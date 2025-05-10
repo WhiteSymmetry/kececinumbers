@@ -64,6 +64,7 @@ print("- kn.unified_generator(...) (low-level)")
 print("\nAccess definitions with: kn.DEFINITIONS")
 print("\nAccess type constants like: kn.TYPE_COMPLEX")
 ```
+---
 
 Trying interactive mode (will prompt for input in the console/output area)...
 Keçeci Number Types:
