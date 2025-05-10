@@ -120,8 +120,8 @@ If this library was useful to you in your research, please cite us. Following th
   year         = 2025,
   publisher    = {PyPI, Anaconda, Github, Zenodo},
   version      = {0.1.0},
-  doi          = {10.5281/zenodo.},
-  url          = {https://doi.org/10.5281/zenodo.},
+  doi          = {10.5281/zenodo.15377660},
+  url          = {https://doi.org/10.5281/zenodo.15377660},
 }
 
 @misc{kececi_2025_15314329,
@@ -139,14 +139,14 @@ If this library was useful to you in your research, please cite us. Following th
 ### APA
 
 ```
-Keçeci, M. (2025). kececinumbers (0.1.0). PyPI, Anaconda, GitHub, Zenodo. https://doi.org/10.5281/zenodo.
+Keçeci, M. (2025). kececinumbers (0.1.0). PyPI, Anaconda, GitHub, Zenodo. https://doi.org/10.5281/zenodo.15377660
 
 Keçeci, M. (2025). Keçeci Numbers. https://doi.org/10.5281/zenodo.
 ```
 
 ### Chicago
 ```
-Keçeci, Mehmet. "kececinumbers". PyPI, Anaconda, GitHub, Zenodo, 01 May 2025. https://doi.org/10.5281/zenodo.
+Keçeci, Mehmet. "kececinumbers". PyPI, Anaconda, GitHub, Zenodo, 01 May 2025. https://doi.org/10.5281/zenodo.15377660
 
 Keçeci, Mehmet. "Keçeci Numbers", 01 May 2025. https://doi.org/10.5281/zenodo.
 ```
