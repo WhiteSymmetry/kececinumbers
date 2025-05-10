@@ -65,7 +65,6 @@ print("\nAccess definitions with: kn.DEFINITIONS")
 print("\nAccess type constants like: kn.TYPE_COMPLEX")
 ```
 ---
-
 Trying interactive mode (will prompt for input in the console/output area)...
 Keçeci Number Types:
 1: Positive Real Numbers (Integer: e.g., 1)
@@ -78,6 +77,7 @@ Please select Keçeci Number Type (1-6):  1
 Enter the starting number (e.g., 0 or 2.5, complex:3+4j, rational: 3/4, quaternions: 1)  :  0
 Enter the base scalar value for increment (e.g., 9):  9
 Enter the number of iterations (positive integer: e.g., 30):  30
+
 ---
 ![Keçeci Numbers Example](https://github.com/WhiteSymmetry/kececinumbers/blob/main/examples/kn-1.png?raw=true)
 
