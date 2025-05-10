@@ -1,5 +1,19 @@
 # Keçeci Numbers: Keçeci Sayıları
 
+[![PyPI version](https://badge.fury.io/py/kececinumbers.svg)](https://badge.fury.io/py/kececinumbers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15377660.svg)](https://doi.org/10.5281/zenodo.15377660)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.*.svg)](https://doi.org/10.5281/zenodo.*)
+
+[![Anaconda-Server Badge](https://anaconda.org/bilgi/kececinumbers/badges/version.svg)](https://anaconda.org/bilgi/kececinumbers)
+[![Anaconda-Server Badge](https://anaconda.org/bilgi/kececinumbers/badges/latest_release_date.svg)](https://anaconda.org/bilgi/kececinumbers)
+[![Anaconda-Server Badge](https://anaconda.org/bilgi/kececinumbers/badges/platforms.svg)](https://anaconda.org/bilgi/kececinumbers)
+[![Anaconda-Server Badge](https://anaconda.org/bilgi/kececinumbers/badges/license.svg)](https://anaconda.org/bilgi/kececinumbers)
+
+[![Open Source](https://img.shields.io/badge/Open%20Source-Open%20Source-brightgreen.svg)](https://opensource.org/)
+[![Documentation Status](https://app.readthedocs.org/projects/kececinumbers/badge/?0.2.1=main)](https://kececinumbers.readthedocs.io/en/main/?badge=main)
+
 ---
 
 ## Description / Açıklama
