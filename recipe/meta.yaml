@@ -1,4 +1,4 @@
-{% set version = "0.1.3" %}
+{% set version = "0.1.4" %}
 
 package:
   name: kececinumbers
@@ -7,11 +7,11 @@ package:
 source:
   path: kececinumbers/
   url: 
-  sha256: 
+  sha256:
 
 build:
   noarch: python  # Platformdan bağımsız bir paket oluşturur
-  script: python -m pip install --ignore-installed .
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed"
   number: 0
 
 requirements:
@@ -23,6 +23,9 @@ requirements:
     - python {{ python }}
     - numpy
     # Other runtime dependencies
+  build:
+    - python >=3.9,<3.14
+    - pip
 
 about:
   home: https://github.com/WhiteSymmetry/kececinumbers
