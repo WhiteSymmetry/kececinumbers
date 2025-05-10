@@ -1,0 +1,35 @@
+{% set version = "0.1.0" %}
+
+package:
+  name: kececinumbers
+  version: {{ version }}
+
+source:
+  path: kececinumbers/
+  url: 
+  sha256: 
+
+build:
+  noarch: python  # Platformdan bağımsız bir paket oluşturur
+  script: python -m pip install --ignore-installed .
+  number: 0
+
+requirements:
+  host:
+    - python {{ python }}
+    - numpy
+    # Other build tools
+  run:
+    - python {{ python }}
+    - numpy
+    # Other runtime dependencies
+
+about:
+  home: https://github.com/WhiteSymmetry/kececinumbers
+  license: MIT
+  summary: 'Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets.'
+  description: |
+    Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets.
+  dev_url: https://github.com/WhiteSymmetry/kececinumbers
+  doc_url: https://github.com/WhiteSymmetry/kececinumbers
+  doc_source_url: https://github.com/WhiteSymmetry/kececinumbers/blob/main/README.md

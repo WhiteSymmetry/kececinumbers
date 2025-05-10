@@ -1,0 +1,35 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: kececinumbers
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file. / Eğer bu yazılımı
+  kullanıyorsanız, lütfen bu dosyadaki meta   verileri
+  kullanarak atıfta bulunun.
+type: software
+authors:
+  - given-names: Mehmet
+    family-names: Keçeci
+    email: bilginomi@yaani.com
+    orcid: 'https://orcid.org/0000-0001-9937-9839'
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.
+  - type: doi
+    value: 10.5281/zenodo.
+repository-code: 'https://github.com/WhiteSymmetry/kececinumbers'
+url: 'https://github.com/WhiteSymmetry/kececinumbers'
+repository: 'https://anaconda.org/bilgi/kececinumbers'
+repository-artifact: 'https://pypi.org/project/kececinumbers/'
+abstract: >-
+  Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets.
+keywords:
+  - kececinumbers
+  - kececinumbers
+  - numbers
+license: MIT
+commit: 'Revision: 1'
+version: 0.1.0
+date-released: '2025-05-10'

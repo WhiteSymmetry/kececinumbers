@@ -1,0 +1,15 @@
+LICENSE
+MANIFEST.in
+README.md
+pyproject.toml
+setup.cfg
+setup.py
+kececinumbers/__init__.py
+kececinumbers/_version.py
+kececinumbers/kececinumbers.py
+kececinumbers.egg-info/PKG-INFO
+kececinumbers.egg-info/SOURCES.txt
+kececinumbers.egg-info/dependency_links.txt
+kececinumbers.egg-info/requires.txt
+kececinumbers.egg-info/top_level.txt
+tests/test_sample.py
