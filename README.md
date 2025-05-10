@@ -66,16 +66,27 @@ print("\nAccess type constants like: kn.TYPE_COMPLEX")
 ```
 ---
 Trying interactive mode (will prompt for input in the console/output area)...
+
 Keçeci Number Types:
+
 1: Positive Real Numbers (Integer: e.g., 1)
+
 2: Negative Real Numbers (Integer: e.g., -3)
+
 3: Complex Numbers (e.g., 3+4j)
+
 4: Floating-Point Numbers (e.g., 2.5)
+
 5: Rational Numbers (e.g., 3/2, 5)
+
 6: Quaternions (scalar start input becomes q(s,s,s,s): e.g.,  1 or 2.5)
+
 Please select Keçeci Number Type (1-6):  1
+
 Enter the starting number (e.g., 0 or 2.5, complex:3+4j, rational: 3/4, quaternions: 1)  :  0
+
 Enter the base scalar value for increment (e.g., 9):  9
+
 Enter the number of iterations (positive integer: e.g., 30):  30
 
 ---
