@@ -16,7 +16,7 @@ authors:
     orcid: 'https://orcid.org/0000-0001-9937-9839'
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.
+    value: 10.5281/zenodo.15377660
   - type: doi
     value: 10.5281/zenodo.
 repository-code: 'https://github.com/WhiteSymmetry/kececinumbers'
@@ -31,5 +31,5 @@ keywords:
   - numbers
 license: MIT
 commit: 'Revision: 1'
-version: 0.1.0
+version: 0.1.3
 date-released: '2025-05-10'
