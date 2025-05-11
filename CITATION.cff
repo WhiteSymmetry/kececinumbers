@@ -19,6 +19,8 @@ identifiers:
     value: 10.5281/zenodo.15377660
   - type: doi
     value: 10.5281/zenodo.15381417
+  - type: doi
+    value: 10.5281/zenodo.15381698
 repository-code: 'https://github.com/WhiteSymmetry/kececinumbers'
 url: 'https://github.com/WhiteSymmetry/kececinumbers'
 repository: 'https://anaconda.org/bilgi/kececinumbers'
