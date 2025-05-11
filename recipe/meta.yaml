@@ -1,4 +1,4 @@
-{% set version = "0.1.4" %}
+{% set version = "0.2.0" %}
 
 package:
   name: kececinumbers
@@ -13,6 +13,8 @@ build:
   noarch: python  # Platformdan bağımsız bir paket oluşturur
   script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed"
   number: 0
+  entry_points:
+    - kececinumbers = kececinumbers.__main__:main
 
 requirements:
   host:
@@ -20,12 +22,16 @@ requirements:
     - numpy
     # Other build tools
   run:
-    - python {{ python }}
+    - python >=3.9,<3.14
     - numpy
     # Other runtime dependencies
   build:
     - python >=3.9,<3.14
     - pip
+
+test:
+  imports:
+    - kececinumbers
 
 about:
   home: https://github.com/WhiteSymmetry/kececinumbers
