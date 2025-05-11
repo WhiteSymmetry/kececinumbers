@@ -117,6 +117,41 @@ Enter the number of iterations (positive integer: e.g., 30):  30
 ![Keçeci Numbers Example](https://github.com/WhiteSymmetry/kececinumbers/blob/main/examples/kn-5.png?raw=true)
 
 ---
+# Keçeci Prime Number
+
+```python
+import matplotlib.pyplot as plt
+import kececinumbers as kn
+
+
+print("--- Interactive Test ---")
+seq_interactive = kn.get_interactive()
+if seq_interactive:
+    kn.plot_numbers(seq_interactive, "Keçeci Numbers")
+
+print("\n--- Random Type Test (60 Keçeci Steps) ---")
+# num_iterations burada Keçeci adımı sayısıdır
+seq_random = kn.get_random_type(num_iterations=60) 
+if seq_random:
+    kn.plot_numbers(seq_random, "Random Type Keçeci Numbers")
+
+print("\n--- Fixed Params Test (Complex, 60 Keçeci Steps) ---")
+seq_fixed = kn.get_with_params(
+    kececi_type_choice=kn.TYPE_COMPLEX, 
+    iterations=60, 
+    start_value_raw="1+2j", 
+    add_value_base_scalar=3.0
+)
+if seq_fixed:
+    kn.plot_numbers(seq_fixed, "Fixed Params (Complex) Keçeci Numbers")
+
+# İsterseniz find_kececi_prime_number'ı ayrıca da çağırabilirsiniz:
+if seq_fixed:
+    kpn_direct = kn.find_kececi_prime_number(seq_fixed)
+    if kpn_direct is not None:
+        print(f"\nDirect call to find_kececi_prime_number for fixed numbers: {kpn_direct}")
+```
+---
 
 ## License / Lisans
 
