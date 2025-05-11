@@ -151,6 +151,17 @@ if seq_fixed:
     if kpn_direct is not None:
         print(f"\nDirect call to find_kececi_prime_number for fixed numbers: {kpn_direct}")
 ```
+
+Generated Keçeci Sequence (first 20 of 121): [4, 11, 12, 4, 11, 10, 5, 12, 4, 11, 12, 6, 13, 12, 4, 11, 12, 6, 13, 12]...
+Keçeci Prime Number for this sequence: 11
+
+--- Random Type Test (60 Keçeci Steps) ---
+
+Randomly selected Keçeci Number Type: 1 (Positive Integer)
+
+Generated Keçeci Sequence (using get_with_params, first 20 of 61): [0, 9, 3, 12, 6, 15, 5, 14, 7, 16, 8, 17, 18, 6, 15, 5, 14, 7, 16, 8]...
+Keçeci Prime Number for this sequence: 17
+
 ---
 
 ## License / Lisans
