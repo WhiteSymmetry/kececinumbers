@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15377660.svg)](https://doi.org/10.5281/zenodo.15377660)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.*.svg)](https://doi.org/10.5281/zenodo.*)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15381417.svg)](https://doi.org/10.5281/zenodo.15381417)
 
 [![Anaconda-Server Badge](https://anaconda.org/bilgi/kececinumbers/badges/version.svg)](https://anaconda.org/bilgi/kececinumbers)
 [![Anaconda-Server Badge](https://anaconda.org/bilgi/kececinumbers/badges/latest_release_date.svg)](https://anaconda.org/bilgi/kececinumbers)
@@ -12,7 +12,7 @@
 [![Anaconda-Server Badge](https://anaconda.org/bilgi/kececinumbers/badges/license.svg)](https://anaconda.org/bilgi/kececinumbers)
 
 [![Open Source](https://img.shields.io/badge/Open%20Source-Open%20Source-brightgreen.svg)](https://opensource.org/)
-[![Documentation Status](https://app.readthedocs.org/projects/kececinumbers/badge/?0.1.2=main)](https://kececinumbers.readthedocs.io/en/latest)
+[![Documentation Status](https://app.readthedocs.org/projects/kececinumbers/badge/?0.2.0=main)](https://kececinumbers.readthedocs.io/en/latest)
 
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10536/badge)](https://www.bestpractices.dev/projects/10536)
 
@@ -192,9 +192,9 @@ If this library was useful to you in your research, please cite us. Following th
   month        = may,
   year         = 2025,
   publisher    = {Zenodo},
-  version      = {1.0.0},
-  doi          = {10.5281/zenodo.},
-  url          = {https://doi.org/10.5281/zenodo.},
+  version      = {0.2.0},
+  doi          = {10.5281/zenodo.15381417},
+  url          = {https://doi.org/10.5281/zenodo.15381417},
 }
 ```
 
@@ -203,12 +203,12 @@ If this library was useful to you in your research, please cite us. Following th
 ```
 Keçeci, M. (2025). kececinumbers (0.1.0). PyPI, Anaconda, GitHub, Zenodo. https://doi.org/10.5281/zenodo.15377660
 
-Keçeci, M. (2025). Keçeci Numbers. https://doi.org/10.5281/zenodo.
+Keçeci, M. (2025). kececinumbers (0.2.0). GitHub, PyPI, Anaconda, Zenodo. https://doi.org/10.5281/zenodo.15381417
 ```
 
 ### Chicago
 ```
 Keçeci, Mehmet. "kececinumbers". PyPI, Anaconda, GitHub, Zenodo, 01 May 2025. https://doi.org/10.5281/zenodo.15377660
 
-Keçeci, Mehmet. "Keçeci Numbers", 01 May 2025. https://doi.org/10.5281/zenodo.
+Keçeci, Mehmet. “Kececinumbers”. GitHub, PyPI, Anaconda, Zenodo, 11 May 2025. https://doi.org/10.5281/zenodo.15381417
 ```
