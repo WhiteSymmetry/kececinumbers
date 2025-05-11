@@ -5,7 +5,7 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15377660.svg)](https://doi.org/10.5281/zenodo.15377660)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15381417.svg)](https://doi.org/10.5281/zenodo.15381417)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15381698.svg)](https://doi.org/10.5281/zenodo.15381698
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15381698.svg)](https://doi.org/10.5281/zenodo.15381698)
 
 [![Anaconda-Server Badge](https://anaconda.org/bilgi/kececinumbers/badges/version.svg)](https://anaconda.org/bilgi/kececinumbers)
 [![Anaconda-Server Badge](https://anaconda.org/bilgi/kececinumbers/badges/latest_release_date.svg)](https://anaconda.org/bilgi/kececinumbers)
