@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 setup(
     name="kececinumbers",
     version="0.2.0",
-    description="Keçeci Numbers An Exploration of a Dynamic Sequence Across Diverse Number Sets",
+    description="Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     author="Mehmet Keçeci",
