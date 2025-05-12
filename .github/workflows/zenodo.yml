@@ -1,0 +1,36 @@
+name: Publish to Zenodo on Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish-to-zenodo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create release archive
+        run: |
+          mkdir -p release-artifact
+          cp -r ./* release-artifact/
+          cd release-artifact
+          zip -r ../release.zip *
+
+      - name: Upload to Zenodo
+        uses: nasa/gh-action-upload-zenodo-release@main
+        with:
+          zenodo_token: ${{ secrets.ZENODO_TOKEN }}
+          dir: .
+          metadata: |
+            {
+              "title": "kececinumbers",
+              "upload_type": "software",
+              "description": "Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets",
+              "creators": [
+                {"name": "Keçeci, Mehmet", "orcid": "0000-0001-9937-9839"}
+              ],
+              "access_right": "open",
+              "license": "mit-license"
+            }
