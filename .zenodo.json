@@ -1,0 +1,13 @@
+{
+  "title": "kececinumbers",
+  "upload_type": "software",
+  "description": "Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets",
+  "creators": [
+    {
+      "name": "Keçeci, Mehmet",
+      "orcid": "0000-0001-9937-9839"
+    }
+  ],
+  "license": "mit-license",
+  "access_right": "open"
+}
