@@ -207,13 +207,21 @@ Keçeci, M. (2025). kececinumbers (0.1.0). PyPI, Anaconda, GitHub, Zenodo. https
 Keçeci, M. (2025). kececinumbers (0.2.0). GitHub, PyPI, Anaconda, Zenodo. https://doi.org/10.5281/zenodo.15381417
 
 Keçeci, M. (2025). Keçeci Numbers and the Keçeci Prime Number: A Potential Number Theoretic Exploratory Tool. https://doi.org/10.5281/zenodo.15381698
+
+Keçeci, M. (2025). Diversity of Keçeci Numbers and Their Application to Prešić-Type Fixed-Point Iterations: A Numerical Exploration. https://doi.org/10.5281/zenodo.15481711
+
+Keçeci, M. (2025). Keçeci Numbers and the Keçeci Prime Number. Authorea. June 02, 2025. https://doi.org/10.22541/au.174890181.14730464/v1
 ```
 
 ### Chicago
 ```
 Keçeci, Mehmet. "kececinumbers". PyPI, Anaconda, GitHub, Zenodo, 01 May 2025. https://doi.org/10.5281/zenodo.15377660
 
-Keçeci, Mehmet. “Kececinumbers”. GitHub, PyPI, Anaconda, Zenodo, 11 May 2025. https://doi.org/10.5281/zenodo.15381417
+Keçeci, Mehmet. "Kececinumbers". GitHub, PyPI, Anaconda, Zenodo, 11 May 2025. https://doi.org/10.5281/zenodo.15381417
 
-Keçeci, Mehmet. “Keçeci Numbers and the Keçeci Prime Number: A Potential Number Theoretic Exploratory Tool”, 11 Mayıs 2025. https://doi.org/10.5281/zenodo.15381698.
+Keçeci, Mehmet. "Keçeci Numbers and the Keçeci Prime Number: A Potential Number Theoretic Exploratory Tool", 11 Mayıs 2025. https://doi.org/10.5281/zenodo.15381698
+
+Keçeci, Mehmet. "Diversity of Keçeci Numbers and Their Application to Prešić-Type Fixed-Point Iterations: A Numerical Exploration". https://doi.org/10.5281/zenodo.15481711
+
+Keçeci, Mehmet. "Keçeci Numbers and the Keçeci Prime Number". Authorea. June 02, 2025. https://doi.org/10.22541/au.174890181.14730464/v1
 ```
