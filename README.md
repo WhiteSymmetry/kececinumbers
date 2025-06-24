@@ -3,9 +3,7 @@
 [![PyPI version](https://badge.fury.io/py/kececinumbers.svg)](https://badge.fury.io/py/kececinumbers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15377660.svg)](https://doi.org/10.5281/zenodo.15377660)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15381417.svg)](https://doi.org/10.5281/zenodo.15381417)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15381698.svg)](https://doi.org/10.5281/zenodo.15381698)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15377659.svg)](https://doi.org/10.5281/zenodo.15377659)
 
 [![Anaconda-Server Badge](https://anaconda.org/bilgi/kececinumbers/badges/version.svg)](https://anaconda.org/bilgi/kececinumbers)
 [![Anaconda-Server Badge](https://anaconda.org/bilgi/kececinumbers/badges/latest_release_date.svg)](https://anaconda.org/bilgi/kececinumbers)
@@ -176,35 +174,22 @@ If this library was useful to you in your research, please cite us. Following th
 ### BibTeX
 
 ```bibtex
-@misc{kececi_2025_15313947,
+@misc{kececi_2025_15377659,
   author       = {Keçeci, Mehmet},
   title        = {kececinumbers},
   month        = may,
   year         = 2025,
   publisher    = {PyPI, Anaconda, Github, Zenodo},
   version      = {0.1.0},
-  doi          = {10.5281/zenodo.15377660},
-  url          = {https://doi.org/10.5281/zenodo.15377660},
-}
-
-@misc{kececi_2025_15314329,
-  author       = {Keçeci, Mehmet},
-  title        = {Keçeci numbers},
-  month        = may,
-  year         = 2025,
-  publisher    = {Zenodo},
-  version      = {0.2.0},
-  doi          = {10.5281/zenodo.15381417},
-  url          = {https://doi.org/10.5281/zenodo.15381417},
+  doi          = {10.5281/zenodo.15377659},
+  url          = {https://doi.org/10.5281/zenodo.15377659},
 }
 ```
 
 ### APA
 
 ```
-Keçeci, M. (2025). kececinumbers (0.1.0). PyPI, Anaconda, GitHub, Zenodo. https://doi.org/10.5281/zenodo.15377660
-
-Keçeci, M. (2025). kececinumbers (0.2.0). GitHub, PyPI, Anaconda, Zenodo. https://doi.org/10.5281/zenodo.15381417
+Keçeci, M. (2025). kececinumbers. Zenodo. https://doi.org/10.5281/zenodo.15377659
 
 Keçeci, M. (2025). Keçeci Numbers and the Keçeci Prime Number: A Potential Number Theoretic Exploratory Tool. https://doi.org/10.5281/zenodo.15381698
 
@@ -215,9 +200,7 @@ Keçeci, M. (2025). Keçeci Numbers and the Keçeci Prime Number. Authorea. June
 
 ### Chicago
 ```
-Keçeci, Mehmet. "kececinumbers". PyPI, Anaconda, GitHub, Zenodo, 01 May 2025. https://doi.org/10.5281/zenodo.15377660
-
-Keçeci, Mehmet. "Kececinumbers". GitHub, PyPI, Anaconda, Zenodo, 11 May 2025. https://doi.org/10.5281/zenodo.15381417
+Keçeci, Mehmet. "kececinumbers". Zenodo, 01 May 2025. https://doi.org/10.5281/zenodo.15377659
 
 Keçeci, Mehmet. "Keçeci Numbers and the Keçeci Prime Number: A Potential Number Theoretic Exploratory Tool", 11 Mayıs 2025. https://doi.org/10.5281/zenodo.15381698
 
