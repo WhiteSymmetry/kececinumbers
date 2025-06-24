@@ -189,6 +189,8 @@ If this library was useful to you in your research, please cite us. Following th
 ### APA
 
 ```
+Keçeci, M. (2025). kececinumbers [Data set]. WorkflowHub. https://doi.org/10.48546/workflowhub.datafile.14.1
+
 Keçeci, M. (2025). kececinumbers. Zenodo. https://doi.org/10.5281/zenodo.15377659
 
 Keçeci, M. (2025). Keçeci Numbers and the Keçeci Prime Number: A Potential Number Theoretic Exploratory Tool. https://doi.org/10.5281/zenodo.15381698
@@ -200,6 +202,8 @@ Keçeci, M. (2025). Keçeci Numbers and the Keçeci Prime Number. Authorea. June
 
 ### Chicago
 ```
+Keçeci, Mehmet. kececinumbers [Data set]. WorkflowHub, 2025. https://doi.org/10.48546/workflowhub.datafile.14.1
+
 Keçeci, Mehmet. "kececinumbers". Zenodo, 01 May 2025. https://doi.org/10.5281/zenodo.15377659
 
 Keçeci, Mehmet. "Keçeci Numbers and the Keçeci Prime Number: A Potential Number Theoretic Exploratory Tool", 11 Mayıs 2025. https://doi.org/10.5281/zenodo.15381698
