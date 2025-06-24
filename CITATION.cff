@@ -16,9 +16,7 @@ authors:
     orcid: 'https://orcid.org/0000-0001-9937-9839'
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.15377660
-  - type: doi
-    value: 10.5281/zenodo.15381417
+    value: 10.5281/zenodo.15377659
   - type: doi
     value: 10.5281/zenodo.15381698
   - type: doi
