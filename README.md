@@ -27,6 +27,45 @@
 
 ---
 
+<p align="left">
+    <table>
+        <tr>
+            <td style="text-align: center;">PyPI</td>
+            <td style="text-align: center;">
+                <a href="https://pypi.org/project/kececinumbers/">
+                    <img src="https://badge.fury.io/py/kececinumbers.svg" alt="PyPI version" height="18"/>
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align: center;">Conda</td>
+            <td style="text-align: center;">
+                <a href="https://anaconda.org/bilgi/kececinumberss">
+                    <img src="https://anaconda.org/bilgi/kececinumbers/badges/version.svg" alt="conda-forge version" height="18"/>
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align: center;">DOI</td>
+            <td style="text-align: center;">
+                <a href="https://doi.org/10.5281/zenodo.15377659">
+                    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.15377659.svg" alt="DOI" height="18"/>
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align: center;">License: MIT</td>
+            <td style="text-align: center;">
+                <a href="https://opensource.org/licenses/MIT">
+                    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License" height="18"/>
+                </a>
+            </td>
+        </tr>
+    </table>
+</p>
+
+---
+
 ## Description / Açıklama
 
 **Keçeci Numbers (Keçeci Sayıları)**: Keçeci Numbers; An Exploration of a Dynamic Sequence Across Diverse Number Sets: This work introduces a novel numerical sequence concept termed "Keçeci Numbers." Keçeci Numbers are a dynamic sequence generated through an iterative process, originating from a specific starting value and an increment value. In each iteration, the increment value is added to the current value, and this "added value" is recorded in the sequence. Subsequently, a division operation is attempted on this "added value," primarily using the divisors 2 and 3, with the choice of divisor depending on the one used in the previous step. If division is successful, the quotient becomes the next element in the sequence. If the division operation fails, the primality of the "added value" (or its real/scalar part for complex/quaternion numbers, or integer part for rational numbers) is checked. If it is prime, an "Augment/Shrink then Check" (ASK) rule is invoked: a type-specific unit value is added or subtracted (based on the previous ASK application), this "modified value" is recorded in the sequence, and the division operation is re-attempted on it. If division fails again, or if the number is not prime, the "added value" (or the "modified value" post-ASK) itself becomes the next element in the sequence. This mechanism is designed to be applicable across various number sets, including positive and negative real numbers, complex numbers, floating-point numbers, rational numbers, and quaternions. The increment value, ASK unit, and divisibility checks are appropriately adapted for each number type. This flexibility of Keçeci Numbers offers rich potential for studying their behavior in different numerical systems. The patterns exhibited by the sequences, their convergence/divergence properties, and potential for chaotic behavior may constitute interesting research avenues for advanced mathematical analysis and number theory applications. This study outlines the fundamental generation mechanism of Keçeci Numbers and their initial behaviors across diverse number sets.
