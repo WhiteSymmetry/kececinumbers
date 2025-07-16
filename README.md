@@ -40,7 +40,7 @@
         <tr>
             <td style="text-align: center;">Conda</td>
             <td style="text-align: center;">
-                <a href="https://anaconda.org/bilgi/kececinumberss">
+                <a href="https://anaconda.org/bilgi/kececinumbers">
                     <img src="https://anaconda.org/bilgi/kececinumbers/badges/version.svg" alt="conda-forge version" height="18"/>
                 </a>
             </td>
