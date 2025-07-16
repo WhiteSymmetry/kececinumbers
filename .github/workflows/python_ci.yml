@@ -4,10 +4,6 @@ on:
   push
 
 jobs:
-  my-job:
-    permissions:
-      contents: read
-      pull-requests: write
   test:
     name: Run tests and collect coverage
     runs-on: ubuntu-latest
