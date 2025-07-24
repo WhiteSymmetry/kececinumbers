@@ -185,7 +185,17 @@ Keçeci Number Types:
 
 6: Quaternions (scalar start input becomes q(s,s,s,s): e.g.,  1 or 2.5)
 
-Please select Keçeci Number Type (1-6):  1
+7: Neutrosophic     
+
+8: Neutro-Complex   
+
+9: Hyperreal
+ 
+10: Bicomplex        
+
+11: Neutro-Bicomplex
+
+Please select Keçeci Number Type (1-11):  1
 
 Enter the starting number (e.g., 0 or 2.5, complex:3+4j, rational: 3/4, quaternions: 1)  :  0
 
