@@ -457,142 +457,6 @@ def _is_divisible(value, divisor, kececi_type):
         return False
     return False
 
-# ==============================================================================
-# --- CORE GENERATOR ---
-# ==============================================================================
-
-def unified_generator(kececi_type, start_input_raw, add_input_base_scalar, iterations):
-    """
-    Herhangi bir desteklenen türde Keçeci Sayı dizileri üreten çekirdek motor.
-    Bu sürüm, tüm tipler için sağlam tür dönüştürme ve özel format ayrıştırma içerir.
-    """
-    current_value = None
-    add_value_typed = None
-    ask_unit = None
-    use_integer_division = False
-
-    try:
-        # --- Adım 1: Keçeci Türüne Göre Başlatma ---
-        a_float = float(add_input_base_scalar)
-
-        if kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL]:
-            s_int = int(float(start_input_raw))
-            current_value = s_int
-            add_value_typed = int(a_float)
-            ask_unit = 1
-            use_integer_division = True
-            
-        elif kececi_type == TYPE_FLOAT:
-            current_value = float(start_input_raw)
-            add_value_typed = a_float
-            ask_unit = 1.0
-            
-        elif kececi_type == TYPE_RATIONAL:
-            current_value = Fraction(start_input_raw)
-            add_value_typed = Fraction(add_input_base_scalar)
-            ask_unit = Fraction(1)
-            
-        elif kececi_type == TYPE_COMPLEX:
-            current_value = _parse_complex(start_input_raw)
-            add_value_typed = complex(a_float, a_float)
-            ask_unit = 1 + 1j
-
-        elif kececi_type == TYPE_NEUTROSOPHIC:
-            a, b = _parse_neutrosophic(start_input_raw)
-            current_value = NeutrosophicNumber(a, b)
-            add_value_typed = NeutrosophicNumber(a_float, 0)
-            ask_unit = NeutrosophicNumber(1, 1)
-
-        # --- YENİ EKLENEN/DÜZELTİLEN BLOKLAR ---
-
-        elif kececi_type == TYPE_NEUTROSOPHIC_COMPLEX: # HATA DÜZELTİLDİ
-            s_complex = _parse_complex(start_input_raw)
-            # Başlangıç indeterminacy değerini 0 olarak varsayalım
-            current_value = NeutrosophicComplexNumber(s_complex.real, s_complex.imag, 0.0)
-            # Artış, deterministik reel kısma etki eder
-            add_value_typed = NeutrosophicComplexNumber(a_float, 0.0, 0.0)
-            ask_unit = NeutrosophicComplexNumber(1, 1, 1)
-
-        elif kececi_type == TYPE_HYPERREAL: # HATA DÜZELTİLDİ
-            a, b = _parse_hyperreal(start_input_raw)
-            # 'a' reel kısmı, 'b' ise sonsuz küçükleri ölçekler
-            sequence_list = [a + b / n for n in range(1, 11)]
-            current_value = HyperrealNumber(sequence_list)
-            # Artış, sadece standart (ilk) reel kısma etki eder
-            add_sequence = [a_float] + [0.0] * 9
-            add_value_typed = HyperrealNumber(add_sequence)
-            ask_unit = HyperrealNumber([1.0] * 10)
-
-        elif kececi_type == TYPE_BICOMPLEX: # Mantık aynı, sadece ayrıştırıcıyı kullanıyor
-            s_complex = _parse_complex(start_input_raw)
-            a_complex = complex(a_float)
-            current_value = BicomplexNumber(s_complex, s_complex / 2)
-            add_value_typed = BicomplexNumber(a_complex, a_complex / 2)
-            ask_unit = BicomplexNumber(complex(1, 1), complex(0.5, 0.5))
-
-        elif kececi_type == TYPE_NEUTROSOPHIC_BICOMPLEX: # HATA DÜZELTİLDİ
-            s_complex = _parse_complex(start_input_raw)
-            # Başlangıç değeri olarak kompleks sayıyı kullanıp diğer 6 bileşeni 0 yapalım
-            current_value = NeutrosophicBicomplexNumber(s_complex.real, s_complex.imag, 0, 0, 0, 0, 0, 0)
-            # Artış, sadece ana reel kısma etki eder
-            add_value_typed = NeutrosophicBicomplexNumber(a_float, 0, 0, 0, 0, 0, 0, 0)
-            ask_unit = NeutrosophicBicomplexNumber(*([1.0] * 8))
-
-        # --- DİĞER TİPLER ---
-
-        elif kececi_type == TYPE_QUATERNION:
-            s_float = float(start_input_raw)
-            current_value = np.quaternion(s_float, s_float, s_float, s_float)
-            add_value_typed = np.quaternion(a_float, a_float, a_float, a_float)
-            ask_unit = np.quaternion(1, 1, 1, 1)
-
-        else:
-            raise ValueError(f"Geçersiz veya desteklenmeyen Keçeci Sayı Tipi: {kececi_type}")
-
-    except (ValueError, TypeError) as e:
-        print(f"HATA: Tip {kececi_type} için '{start_input_raw}' girdisiyle başlatma başarısız: {e}")
-        return []
-
-    # --- Adım 2: İterasyon Döngüsü ---
-    sequence = [current_value]
-    last_divisor_used = None
-    ask_counter = 0
-    
-    for _ in range(iterations):
-        added_value = current_value + add_value_typed
-        sequence.append(added_value)
-        
-        result_value = added_value
-        divided_successfully = False
-
-        primary_divisor = 3 if last_divisor_used == 2 or last_divisor_used is None else 2
-        alternative_divisor = 2 if primary_divisor == 3 else 3
-        
-        for divisor in [primary_divisor, alternative_divisor]:
-            if _is_divisible(added_value, divisor, kececi_type):
-                result_value = added_value // divisor if use_integer_division else added_value / divisor
-                last_divisor_used = divisor
-                divided_successfully = True
-                break
-        
-        if not divided_successfully and is_prime(added_value):
-            modified_value = (added_value + ask_unit) if ask_counter == 0 else (added_value - ask_unit)
-            ask_counter = 1 - ask_counter
-            sequence.append(modified_value)
-            
-            result_value = modified_value 
-            
-            for divisor in [primary_divisor, alternative_divisor]:
-                if _is_divisible(modified_value, divisor, kececi_type):
-                    result_value = modified_value // divisor if use_integer_division else modified_value / divisor
-                    last_divisor_used = divisor
-                    break
-        
-        sequence.append(result_value)
-        current_value = result_value
-        
-    return sequence
-
 def _parse_complex(s: str) -> complex:
     """
     Bir string'i kompleks sayıya çevirir. 
@@ -700,6 +564,58 @@ def _parse_hyperreal(s: str) -> (float, float):
         
     return a, b
 
+def _parse_quaternion(s: str) -> np.quaternion:
+    """
+    Kullanıcıdan gelen metin girdisini ('a+bi+cj+dk' veya sadece skaler)
+    bir kuaterniyon nesnesine çevirir.
+
+    Örnekler:
+    - '2.5' -> quaternion(2.5, 2.5, 2.5, 2.5)
+    - '2.5+2.5i+2.5j+2.5k' -> quaternion(2.5, 2.5, 2.5, 2.5)
+    - '1-2i+3.5j-k' -> quaternion(1, -2, 3.5, -1)
+    """
+    s_clean = s.replace(" ", "").lower()
+    if not s_clean:
+        raise ValueError("Girdi boş olamaz.")
+
+    # Girdinin sadece bir sayı olup olmadığını kontrol et
+    try:
+        val = float(s_clean)
+        # Programın orijinal mantığına göre skalerden kuaterniyon oluştur
+        return np.quaternion(val, val, val, val)
+    except ValueError:
+        # Girdi tam bir kuaterniyon ifadesi, ayrıştırmaya devam et
+        pass
+    
+    # Tüm kuaterniyon bileşenlerini bulmak için daha esnek bir regex
+    # Örnek: '-10.5j', '+2i', '5', '-k' gibi parçaları yakalar
+    pattern = re.compile(r'([+-]?\d*\.?\d+)([ijk])?')
+    matches = pattern.findall(s_clean.replace('i', 'i ').replace('j', 'j ').replace('k', 'k ')) # Ayrıştırmayı kolaylaştır
+    
+    parts = {'w': 0.0, 'x': 0.0, 'y': 0.0, 'z': 0.0}
+    
+    # 'i', 'j', 'k' olmayan katsayıları ('-1k' gibi) düzeltmek için
+    s_temp = s_clean
+    for val_str, comp in re.findall(r'([+-])([ijk])', s_clean):
+        s_temp = s_temp.replace(val_str+comp, f'{val_str}1{comp}')
+    
+    matches = pattern.findall(s_temp)
+
+    if not matches:
+        raise ValueError(f"Geçersiz kuaterniyon formatı: '{s}'")
+
+    for value_str, component in matches:
+        value = float(value_str)
+        if component == 'i':
+            parts['x'] += value
+        elif component == 'j':
+            parts['y'] += value
+        elif component == 'k':
+            parts['z'] += value
+        else: # Reel kısım
+            parts['w'] += value
+            
+    return np.quaternion(parts['w'], parts['x'], parts['y'], parts['z'])
 
 def get_random_type(num_iterations, fixed_start_raw="0", fixed_add_base_scalar=9.0):
     """
@@ -729,6 +645,146 @@ def get_random_type(num_iterations, fixed_start_raw="0", fixed_add_base_scalar=9
     )
     
     return generated_sequence
+
+# ==============================================================================
+# --- CORE GENERATOR ---
+# ==============================================================================
+
+def unified_generator(kececi_type, start_input_raw, add_input_base_scalar, iterations):
+    """
+    Herhangi bir desteklenen türde Keçeci Sayı dizileri üreten çekirdek motor.
+    Bu sürüm, tüm tipler için sağlam tür dönüştürme ve özel format ayrıştırma içerir.
+    """
+    current_value = None
+    add_value_typed = None
+    ask_unit = None
+    use_integer_division = False
+
+    try:
+        # --- Adım 1: Keçeci Türüne Göre Başlatma ---
+        a_float = float(add_input_base_scalar)
+
+        if kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL]:
+            s_int = int(float(start_input_raw))
+            current_value = s_int
+            add_value_typed = int(a_float)
+            ask_unit = 1
+            use_integer_division = True
+            
+        elif kececi_type == TYPE_FLOAT:
+            current_value = float(start_input_raw)
+            add_value_typed = a_float
+            ask_unit = 1.0
+            
+        elif kececi_type == TYPE_RATIONAL:
+            current_value = Fraction(start_input_raw)
+            add_value_typed = Fraction(add_input_base_scalar)
+            ask_unit = Fraction(1)
+            
+        elif kececi_type == TYPE_COMPLEX:
+            current_value = _parse_complex(start_input_raw)
+            add_value_typed = complex(a_float, a_float)
+            ask_unit = 1 + 1j
+
+        elif kececi_type == TYPE_NEUTROSOPHIC:
+            a, b = _parse_neutrosophic(start_input_raw)
+            current_value = NeutrosophicNumber(a, b)
+            add_value_typed = NeutrosophicNumber(a_float, 0)
+            ask_unit = NeutrosophicNumber(1, 1)
+
+        # --- YENİ EKLENEN/DÜZELTİLEN BLOKLAR ---
+
+        elif kececi_type == TYPE_NEUTROSOPHIC_COMPLEX: # HATA DÜZELTİLDİ
+            s_complex = _parse_complex(start_input_raw)
+            # Başlangıç indeterminacy değerini 0 olarak varsayalım
+            current_value = NeutrosophicComplexNumber(s_complex.real, s_complex.imag, 0.0)
+            # Artış, deterministik reel kısma etki eder
+            add_value_typed = NeutrosophicComplexNumber(a_float, 0.0, 0.0)
+            ask_unit = NeutrosophicComplexNumber(1, 1, 1)
+
+        elif kececi_type == TYPE_HYPERREAL: # HATA DÜZELTİLDİ
+            a, b = _parse_hyperreal(start_input_raw)
+            # 'a' reel kısmı, 'b' ise sonsuz küçükleri ölçekler
+            sequence_list = [a + b / n for n in range(1, 11)]
+            current_value = HyperrealNumber(sequence_list)
+            # Artış, sadece standart (ilk) reel kısma etki eder
+            add_sequence = [a_float] + [0.0] * 9
+            add_value_typed = HyperrealNumber(add_sequence)
+            ask_unit = HyperrealNumber([1.0] * 10)
+
+        elif kececi_type == TYPE_BICOMPLEX: # Mantık aynı, sadece ayrıştırıcıyı kullanıyor
+            s_complex = _parse_complex(start_input_raw)
+            a_complex = complex(a_float)
+            current_value = BicomplexNumber(s_complex, s_complex / 2)
+            add_value_typed = BicomplexNumber(a_complex, a_complex / 2)
+            ask_unit = BicomplexNumber(complex(1, 1), complex(0.5, 0.5))
+
+        elif kececi_type == TYPE_NEUTROSOPHIC_BICOMPLEX: # HATA DÜZELTİLDİ
+            s_complex = _parse_complex(start_input_raw)
+            # Başlangıç değeri olarak kompleks sayıyı kullanıp diğer 6 bileşeni 0 yapalım
+            current_value = NeutrosophicBicomplexNumber(s_complex.real, s_complex.imag, 0, 0, 0, 0, 0, 0)
+            # Artış, sadece ana reel kısma etki eder
+            add_value_typed = NeutrosophicBicomplexNumber(a_float, 0, 0, 0, 0, 0, 0, 0)
+            ask_unit = NeutrosophicBicomplexNumber(*([1.0] * 8))
+
+        # --- DİĞER TİPLER ---
+
+        elif kececi_type == TYPE_QUATERNION:
+            # Artık girdiyi doğrudan float'a çevirmek yerine, 
+            # hem skaler hem de tam ifadeyi ayrıştırabilen fonksiyonu kullanıyoruz.
+            current_value = _parse_quaternion(start_input_raw)
+            
+            # Artırım değeri (add_value) genellikle basit bir skalerdir,
+            # bu yüzden bu kısım aynı kalabilir.
+            add_value_typed = np.quaternion(a_float, a_float, a_float, a_float)
+            ask_unit = np.quaternion(1, 1, 1, 1)
+
+        else:
+            raise ValueError(f"Geçersiz veya desteklenmeyen Keçeci Sayı Tipi: {kececi_type}")
+
+    except (ValueError, TypeError) as e:
+        print(f"HATA: Tip {kececi_type} için '{start_input_raw}' girdisiyle başlatma başarısız: {e}")
+        return []
+
+    # --- Adım 2: İterasyon Döngüsü ---
+    sequence = [current_value]
+    last_divisor_used = None
+    ask_counter = 0
+    
+    for _ in range(iterations):
+        added_value = current_value + add_value_typed
+        sequence.append(added_value)
+        
+        result_value = added_value
+        divided_successfully = False
+
+        primary_divisor = 3 if last_divisor_used == 2 or last_divisor_used is None else 2
+        alternative_divisor = 2 if primary_divisor == 3 else 3
+        
+        for divisor in [primary_divisor, alternative_divisor]:
+            if _is_divisible(added_value, divisor, kececi_type):
+                result_value = added_value // divisor if use_integer_division else added_value / divisor
+                last_divisor_used = divisor
+                divided_successfully = True
+                break
+        
+        if not divided_successfully and is_prime(added_value):
+            modified_value = (added_value + ask_unit) if ask_counter == 0 else (added_value - ask_unit)
+            ask_counter = 1 - ask_counter
+            sequence.append(modified_value)
+            
+            result_value = modified_value 
+            
+            for divisor in [primary_divisor, alternative_divisor]:
+                if _is_divisible(modified_value, divisor, kececi_type):
+                    result_value = modified_value // divisor if use_integer_division else modified_value / divisor
+                    last_divisor_used = divisor
+                    break
+        
+        sequence.append(result_value)
+        current_value = result_value
+        
+    return sequence
 
 def print_detailed_report(sequence, params):
     """
