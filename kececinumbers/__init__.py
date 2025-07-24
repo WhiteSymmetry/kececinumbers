@@ -34,4 +34,4 @@ def eski_fonksiyon():
 
 
 # Paket sürüm numarası
-__version__ = "0.2.2"
+__version__ = "0.2.3"
