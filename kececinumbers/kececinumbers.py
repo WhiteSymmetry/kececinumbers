@@ -53,6 +53,24 @@ TYPE_NEUTROSOPHIC_BICOMPLEX = 11
 # --- CUSTOM NUMBER CLASS DEFINITIONS ---
 # ==============================================================================
 
+def get_random_type(num_iterations, use_fixed_params_for_selected_type=True,
+                    fixed_start_raw="0", fixed_add_base_scalar=9.0, random_factor=10):
+    """
+    Generates Keçeci Numbers for a randomly selected type.
+    """
+    random_type_choice = random.randint(1, 6)
+    type_names_list = ["Positive Integer", "Negative Integer", "Complex", "Float", "Rational", "Quaternion"]
+    print(f"\nRandomly selected Keçeci Number Type: {random_type_choice} ({type_names_list[random_type_choice-1]})")
+    
+    # get_with_params fonksiyonu zaten KPN'yi yazdıracak, bu yüzden burada tekrar yazdırmaya gerek yok.
+    # Sadece get_with_params'ı çağırıyoruz.
+    generated_sequence = get_with_params(random_type_choice, num_iterations,
+                                         start_value_raw=fixed_start_raw,
+                                         add_value_base_scalar=fixed_add_base_scalar,
+                                         fixed_params=use_fixed_params_for_selected_type,
+                                         random_range_factor=random_factor)
+    return generated_sequence # get_with_params zaten KPN yazdırıyor.
+
 @dataclass
 class NeutrosophicNumber:
     """
