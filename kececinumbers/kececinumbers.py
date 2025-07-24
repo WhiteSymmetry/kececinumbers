@@ -33,6 +33,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import quaternion  # Requires: pip install numpy numpy-quaternion
 from matplotlib.gridspec import GridSpec
+import re
 
 # ==============================================================================
 # --- MODULE CONSTANTS: KEÇECI NUMBER TYPES ---
@@ -52,35 +53,6 @@ TYPE_NEUTROSOPHIC_BICOMPLEX = 11
 # ==============================================================================
 # --- CUSTOM NUMBER CLASS DEFINITIONS ---
 # ==============================================================================
-
-def get_random_type(num_iterations, fixed_start_raw="0", fixed_add_base_scalar=9.0):
-    """
-    Generates Keçeci Numbers for a randomly selected type using fixed parameters.
-    (Updated with the full list of 11 types and compatible with the new get_with_params signature)
-    """
-    # Rastgele sayı üretme aralığı 11 tipe göre güncellendi.
-    random_type_choice = random.randint(1, 11)
-    
-    # Kullanıcının sağladığı tam liste eklendi.
-    type_names_list = [
-        "Positive Real", "Negative Real", "Complex", "Float", "Rational", 
-        "Quaternion", "Neutrosophic", "Neutro-Complex", "Hyperreal", 
-        "Bicomplex", "Neutro-Bicomplex"
-    ]
-    
-    # Listenin indeksi 0'dan başladığı için random_type_choice-1 kullanılır.
-    print(f"\nRandomly selected Keçeci Number Type: {random_type_choice} ({type_names_list[random_type_choice-1]})")
-    
-    # get_with_params fonksiyonu sadeleştirilmiş haliyle çağrılıyor.
-    # Beklenmeyen 'random_range_factor' veya 'fixed_params' argümanları yok.
-    generated_sequence = get_with_params(
-        kececi_type_choice=random_type_choice, 
-        iterations=num_iterations,
-        start_value_raw=fixed_start_raw,
-        add_value_base_scalar=fixed_add_base_scalar
-    )
-    
-    return generated_sequence
 
 @dataclass
 class NeutrosophicNumber:
@@ -491,22 +463,19 @@ def _is_divisible(value, divisor, kececi_type):
 
 def unified_generator(kececi_type, start_input_raw, add_input_base_scalar, iterations):
     """
-    The core engine for generating Keçeci Number sequences of any supported type.
-    This version includes robust type conversion to prevent initialization errors.
+    Herhangi bir desteklenen türde Keçeci Sayı dizileri üreten çekirdek motor.
+    Bu sürüm, tüm tipler için sağlam tür dönüştürme ve özel format ayrıştırma içerir.
     """
-    # --- Step 1: Initialization based on Keçeci Type ---
     current_value = None
     add_value_typed = None
     ask_unit = None
     use_integer_division = False
 
     try:
-        # Convert the ADD value once, as it's always a scalar float.
+        # --- Adım 1: Keçeci Türüne Göre Başlatma ---
         a_float = float(add_input_base_scalar)
 
-        # Handle START value conversion properly within each type-specific block.
         if kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL]:
-            # Correctly handle float strings like "2.5" by converting to float first.
             s_int = int(float(start_input_raw))
             current_value = s_int
             add_value_typed = int(a_float)
@@ -519,82 +488,83 @@ def unified_generator(kececi_type, start_input_raw, add_input_base_scalar, itera
             ask_unit = 1.0
             
         elif kececi_type == TYPE_RATIONAL:
-            # The Fraction constructor correctly handles strings like "2.5".
-            current_value = Fraction(str(start_input_raw))
-            add_value_typed = Fraction(str(add_input_base_scalar))
-            ask_unit = Fraction(1, 1)
+            current_value = Fraction(start_input_raw)
+            add_value_typed = Fraction(add_input_base_scalar)
+            ask_unit = Fraction(1)
             
         elif kececi_type == TYPE_COMPLEX:
-            s_complex = complex(start_input_raw)
-            # If input was a plain number (e.g., "2.5"), interpret it as s+sj.
-            if s_complex.imag == 0 and 'j' not in str(start_input_raw).lower():
-                s_complex = complex(s_complex.real, s_complex.real)
-            current_value = s_complex
+            current_value = _parse_complex(start_input_raw)
             add_value_typed = complex(a_float, a_float)
             ask_unit = 1 + 1j
 
-        elif kececi_type == TYPE_QUATERNION:
-            # Explicitly convert the input string to a float before use.
-            s_float = float(start_input_raw)
-            current_value = np.quaternion(s_float, s_float, s_float, s_float)
-            add_value_typed = np.quaternion(a_float, a_float, a_float, a_float)
-            ask_unit = np.quaternion(1, 1, 1, 1)
-            
         elif kececi_type == TYPE_NEUTROSOPHIC:
-            s_float = float(start_input_raw)
-            current_value = NeutrosophicNumber(s_float, s_float / 2)
-            add_value_typed = NeutrosophicNumber(a_float, a_float / 2)
+            a, b = _parse_neutrosophic(start_input_raw)
+            current_value = NeutrosophicNumber(a, b)
+            add_value_typed = NeutrosophicNumber(a_float, 0)
             ask_unit = NeutrosophicNumber(1, 1)
-            
-        elif kececi_type == TYPE_NEUTROSOPHIC_COMPLEX:
-            s_float = float(start_input_raw)
-            current_value = NeutrosophicComplexNumber(s_float, s_float / 2, s_float / 3)
-            add_value_typed = NeutrosophicComplexNumber(a_float, a_float / 2, a_float / 3)
+
+        # --- YENİ EKLENEN/DÜZELTİLEN BLOKLAR ---
+
+        elif kececi_type == TYPE_NEUTROSOPHIC_COMPLEX: # HATA DÜZELTİLDİ
+            s_complex = _parse_complex(start_input_raw)
+            # Başlangıç indeterminacy değerini 0 olarak varsayalım
+            current_value = NeutrosophicComplexNumber(s_complex.real, s_complex.imag, 0.0)
+            # Artış, deterministik reel kısma etki eder
+            add_value_typed = NeutrosophicComplexNumber(a_float, 0.0, 0.0)
             ask_unit = NeutrosophicComplexNumber(1, 1, 1)
-            
-        elif kececi_type == TYPE_HYPERREAL:
-            s_float = float(start_input_raw)
-            current_value = HyperrealNumber([s_float / n for n in range(1, 11)])
-            add_value_typed = HyperrealNumber([a_float / n for n in range(1, 11)])
+
+        elif kececi_type == TYPE_HYPERREAL: # HATA DÜZELTİLDİ
+            a, b = _parse_hyperreal(start_input_raw)
+            # 'a' reel kısmı, 'b' ise sonsuz küçükleri ölçekler
+            sequence_list = [a + b / n for n in range(1, 11)]
+            current_value = HyperrealNumber(sequence_list)
+            # Artış, sadece standart (ilk) reel kısma etki eder
+            add_sequence = [a_float] + [0.0] * 9
+            add_value_typed = HyperrealNumber(add_sequence)
             ask_unit = HyperrealNumber([1.0] * 10)
-            
-        elif kececi_type == TYPE_BICOMPLEX:
-            s_complex = complex(start_input_raw)
+
+        elif kececi_type == TYPE_BICOMPLEX: # Mantık aynı, sadece ayrıştırıcıyı kullanıyor
+            s_complex = _parse_complex(start_input_raw)
             a_complex = complex(a_float)
             current_value = BicomplexNumber(s_complex, s_complex / 2)
             add_value_typed = BicomplexNumber(a_complex, a_complex / 2)
             ask_unit = BicomplexNumber(complex(1, 1), complex(0.5, 0.5))
 
-        elif kececi_type == TYPE_NEUTROSOPHIC_BICOMPLEX:
+        elif kececi_type == TYPE_NEUTROSOPHIC_BICOMPLEX: # HATA DÜZELTİLDİ
+            s_complex = _parse_complex(start_input_raw)
+            # Başlangıç değeri olarak kompleks sayıyı kullanıp diğer 6 bileşeni 0 yapalım
+            current_value = NeutrosophicBicomplexNumber(s_complex.real, s_complex.imag, 0, 0, 0, 0, 0, 0)
+            # Artış, sadece ana reel kısma etki eder
+            add_value_typed = NeutrosophicBicomplexNumber(a_float, 0, 0, 0, 0, 0, 0, 0)
+            ask_unit = NeutrosophicBicomplexNumber(*([1.0] * 8))
+
+        # --- DİĞER TİPLER ---
+
+        elif kececi_type == TYPE_QUATERNION:
             s_float = float(start_input_raw)
-            parts = [s_float / (n + 1) for n in range(8)]
-            add_parts = [a_float / (n + 1) for n in range(8)]
-            ask_parts = [1.0 / (n + 1) for n in range(8)]
-            current_value = NeutrosophicBicomplexNumber(*parts)
-            add_value_typed = NeutrosophicBicomplexNumber(*add_parts)
-            ask_unit = NeutrosophicBicomplexNumber(*ask_parts)
-            
+            current_value = np.quaternion(s_float, s_float, s_float, s_float)
+            add_value_typed = np.quaternion(a_float, a_float, a_float, a_float)
+            ask_unit = np.quaternion(1, 1, 1, 1)
+
         else:
-            raise ValueError(f"Invalid Keçeci Number Type: {kececi_type}")
+            raise ValueError(f"Geçersiz veya desteklenmeyen Keçeci Sayı Tipi: {kececi_type}")
 
     except (ValueError, TypeError) as e:
-        print(f"Error initializing generator for type {kececi_type} with input '{start_input_raw}': {e}")
+        print(f"HATA: Tip {kececi_type} için '{start_input_raw}' girdisiyle başlatma başarısız: {e}")
         return []
 
-    # --- Step 2: Iteration Loop (This part remains unchanged) ---
+    # --- Adım 2: İterasyon Döngüsü ---
     sequence = [current_value]
     last_divisor_used = None
     ask_counter = 0
     
     for _ in range(iterations):
-        # Rule 1: Add the increment value
         added_value = current_value + add_value_typed
         sequence.append(added_value)
         
         result_value = added_value
         divided_successfully = False
 
-        # Rule 2: Attempt Division
         primary_divisor = 3 if last_divisor_used == 2 or last_divisor_used is None else 2
         alternative_divisor = 2 if primary_divisor == 3 else 3
         
@@ -605,16 +575,13 @@ def unified_generator(kececi_type, start_input_raw, add_input_base_scalar, itera
                 divided_successfully = True
                 break
         
-        # Rule 3: Apply ASK Rule if division failed and the number is prime
         if not divided_successfully and is_prime(added_value):
-            # Augment or Shrink the value
             modified_value = (added_value + ask_unit) if ask_counter == 0 else (added_value - ask_unit)
-            ask_counter = 1 - ask_counter  # Flip between 0 and 1
+            ask_counter = 1 - ask_counter
             sequence.append(modified_value)
             
-            result_value = modified_value # Default to modified value if re-division fails
+            result_value = modified_value 
             
-            # Re-attempt division on the modified value
             for divisor in [primary_divisor, alternative_divisor]:
                 if _is_divisible(modified_value, divisor, kececi_type):
                     result_value = modified_value // divisor if use_integer_division else modified_value / divisor
@@ -625,6 +592,205 @@ def unified_generator(kececi_type, start_input_raw, add_input_base_scalar, itera
         current_value = result_value
         
     return sequence
+
+def _parse_complex(s: str) -> complex:
+    """
+    Bir string'i kompleks sayıya çevirir. 
+    Eğer 'j' içermiyorsa, "3" girdisini 3+3j olarak yorumlar.
+    """
+    s_clean = s.strip().lower()
+    try:
+        # Doğrudan kompleks çevirmeyi dene (ör: "3+4j")
+        c = complex(s_clean)
+        # Eğer girdi "3" gibi sadece reel bir sayıysa ve 'j' içermiyorsa,
+        # onu s_complex.real + s_complex.real*j yap.
+        if c.imag == 0 and 'j' not in s_clean:
+            return complex(c.real, c.real)
+        return c
+    except ValueError as e:
+        raise ValueError(f"Geçersiz kompleks sayı formatı: '{s}'") from e
+
+def _parse_neutrosophic(s: str) -> (float, float):
+    """
+    Parses a neutrosophic number string of the form 'a+bI' into a tuple (a, b).
+    Handles cases like '5+2I', '3-I', '7', '4I', '-I'.
+    """
+    s = s.strip().replace(" ", "").upper()
+    if not s:
+        return 0.0, 0.0
+
+    # Eğer 'I' yoksa, bu standart bir sayıdır (b=0)
+    if 'I' not in s:
+        try:
+            return float(s), 0.0
+        except ValueError:
+            raise ValueError(f"Invalid number format for non-neutrosophic part: {s}")
+
+    # 'I' varsa, a ve b kısımlarını ayır
+    # 'b' kısmını bul
+    i_pos = s.find('I')
+    a_part_str = s[:i_pos]
+    
+    # Sadece 'I' veya '-I' gibi durumlar
+    if not a_part_str or a_part_str == '+':
+        b = 1.0
+    elif a_part_str == '-':
+        b = -1.0
+    else:
+        # 'a' ve 'b' kısımlarını ayırmak için sondaki işareti bul
+        last_plus = a_part_str.rfind('+')
+        last_minus = a_part_str.rfind('-')
+        
+        # Eğer başta eksi işareti varsa onu ayraç olarak sayma
+        if last_minus == 0 and last_plus == -1:
+             split_pos = -1
+        else:
+             split_pos = max(last_plus, last_minus)
+
+        if split_pos == -1: # Örneğin '3I' durumu
+            a = 0.0
+            b = float(a_part_str)
+        else: # Örneğin '5+3I' veya '-2-4I' durumu
+            a = float(a_part_str[:split_pos])
+            b_str = a_part_str[split_pos:]
+            if b_str == '+':
+                b = 1.0
+            elif b_str == '-':
+                b = -1.0
+            else:
+                b = float(b_str)
+    
+    return a, b
+
+def _parse_hyperreal(s: str) -> (float, float):
+    """
+    'a+be' formatındaki bir hiperreel string'i (a, b) demetine ayrıştırır.
+    '5+3e', '-2-e', '10', '4e', '-e' gibi formatları işler.
+    """
+    s = s.strip().replace(" ", "").lower()
+    if not s:
+        return 0.0, 0.0
+
+    # Eğer 'e' yoksa, bu standart bir sayıdır (b=0)
+    if 'e' not in s:
+        return float(s), 0.0
+
+    # 'a+be' formatını regex ile ayrıştır
+    # Örnekler: 5+3e, -3.1-4.5e, +2e, e, -e
+    match = re.match(r"^(?P<a>[+-]?\d+\.?\d*)?(?P<b>[+-]?\d*\.?\d*)e$", s)
+    if not match:
+        # Sadece +e veya -e durumları için
+        match = re.match(r"^(?P<a>[+-]?\d+\.?\d*)?(?P<b>[+-])e$", s)
+
+    if not match:
+        raise ValueError(f"Geçersiz hiperreel format: {s}")
+
+    parts = match.groupdict()
+    a_part = parts.get('a')
+    b_part = parts.get('b')
+
+    a = float(a_part) if a_part else 0.0
+    
+    if b_part is None or b_part == '' or b_part == '+':
+        b = 1.0
+    elif b_part == '-':
+        b = -1.0
+    else:
+        b = float(b_part)
+        
+    return a, b
+
+
+def get_random_type(num_iterations, fixed_start_raw="0", fixed_add_base_scalar=9.0):
+    """
+    Generates Keçeci Numbers for a randomly selected type using fixed parameters.
+    (Updated with the full list of 11 types and compatible with the new get_with_params signature)
+    """
+    # Rastgele sayı üretme aralığı 11 tipe göre güncellendi.
+    random_type_choice = random.randint(1, 11)
+    
+    # Kullanıcının sağladığı tam liste eklendi.
+    type_names_list = [
+        "Positive Real", "Negative Real", "Complex", "Float", "Rational", 
+        "Quaternion", "Neutrosophic", "Neutro-Complex", "Hyperreal", 
+        "Bicomplex", "Neutro-Bicomplex"
+    ]
+    
+    # Listenin indeksi 0'dan başladığı için random_type_choice-1 kullanılır.
+    print(f"\nRandomly selected Keçeci Number Type: {random_type_choice} ({type_names_list[random_type_choice-1]})")
+    
+    # get_with_params fonksiyonu sadeleştirilmiş haliyle çağrılıyor.
+    # Beklenmeyen 'random_range_factor' veya 'fixed_params' argümanları yok.
+    generated_sequence = get_with_params(
+        kececi_type_choice=random_type_choice, 
+        iterations=num_iterations,
+        start_value_raw=fixed_start_raw,
+        add_value_base_scalar=fixed_add_base_scalar
+    )
+    
+    return generated_sequence
+
+def print_detailed_report(sequence, params):
+    """
+    Generates and prints a detailed report of the Keçeci sequence results.
+    
+    Args:
+        sequence (list): The generated Keçeci sequence.
+        params (dict): A dictionary containing the generation parameters.
+    """
+    if not sequence:
+        print("\n--- REPORT ---")
+        print("Sequence could not be generated. No report to show.")
+        return
+
+    print("\n\n" + "="*50)
+    print("--- DETAILED SEQUENCE REPORT ---")
+    print("="*50)
+
+    # Parametreleri yazdır
+    print("\n[Parameters Used]")
+    print(f"  - Keçeci Type:   {params['type_name']} ({params['type_choice']})")
+    print(f"  - Start Value:   '{params['start_val']}'")
+    print(f"  - Increment:     {params['add_val']}")
+    print(f"  - Keçeci Steps:  {params['steps']}")
+
+    # Dizi Özeti
+    print("\n[Sequence Summary]")
+    print(f"  - Total Numbers Generated: {len(sequence)}")
+    
+    # Keçeci Asal Sayısı (KPN) sonucunu bul ve yazdır
+    kpn = find_kececi_prime_number(sequence)
+    if kpn is not None:
+        print(f"  - Keçeci Prime Number (KPN): {kpn}")
+    else:
+        print("  - Keçeci Prime Number (KPN): Not found in this sequence.")
+
+    # Dizi Önizlemesi
+    print("\n[Sequence Preview]")
+    # Dizinin tamamını yazdırmadan önce bir önizleme sunalım
+    preview_count = min(len(sequence), 5)
+    print(f"  --- First {preview_count} Numbers ---")
+    for i in range(preview_count):
+        print(f"    {i}: {sequence[i]}")
+
+    if len(sequence) > preview_count:
+        print(f"\n  --- Last {preview_count} Numbers ---")
+        for i in range(len(sequence) - preview_count, len(sequence)):
+            print(f"    {i}: {sequence[i]}")
+            
+    print("\n" + "="*50)
+
+    # Kullanıcıya tüm diziyi görmek isteyip istemediğini sor
+    while True:
+        show_all = input("Do you want to print the full sequence? (y/n): ").lower().strip()
+        if show_all in ['y', 'n']:
+            break
+    
+    if show_all == 'y':
+        print("\n--- FULL SEQUENCE ---")
+        for i, num in enumerate(sequence):
+            print(f"{i}: {num}")
+        print("="*50)
 
 # ==============================================================================
 # --- HIGH-LEVEL CONTROL FUNCTIONS ---
@@ -658,8 +824,8 @@ def get_with_params(kececi_type_choice, iterations, start_value_raw="0", add_val
 
 def get_interactive():
     """
-    Interactively gets parameters from the user and generates Keçeci Numbers,
-    with detailed prompts for each type.
+    Interactively gets parameters from the user and generates Keçeci Numbers.
+    This version only gets data and returns the sequence without plotting.
     """
     print("\n--- Keçeci Number Interactive Generator ---")
     print("  1: Positive Real    2: Negative Real     3: Complex")
@@ -701,10 +867,11 @@ def get_interactive():
     if sequence:
         # sequence adı altında bir isim çakışması olmaması için başlığı değiştiriyoruz.
         plot_title = f"Keçeci Type {type_choice} Sequence"
-        plot_numbers(sequence, plot_title)
-        plt.show() # Grafiği göstermek için
+        #plot_numbers(sequence, plot_title)
+        #plt.show() # Grafiği göstermek için
         
-    return sequence # Oluşturulan diziyi döndür
+    # Fonksiyonun, ana kodun kullanabilmesi için tüm önemli bilgileri döndürmesini sağlıyoruz.
+    return sequence, type_choice, start_input_val_raw, add_base_scalar_val, num_kececi_steps
 
 # ==============================================================================
 # --- ANALYSIS AND PLOTTING ---
