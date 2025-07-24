@@ -922,8 +922,8 @@ def find_kececi_prime_number(kececi_numbers_list):
 
 def plot_numbers(sequence, title="Keçeci Number Sequence Analysis"):
     """
-    Plots the generated Keçeci Number sequence with appropriate visualizations
-    for each number type.
+    Plots the generated Keçeci Number sequence with appropriate, detailed
+    visualizations for each number type.
     """
     plt.style.use('seaborn-v0_8-whitegrid')
     
@@ -931,25 +931,19 @@ def plot_numbers(sequence, title="Keçeci Number Sequence Analysis"):
         print("Sequence is empty, nothing to plot.")
         return
 
-    fig = plt.figure(figsize=(15, 8))
+    fig = plt.figure(figsize=(16, 9)) # Daha geniş bir görünüm için boyut ayarlandı
     plt.suptitle(title, fontsize=16, y=0.98)
     first_elem = sequence[0]
     
-    # --- Plotting logic per type ---
+    # --- Her Türe Özel Çizim Mantığı ---
     
-    # CORRECTED: Check for the actual Python types.
-    # This correctly handles types 1, 2, and 4 (Positive/Negative Real, Float).
-    if isinstance(first_elem, (int, float)):
+    if isinstance(first_elem, (int, float, Fraction)):
         ax = fig.add_subplot(1, 1, 1)
-        ax.plot([float(x) for x in sequence], 'o-')
+        ax.plot([float(x) for x in sequence], 'o-', label="Value")
         ax.set_title("Value over Iterations")
-        ax.set_xlabel("Index"); ax.set_ylabel("Value")
-
-    elif isinstance(first_elem, Fraction):
-        ax = fig.add_subplot(1, 1, 1)
-        ax.plot([float(x) for x in sequence], 'o-')
-        ax.set_title("Value over Iterations (as float)")
-        ax.set_xlabel("Index"); ax.set_ylabel("Value")
+        ax.set_xlabel("Index")
+        ax.set_ylabel("Value")
+        ax.legend()
 
     elif isinstance(first_elem, complex):
         gs = GridSpec(2, 2, figure=fig)
@@ -974,17 +968,18 @@ def plot_numbers(sequence, title="Keçeci Number Sequence Analysis"):
     elif isinstance(first_elem, np.quaternion):
         gs = GridSpec(2, 1, figure=fig)
         ax1 = fig.add_subplot(gs[0, 0])
-        ax2 = fig.add_subplot(gs[1, 0])
+        ax2 = fig.add_subplot(gs[1, 0], sharex=ax1) # X eksenini paylaş
         
         ax1.plot([q.w for q in sequence], 'o-', label='w (scalar)')
         ax1.plot([q.x for q in sequence], 's--', label='x')
         ax1.plot([q.y for q in sequence], '^--', label='y')
         ax1.plot([q.z for q in sequence], 'd--', label='z')
-        ax1.set_title("Quaternion Components"); ax1.legend()
+        ax1.set_title("Quaternion Components over Iterations"); ax1.legend()
 
         magnitudes = [np.sqrt(q.w**2 + q.x**2 + q.y**2 + q.z**2) for q in sequence]
         ax2.plot(magnitudes, 'o-', color='purple', label='Magnitude')
-        ax2.set_title("Quaternion Magnitude"); ax2.legend()
+        ax2.set_title("Quaternion Magnitude over Iterations"); ax2.legend()
+        ax2.set_xlabel("Index")
 
     elif isinstance(first_elem, BicomplexNumber):
         gs = GridSpec(2, 2, figure=fig)
@@ -1000,8 +995,8 @@ def plot_numbers(sequence, title="Keçeci Number Sequence Analysis"):
         ax2.plot(z2r, label='z2.real'); ax2.plot(z2i, label='z2.imag')
         ax2.set_title("Component z2"); ax2.legend()
         
-        ax3.plot(z1r, z1i, '.-'); ax3.set_title("z1 in Complex Plane")
-        ax4.plot(z2r, z2i, '.-'); ax4.set_title("z2 in Complex Plane")
+        ax3.plot(z1r, z1i, '.-'); ax3.set_title("z1 Trajectory"); ax3.set_xlabel("Real"); ax3.set_ylabel("Imaginary")
+        ax4.plot(z2r, z2i, '.-'); ax4.set_title("z2 Trajectory"); ax4.set_xlabel("Real"); ax4.set_ylabel("Imaginary")
         
     elif isinstance(first_elem, NeutrosophicNumber):
         gs = GridSpec(1, 2, figure=fig)
@@ -1009,25 +1004,72 @@ def plot_numbers(sequence, title="Keçeci Number Sequence Analysis"):
         
         a = [x.a for x in sequence]; b = [x.b for x in sequence]
         ax1.plot(a, label='Determinate (a)'); ax1.plot(b, label='Indeterminate (b)')
-        ax1.set_title("Components"); ax1.legend()
+        ax1.set_title("Components over Iterations"); ax1.legend()
         
         sc = ax2.scatter(a, b, c=range(len(a)), cmap='viridis')
-        ax2.set_title("Determinate vs. Indeterminate"); fig.colorbar(sc, ax=ax2)
+        ax2.set_title("Trajectory (colored by time)"); ax2.set_xlabel("Determinate Part"); ax2.set_ylabel("Indeterminate Part"); fig.colorbar(sc, ax=ax2, label="Iteration")
 
     elif isinstance(first_elem, NeutrosophicComplexNumber):
-        gs = GridSpec(1, 2, figure=fig)
-        ax1 = fig.add_subplot(gs[0, 0]); ax2 = fig.add_subplot(gs[0, 1])
+        gs = GridSpec(2, 1, figure=fig)
+        ax1 = fig.add_subplot(gs[0, 0]); ax2 = fig.add_subplot(gs[1, 0])
         
         r = [x.real for x in sequence]; i = [x.imag for x in sequence]; ind = [x.indeterminacy for x in sequence]
         ax1.plot(r, label='Real'); ax1.plot(i, label='Imag'); ax1.plot(ind, label='Indeterminacy', linestyle=':')
-        ax1.set_title("Components"); ax1.legend()
+        ax1.set_title("Components over Iterations"); ax1.legend()
         
-        sc = ax2.scatter(r, i, c=ind, cmap='magma')
-        ax2.set_title("Complex Plane (colored by Indeterminacy)"); fig.colorbar(sc, ax=ax2, label='Indeterminacy')
+        sc = ax2.scatter(r, i, c=ind, cmap='magma', s=20)
+        ax2.set_title("Trajectory in Complex Plane (colored by Indeterminacy)"); 
+        ax2.set_xlabel("Real Part"); ax2.set_ylabel("Imaginary Part");
+        fig.colorbar(sc, ax=ax2, label='Indeterminacy')
+        ax2.axis('equal')
+
+    # --- YENİ EKLENEN BLOKLAR ---
     
-    else: # Fallback for Hyperreal, Neutro-Bicomplex, and others
+    elif isinstance(first_elem, HyperrealNumber):
+        gs = GridSpec(2, 1, figure=fig)
+        ax1 = fig.add_subplot(gs[0, 0])
+        ax2 = fig.add_subplot(gs[1, 0])
+        
+        # İlk birkaç bileşeni çiz
+        num_components_to_plot = min(len(first_elem.sequence), 4)
+        for i in range(num_components_to_plot):
+            comp_data = [h.sequence[i] for h in sequence]
+            ax1.plot(comp_data, label=f'Component {i}')
+        ax1.set_title("Hyperreal Components over Iterations"); ax1.legend()
+        
+        # En önemli iki bileşenin yörüngesini çiz
+        comp0 = [h.sequence[0] for h in sequence]
+        comp1 = [h.sequence[1] for h in sequence]
+        sc = ax2.scatter(comp0, comp1, c=range(len(comp0)), cmap='plasma')
+        ax2.set_title("Trajectory in Standard-Infinitesimal Plane (C0 vs C1)")
+        ax2.set_xlabel("Standard Part (C0)"); ax2.set_ylabel("Primary Infinitesimal (C1)")
+        fig.colorbar(sc, ax=ax2, label="Iteration")
+        
+    elif isinstance(first_elem, NeutrosophicBicomplexNumber):
+        gs = GridSpec(2, 2, figure=fig)
+        ax1 = fig.add_subplot(gs[0, 0]); ax2 = fig.add_subplot(gs[0, 1])
+        ax3 = fig.add_subplot(gs[1, 0]); ax4 = fig.add_subplot(gs[1, 1])
+        
+        # Ana 4 yörüngeyi çizelim
+        r = [n.real for n in sequence]; i = [n.imag for n in sequence]
+        ax1.plot(r, i, '.-', label='(1, i1)')
+        ax1.set_title("Primary Deterministic Plane"); ax1.legend()
+
+        nr = [n.neut_real for n in sequence]; ni = [n.neut_imag for n in sequence]
+        ax2.plot(nr, ni, '.-', label='(I, I*i1)')
+        ax2.set_title("Primary Neutrosophic Plane"); ax2.legend()
+        
+        jr = [n.j_real for n in sequence]; ji = [n.j_imag for n in sequence]
+        ax3.plot(jr, ji, '.-', label='(i2, i1*i2)')
+        ax3.set_title("Secondary Deterministic Plane"); ax3.legend()
+
+        njr = [n.j_neut_real for n in sequence]; nji = [n.j_neut_imag for n in sequence]
+        ax4.plot(njr, nji, '.-', label='(I*i2, I*i1*i2)')
+        ax4.set_title("Secondary Neutrosophic Plane"); ax4.legend()
+
+    else: # Gelecekte eklenebilecek diğer tipler için yedek blok
         ax = fig.add_subplot(1, 1, 1)
-        ax.text(0.5, 0.5, f"Plotting for type '{type(first_elem).__name__}'\nis not specifically implemented.\nShowing string representation of first 3 elements:\n\n1. {sequence[0]}\n2. {sequence[1]}\n3. {sequence[2]}",
+        ax.text(0.5, 0.5, f"Plotting for type '{type(first_elem).__name__}' is not specifically implemented.",
                 ha='center', va='center', fontsize=12, bbox=dict(facecolor='lightyellow'))
     
     plt.tight_layout(rect=[0, 0, 1, 0.96])
