@@ -658,7 +658,8 @@ def get_with_params(kececi_type_choice, iterations, start_value_raw="0", add_val
 
 def get_interactive():
     """
-    Interactively gets parameters from the user and generates Keçeci Numbers.
+    Interactively gets parameters from the user and generates Keçeci Numbers,
+    with detailed prompts for each type.
     """
     print("\n--- Keçeci Number Interactive Generator ---")
     print("  1: Positive Real    2: Negative Real     3: Complex")
@@ -673,18 +674,37 @@ def get_interactive():
             else: print("Invalid type. Please enter a number between 1 and 11.")
         except ValueError: print("Invalid input. Please enter a number.")
         
-    start_prompt = "Enter starting value: "
-    if type_choice == TYPE_COMPLEX: start_prompt = "Enter complex start (e.g., '3+4j' or '3' for 3+3j): "
-    elif type_choice == TYPE_RATIONAL: start_prompt = "Enter rational start (e.g., '7/2' or '5'): "
-    elif type_choice == TYPE_BICOMPLEX: start_prompt = "Enter bicomplex start (complex, e.g., '2+1j'): "
+    # Her tip için özel başlangıç değeri istemleri (prompts)
+    prompts = {
+        1:  "Enter positive integer start (e.g., '10'): ",
+        2:  "Enter negative integer start (e.g., '-5'): ",
+        3:  "Enter complex start (e.g., '3+4j' or '3' for 3+3j): ",
+        4:  "Enter float start (e.g., '3.14' or '-0.5'): ",
+        5:  "Enter rational start (e.g., '7/2' or '5' for 5/1): ",
+        6:  "Enter scalar for quaternion base (e.g., '2.5' for 2.5+2.5i+2.5j+2.5k): ",
+        7:  "Enter neutrosophic start (e.g., '5+2I' or '7'): ",
+        8:  "Enter complex base for neutro-complex (e.g., '1-2j'): ",
+        9:  "Enter hyperreal start (e.g., '5+3e' or '10'): ",
+        10: "Enter complex base for bicomplex (e.g., '2+1j'): ",
+        11: "Enter complex base for neutro-bicomplex (e.g., '1+2j'): "
+    }
+    
+    # Seçilen tipe göre doğru istemi al, yoksa genel bir istem kullan
+    start_prompt = prompts.get(type_choice, "Enter starting value: ")
 
     start_input_val_raw = input(start_prompt)
-    add_base_scalar_val = float(input("Enter base scalar increment (e.g., 9.0): "))
+    add_base_scalar_val = float(input("Enter base scalar increment (e.g., 9.0 for positive, -3.0 for negative): "))
     num_kececi_steps = int(input("Enter number of Keçeci steps (e.g., 15): "))
     
+    # Diziyi oluştur ve çizdir
     sequence = get_with_params(type_choice, num_kececi_steps, start_input_val_raw, add_base_scalar_val)
-    plot_numbers(sequence, f"Keçeci Type {type_choice} Sequence")
-    plt.show()
+    if sequence:
+        # sequence adı altında bir isim çakışması olmaması için başlığı değiştiriyoruz.
+        plot_title = f"Keçeci Type {type_choice} Sequence"
+        plot_numbers(sequence, plot_title)
+        plt.show() # Grafiği göstermek için
+        
+    return sequence # Oluşturulan diziyi döndür
 
 # ==============================================================================
 # --- ANALYSIS AND PLOTTING ---
