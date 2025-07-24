@@ -97,14 +97,54 @@ https://zenodo.org/records/
 
 ```python
 import matplotlib.pyplot as plt
+import kececinumbers as kn
+
+print("--- Interactive Test ---")
+
+# Adım 1: get_interactive'ten tüm verileri al
+# Not: Fonksiyon artık birden fazla değer döndürüyor.
+interactive_results = kn.get_interactive()
+
+# Fonksiyon bir dizi döndürdüyse (başarılıysa) devam et
+if interactive_results and interactive_results[0]:
+    # Dönen değerleri değişkenlere ata
+    seq_interactive, type_choice, start_val, add_val, steps = interactive_results
+    
+    # Tip numarasını isme çevirelim
+    type_names = [
+        "Positive Real", "Negative Real", "Complex", "Float", "Rational", 
+        "Quaternion", "Neutrosophic", "Neutro-Complex", "Hyperreal", 
+        "Bicomplex", "Neutro-Bicomplex"
+    ]
+    type_name = type_names[type_choice - 1]
+
+    # Adım 2: Ayrıntılı raporu yazdır
+    params = {
+        'type_choice': type_choice,
+        'type_name': type_name,
+        'start_val': start_val,
+        'add_val': add_val,
+        'steps': steps
+    }
+    kn.print_detailed_report(seq_interactive, params)
+    
+    # Adım 3: Grafiği SADECE BİR KERE çizdir
+    print("\nDisplaying plot...")
+    plot_title = f"Interactive Keçeci Sequence ({type_name})"
+    kn.plot_numbers(seq_interactive, plot_title)
+    plt.show()
+
+else:
+    print("Sequence generation was cancelled or failed.")
+```
+
+```python
+import matplotlib.pyplot as plt
 import random
 import numpy as np
 import math
 from fractions import Fraction
 import quaternion # pip install numpy numpy-quaternion
-```
-```python
-import matplotlib.pyplot as plt
 import kececinumbers as kn
 
 # Matplotlib grafiklerinin notebook içinde gösterilmesini sağla
