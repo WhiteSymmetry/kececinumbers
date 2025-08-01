@@ -1,4 +1,4 @@
-# Keçeci Conjecture: Keçeci Varsayımı, Keçeci-Vermutung, Conjecture de Keçeci, Гипотеза Кечеджи, Keçeci Hipoteza, 凯杰西猜想, Keçeci Xiǎngcāng, ケジェジ予想, Keçeci Yosō, Keçeci Huds, Keçeci Hudsiye, Keçeci Hudsia, حدس كَچَه جِي ,حدس کچه جی, کچہ جی حدسیہ
+# Keçeci Conjecture: Keçeci Varsayımı, Keçeci-Vermutung, Conjecture de Keçeci, Гипотеза Кечеджи, Keçeci Hipoteza, 凯杰西猜想, Keçeci Xiǎngcāng, ケジェジ予想, Keçeci Yosō, Keçeci Huds, Keçeci Hudsiye, Keçeci Hudsia, حدس كَچَه جِي ,حدس کچه جی ,کچہ جی حدسیہ
 ---
 
 ### 🇹🇷 **Türkçe**  
