@@ -321,7 +321,8 @@ Keçeci, Mehmet. Keçeci numbers and the Keçeci prime number: A potential numbe
 ```
 
 ---
-# Keçeci Varsayımı (Keçeci Conjecture)
+
+# Keçeci Conjecture: Keçeci Varsayımı
 
 ---
 
