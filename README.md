@@ -322,7 +322,7 @@ Keçeci, Mehmet. Keçeci numbers and the Keçeci prime number: A potential numbe
 
 ---
 
-# Keçeci Conjecture: Keçeci Varsayımı
+# Keçeci Conjecture: Keçeci Varsayımı, Keçeci-Vermutung, Conjecture de Keçeci, Гипотеза Кечеджи, 凯杰西猜想, ケジェジ予想, Keçeci Huds, Keçeci Hudsiye, Keçeci Hudsia, كَچَه جِي ,حدس کچه جی, کچہ جی حدسیہ
 
 ---
 
