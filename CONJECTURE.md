@@ -79,7 +79,7 @@ Elle n'est pas encore démontrée, et ce module fournit un cadre pour la tester.
 
 ---
 
-### 🇸🇦 **Arapça (العربية) – Güncellenmiş: "كَچَه جِي"**
+### 🇸🇦 **Arapça (العربية): "كَچَه جِي"**
 ```text
 ## حدس كَچَه جِي (Keçeci Conjecture) — مقترح
 
@@ -90,7 +90,7 @@ Elle n'est pas encore démontrée, et ce module fournit un cadre pour la tester.
 
 ---
 
-### 🇮🇷 **Farsça (فارسی) – Güncellenmiş: "کچه جی"**
+### 🇮🇷 **Farsça (فارسی): "کچه جی"**
 ```text
 ## حدس کچه جی (Keçeci Conjecture) — پیشنهادی
 
@@ -101,7 +101,7 @@ Elle n'est pas encore démontrée, et ce module fournit un cadre pour la tester.
 
 ---
 
-### 🇵🇰 **Urduca (اردو) – Güncellenmiş: "کچہ جی"**
+### 🇵🇰 **Urduca (اردو): "کچہ جی"**
 ```text
 ## کچہ جی حدسیہ (Keçeci Conjecture) — تجویز شدہ
 
