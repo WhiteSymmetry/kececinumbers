@@ -24,7 +24,9 @@ identifiers:
   - type: doi
     value: 10.22541/au.174890181.14730464/v1
  - type: doi
-    value: 10.48546/workflowhub.datafile.14.1
+    value: 10.48546/workflowhub.datafile.14.2
+ - type: doi
+    value: 10.6084/m9.figshare.29816414
 repository-code: 'https://github.com/WhiteSymmetry/kececinumbers'
 url: 'https://github.com/WhiteSymmetry/kececinumbers'
 repository: 'https://anaconda.org/bilgi/kececinumbers'
