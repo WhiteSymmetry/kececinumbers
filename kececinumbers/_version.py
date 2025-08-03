@@ -1,6 +1,6 @@
 # _version.py
 
-__version__ = "0.3.2"
+__version__ = "0.3.3"
 __license__ = "MIT"
 __description__ = "Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets."
 __author__ = "Mehmet Keçeci"
