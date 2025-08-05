@@ -1,5 +1,3 @@
-# kececinumbers.py (Ruff-Formatted and Refactored)
-
 # -*- coding: utf-8 -*-
 """
 Keçeci Numbers Module (kececinumbers.py)
@@ -20,6 +18,15 @@ Key Features:
 - Advanced plotting capabilities tailored to each number system.
 - Functions for interactive use or programmatic integration.
 """
+"""
+Keçeci Conjecture: Keçeci Varsayımı, Keçeci-Vermutung, Conjecture de Keçeci, Гипотеза Кечеджи, 凯杰西猜想, ケジェジ予想, Keçeci Huds, Keçeci Hudsiye, Keçeci Hudsia, كَچَه جِي ,حدس کچه جی, کچہ جی حدسیہ
+
+Keçeci Varsayımı (Keçeci Conjecture) - Önerilen
+
+Her Keçeci Sayı türü için, `unified_generator` fonksiyonu tarafından oluşturulan dizilerin, sonlu adımdan sonra periyodik bir yapıya veya tekrar eden bir asal temsiline (Keçeci Asal Sayısı, KPN) yakınsadığı sanılmaktadır. Bu davranış, Collatz Varsayımı'nın çoklu cebirsel sistemlere genişletilmiş bir hali olarak değerlendirilebilir.
+
+Henüz kanıtlanmamıştır ve bu modül bu varsayımı test etmek için bir çerçeve sunar.
+"""
 
 # --- Standard Library Imports ---
 import collections
@@ -28,7 +35,7 @@ import random
 import re
 from dataclasses import dataclass
 from fractions import Fraction
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 # --- Third-Party Imports ---
 import matplotlib.pyplot as plt
@@ -57,7 +64,7 @@ TYPE_NEUTROSOPHIC_BICOMPLEX = 11
 
 @dataclass
 class NeutrosophicNumber:
-    """Represents a neutrosophic number of the form a + bI, where I^2 = I."""
+    """Represents a neutrosophic number of the form a + bI where I^2 = I."""
     a: float
     b: float
 
@@ -77,10 +84,9 @@ class NeutrosophicNumber:
 
     def __mul__(self, other: Any) -> "NeutrosophicNumber":
         if isinstance(other, NeutrosophicNumber):
-            # (a + bI)(c + dI) = ac + (ad + bc + bd)I
             return NeutrosophicNumber(
                 self.a * other.a,
-                self.a * other.b + self.b * other.a + self.b * other.b
+                self.a * other.b + self.b * other.a + self.b * other.b,
             )
         if isinstance(other, (int, float)):
             return NeutrosophicNumber(self.a * other, self.b * other)
@@ -88,6 +94,8 @@ class NeutrosophicNumber:
 
     def __truediv__(self, divisor: float) -> "NeutrosophicNumber":
         if isinstance(divisor, (int, float)):
+            if divisor == 0:
+                raise ZeroDivisionError("Cannot divide by zero.")
             return NeutrosophicNumber(self.a / divisor, self.b / divisor)
         raise TypeError("Only scalar division is supported.")
 
@@ -96,10 +104,7 @@ class NeutrosophicNumber:
 
 @dataclass
 class NeutrosophicComplexNumber:
-    """
-    Represents a neutrosophic-complex number (real + imag*j) + indeterminacy*I.
-    Models a value with both a complex state and an associated uncertainty.
-    """
+    """Represents a number with a complex part and an indeterminacy level."""
     real: float = 0.0
     imag: float = 0.0
     indeterminacy: float = 0.0
@@ -113,9 +118,7 @@ class NeutrosophicComplexNumber:
     def __add__(self, other: Any) -> "NeutrosophicComplexNumber":
         if isinstance(other, NeutrosophicComplexNumber):
             return NeutrosophicComplexNumber(
-                self.real + other.real,
-                self.imag + other.imag,
-                self.indeterminacy + other.indeterminacy,
+                self.real + other.real, self.imag + other.imag, self.indeterminacy + other.indeterminacy
             )
         if isinstance(other, (int, float)):
             return NeutrosophicComplexNumber(self.real + other, self.imag, self.indeterminacy)
@@ -124,9 +127,7 @@ class NeutrosophicComplexNumber:
     def __sub__(self, other: Any) -> "NeutrosophicComplexNumber":
         if isinstance(other, NeutrosophicComplexNumber):
             return NeutrosophicComplexNumber(
-                self.real - other.real,
-                self.imag - other.imag,
-                self.indeterminacy - other.indeterminacy,
+                self.real - other.real, self.imag - other.imag, self.indeterminacy - other.indeterminacy
             )
         if isinstance(other, (int, float)):
             return NeutrosophicComplexNumber(self.real - other, self.imag, self.indeterminacy)
@@ -151,20 +152,22 @@ class NeutrosophicComplexNumber:
             if divisor == 0:
                 raise ZeroDivisionError("Cannot divide by zero.")
             return NeutrosophicComplexNumber(
-                self.real / divisor,
-                self.imag / divisor,
-                self.indeterminacy / divisor
+                self.real / divisor, self.imag / divisor, self.indeterminacy / divisor
             )
         raise TypeError("Only scalar division is supported.")
 
     def __radd__(self, other: Any) -> "NeutrosophicComplexNumber":
         return self.__add__(other)
 
+    def __rsub__(self, other: Any) -> "NeutrosophicComplexNumber":
+        if isinstance(other, (int, float)):
+            return NeutrosophicComplexNumber(other - self.real, -self.imag, -self.indeterminacy)
+        return NotImplemented
+
     def __rmul__(self, other: Any) -> "NeutrosophicComplexNumber":
         return self.__mul__(other)
 
     def magnitude_sq(self) -> float:
-        """Returns the squared magnitude of the deterministic (complex) part."""
         return self.real**2 + self.imag**2
 
 @dataclass
@@ -172,12 +175,12 @@ class HyperrealNumber:
     """Represents a hyperreal number as a sequence of real numbers."""
     sequence: list
 
-    def __add__(self, other: "HyperrealNumber") -> "HyperrealNumber":
+    def __add__(self, other: Any) -> "HyperrealNumber":
         if isinstance(other, HyperrealNumber):
             return HyperrealNumber([a + b for a, b in zip(self.sequence, other.sequence)])
         return NotImplemented
 
-    def __sub__(self, other: "HyperrealNumber") -> "HyperrealNumber":
+    def __sub__(self, other: Any) -> "HyperrealNumber":
         if isinstance(other, HyperrealNumber):
             return HyperrealNumber([a - b for a, b in zip(self.sequence, other.sequence)])
         return NotImplemented
@@ -211,19 +214,18 @@ class BicomplexNumber:
     z1: complex
     z2: complex
 
-    def __add__(self, other: "BicomplexNumber") -> "BicomplexNumber":
+    def __add__(self, other: Any) -> "BicomplexNumber":
         if isinstance(other, BicomplexNumber):
             return BicomplexNumber(self.z1 + other.z1, self.z2 + other.z2)
         return NotImplemented
 
-    def __sub__(self, other: "BicomplexNumber") -> "BicomplexNumber":
+    def __sub__(self, other: Any) -> "BicomplexNumber":
         if isinstance(other, BicomplexNumber):
             return BicomplexNumber(self.z1 - other.z1, self.z2 - other.z2)
         return NotImplemented
 
-    def __mul__(self, other: "BicomplexNumber") -> "BicomplexNumber":
+    def __mul__(self, other: Any) -> "BicomplexNumber":
         if isinstance(other, BicomplexNumber):
-            # (z1 + z2j)(w1 + w2j) = (z1w1 - z2w2) + (z1w2 + z2w1)j
             return BicomplexNumber(
                 (self.z1 * other.z1) - (self.z2 * other.z2),
                 (self.z1 * other.z2) + (self.z2 * other.z1),
@@ -232,6 +234,8 @@ class BicomplexNumber:
 
     def __truediv__(self, scalar: float) -> "BicomplexNumber":
         if isinstance(scalar, (int, float)):
+            if scalar == 0:
+                raise ZeroDivisionError("Cannot divide by zero.")
             return BicomplexNumber(self.z1 / scalar, self.z2 / scalar)
         raise TypeError("Only scalar division is supported.")
 
@@ -240,7 +244,7 @@ class BicomplexNumber:
 
 @dataclass
 class NeutrosophicBicomplexNumber:
-    """Represents a simplified neutrosophic-bicomplex number for demonstration."""
+    """Represents a simplified neutrosophic-bicomplex number."""
     real: float
     imag: float
     neut_real: float
@@ -250,46 +254,66 @@ class NeutrosophicBicomplexNumber:
     j_neut_real: float
     j_neut_imag: float
 
-    def __add__(self, other: "NeutrosophicBicomplexNumber") -> "NeutrosophicBicomplexNumber":
+    def __add__(self, other: Any) -> "NeutrosophicBicomplexNumber":
         if isinstance(other, NeutrosophicBicomplexNumber):
             return NeutrosophicBicomplexNumber(*(a + b for a, b in zip(self.__dict__.values(), other.__dict__.values())))
         return NotImplemented
 
-    def __sub__(self, other: "NeutrosophicBicomplexNumber") -> "NeutrosophicBicomplexNumber":
+    def __sub__(self, other: Any) -> "NeutrosophicBicomplexNumber":
         if isinstance(other, NeutrosophicBicomplexNumber):
             return NeutrosophicBicomplexNumber(*(a - b for a, b in zip(self.__dict__.values(), other.__dict__.values())))
         return NotImplemented
 
     def __truediv__(self, scalar: float) -> "NeutrosophicBicomplexNumber":
         if isinstance(scalar, (int, float)):
+            if scalar == 0:
+                raise ZeroDivisionError("Cannot divide by zero.")
             return NeutrosophicBicomplexNumber(*(val / scalar for val in self.__dict__.values()))
         raise TypeError("Only scalar division supported.")
 
     def __str__(self) -> str:
         return f"NeutroBicomplex(r={self.real}, i={self.imag}, Ir={self.neut_real}, ...)"
 
-
 # ==============================================================================
-# --- INTERNAL HELPER FUNCTIONS ---
+# --- HELPER FUNCTIONS ---
 # ==============================================================================
 
-def _get_integer_representation(n_input: Any) -> int:
+def _get_integer_representation(n_input: Any) -> Optional[int]:
     """Extracts the primary integer component from any supported number type."""
-    val = 0
-    if isinstance(n_input, (int, float, Fraction)): val = abs(int(n_input))
-    elif isinstance(n_input, complex): val = abs(int(n_input.real))
-    elif isinstance(n_input, np.quaternion): val = abs(int(n_input.w))
-    elif isinstance(n_input, NeutrosophicNumber): val = abs(int(n_input.a))
-    elif isinstance(n_input, NeutrosophicComplexNumber): val = abs(int(n_input.real))
-    elif isinstance(n_input, HyperrealNumber): val = abs(int(n_input.sequence[0])) if n_input.sequence else 0
-    elif isinstance(n_input, BicomplexNumber): val = abs(int(n_input.z1.real))
-    elif isinstance(n_input, NeutrosophicBicomplexNumber): val = abs(int(n_input.real))
-    else:
-        try:
-            val = abs(int(n_input))
-        except (ValueError, TypeError):
-            return 0  # Return a non-prime default
-    return val
+    try:
+        if isinstance(n_input, (int, float, Fraction)):
+            return abs(int(n_input))
+        if isinstance(n_input, complex):
+            return abs(int(n_input.real))
+        if isinstance(n_input, np.quaternion):
+            return abs(int(n_input.w))
+        if isinstance(n_input, NeutrosophicNumber):
+            return abs(int(n_input.a))
+        if isinstance(n_input, NeutrosophicComplexNumber):
+            return abs(int(n_input.real))
+        if isinstance(n_input, HyperrealNumber):
+            return abs(int(n_input.sequence[0])) if n_input.sequence else 0
+        if isinstance(n_input, BicomplexNumber):
+            return abs(int(n_input.z1.real))
+        if isinstance(n_input, NeutrosophicBicomplexNumber):
+            return abs(int(n_input.real))
+        return abs(int(n_input))
+    except (ValueError, TypeError, IndexError):
+        return None
+
+def is_prime(n_input: Any) -> bool:
+    """Checks if a given number (or its principal component) is prime."""
+    value_to_check = _get_integer_representation(n_input)
+    if value_to_check is None or value_to_check < 2:
+        return False
+    if value_to_check == 2:
+        return True
+    if value_to_check % 2 == 0:
+        return False
+    for i in range(3, int(math.sqrt(value_to_check)) + 1, 2):
+        if value_to_check % i == 0:
+            return False
+    return True
 
 def _is_divisible(value: Any, divisor: int, kececi_type: int) -> bool:
     """Helper to check divisibility for different number types."""
@@ -323,7 +347,6 @@ def _parse_complex(s: str) -> complex:
     s_clean = s.strip().lower()
     try:
         c = complex(s_clean)
-        # If input was just a real number string, interpret as c + cj
         if c.imag == 0 and 'j' not in s_clean:
             return complex(c.real, c.real)
         return c
@@ -333,63 +356,499 @@ def _parse_complex(s: str) -> complex:
 def _parse_neutrosophic(s: str) -> Tuple[float, float]:
     """Parses a neutrosophic string 'a+bI' into a tuple (a, b)."""
     s = s.strip().replace(" ", "").upper()
+    if not s:
+        return 0.0, 0.0
+
     if 'I' not in s:
         return float(s), 0.0
-    
-    a_part_str, _, b_part_str = s.partition('I')
-    # This simplified regex-based approach handles '5+2I', '3I', '-I', '+I', etc.
-    match = re.match(r"^(.*)([+-])(.*)$", a_part_str)
-    if match:
-        a_str = match.group(1)
-        sign = match.group(2)
-        b_str = sign + match.group(3)
+
+    pattern = re.compile(r"^(?P<a>[+-]?\d+\.?\d*)?(?P<b>[+-]?)I$")
+    match = re.match(r"^(?P<val>[+-]?\d+\.?\d*)$", s)
+    if match: # Just a number
+        return float(match.group('val')), 0.0
+        
+    pattern = re.compile(r"^(?P<a>[+-]?\d+\.?\d*)?(?P<b>[+-]?\d*\.?\d*)I$")
+    full_match = pattern.match(s)
+    if not full_match:
+        raise ValueError(f"Invalid neutrosophic format: {s}")
+
+    parts = full_match.groupdict()
+    a_part = parts.get('a') or "0"
+    b_part = parts.get('b')
+
+    if b_part in (None, "", "+"):
+        b_val = 1.0
+    elif b_part == "-":
+        b_val = -1.0
     else:
-        a_str = "0"
-        b_str = a_part_str if a_part_str else "1" # Handle 'I' and '-I'
-        if b_str == '+': b_str = '1'
-        if b_str == '-': b_str = '-1'
+        b_val = float(b_part)
+        
+    return float(a_part), b_val
 
-    a = float(a_str) if a_str else 0.0
-    b = float(b_str)
-    return a, b
 
-# ... Other parsing functions like _parse_hyperreal and _parse_quaternion remain similar ...
+def _parse_hyperreal(s: str) -> Tuple[float, float]:
+    """Parses 'a+be' string into a tuple (a, b)."""
+    s = s.strip().replace(" ", "").lower()
+    if not s:
+        return 0.0, 0.0
+    if 'e' not in s:
+        return float(s), 0.0
+
+    pattern = re.compile(r"^(?P<a>[+-]?\d+\.?\d*)?(?P<b>[+-]?\d*\.?\d*)e$")
+    match = pattern.match(s)
+    if not match:
+        raise ValueError(f"Invalid hyperreal format: {s}")
+
+    parts = match.groupdict()
+    a_part = parts.get('a') or "0"
+    b_part = parts.get('b')
+    
+    if b_part in (None, "", "+"):
+        b_val = 1.0
+    elif b_part == "-":
+        b_val = -1.0
+    else:
+        b_val = float(b_part)
+        
+    return float(a_part), b_val
+
+def _parse_quaternion(s: str) -> np.quaternion:
+    """Parses user string ('a+bi+cj+dk' or scalar) into a quaternion."""
+    s_clean = s.replace(" ", "").lower()
+    if not s_clean:
+        raise ValueError("Input cannot be empty.")
+
+    try:
+        val = float(s_clean)
+        return np.quaternion(val, val, val, val)
+    except ValueError:
+        pass
+    
+    s_temp = re.sub(r'([+-])([ijk])', r'\g<1>1\g<2>', s_clean)
+    if s_temp.startswith(('i', 'j', 'k')):
+        s_temp = '1' + s_temp
+    
+    pattern = re.compile(r'([+-]?\d*\.?\d*)([ijk])?')
+    matches = pattern.findall(s_temp)
+    
+    parts = {'w': 0.0, 'x': 0.0, 'y': 0.0, 'z': 0.0}
+    for value_str, component in matches:
+        if not value_str:
+            continue
+        value = float(value_str)
+        if component == 'i':
+            parts['x'] += value
+        elif component == 'j':
+            parts['y'] += value
+        elif component == 'k':
+            parts['z'] += value
+        else:
+            parts['w'] += value
+            
+    return np.quaternion(parts['w'], parts['x'], parts['y'], parts['z'])
+
+def get_random_type(num_iterations: int, fixed_start_raw: str = "0", fixed_add_base_scalar: float = 9.0) -> List[Any]:
+    """Generates Keçeci Numbers for a randomly selected type."""
+    random_type_choice = random.randint(1, 11)
+    type_names_list = [
+        "Positive Real", "Negative Real", "Complex", "Float", "Rational", 
+        "Quaternion", "Neutrosophic", "Neutro-Complex", "Hyperreal", 
+        "Bicomplex", "Neutro-Bicomplex"
+    ]
+    print(f"\nRandomly selected Keçeci Number Type: {random_type_choice} ({type_names_list[random_type_choice-1]})")
+    
+    return get_with_params(
+        kececi_type_choice=random_type_choice, 
+        iterations=num_iterations,
+        start_value_raw=fixed_start_raw,
+        add_value_base_scalar=fixed_add_base_scalar
+    )
 
 # ==============================================================================
-# --- PUBLIC API FUNCTIONS ---
+# --- CORE GENERATOR ---
 # ==============================================================================
 
-def is_prime(n_input: Any) -> bool:
-    """
-    Checks if a given number (or its principal component) is prime.
-    """
-    value_to_check = _get_integer_representation(n_input)
-    if value_to_check < 2: return False
-    if value_to_check == 2: return True
-    if value_to_check % 2 == 0: return False
-    for i in range(3, int(math.sqrt(value_to_check)) + 1, 2):
-        if value_to_check % i == 0:
-            return False
-    return True
+def unified_generator(kececi_type: int, start_input_raw: str, add_input_base_scalar: float, iterations: int) -> List[Any]:
+    """Core engine to generate Keçeci Number sequences."""
+    current_value = None
+    add_value_typed = None
+    ask_unit = None
+    use_integer_division = False
+
+    try:
+        a_float = float(add_input_base_scalar)
+
+        if kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL]:
+            current_value = int(float(start_input_raw))
+            add_value_typed = int(a_float)
+            ask_unit = 1
+            use_integer_division = True
+        elif kececi_type == TYPE_FLOAT:
+            current_value = float(start_input_raw)
+            add_value_typed = a_float
+            ask_unit = 1.0
+        elif kececi_type == TYPE_RATIONAL:
+            current_value = Fraction(start_input_raw)
+            add_value_typed = Fraction(add_input_base_scalar)
+            ask_unit = Fraction(1)
+        elif kececi_type == TYPE_COMPLEX:
+            current_value = _parse_complex(start_input_raw)
+            add_value_typed = complex(a_float, a_float)
+            ask_unit = 1 + 1j
+        elif kececi_type == TYPE_NEUTROSOPHIC:
+            a, b = _parse_neutrosophic(start_input_raw)
+            current_value = NeutrosophicNumber(a, b)
+            add_value_typed = NeutrosophicNumber(a_float, 0)
+            ask_unit = NeutrosophicNumber(1, 1)
+        elif kececi_type == TYPE_NEUTROSOPHIC_COMPLEX:
+            s_complex = _parse_complex(start_input_raw)
+            current_value = NeutrosophicComplexNumber(s_complex.real, s_complex.imag, 0.0)
+            add_value_typed = NeutrosophicComplexNumber(a_float, 0.0, 0.0)
+            ask_unit = NeutrosophicComplexNumber(1, 1, 1)
+        elif kececi_type == TYPE_HYPERREAL:
+            a, b = _parse_hyperreal(start_input_raw)
+            sequence_list = [a + b / n for n in range(1, 11)]
+            current_value = HyperrealNumber(sequence_list)
+            add_sequence = [a_float] + [0.0] * 9
+            add_value_typed = HyperrealNumber(add_sequence)
+            ask_unit = HyperrealNumber([1.0] * 10)
+        elif kececi_type == TYPE_BICOMPLEX:
+            s_complex = _parse_complex(start_input_raw)
+            a_complex = complex(a_float)
+            current_value = BicomplexNumber(s_complex, s_complex / 2)
+            add_value_typed = BicomplexNumber(a_complex, a_complex / 2)
+            ask_unit = BicomplexNumber(complex(1, 1), complex(0.5, 0.5))
+        elif kececi_type == TYPE_NEUTROSOPHIC_BICOMPLEX:
+            s_complex = _parse_complex(start_input_raw)
+            current_value = NeutrosophicBicomplexNumber(s_complex.real, s_complex.imag, 0, 0, 0, 0, 0, 0)
+            add_value_typed = NeutrosophicBicomplexNumber(a_float, 0, 0, 0, 0, 0, 0, 0)
+            ask_unit = NeutrosophicBicomplexNumber(*([1.0] * 8))
+        elif kececi_type == TYPE_QUATERNION:
+            current_value = _parse_quaternion(start_input_raw)
+            add_value_typed = np.quaternion(a_float, a_float, a_float, a_float)
+            ask_unit = np.quaternion(1, 1, 1, 1)
+        else:
+            raise ValueError(f"Invalid Keçeci Number Type: {kececi_type}")
+
+    except (ValueError, TypeError) as e:
+        print(f"ERROR: Failed to initialize type {kececi_type} with input '{start_input_raw}': {e}")
+        return []
+
+    sequence = [current_value]
+    last_divisor_used = None
+    ask_counter = 0
+    
+    for _ in range(iterations):
+        added_value = current_value + add_value_typed
+        sequence.append(added_value)
+        
+        result_value = added_value
+        divided_successfully = False
+
+        primary_divisor = 3 if last_divisor_used == 2 or last_divisor_used is None else 2
+        alternative_divisor = 2 if primary_divisor == 3 else 3
+        
+        for divisor in [primary_divisor, alternative_divisor]:
+            if _is_divisible(added_value, divisor, kececi_type):
+                result_value = added_value // divisor if use_integer_division else added_value / divisor
+                last_divisor_used = divisor
+                divided_successfully = True
+                break
+        
+        if not divided_successfully and is_prime(added_value):
+            modified_value = (added_value + ask_unit) if ask_counter == 0 else (added_value - ask_unit)
+            ask_counter = 1 - ask_counter
+            sequence.append(modified_value)
+            
+            result_value = modified_value 
+            
+            for divisor in [primary_divisor, alternative_divisor]:
+                if _is_divisible(modified_value, divisor, kececi_type):
+                    result_value = modified_value // divisor if use_integer_division else modified_value / divisor
+                    last_divisor_used = divisor
+                    break
+        
+        sequence.append(result_value)
+        current_value = result_value
+        
+    return sequence
+
+def print_detailed_report(sequence: List[Any], params: Dict[str, Any]):
+    """Generates and prints a detailed report of the sequence results."""
+    if not sequence:
+        print("\n--- REPORT ---\nSequence could not be generated.")
+        return
+
+    print("\n\n" + "="*50)
+    print("--- DETAILED SEQUENCE REPORT ---")
+    print("="*50)
+
+    print("\n[Parameters Used]")
+    print(f"  - Keçeci Type:   {params.get('type_name', 'N/A')} ({params['type_choice']})")
+    print(f"  - Start Value:   '{params['start_val']}'")
+    print(f"  - Increment:     {params['add_val']}")
+    print(f"  - Keçeci Steps:  {params['steps']}")
+
+    print("\n[Sequence Summary]")
+    print(f"  - Total Numbers Generated: {len(sequence)}")
+    
+    kpn = find_kececi_prime_number(sequence)
+    print(f"  - Keçeci Prime Number (KPN): {kpn if kpn is not None else 'Not found'}")
+
+    print("\n[Sequence Preview]")
+    preview_count = min(len(sequence), 5)
+    print(f"  --- First {preview_count} Numbers ---")
+    for i in range(preview_count):
+        print(f"    {i}: {sequence[i]}")
+
+    if len(sequence) > preview_count:
+        print(f"\n  --- Last {preview_count} Numbers ---")
+        for i in range(len(sequence) - preview_count, len(sequence)):
+            print(f"    {i}: {sequence[i]}")
+            
+    print("\n" + "="*50)
+
+    while True:
+        show_all = input("Do you want to print the full sequence? (y/n): ").lower().strip()
+        if show_all in ['y', 'n']:
+            break
+    
+    if show_all == 'y':
+        print("\n--- FULL SEQUENCE ---")
+        for i, num in enumerate(sequence):
+            print(f"{i}: {num}")
+        print("="*50)
+
+# ==============================================================================
+# --- HIGH-LEVEL CONTROL FUNCTIONS ---
+# ==============================================================================
+
+def get_with_params(kececi_type_choice: int, iterations: int, start_value_raw: str = "0", add_value_base_scalar: float = 9.0) -> List[Any]:
+    """Generates Keçeci Numbers with specified parameters."""
+    print(f"\n--- Generating Sequence: Type {kececi_type_choice}, Steps {iterations} ---")
+    print(f"Start: '{start_value_raw}', Increment: {add_value_base_scalar}")
+
+    generated_sequence = unified_generator(
+        kececi_type_choice, start_value_raw, add_value_base_scalar, iterations
+    )
+    
+    if generated_sequence:
+        print(f"Generated {len(generated_sequence)} numbers. Preview: {generated_sequence[:3]}...")
+        kpn = find_kececi_prime_number(generated_sequence)
+        if kpn is not None:
+            print(f"Keçeci Prime Number for this sequence: {kpn}")
+        else:
+            print("No repeating Keçeci Prime Number found.")
+    else:
+        print("Sequence generation failed.")
+        
+    return generated_sequence
+
+def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
+    """Interactively gets parameters from the user to generate a sequence."""
+    print("\n--- Keçeci Number Interactive Generator ---")
+    print("  1: Positive Real    2: Negative Real     3: Complex")
+    print("  4: Float            5: Rational          6: Quaternion")
+    print("  7: Neutrosophic     8: Neutro-Complex   9: Hyperreal")
+    print(" 10: Bicomplex        11: Neutro-Bicomplex")
+    
+    while True:
+        try:
+            type_choice = int(input("Select Keçeci Number Type (1-11): "))
+            if 1 <= type_choice <= 11:
+                break
+            print("Invalid type. Please enter a number between 1 and 11.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+        
+    prompts = {
+        1: "Enter positive integer start (e.g., '10'): ",
+        2: "Enter negative integer start (e.g., '-5'): ",
+        3: "Enter complex start (e.g., '3+4j' or '3' for 3+3j): ",
+        4: "Enter float start (e.g., '3.14'): ",
+        5: "Enter rational start (e.g., '7/2' or '5'): ",
+        6: "Enter quaternion (e.g., '1+2i-3j+k' or '2.5'): ",
+        7: "Enter neutrosophic start (e.g., '5+2I' or '7'): ",
+        8: "Enter complex base for neutro-complex (e.g., '1-2j'): ",
+        9: "Enter hyperreal start (e.g., '5+3e' or '10'): ",
+        10: "Enter complex base for bicomplex (e.g., '2+1j'): ",
+        11: "Enter complex base for neutro-bicomplex (e.g., '1+2j'): "
+    }
+    
+    start_prompt = prompts.get(type_choice, "Enter starting value: ")
+    start_input_val_raw = input(start_prompt)
+    add_base_scalar_val = float(input("Enter base scalar increment (e.g., 9.0): "))
+    num_kececi_steps = int(input("Enter number of Keçeci steps (e.g., 15): "))
+    
+    sequence = get_with_params(type_choice, num_kececi_steps, start_input_val_raw, add_base_scalar_val)
+    
+    params = {
+        "type_choice": type_choice,
+        "start_val": start_input_val_raw,
+        "add_val": add_base_scalar_val,
+        "steps": num_kececi_steps
+    }
+    return sequence, params
+
+# ==============================================================================
+# --- ANALYSIS AND PLOTTING ---
+# ==============================================================================
 
 def find_kececi_prime_number(kececi_numbers_list: List[Any]) -> Optional[int]:
-    """
-    Finds the Keçeci Prime Number (KPN) from a sequence.
-    KPN is the most frequent prime integer representation, with ties
-    broken by choosing the larger prime.
-    """
+    """Finds the Keçeci Prime Number from a generated sequence."""
     if not kececi_numbers_list:
         return None
 
-    prime_reps = [_get_integer_representation(num) for num in kececi_numbers_list if is_prime(num)]
-    if not prime_reps:
+    integer_prime_reps = [
+        rep for num in kececi_numbers_list
+        if is_prime(num) and (rep := _get_integer_representation(num)) is not None
+    ]
+
+    if not integer_prime_reps:
         return None
 
-    counts = collections.Counter(prime_reps)
+    counts = collections.Counter(integer_prime_reps)
     repeating_primes = [(freq, prime) for prime, freq in counts.items() if freq > 1]
     if not repeating_primes:
         return None
-
-    # Find the one with the highest frequency, using prime value as a tie-breaker
+    
     _, best_prime = max(repeating_primes)
     return best_prime
+
+def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Analysis"):
+    """Plots the generated sequence with detailed visualizations for each type."""
+    plt.style.use('seaborn-v0_8-whitegrid')
+    
+    if not sequence:
+        print("Sequence is empty, nothing to plot.")
+        return
+
+    fig = plt.figure(figsize=(16, 9))
+    plt.suptitle(title, fontsize=16, y=0.98)
+    first_elem = sequence[0]
+    
+    if isinstance(first_elem, (int, float, Fraction)):
+        ax = fig.add_subplot(1, 1, 1)
+        ax.plot([float(x) for x in sequence], 'o-', label="Value")
+        ax.set_title("Value over Iterations")
+        ax.set_xlabel("Index"), ax.set_ylabel("Value"), ax.legend()
+
+    elif isinstance(first_elem, complex):
+        gs = GridSpec(2, 2, figure=fig)
+        ax1, ax2, ax3 = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[0, 1]), fig.add_subplot(gs[1, :])
+        real_parts, imag_parts = [c.real for c in sequence], [c.imag for c in sequence]
+        ax1.plot(real_parts, 'o-', label='Real Part'), ax1.set_title("Real Part"), ax1.legend()
+        ax2.plot(imag_parts, 'o-', color='red', label='Imaginary Part'), ax2.set_title("Imaginary Part"), ax2.legend()
+        ax3.plot(real_parts, imag_parts, '.-', label='Trajectory')
+        ax3.scatter(real_parts[0], imag_parts[0], c='g', s=100, label='Start', zorder=5)
+        ax3.scatter(real_parts[-1], imag_parts[-1], c='r', s=100, label='End', zorder=5)
+        ax3.set_title("Trajectory in Complex Plane"), ax3.set_xlabel("Real"), ax3.set_ylabel("Imaginary"), ax3.legend(), ax3.axis('equal')
+
+    elif isinstance(first_elem, np.quaternion):
+        gs = GridSpec(2, 1, figure=fig)
+        ax1, ax2 = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[1, 0], sharex=ax1)
+        ax1.plot([q.w for q in sequence], 'o-', label='w (scalar)'), ax1.plot([q.x for q in sequence], 's--', label='x')
+        ax1.plot([q.y for q in sequence], '^--', label='y'), ax1.plot([q.z for q in sequence], 'd--', label='z')
+        ax1.set_title("Quaternion Components"), ax1.legend()
+        magnitudes = [abs(q) for q in sequence]
+        ax2.plot(magnitudes, 'o-', color='purple', label='Magnitude'), ax2.set_title("Magnitude"), ax2.legend(), ax2.set_xlabel("Index")
+
+    elif isinstance(first_elem, BicomplexNumber):
+        gs = GridSpec(2, 2, figure=fig)
+        ax1, ax2, ax3, ax4 = fig.add_subplot(gs[0,0]), fig.add_subplot(gs[0,1]), fig.add_subplot(gs[1,0]), fig.add_subplot(gs[1,1])
+        z1r, z1i = [x.z1.real for x in sequence], [x.z1.imag for x in sequence]
+        z2r, z2i = [x.z2.real for x in sequence], [x.z2.imag for x in sequence]
+        ax1.plot(z1r, label='z1.real'), ax1.plot(z1i, label='z1.imag'), ax1.set_title("Component z1"), ax1.legend()
+        ax2.plot(z2r, label='z2.real'), ax2.plot(z2i, label='z2.imag'), ax2.set_title("Component z2"), ax2.legend()
+        ax3.plot(z1r, z1i, '.-'), ax3.set_title("z1 Trajectory"), ax3.set_xlabel("Real"), ax3.set_ylabel("Imaginary")
+        ax4.plot(z2r, z2i, '.-'), ax4.set_title("z2 Trajectory"), ax4.set_xlabel("Real"), ax4.set_ylabel("Imaginary")
+        
+    elif isinstance(first_elem, NeutrosophicNumber):
+        gs = GridSpec(1, 2, figure=fig)
+        ax1, ax2 = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[0, 1])
+        a, b = [x.a for x in sequence], [x.b for x in sequence]
+        ax1.plot(a, label='Determinate (a)'), ax1.plot(b, label='Indeterminate (b)'), ax1.set_title("Components"), ax1.legend()
+        sc = ax2.scatter(a, b, c=range(len(a)), cmap='viridis')
+        ax2.set_title("Trajectory"), ax2.set_xlabel("Determinate"), ax2.set_ylabel("Indeterminate"), fig.colorbar(sc, ax=ax2, label="Iteration")
+
+    elif isinstance(first_elem, NeutrosophicComplexNumber):
+        gs = GridSpec(2, 1, figure=fig)
+        ax1, ax2 = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[1, 0])
+        r, i, ind = [x.real for x in sequence], [x.imag for x in sequence], [x.indeterminacy for x in sequence]
+        ax1.plot(r, label='Real'), ax1.plot(i, label='Imag'), ax1.plot(ind, label='Indeterminacy', linestyle=':')
+        ax1.set_title("Components"), ax1.legend()
+        sc = ax2.scatter(r, i, c=ind, cmap='magma', s=20)
+        ax2.set_title("Trajectory (colored by Indeterminacy)"), ax2.set_xlabel("Real"), ax2.set_ylabel("Imaginary")
+        fig.colorbar(sc, ax=ax2, label='Indeterminacy'), ax2.axis('equal')
+
+    elif isinstance(first_elem, HyperrealNumber):
+        gs = GridSpec(2, 1, figure=fig)
+        ax1, ax2 = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[1, 0])
+        num_components = min(len(first_elem.sequence), 4)
+        for i in range(num_components):
+            ax1.plot([h.sequence[i] for h in sequence], label=f'Comp {i}')
+        ax1.set_title("Hyperreal Components"), ax1.legend()
+        comp0, comp1 = [h.sequence[0] for h in sequence], [h.sequence[1] for h in sequence]
+        sc = ax2.scatter(comp0, comp1, c=range(len(comp0)), cmap='plasma')
+        ax2.set_title("Trajectory (C0 vs C1)"), ax2.set_xlabel("C0"), ax2.set_ylabel("C1"), fig.colorbar(sc, ax=ax2, label="Iteration")
+        
+    elif isinstance(first_elem, NeutrosophicBicomplexNumber):
+        gs = GridSpec(2, 2, figure=fig)
+        ax1, ax2 = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[0, 1])
+        ax3, ax4 = fig.add_subplot(gs[1, 0]), fig.add_subplot(gs[1, 1])
+        ax1.plot([n.real for n in sequence], [n.imag for n in sequence], '.-'), ax1.set_title("Primary Deterministic")
+        ax2.plot([n.neut_real for n in sequence], [n.neut_imag for n in sequence], '.-'), ax2.set_title("Primary Neutrosophic")
+        ax3.plot([n.j_real for n in sequence], [n.j_imag for n in sequence], '.-'), ax3.set_title("Secondary Deterministic")
+        ax4.plot([n.j_neut_real for n in sequence], [n.j_neut_imag for n in sequence], '.-'), ax4.set_title("Secondary Neutrosophic")
+
+    else:
+        ax = fig.add_subplot(1, 1, 1)
+        ax.text(0.5, 0.5, f"Plotting for '{type(first_elem).__name__}' not implemented.", ha='center')
+    
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
+
+# ==============================================================================
+# --- MAIN EXECUTION BLOCK ---
+# ==============================================================================
+if __name__ == "__main__":
+    print("="*60)
+    print("  Keçeci Numbers Module - Demonstration")
+    print("="*60)
+    print("This script demonstrates the generation of various Keçeci Number types.")
+    
+    # --- Example 1: Interactive Mode ---
+    # Uncomment the following lines to run in interactive mode:
+    # seq, params = get_interactive()
+    # if seq:
+    #     plot_numbers(seq, title=f"Keçeci Type {params['type_choice']} Sequence")
+    #     plt.show()
+
+    # --- Example 2: Programmatic Generation and Plotting ---
+    print("\nRunning programmatic tests for all 11 number types...")
+    
+    STEPS = 30
+    START_VAL = "2.5"
+    ADD_VAL = 3.0
+
+    all_types = {
+        "Positive Real": TYPE_POSITIVE_REAL, "Negative Real": TYPE_NEGATIVE_REAL,
+        "Complex": TYPE_COMPLEX, "Float": TYPE_FLOAT, "Rational": TYPE_RATIONAL,
+        "Quaternion": TYPE_QUATERNION, "Neutrosophic": TYPE_NEUTROSOPHIC,
+        "Neutrosophic Complex": TYPE_NEUTROSOPHIC_COMPLEX, "Hyperreal": TYPE_HYPERREAL,
+        "Bicomplex": TYPE_BICOMPLEX, "Neutrosophic Bicomplex": TYPE_NEUTROSOPHIC_BICOMPLEX
+    }
+
+    types_to_plot = [
+        "Complex", "Quaternion", "Bicomplex", "Neutrosophic Complex", "Hyperreal"
+    ]
+    
+    for name, type_id in all_types.items():
+        start = "-5" if type_id == TYPE_NEGATIVE_REAL else "2+3j" if type_id in [TYPE_COMPLEX, TYPE_BICOMPLEX] else START_VAL
+        
+        seq = get_with_params(type_id, STEPS, start, ADD_VAL)
+        
+        if name in types_to_plot and seq:
+            plot_numbers(seq, title=f"Demonstration: {name} Keçeci Numbers")
+
+    print("\n\nDemonstration finished. Plots for selected types are shown.")
+    plt.show()
