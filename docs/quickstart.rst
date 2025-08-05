@@ -95,7 +95,7 @@ Running the script will print a summary to your console and then display a plot.
 
 **Plot:**
 
-.. image:: https://github.com/WhiteSymmetry/kececinumbers/blob/main/examples/kn-2.png?raw=true
+.. image:: https://github.com/WhiteSymmetry/kececinumbers/blob/main/examples/kn-c.png?raw=true
    :alt: Example plot of a complex Keçeci Number sequence
 
 Next Steps
