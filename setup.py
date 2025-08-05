@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="kececinumbers",
-    version="0.3.3",
+    version="0.3.4",
     description="Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -24,7 +24,7 @@ setup(
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
-        "Operating System :: OS Independent",
+        "Operating System :: OS Independent"
     ],
     python_requires='>=3.9',
     license="MIT",
