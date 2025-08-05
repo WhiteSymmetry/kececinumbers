@@ -1,20 +1,104 @@
 # __init__.py
-# Bu dosya paketin başlangıç noktası olarak çalışır.
-# Alt modülleri yükler, sürüm bilgileri tanımlar ve geriye dönük uyumluluk için uyarılar sağlar.
+
+"""
+Keçeci Numbers: A Comprehensive Framework for Number Sequence Analysis.
+
+This package provides tools for generating, analyzing, and visualizing
+11 different types of Keçeci Number sequences, from standard integers
+to complex algebraic structures like quaternions and neutrosophic numbers.
+
+Bu dosya paketin başlangıç noktası olarak çalışır.
+Alt modülleri yükler, sürüm bilgileri tanımlar ve geriye dönük uyumluluk için uyarılar sağlar.
+"""
 
 from __future__ import annotations
 import importlib
-import warnings
 import os
+import warnings
+
 # if os.getenv("DEVELOPMENT") == "true":
     # importlib.reload(kececinumbers) # F821 undefined name 'kececinumbers'
+
+# Paket sürüm numarası
+__version__ = "0.3.4"
+__author__ = "Mehmet Keçeci"
+__email__ = "mkececi@yaani.com"
+
+# Public API exposed to users of the 'kececinumbers' package.
+__all__ = [
+    # --- Custom Number Classes ---
+    'NeutrosophicNumber',
+    'NeutrosophicComplexNumber',
+    'HyperrealNumber',
+    'BicomplexNumber',
+    'NeutrosophicBicomplexNumber',
+
+    # --- High-Level Functions ---
+    'get_with_params',
+    'get_interactive',
+    'get_random_type',
+
+    # --- Core Generation and Analysis ---
+    'unified_generator',
+    'is_prime',
+    'find_kececi_prime_number',
+
+    # --- Visualization and Reporting ---
+    'plot_numbers',
+    'print_detailed_report',
+
+    # --- Type Constants ---
+    'TYPE_POSITIVE_REAL',
+    'TYPE_NEGATIVE_REAL',
+    'TYPE_COMPLEX',
+    'TYPE_FLOAT',
+    'TYPE_RATIONAL',
+    'TYPE_QUATERNION',
+    'TYPE_NEUTROSOPHIC',
+    'TYPE_NEUTROSOPHIC_COMPLEX',
+    'TYPE_HYPERREAL',
+    'TYPE_BICOMPLEX',
+    'TYPE_NEUTROSOPHIC_BICOMPLEX'
+]
 
 # Göreli modül içe aktarmaları
 # F401 hatasını önlemek için sadece kullanacağınız şeyleri dışa aktarın
 # Aksi halde linter'lar "imported but unused" uyarısı verir
 try:
-    from .kececinumbers import *  # gerekirse burada belirli fonksiyonları seçmeli yapmak daha güvenlidir
-    from . import kececinumbers  # Modülün kendisine doğrudan erişim isteniyorsa
+    #from .kececinumbers import *  # gerekirse burada belirli fonksiyonları seçmeli yapmak daha güvenlidir
+    #from . import kececinumbers  # Modülün kendisine doğrudan erişim isteniyorsa
+    # Import the public API into the package's namespace.
+    from .kececinumbers import (
+        # Classes
+        NeutrosophicNumber,
+        NeutrosophicComplexNumber,
+        HyperrealNumber,
+        BicomplexNumber,
+        NeutrosophicBicomplexNumber,
+    
+        # Functions
+        get_with_params,
+        get_interactive,
+        get_random_type,
+        unified_generator,
+        is_prime,
+        find_kececi_prime_number,
+        plot_numbers,
+        print_detailed_report,
+    
+        # Constants
+        TYPE_POSITIVE_REAL,
+        TYPE_NEGATIVE_REAL,
+        TYPE_COMPLEX,
+        TYPE_FLOAT,
+        TYPE_RATIONAL,
+        TYPE_QUATERNION,
+        TYPE_NEUTROSOPHIC,
+        TYPE_NEUTROSOPHIC_COMPLEX,
+        TYPE_HYPERREAL,
+        TYPE_BICOMPLEX,
+        TYPE_NEUTROSOPHIC_BICOMPLEX
+    )
 except ImportError as e:
     warnings.warn(f"Gerekli modül yüklenemedi: {e}", ImportWarning)
 
@@ -31,7 +115,3 @@ def eski_fonksiyon():
         category=DeprecationWarning,
         stacklevel=2
     )
-
-
-# Paket sürüm numarası
-__version__ = "0.3.3"
