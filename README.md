@@ -414,6 +414,16 @@ If this library was useful to you in your research, please cite us. Following th
 
 ```
 
+Keçeci, M. (2025). Keçeci Varsayımının Kuramsal ve Karşılaştırmalı Analizi. ResearchGate. https://dx.doi.org/10.13140/RG.2.2.21825.88165
+
+Keçeci, M. (2025). Keçeci Varsayımı'nın Hesaplanabilirliği: Sonlu Adımda Kararlı Yapıya Yakınsama Sorunu. WorkflowHub. https://doi.org/10.48546/workflowhub.document.44.1
+
+Keçeci, M. (2025). Keçeci Varsayımı ve Dinamik Sistemler: Farklı Başlangıç Koşullarında Yakınsama ve Döngüler. Open Science Output Articles (OSOAs), OSF.	 https://doi.org/10.17605/OSF.IO/68AFN 
+
+Keçeci, M. (2025). Keçeci Varsayımı: Periyodik Çekiciler ve Keçeci Asal Sayısı (KPN) Kavramı. Open Science Knowledge Articles (OSKAs), Knowledge Commons. https://doi.org/10.17613/g60hy-egx74
+
+Keçeci, M. (2025). Genelleştirilmiş Keçeci Operatörleri: Collatz Yinelemesinin Nötrosofik ve Hiperreel Sayı Sistemlerinde Uzantıları. Authorea.	 https://doi.org/10.22541/au.175433544.41244947/v1 
+
 Keçeci, M. (2025). Keçeci Varsayımı: Collatz Genelleştirmesi Olarak Çoklu Cebirsel Sistemlerde Yinelemeli Dinamikler. Open Science Articles (OSAs), Zenodo. https://doi.org/10.5281/zenodo.16702475
 
 Keçeci, M. (2025). Geometric Interpretations of Keçeci Numbers with Neutrosophic and Hyperreal Numbers. Zenodo. https://doi.org/10.5281/zenodo.16344232
