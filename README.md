@@ -1,15 +1,71 @@
 # Keçeci Numbers: Keçeci Sayıları
 ---
 
-# Keçeci Numbers
-
-[![PyPI version](https://badge.fury.io/py/kececinumbers.svg)](https://pypi.org/project/kececinumbers/)
-[![Conda Version](https://anaconda.org/bilgi/kececinumbers/badges/version.svg)](https://anaconda.org/bilgi/kececinumbers)
-[![Documentation Status](https://readthedocs.org/projects/kececinumbers/badge/?version=latest)](https://kececinumbers.readthedocs.io/en/latest/)
-[![Python CI](https://github.com/WhiteSymmetry/kececinumbers/actions/workflows/python_ci.yml/badge.svg?branch=main)](https://github.com/WhiteSymmetry/kececinumbers/actions/workflows/python_ci.yml)
-[![codecov](https://codecov.io/gh/WhiteSymmetry/kececinumbers/graph/badge.svg?token=0X78S7TL0W)](https://codecov.io/gh/WhiteSymmetry/kececinumbers)
+[![PyPI version](https://badge.fury.io/py/kececinumbers.svg)](https://badge.fury.io/py/kececinumbers/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15377659.svg)](https://doi.org/10.5281/zenodo.15377659)
+[![WorkflowHub DOI](https://img.shields.io/badge/DOI-10.48546%2Fworkflowhub.datafile.14.2-blue)](https://doi.org/10.48546/workflowhub.datafile.14.2)
+[![figshare DOI](https://img.shields.io/badge/DOI-10.6084/m9.figshare.29816414-blue)](https://doi.org/10.6084/m9.figshare.29816414)
+
+[![Anaconda-Server Badge](https://anaconda.org/bilgi/kececinumbers/badges/version.svg)](https://anaconda.org/bilgi/kececinumbers)
+[![Anaconda-Server Badge](https://anaconda.org/bilgi/kececinumbers/badges/latest_release_date.svg)](https://anaconda.org/bilgi/kececinumbers)
+[![Anaconda-Server Badge](https://anaconda.org/bilgi/kececinumbers/badges/platforms.svg)](https://anaconda.org/bilgi/kececinumbers)
+[![Anaconda-Server Badge](https://anaconda.org/bilgi/kececinumbers/badges/license.svg)](https://anaconda.org/bilgi/kececinumbers)
+
+[![Open Source](https://img.shields.io/badge/Open%20Source-Open%20Source-brightgreen.svg)](https://opensource.org/)
+[![Documentation Status](https://app.readthedocs.org/projects/kececinumbers/badge/?0.2.0=main)](https://kececinumbers.readthedocs.io/en/latest)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10536/badge)](https://www.bestpractices.dev/projects/10536)
+
+[![Python CI](https://github.com/WhiteSymmetry/kececinumbers/actions/workflows/python_ci.yml/badge.svg?branch=main)](https://github.com/WhiteSymmetry/kececinumbers/actions/workflows/python_ci.yml)
+[![codecov](https://codecov.io/gh/WhiteSymmetry/kececinumbers/graph/badge.svg?token=0X78S7TL0W)](https://codecov.io/gh/WhiteSymmetry/kececinumbers)
+[![Documentation Status](https://readthedocs.org/projects/kececinumbers/badge/?version=latest)](https://kececinumbers.readthedocs.io/en/latest/)
+[![Binder](https://terrarium.evidencepub.io/badge_logo.svg)](https://terrarium.evidencepub.io/v2/gh/WhiteSymmetry/kececinumbers/HEAD)
+
+[![PyPI version](https://badge.fury.io/py/kececinumbers.svg)](https://badge.fury.io/py/kececinumbers)
+[![PyPI Downloads](https://static.pepy.tech/badge/kececinumbers)](https://pepy.tech/projects/kececinumbers)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
+[![Linted with Ruff](https://img.shields.io/badge/Linted%20with-Ruff-green?logo=python&logoColor=white)](https://github.com/astral-sh/ruff)
+
+---
+
+<p align="left">
+    <table>
+        <tr>
+            <td style="text-align: center;">PyPI</td>
+            <td style="text-align: center;">
+                <a href="https://pypi.org/project/kececinumbers/">
+                    <img src="https://badge.fury.io/py/kececinumbers.svg" alt="PyPI version" height="18"/>
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align: center;">Conda</td>
+            <td style="text-align: center;">
+                <a href="https://anaconda.org/bilgi/kececinumbers">
+                    <img src="https://anaconda.org/bilgi/kececinumbers/badges/version.svg" alt="conda-forge version" height="18"/>
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align: center;">DOI</td>
+            <td style="text-align: center;">
+                <a href="https://doi.org/10.5281/zenodo.15377659">
+                    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.15377659.svg" alt="DOI" height="18"/>
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align: center;">License: MIT</td>
+            <td style="text-align: center;">
+                <a href="https://opensource.org/licenses/MIT">
+                    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License" height="18"/>
+                </a>
+            </td>
+        </tr>
+    </table>
+</p>
+
+---
 
 **Keçeci Numbers** is a Python library for generating, analyzing, and visualizing dynamic sequences inspired by the Collatz Conjecture across diverse number systems.
 
@@ -104,75 +160,6 @@ This conjecture remains unproven, and this library provides a framework for test
 *   **🇩🇪 Deutsch:** Es wird vermutet, dass die vom `unified_generator` erzeugten Sequenzen für jeden Keçeci-Zahl-Typ nach endlich vielen Schritten gegen eine periodische Struktur oder eine wiederkehrende Primdarstellung (KPN) konvergieren.
 
 </details>
----
-
-[![PyPI version](https://badge.fury.io/py/kececinumbers.svg)](https://badge.fury.io/py/kececinumbers)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15377659.svg)](https://doi.org/10.5281/zenodo.15377659)
-
-[![WorkflowHub DOI](https://img.shields.io/badge/DOI-10.48546%2Fworkflowhub.datafile.14.2-blue)](https://doi.org/10.48546/workflowhub.datafile.14.2)
-
-[![figshare DOI](https://img.shields.io/badge/DOI-10.6084/m9.figshare.29816414-blue)](https://doi.org/10.6084/m9.figshare.29816414)
-
-[![Anaconda-Server Badge](https://anaconda.org/bilgi/kececinumbers/badges/version.svg)](https://anaconda.org/bilgi/kececinumbers)
-[![Anaconda-Server Badge](https://anaconda.org/bilgi/kececinumbers/badges/latest_release_date.svg)](https://anaconda.org/bilgi/kececinumbers)
-[![Anaconda-Server Badge](https://anaconda.org/bilgi/kececinumbers/badges/platforms.svg)](https://anaconda.org/bilgi/kececinumbers)
-[![Anaconda-Server Badge](https://anaconda.org/bilgi/kececinumbers/badges/license.svg)](https://anaconda.org/bilgi/kececinumbers)
-
-[![Open Source](https://img.shields.io/badge/Open%20Source-Open%20Source-brightgreen.svg)](https://opensource.org/)
-[![Documentation Status](https://app.readthedocs.org/projects/kececinumbers/badge/?0.2.0=main)](https://kececinumbers.readthedocs.io/en/latest)
-
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10536/badge)](https://www.bestpractices.dev/projects/10536)
-
-[![Python CI](https://github.com/WhiteSymmetry/kececinumbers/actions/workflows/python_ci.yml/badge.svg?branch=main)](https://github.com/WhiteSymmetry/kececinumbers/actions/workflows/python_ci.yml)
-[![codecov](https://codecov.io/gh/WhiteSymmetry/kececinumbers/graph/badge.svg?token=0X78S7TL0W)](https://codecov.io/gh/WhiteSymmetry/kececinumbers)
-[![Documentation Status](https://readthedocs.org/projects/kececinumbers/badge/?version=latest)](https://kececinumbers.readthedocs.io/en/latest/)
-[![Binder](https://terrarium.evidencepub.io/badge_logo.svg)](https://terrarium.evidencepub.io/v2/gh/WhiteSymmetry/kececinumbers/HEAD)
-[![PyPI version](https://badge.fury.io/py/kececinumbers.svg)](https://badge.fury.io/py/kececinumbers)
-[![PyPI Downloads](https://static.pepy.tech/badge/kececinumbers)](https://pepy.tech/projects/kececinumbers)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
-[![Linted with Ruff](https://img.shields.io/badge/Linted%20with-Ruff-green?logo=python&logoColor=white)](https://github.com/astral-sh/ruff)
-
----
-
-<p align="left">
-    <table>
-        <tr>
-            <td style="text-align: center;">PyPI</td>
-            <td style="text-align: center;">
-                <a href="https://pypi.org/project/kececinumbers/">
-                    <img src="https://badge.fury.io/py/kececinumbers.svg" alt="PyPI version" height="18"/>
-                </a>
-            </td>
-        </tr>
-        <tr>
-            <td style="text-align: center;">Conda</td>
-            <td style="text-align: center;">
-                <a href="https://anaconda.org/bilgi/kececinumbers">
-                    <img src="https://anaconda.org/bilgi/kececinumbers/badges/version.svg" alt="conda-forge version" height="18"/>
-                </a>
-            </td>
-        </tr>
-        <tr>
-            <td style="text-align: center;">DOI</td>
-            <td style="text-align: center;">
-                <a href="https://doi.org/10.5281/zenodo.15377659">
-                    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.15377659.svg" alt="DOI" height="18"/>
-                </a>
-            </td>
-        </tr>
-        <tr>
-            <td style="text-align: center;">License: MIT</td>
-            <td style="text-align: center;">
-                <a href="https://opensource.org/licenses/MIT">
-                    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License" height="18"/>
-                </a>
-            </td>
-        </tr>
-    </table>
-</p>
-
 ---
 
 ## Description / Açıklama
