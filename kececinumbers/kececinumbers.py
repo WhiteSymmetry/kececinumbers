@@ -39,16 +39,16 @@ It remains unproven, and this module provides a framework for testing the conjec
 
 # --- Standard Library Imports ---
 import collections
-import math
-import random
 from dataclasses import dataclass
 from fractions import Fraction
+import math
+import random
 
 # --- Third-Party Imports ---
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 import numpy as np
 import quaternion  # Requires: pip install numpy numpy-quaternion
-from matplotlib.gridspec import GridSpec
 import re
 
 # ==============================================================================
