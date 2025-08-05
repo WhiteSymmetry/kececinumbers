@@ -117,6 +117,35 @@ pip install kececinumbers
 
 ## Quick Start
 
+The following example creates and visualizes a Keçeci sequence with POSITIVE_REAL numbers.
+
+```python
+import matplotlib.pyplot as plt
+import kececinumbers as kn
+
+# Generate a Keçeci sequence with specific parameters
+sequence = kn.get_with_params(
+    kececi_type_choice=kn.TYPE_POSITIVE_REAL,
+    iterations=20,
+    start_value_raw="1",
+    add_value_base_scalar=9.0
+)
+
+# If the sequence was generated successfully, plot it
+if sequence:
+    kn.plot_numbers(sequence, title="My First POSITIVE_REAL Keçeci Sequence")
+    plt.show()
+
+    # Optionally, find and print the Keçeci Prime Number (KPN)
+    kpn = kn.find_kececi_prime_number(sequence)
+    if kpn:
+        print(f"\nKeçeci Prime Number (KPN) found: {kpn}")
+```
+
+![Keçeci Numbers Example](https://github.com/WhiteSymmetry/kececinumbers/blob/main/examples/kn-1.png?raw=true)
+
+---        
+
 The following example creates and visualizes a Keçeci sequence with complex numbers.
 
 ```python
@@ -143,7 +172,7 @@ if sequence:
         print(f"\nKeçeci Prime Number (KPN) found for this sequence: {kpn}")
 ```
 
-![Keçeci Numbers Example](https://github.com/WhiteSymmetry/kececinumbers/blob/main/examples/kn-2.png?raw=true)
+![Keçeci Numbers Example](https://github.com/WhiteSymmetry/kececinumbers/blob/main/examples/kn-c.png?raw=true)
 
 ---
 
