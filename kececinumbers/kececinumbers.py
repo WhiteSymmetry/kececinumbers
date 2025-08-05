@@ -17,8 +17,8 @@ Key Features:
 - Helper functions for mathematical properties like primality and divisibility.
 - Advanced plotting capabilities tailored to each number system.
 - Functions for interactive use or programmatic integration.
-"""
-"""
+---
+
 Keçeci Conjecture: Keçeci Varsayımı, Keçeci-Vermutung, Conjecture de Keçeci, Гипотеза Кечеджи, 凯杰西猜想, ケジェジ予想, Keçeci Huds, Keçeci Hudsiye, Keçeci Hudsia, كَچَه جِي ,حدس کچه جی, کچہ جی حدسیہ
 
 Keçeci Varsayımı (Keçeci Conjecture) - Önerilen
