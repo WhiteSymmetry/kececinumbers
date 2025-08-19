@@ -785,7 +785,8 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
     elif isinstance(first_elem, np.quaternion):
         gs = GridSpec(2, 1, figure=fig)
-        ax1, ax2 = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[1, 0], sharex=ax1)
+        ax1 = fig.add_subplot(gs[0, 0])
+        ax2 = fig.add_subplot(gs[1, 0], sharex=ax1)
         ax1.plot([q.w for q in sequence], 'o-', label='w (scalar)'), ax1.plot([q.x for q in sequence], 's--', label='x')
         ax1.plot([q.y for q in sequence], '^--', label='y'), ax1.plot([q.z for q in sequence], 'd--', label='z')
         ax1.set_title("Quaternion Components"), ax1.legend()
