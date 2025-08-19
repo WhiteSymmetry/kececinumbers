@@ -16,7 +16,8 @@ setup(
     install_requires=[
         "numpy",
         "matplotlib",
-        "numpy-quaternion"
+        "numpy-quaternion",
+        "sympy",
     ],
     extras_require={
 
