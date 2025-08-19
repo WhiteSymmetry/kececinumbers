@@ -693,6 +693,46 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
 # --- ANALYSIS AND PLOTTING ---
 # ==============================================================================
 
+def find_period(sequence: List[Any], min_repeats: int = 3) -> Optional[List[Any]]:
+    """
+    Checks if the end of a sequence has a repeating cycle (period).
+
+    Args:
+        sequence: The list of numbers to check.
+        min_repeats: How many times the cycle must repeat to be considered stable.
+
+    Returns:
+        The repeating cycle as a list if found, otherwise None.
+    """
+    if len(sequence) < 10:  # Çok kısa dizilerde periyot aramak anlamsız
+        return None
+
+    # Olası periyot uzunluklarını dizinin yarısına kadar kontrol et
+    for p_len in range(1, len(sequence) // min_repeats):
+        # Dizinin sonundan potansiyel döngüyü al
+        candidate_cycle = sequence[-p_len:]
+        
+        # Döngünün en az `min_repeats` defa tekrar edip etmediğini kontrol et
+        is_periodic = True
+        for i in range(1, min_repeats):
+            start_index = -(i + 1) * p_len
+            end_index = -i * p_len
+            
+            # Dizinin o bölümünü al
+            previous_block = sequence[start_index:end_index]
+
+            # Eğer bloklar uyuşmuyorsa, bu periyot değildir
+            if candidate_cycle != previous_block:
+                is_periodic = False
+                break
+        
+        # Eğer döngü tüm kontrollerden geçtiyse, periyodu bulduk demektir
+        if is_periodic:
+            return candidate_cycle
+
+    # Hiçbir periyot bulunamadı
+    return None
+
 def find_kececi_prime_number(kececi_numbers_list: List[Any]) -> Optional[int]:
     """Finds the Keçeci Prime Number from a generated sequence."""
     if not kececi_numbers_list:
