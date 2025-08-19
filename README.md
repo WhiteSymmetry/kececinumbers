@@ -260,22 +260,30 @@ else:
 
 ```python
 import matplotlib.pyplot as plt
-import random
-import numpy as np
-import math
-from fractions import Fraction
-import quaternion # pip install numpy numpy-quaternion
 import kececinumbers as kn
 
 # Matplotlib grafiklerinin notebook içinde gösterilmesini sağla
 %matplotlib inline
 
 print("Trying interactive mode (will prompt for input in the console/output area)...")
-interactive_sequence = kn.get_interactive()
-if interactive_sequence:
-    kn.plot_numbers(interactive_sequence, title="Keçeci Numbers")
 
-print("Done with examples.")
+# DÜZELTİLMİŞ KISIM:
+# get_interactive'ten dönen iki değeri ayrı değişkenlere alıyoruz.
+# 'seq' listenin kendisi, 'params' ise parametre sözlüğüdür.
+seq, params = kn.get_interactive()
+
+# Sadece dizi (seq) başarılı bir şekilde oluşturulduysa devam et
+if seq:
+    print("\nSequence generated successfully. Plotting...")
+    # plot_numbers fonksiyonuna artık doğru şekilde SADECE listeyi gönderiyoruz.
+    kn.plot_numbers(seq, title=f"Interactive Keçeci Numbers ({params.get('type_name', '')})")
+    # Grafiği göstermek için plt.show() ekleyelim
+    plt.show() 
+else:
+    print("\nSequence generation failed or was cancelled.")
+
+
+print("\nDone with examples.")
 print("Keçeci Numbers Module Loaded.")
 print("This module provides functions to generate and plot Keçeci Numbers.")
 print("Example: Use 'import kececinumbers as kn' in your script/notebook.")
@@ -285,8 +293,6 @@ print("- kn.get_with_params(kececi_type, iterations, ...)")
 print("- kn.get_random_type(iterations, ...)")
 print("- kn.plot_numbers(sequence, title)")
 print("- kn.unified_generator(...) (low-level)")
-print("\nAccess definitions with: kn.DEFINITIONS")
-print("\nAccess type constants like: kn.TYPE_COMPLEX")
 ```
 ---
 Trying interactive mode (will prompt for input in the console/output area)...
