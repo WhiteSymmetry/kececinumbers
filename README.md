@@ -347,18 +347,31 @@ Enter the number of iterations (positive integer: e.g., 30):  30
 import matplotlib.pyplot as plt
 import kececinumbers as kn
 
-
+# ==============================================================================
+# --- Interactive Test ---
+# ==============================================================================
 print("--- Interactive Test ---")
-seq_interactive = kn.get_interactive()
-if seq_interactive:
-    kn.plot_numbers(seq_interactive, "Keçeci Numbers")
 
+# DÜZELTME: Fonksiyondan dönen 2 değeri ayrı değişkenlere alıyoruz.
+# Sadece diziye ihtiyacımız olduğu için 'params'ı şimdilik kullanmayacağız.
+seq_interactive, params_interactive = kn.get_interactive() 
+
+# Dizi başarılı bir şekilde oluşturulduysa (boş değilse) grafiği çiz
+if seq_interactive:
+    kn.plot_numbers(seq_interactive, "Interactive Keçeci Numbers")
+
+# ==============================================================================
+# --- Random Type Test (Bu kısım zaten doğruydu) ---
+# ==============================================================================
 print("\n--- Random Type Test (60 Keçeci Steps) ---")
 # num_iterations burada Keçeci adımı sayısıdır
 seq_random = kn.get_random_type(num_iterations=60) 
 if seq_random:
     kn.plot_numbers(seq_random, "Random Type Keçeci Numbers")
 
+# ==============================================================================
+# --- Fixed Params Test (Bu kısım da zaten doğruydu) ---
+# ==============================================================================
 print("\n--- Fixed Params Test (Complex, 60 Keçeci Steps) ---")
 seq_fixed = kn.get_with_params(
     kececi_type_choice=kn.TYPE_COMPLEX, 
@@ -374,6 +387,12 @@ if seq_fixed:
     kpn_direct = kn.find_kececi_prime_number(seq_fixed)
     if kpn_direct is not None:
         print(f"\nDirect call to find_kececi_prime_number for fixed numbers: {kpn_direct}")
+
+# ==============================================================================
+# --- Tüm Grafikleri Göster ---
+# ==============================================================================
+print("\nDisplaying all generated plots...")
+plt.show()
 ```
 
 Generated Keçeci Sequence (first 20 of 121): [4, 11, 12, 4, 11, 10, 5, 12, 4, 11, 12, 6, 13, 12, 4, 11, 12, 6, 13, 12]...
