@@ -41,6 +41,7 @@ __all__ = [
     # --- Core Generation and Analysis ---
     'unified_generator',
     'is_prime',
+    'find_period',
     'find_kececi_prime_number',
 
     # --- Visualization and Reporting ---
@@ -82,6 +83,7 @@ try:
         get_random_type,
         unified_generator,
         is_prime,
+        find_period,
         find_kececi_prime_number,
         plot_numbers,
         print_detailed_report,
