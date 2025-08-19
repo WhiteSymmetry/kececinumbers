@@ -39,6 +39,7 @@ import numpy as np
 import quaternion
 import random
 import re
+import sympy
 from typing import Any, Dict, List, Optional, Tuple
 
 
@@ -301,7 +302,24 @@ def _get_integer_representation(n_input: Any) -> Optional[int]:
         return None
 
 def is_prime(n_input: Any) -> bool:
-    """Checks if a given number (or its principal component) is prime."""
+    """
+    Checks if a given number (or its principal component) is prime
+    using the robust sympy.isprime function.
+    """
+    # Adım 1: Karmaşık sayı türünden tamsayıyı çıkarma (Bu kısım aynı kalıyor)
+    value_to_check = _get_integer_representation(n_input)
+
+    # Adım 2: Tamsayı geçerli değilse False döndür
+    if value_to_check is None:
+        return False
+    
+    # Adım 3: Asallık testini sympy'ye bırak
+    # sympy.isprime, 2'den küçük sayılar (1, 0, negatifler) için zaten False döndürür.
+    return sympy.isprime(value_to_check)
+    
+"""
+def is_prime(n_input: Any) -> bool:
+    #Checks if a given number (or its principal component) is prime.
     value_to_check = _get_integer_representation(n_input)
     if value_to_check is None or value_to_check < 2:
         return False
@@ -313,6 +331,7 @@ def is_prime(n_input: Any) -> bool:
         if value_to_check % i == 0:
             return False
     return True
+"""
 
 def _is_divisible(value: Any, divisor: int, kececi_type: int) -> bool:
     """Helper to check divisibility for different number types."""
