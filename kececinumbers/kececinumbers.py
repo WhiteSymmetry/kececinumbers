@@ -205,7 +205,7 @@ class HyperrealNumber:
         raise TypeError("Modulo only supported with a scalar divisor.")
 
     def __str__(self) -> str:
-        return f"Hyperreal({self.sequence[:3]}...)"
+        return f"Hyperreal({self.sequence[:30]}...)"
 
 @dataclass
 class BicomplexNumber:
@@ -595,7 +595,7 @@ def print_detailed_report(sequence: List[Any], params: Dict[str, Any]):
     print(f"  - Keçeci Prime Number (KPN): {kpn if kpn is not None else 'Not found'}")
 
     print("\n[Sequence Preview]")
-    preview_count = min(len(sequence), 5)
+    preview_count = min(len(sequence), 30)
     print(f"  --- First {preview_count} Numbers ---")
     for i in range(preview_count):
         print(f"    {i}: {sequence[i]}")
@@ -632,7 +632,7 @@ def get_with_params(kececi_type_choice: int, iterations: int, start_value_raw: s
     )
     
     if generated_sequence:
-        print(f"Generated {len(generated_sequence)} numbers. Preview: {generated_sequence[:3]}...")
+        print(f"Generated {len(generated_sequence)} numbers. Preview: {generated_sequence[:30]}...")
         kpn = find_kececi_prime_number(generated_sequence)
         if kpn is not None:
             print(f"Keçeci Prime Number for this sequence: {kpn}")
