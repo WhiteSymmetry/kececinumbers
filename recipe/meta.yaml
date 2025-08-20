@@ -9,6 +9,9 @@ source:
   url:
   sha256:
 
+channels:
+  - conda-forge
+
 build:
   noarch: python  # Platformdan bağımsız bir paket oluşturur
   script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed"
