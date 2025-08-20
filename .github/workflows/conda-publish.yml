@@ -58,6 +58,14 @@ jobs:
           echo "Installing $PACKAGE_FILE"
           conda install -n test-env -y "$PACKAGE_FILE"
 
+      - name: Run final import test and get traceback
+        run: |
+          echo "--- Installing graphillion in test-env via pip ---"
+          conda run -n test-env pip install numpy-quaternion
+          
+          echo "--- Attempting to import kececilayout ---"
+          conda run -n test-env python -c "import kececilayout"
+
       - name: Test the package in the environment
         run: |
           conda activate test-env && python -c
