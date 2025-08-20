@@ -12,6 +12,7 @@ Alt modülleri yükler, sürüm bilgileri tanımlar ve geriye dönük uyumluluk 
 """
 
 from __future__ import annotations
+import inspect
 import importlib
 import os
 import warnings
