@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kececinumbers"
-version = "0.4.7"
+version = "0.4.8"
 
 # Diğer proje bilgileri (isteğe bağlı ama tavsiye edilir)
 authors = [
@@ -43,6 +43,9 @@ test = [
     "numpy-quaternion",
     "sympy",
 ]
+
+[tool.setuptools.packages.find]
+where = ["."]
 
 [project.urls]
 "Homepage" = "https://github.com/WhiteSymmetry/kececinumbers"
