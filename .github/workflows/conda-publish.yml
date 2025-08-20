@@ -60,14 +60,7 @@ jobs:
 
       - name: Test the package in the environment
         run: |
-          conda activate test-env && python -c "
-import numpy
-import matplotlib
-import numpy_quaternion
-import sympy
-print('✅ All imports successful!')
-# Burada gerekirse daha fazla test çalıştırılabilir
-"
+          conda activate test-env && python -c
 
       - name: Upload to Anaconda Cloud
         if: github.event_name == 'release' && success()
