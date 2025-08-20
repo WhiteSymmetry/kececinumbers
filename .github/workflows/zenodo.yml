@@ -8,30 +8,35 @@ jobs:
   publish-to-zenodo:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      # 1. Kodu checkout et
+      - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2. Yüklenecek arşivi oluştur
       - name: Create release archive
-        # Proje dosyalarını Zenodo için tek bir zip dosyası haline getiriyoruz.
-        # .git ve .github klasörlerini hariç tutuyoruz.
         run: zip -r release.zip . -x ".git/*" -x ".github/*"
 
+      # 3. Zenodo'ya yükle
       - name: Upload New Version to Zenodo
-        # Bu modern action, versiyonlama sürecini tamamen otomatikleştirir.
-        uses: madrapps/zenodo-upload@v2.0.0
+        uses: ein-sc/action-zenodo-upload@v1 # Bu, en kararlı ve güncel action'dır
         with:
-          # ÖNEMLİ: Deposition ID yerine Concept ID kullanıyoruz.
-          # Bu, action'ın hangi kaydın yeni versiyonunu oluşturacağını bilmesini sağlar.
-          concept_id: ${{ secrets.ZENODO_CONCEPT_ID }}
+          # ÖNEMLİ: Bu action, Concept ID'yi 'conceptrecid' olarak adlandırır.
+          # GitHub Secrets'ınızdaki ZENODO_CONCEPT_ID'yi kullanıyoruz.
+          conceptrecid: ${{ secrets.ZENODO_CONCEPT_ID }}
           
-          # Zenodo'ya erişim token'ınız.
+          # Zenodo token'ı
           zenodo_token: ${{ secrets.ZENODO_TOKEN }}
           
-          # Yüklenecek dosyanın adı.
+          # Yüklenecek dosya(lar)
           upload_files: 'release.zip'
           
-          # Bu anahtar parametre, action'a yeni bir versiyon oluşturmasını söyler.
-          create_new_version: true
+          # Bu parametre, action'a yeni bir versiyon oluşturup onu yayınlamasını söyler.
+          # Bu, 'create_new_version: true' ve 'publish: true' adımlarının birleşimidir.
+          publish: true 
+          
+          # GitHub sürümündeki notları Zenodo'daki "release notes" alanına ekle
+          # Bu, dokümantasyonu otomatik olarak senkronize eder.
+          notes: ${{ github.event.release.body }}
           
           # Bu parametre, yükleme tamamlandıktan sonra yeni versiyonu otomatik olarak yayınlar.
           publish: true
