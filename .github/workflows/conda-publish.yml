@@ -20,7 +20,7 @@ jobs:
       - name: Setup Miniconda for Python ${{ matrix.python-version }}
         uses: conda-incubator/setup-miniconda@v3
         with:
-          auto-activate-base: false
+          auto_activate: false
           python-version: "${{ matrix.python-version }}" # Matrix'ten gelen versiyonu kullan
           channels: conda-forge,defaults
           channel-priority: strict
