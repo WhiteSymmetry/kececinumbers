@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # test_sample.py
 """
 Comprehensive unit tests for the kececinumbers module.
