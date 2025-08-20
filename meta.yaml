@@ -5,9 +5,8 @@ package:
   version: {{ version }}
 
 source:
-  path: kececinumbers/
-  url:
-  sha256:
+  path: .
+
 
 channels:
   - conda-forge
