@@ -5,8 +5,8 @@ package:
   version: {{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/e9/64/66ac6cec9c0c623e99bf84d5623a33dfcff635f37ca24da95421367ee8ef/kececinumbers-0.4.7.tar.gz
-  sha256: 49c9719f067299b4e1dc12a1ebec090a64ff85ae8970b543462faa34c8cbe52a
+  url: https://files.pythonhosted.org/packages/62/a7/810842a61d906f70d718ae50dbe357e32e56c70fefdf5c7c44a742a36cad/kececinumbers-0.4.8.tar.gz
+  sha256: dc338c77e71af85dca425cd4a89f4d6088c99af2dd96cf6757f9defa49804037
 
 
 channels:
