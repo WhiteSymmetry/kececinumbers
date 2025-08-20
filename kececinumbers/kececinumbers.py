@@ -488,6 +488,10 @@ def get_random_type(num_iterations: int, fixed_start_raw: str = "0", fixed_add_b
 
 def unified_generator(kececi_type: int, start_input_raw: str, add_input_base_scalar: float, iterations: int) -> List[Any]:
     """Core engine to generate Keçeci Number sequences."""
+    
+    if not (TYPE_POSITIVE_REAL <= kececi_type <= TYPE_NEUTROSOPHIC_BICOMPLEX):
+        raise ValueError(f"Invalid Keçeci Number Type: {kececi_type}. Must be between {TYPE_POSITIVE_REAL} and {TYPE_NEUTROSOPHIC_BICOMPLEX}.")
+
     current_value = None
     add_value_typed = None
     ask_unit = None
@@ -545,8 +549,6 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_base_sca
             current_value = _parse_quaternion(start_input_raw)
             add_value_typed = np.quaternion(a_float, a_float, a_float, a_float)
             ask_unit = np.quaternion(1, 1, 1, 1)
-        else:
-            raise ValueError(f"Invalid Keçeci Number Type: {kececi_type}")
 
     except (ValueError, TypeError) as e:
         print(f"ERROR: Failed to initialize type {kececi_type} with input '{start_input_raw}': {e}")
