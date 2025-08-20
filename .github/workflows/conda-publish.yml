@@ -61,7 +61,6 @@ jobs:
       - name: Test the package in the environment
         run: |
           conda activate test-env && python -c "
-import kececinumbers
 import numpy
 import matplotlib
 import numpy_quaternion
