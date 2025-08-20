@@ -23,13 +23,14 @@ requirements:
     - setuptools
     # Other build tools
   run:
-    - python >=3.10,<3.13
+    - python >=3.10,<3.12
     - numpy
     # Other runtime dependencies
   build:
-    - python >=3.10,<3.13
+    - python >=3.10,<3.12
     - pip
     - setuptools
+    - numpy {{ np }}
 
 test:
   imports:
