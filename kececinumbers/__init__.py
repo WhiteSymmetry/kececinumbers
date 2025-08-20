@@ -21,7 +21,7 @@ import warnings
     # importlib.reload(kececinumbers) # F821 undefined name 'kececinumbers'
 
 # Paket sürüm numarası
-__version__ = "0.4.3"
+__version__ = "0.4.4"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 
@@ -83,6 +83,7 @@ try:
         get_with_params,
         get_interactive,
         get_random_type,
+        _get_integer_representation,
         unified_generator,
         is_prime,
         find_period,
