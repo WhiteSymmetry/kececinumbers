@@ -1,0 +1,59 @@
+name: Build and Test Package
+
+on:
+  workflow_dispatch: # Manuel tetikleme
+  release:
+    types: [published] # Yeni release yayınlandığında tetikler
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: false
+          python-version: "3.11"
+          channels: conda-forge,defaults
+          channel-priority: strict
+
+      - name: Install Conda-Build and Anaconda-Client
+        run: conda install -n base conda-build anaconda-client -y
+
+      - name: Build the package
+        run: |
+          conda build . --output-folder ./conda_pkgs --variant-config-files ./conda_build_config.yaml
+          mkdir -p dist
+          find ./conda_pkgs -name "*.conda" -exec cp {} dist/ \;
+          echo "Paketler dist klasörüne kopyalandı:"
+          ls -l dist
+
+      - name: Create a clean environment and install dependencies
+        run: |
+          conda create -n test-env -y python=3.11
+          conda install -n test-env -y \
+            numpy \
+            matplotlib \
+            numpy-quaternion \
+            sympy
+
+      - name: Install the built package into the test environment
+        run: |
+          PACKAGE_FILE=$(ls dist/*.conda | head -n 1)
+          echo "Installing $PACKAGE_FILE"
+          conda install -n test-env -y "$PACKAGE_FILE"
+
+      - name: Upload to Anaconda Cloud
+        if: success()
+        env:
+          ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
+        run: |
+          conda install -n base anaconda-client -y
+          conda run -n base anaconda -t $ANACONDA_TOKEN upload \
+            dist/*.conda \
+            --label main \
+            --skip-existing
