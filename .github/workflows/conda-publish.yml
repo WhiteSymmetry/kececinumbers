@@ -43,6 +43,10 @@ jobs:
           name: conda-package
           path: dist/
 
+      - name: Debug: Search numpy on conda-forge
+        run: |
+          conda search numpy --channel conda-forge | grep 2.2
+
       - name: Create a clean environment and install dependencies
         run: |
           conda create -n test-env -y python=3.11
