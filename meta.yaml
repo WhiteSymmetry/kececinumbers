@@ -20,14 +20,16 @@ requirements:
   host:
     - python {{ python }}
     - numpy
+    - setuptools
     # Other build tools
   run:
-    - python >=3.9,<3.14
+    - python >=3.10,<3.14
     - numpy
     # Other runtime dependencies
   build:
-    - python >=3.9,<3.14
+    - python >=3.10,<3.14
     - pip
+    - setuptools
 
 test:
   imports:
