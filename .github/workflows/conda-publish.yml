@@ -25,8 +25,8 @@ jobs:
           channels: conda-forge,defaults
           channel-priority: strict
 
-      - name: Install Conda-Build
-        run: conda install -n base conda-build -y
+      - name: Install Conda-Build and Conda-Verify
+        run: conda install -n base conda-build conda-verify -y
 
       - name: Build the package for Python ${{ matrix.python-version }}
         # Artık variant config'e ihtiyacımız yok, Python versiyonunu doğrudan belirtiyoruz
