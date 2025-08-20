@@ -38,6 +38,7 @@ __all__ = [
     'get_with_params',
     'get_interactive',
     'get_random_type',
+    '_get_integer_representation',
 
     # --- Core Generation and Analysis ---
     'unified_generator',
