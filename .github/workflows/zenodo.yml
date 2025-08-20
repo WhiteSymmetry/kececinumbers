@@ -1,4 +1,4 @@
-name: Publish New Version and Publish to Zenodo on Release
+name: Publish New Version to Zenodo on Release
 
 on:
   release:
