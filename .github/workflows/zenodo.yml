@@ -1,4 +1,4 @@
-name: Publish to Zenodo on Release
+name: Publish New Version and Publish to Zenodo on Release
 
 on:
   release:
@@ -12,25 +12,26 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Create release archive
-        run: |
-          mkdir -p release-artifact
-          cp -r ./* release-artifact/
-          cd release-artifact
-          zip -r ../release.zip *
+        # Proje dosyalarını Zenodo için tek bir zip dosyası haline getiriyoruz.
+        # .git ve .github klasörlerini hariç tutuyoruz.
+        run: zip -r release.zip . -x ".git/*" -x ".github/*"
 
-      - name: Upload to Zenodo
-        uses: nasa/gh-action-upload-zenodo-release@main
+      - name: Upload New Version to Zenodo
+        # Bu modern action, versiyonlama sürecini tamamen otomatikleştirir.
+        uses: madrapps/zenodo-upload@v2.0.0
         with:
+          # ÖNEMLİ: Deposition ID yerine Concept ID kullanıyoruz.
+          # Bu, action'ın hangi kaydın yeni versiyonunu oluşturacağını bilmesini sağlar.
+          concept_id: ${{ secrets.ZENODO_CONCEPT_ID }}
+          
+          # Zenodo'ya erişim token'ınız.
           zenodo_token: ${{ secrets.ZENODO_TOKEN }}
-          dir: .
-          metadata: |
-            {
-              "title": "kececinumbers",
-              "upload_type": "software",
-              "description": "Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets",
-              "creators": [
-                {"name": "Keçeci, Mehmet", "orcid": "0000-0001-9937-9839"}
-              ],
-              "access_right": "open",
-              "license": "mit-license"
-            }
+          
+          # Yüklenecek dosyanın adı.
+          upload_files: 'release.zip'
+          
+          # Bu anahtar parametre, action'a yeni bir versiyon oluşturmasını söyler.
+          create_new_version: true
+          
+          # Bu parametre, yükleme tamamlandıktan sonra yeni versiyonu otomatik olarak yayınlar.
+          publish: true
