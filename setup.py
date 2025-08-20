@@ -14,6 +14,15 @@ with open("README.md", "r", encoding="utf-8") as fh:
 with open("kececinumbers/kececinumbers.py", "r", encoding="utf-8") as f:
     long_description = f.read()
 
+with open("kececinumbers/__init__.py", "r", encoding="utf-8") as f:
+    long_description = f.read()
+
+with open("kececinumbers/_version.py", "r", encoding="utf-8") as f:
+    long_description = f.read()
+
+with open("tests/test_sample.py", "r", encoding="utf-8") as f:
+    long_description = f.read()
+
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 
@@ -36,7 +45,10 @@ setup(
     author_email="mkececi@yaani.com",
     maintainer_email="mkececi@yaani.com",
     url="https://github.com/WhiteSymmetry/kececinumbers",
-    packages=find_packages(),
+    packages=find_packages(),  # 'kececinumbers' klasörünü otomatik bulur
+    package_data={
+        "kececinumbers": ["__init__.py", "_version.py"]  # Gerekli dosyaları dahil et
+    },
     install_requires=[
         "numpy",
         "matplotlib",
