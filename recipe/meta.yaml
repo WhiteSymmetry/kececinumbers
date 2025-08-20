@@ -5,8 +5,9 @@ package:
   version: {{ version }}
 
 source:
-  path: .
-
+  url: https://files.pythonhosted.org/packages/fd/a3/f98293e7ee86b5e38fab48d83ab6741c7c11f147b9e038f64ea36b21d819/kececinumbers-0.4.4.tar.gz
+  sha256: c2320a5e1479576555b860f6615eb1c963a06283dfffe78d0abf1de3e9f30e99
+  
 channels:
   - conda-forge
 
