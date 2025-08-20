@@ -51,11 +51,35 @@ jobs:
           conda install -n test-env -y "$PACKAGE_FILE"
           conda run -n test-env python -c "import kececinumbers; print('✅ Import successful for Python ${{ matrix.python-version }}!')"
 
+      - name: Build the package
+        run: |
+          export PKG_VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')
+          echo "Building version: $PKG_VERSION"
+          # Hata durumunda bile devam etmesi için || true ekleyerek build loglarını görelim
+          conda build . --output-folder ./dist || true
+      
+      # ===================================================================
+      # === YENİ HATA AYIKLAMA ADIMI ===
+      # Bu adım, upload'dan önce dosya sisteminin durumunu bize gösterecek
+      - name: Debug - List files in the workspace
+        run: |
+          echo "--- Current Working Directory ---"
+          pwd
+          echo "--- Recursive file listing ---"
+          ls -R
+          echo "--- End of file listing ---"
+      # ===================================================================
+
       - name: Upload to Anaconda Cloud
-        if: github.event_name == 'release' && success()
+        if: success()
         env:
           ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
         run: |
+          # Upload'dan önce dosyanın varlığını kontrol et
+          if [ -z "$(ls -A dist/*.conda 2>/dev/null)" ]; then
+            echo "HATA: Yüklenecek .conda dosyası bulunamadı! Build adımı başarısız olmuş olabilir."
+            exit 1
+          fi
           conda install -n base -y anaconda-client
           conda run -n base anaconda -t $ANACONDA_TOKEN upload \
             dist/*.conda \
