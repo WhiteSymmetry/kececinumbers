@@ -11,7 +11,7 @@ jobs:
     # Matrix stratejisini burada tanımlıyoruz
     strategy:
       matrix:
-        python-version: ["3.10", "3.11"] # Hangi Python versiyonları için çalıştırılacak
+        python-version: ["3.11"] # Hangi Python versiyonları için çalıştırılacak
 
     steps:
       - name: Checkout repository
