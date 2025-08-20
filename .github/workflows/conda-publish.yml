@@ -21,16 +21,27 @@ jobs:
           channels: conda-forge,defaults
           channel-priority: strict
 
-      - name: Install Conda-Build and Anaconda-Client
-        run: conda install -n base conda-build anaconda-client -y
+      - name: Install Conda-Build
+        run: conda install -n base conda-build -y
 
       - name: Build the package
         run: |
           conda build . --output-folder ./conda_pkgs --variant-config-files ./conda_build_config.yaml
           mkdir -p dist
           find ./conda_pkgs -name "*.conda" -exec cp {} dist/ \;
+          if [ -z "$(ls -A dist)" ]; then
+            echo "HATA: Hiçbir conda paketi oluşturulmadı."
+            exit 1
+          fi
           echo "Paketler dist klasörüne kopyalandı:"
           ls -l dist
+
+      - name: Upload conda package as artifact
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: conda-package
+          path: dist/
 
       - name: Create a clean environment and install dependencies
         run: |
@@ -47,13 +58,29 @@ jobs:
           echo "Installing $PACKAGE_FILE"
           conda install -n test-env -y "$PACKAGE_FILE"
 
+      - name: Test the package in the environment
+        run: |
+          conda activate test-env && python -c "
+import your_package_name
+import numpy
+import matplotlib
+import numpy_quaternion
+import sympy
+print('✅ All imports successful!')
+# Burada gerekirse daha fazla test çalıştırılabilir
+"
+
       - name: Upload to Anaconda Cloud
-        if: success()
+        if: github.event_name == 'release' && success()
         env:
           ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
         run: |
-          conda install -n base anaconda-client -y
           conda run -n base anaconda -t $ANACONDA_TOKEN upload \
             dist/*.conda \
             --label main \
             --skip-existing
+
+      - name: Cleanup test environment
+        if: always()
+        run: |
+          conda env remove -n test-env || echo "test-env zaten kaldırılmış veya yok"
