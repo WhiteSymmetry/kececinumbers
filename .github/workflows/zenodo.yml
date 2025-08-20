@@ -37,6 +37,3 @@ jobs:
           # GitHub sürümündeki notları Zenodo'daki "release notes" alanına ekle
           # Bu, dokümantasyonu otomatik olarak senkronize eder.
           notes: ${{ github.event.release.body }}
-          
-          # Bu parametre, yükleme tamamlandıktan sonra yeni versiyonu otomatik olarak yayınlar.
-          publish: true
