@@ -48,5 +48,5 @@ test = [
 where = ["."]
 
 [project.urls]
-"Homepage" = "https://github.com/WhiteSymmetry/kececinumbers"
-"Bug Tracker" = "https://github.com/WhiteSymmetry/kececinumbers/issues"
+Homepage = "https://github.com/WhiteSymmetry/kececinumbers"
+Repository = "https://github.com/WhiteSymmetry/kececinumbers"
