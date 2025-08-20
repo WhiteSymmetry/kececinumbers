@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # __init__.py
 
 """
@@ -21,7 +22,7 @@ import warnings
     # importlib.reload(kececinumbers) # F821 undefined name 'kececinumbers'
 
 # Paket sürüm numarası
-__version__ = "0.4.7"
+__version__ = "0.4.8"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 
