@@ -47,7 +47,7 @@ jobs:
         run: |
           conda create -n test-env -y python=3.11
           conda install -n test-env -y numpy matplotlib sympy
-          conda activate test-env && pip install numpy-quaternion
+          conda run -n test-env pip install numpy-quaternion
       
       - name: Install the built package into the test environment
         run: |
