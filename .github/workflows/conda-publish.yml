@@ -75,17 +75,24 @@ jobs:
         env:
           ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
         run: |
-          # Upload'dan önce dosyanın varlığını kontrol et
-          if [ -z "$(ls -A dist/*.conda 2>/dev/null)" ]; then
+          # 'find' komutu ile dist klasörünün içindeki tüm .conda dosyalarını bul
+          PACKAGE_FILES=$(find dist -name "*.conda")
+          
+          # Bulunan dosya(lar)ın varlığını kontrol et
+          if [ -z "$PACKAGE_FILES" ]; then
             echo "HATA: Yüklenecek .conda dosyası bulunamadı! Build adımı başarısız olmuş olabilir."
             exit 1
           fi
+
+          echo "Yüklenecek paketler bulundu:"
+          echo "$PACKAGE_FILES"
+          
           conda install -n base -y anaconda-client
+          # $PACKAGE_FILES değişkenini kullanarak bulunan dosyaları yükle
           conda run -n base anaconda -t $ANACONDA_TOKEN upload \
-            dist/*.conda \
+            $PACKAGE_FILES \
             --label main \
             --skip-existing
-
       - name: Cleanup test environment
         if: always()
         run: conda env remove -n test-env || true
