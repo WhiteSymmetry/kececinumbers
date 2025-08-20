@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kececinumbers"
-version = "0.4.8"
+version = "0.4.9"
 
 # Diğer proje bilgileri (isteğe bağlı ama tavsiye edilir)
 authors = [
