@@ -11,6 +11,9 @@ import sys
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
+with open("kececinumbers/kececinumbers.py", "r", encoding="utf-8") as f:
+    long_description = f.read()
+
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 
