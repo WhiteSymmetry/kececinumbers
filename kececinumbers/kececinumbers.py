@@ -552,9 +552,9 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
     """
     Core engine to generate Keçeci Number sequences.
 
-    Bu güncellenmiş versiyon, tüm sayı tipleri için esnek girdi işleme,
-    kuaterniyonlar için tam vektörel toplama desteği sunar ve isteğe bağlı
-    olarak ara hesaplama adımlarını da döndürebilir.
+    Bu nihai versiyon, tüm sayı tipleri için esnek girdi işleme, kuaterniyonlar
+    için tam vektörel toplama desteği sunar ve isteğe bağlı olarak ara
+    hesaplama adımlarını da, veri tekrarı olmadan doğru bir şekilde döndürür.
 
     Args:
         kececi_type (int): Keçeci Sayı türü (1-11).
@@ -571,104 +571,54 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
     if not (TYPE_POSITIVE_REAL <= kececi_type <= TYPE_NEUTROSOPHIC_BICOMPLEX):
         raise ValueError(f"Invalid Keçeci Number Type: {kececi_type}. Must be between {TYPE_POSITIVE_REAL} and {TYPE_NEUTROSOPHIC_BICOMPLEX}.")
 
-    current_value = None
-    add_value_typed = None
-    ask_unit = None
-    use_integer_division = False
-
+    # --- 1. Değişkenlerin Başlatılması ---
     try:
         # Her sayı tipi, kendi `elif` bloğu içinde kendi girdisini işler.
-        # Bu, farklı formatlardaki (örn: '1.5' vs '1,2,3,4') girdilerin
-        # hatasız bir şekilde yönetilmesini sağlar.
-
         if kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL]:
-            current_value = int(float(start_input_raw))
-            add_value_typed = int(float(add_input_raw))
-            ask_unit = 1
-            use_integer_division = True
-            
+            current_value = int(float(start_input_raw)); add_value_typed = int(float(add_input_raw)); ask_unit = 1; use_integer_division = True
         elif kececi_type == TYPE_FLOAT:
-            current_value = float(start_input_raw)
-            add_value_typed = float(add_input_raw)
-            ask_unit = 1.0
-            
+            current_value = float(start_input_raw); add_value_typed = float(add_input_raw); ask_unit = 1.0
         elif kececi_type == TYPE_RATIONAL:
-            current_value = Fraction(start_input_raw)
-            add_value_typed = Fraction(add_input_raw)
-            ask_unit = Fraction(1)
-            
+            current_value = Fraction(start_input_raw); add_value_typed = Fraction(add_input_raw); ask_unit = Fraction(1)
         elif kececi_type == TYPE_COMPLEX:
-            current_value = _parse_complex(start_input_raw)
-            a_float = float(add_input_raw)
-            add_value_typed = complex(a_float, a_float)
-            ask_unit = 1 + 1j
-            
+            current_value = _parse_complex(start_input_raw); a_float = float(add_input_raw); add_value_typed = complex(a_float, a_float); ask_unit = 1 + 1j
         elif kececi_type == TYPE_QUATERNION:
-            current_value = _parse_quaternion_from_csv(start_input_raw)
-            add_value_typed = _parse_quaternion_from_csv(add_input_raw)
-            ask_unit = np.quaternion(1, 1, 1, 1)
-            
+            current_value = _parse_quaternion_from_csv(start_input_raw); add_value_typed = _parse_quaternion_from_csv(add_input_raw); ask_unit = np.quaternion(1, 1, 1, 1)
         elif kececi_type == TYPE_NEUTROSOPHIC:
-            a, b = _parse_neutrosophic(start_input_raw)
-            current_value = NeutrosophicNumber(a, b)
-            a_float = float(add_input_raw)
-            add_value_typed = NeutrosophicNumber(a_float, 0)
-            ask_unit = NeutrosophicNumber(1, 1)
-            
+            a, b = _parse_neutrosophic(start_input_raw); current_value = NeutrosophicNumber(a, b); a_float = float(add_input_raw); add_value_typed = NeutrosophicNumber(a_float, 0); ask_unit = NeutrosophicNumber(1, 1)
         elif kececi_type == TYPE_NEUTROSOPHIC_COMPLEX:
-            s_complex = _parse_complex(start_input_raw)
-            current_value = NeutrosophicComplexNumber(s_complex.real, s_complex.imag, 0.0)
-            a_float = float(add_input_raw)
-            add_value_typed = NeutrosophicComplexNumber(a_float, 0.0, 0.0)
-            ask_unit = NeutrosophicComplexNumber(1, 1, 1)
-            
+            s_complex = _parse_complex(start_input_raw); current_value = NeutrosophicComplexNumber(s_complex.real, s_complex.imag, 0.0); a_float = float(add_input_raw); add_value_typed = NeutrosophicComplexNumber(a_float, 0.0, 0.0); ask_unit = NeutrosophicComplexNumber(1, 1, 1)
         elif kececi_type == TYPE_HYPERREAL:
-            a, b = _parse_hyperreal(start_input_raw)
-            sequence_list = [a + b / n for n in range(1, 11)]
-            current_value = HyperrealNumber(sequence_list)
-            a_float = float(add_input_raw)
-            add_sequence = [a_float] + [0.0] * 9
-            add_value_typed = HyperrealNumber(add_sequence)
-            ask_unit = HyperrealNumber([1.0] * 10)
-            
+            a, b = _parse_hyperreal(start_input_raw); sequence_list = [a + b / n for n in range(1, 11)]; current_value = HyperrealNumber(sequence_list); a_float = float(add_input_raw); add_sequence = [a_float] + [0.0] * 9; add_value_typed = HyperrealNumber(add_sequence); ask_unit = HyperrealNumber([1.0] * 10)
         elif kececi_type == TYPE_BICOMPLEX:
-            s_complex = _parse_complex(start_input_raw)
-            a_float = float(add_input_raw)
-            a_complex = complex(a_float)
-            current_value = BicomplexNumber(s_complex, s_complex / 2)
-            add_value_typed = BicomplexNumber(a_complex, a_complex / 2)
-            ask_unit = BicomplexNumber(complex(1, 1), complex(0.5, 0.5))
-            
+            s_complex = _parse_complex(start_input_raw); a_float = float(add_input_raw); a_complex = complex(a_float); current_value = BicomplexNumber(s_complex, s_complex / 2); add_value_typed = BicomplexNumber(a_complex, a_complex / 2); ask_unit = BicomplexNumber(complex(1, 1), complex(0.5, 0.5))
         elif kececi_type == TYPE_NEUTROSOPHIC_BICOMPLEX:
-            s_complex = _parse_complex(start_input_raw)
-            current_value = NeutrosophicBicomplexNumber(s_complex.real, s_complex.imag, 0, 0, 0, 0, 0, 0)
-            a_float = float(add_input_raw)
-            add_value_typed = NeutrosophicBicomplexNumber(a_float, 0, 0, 0, 0, 0, 0, 0)
-            ask_unit = NeutrosophicBicomplexNumber(*([1.0] * 8))
-
+            s_complex = _parse_complex(start_input_raw); current_value = NeutrosophicBicomplexNumber(s_complex.real, s_complex.imag, 0, 0, 0, 0, 0, 0); a_float = float(add_input_raw); add_value_typed = NeutrosophicBicomplexNumber(a_float, 0, 0, 0, 0, 0, 0, 0); ask_unit = NeutrosophicBicomplexNumber(*([1.0] * 8))
     except (ValueError, TypeError) as e:
         print(f"ERROR: Failed to initialize type {kececi_type} with start='{start_input_raw}' and increment='{add_input_raw}': {e}")
         return []
 
-    # --- Üreteç Döngüsü ---
-    sequence = [current_value]
+    # --- 2. Üreteç Döngüsü ---
+    clean_trajectory = [current_value]
+    full_log = [current_value]
+    
     last_divisor_used = None
     ask_counter = 0
     
     for _ in range(iterations):
+        # --- Bir Sonraki Adımın Değerini (next_q) Hesapla ---
         added_value = current_value + add_value_typed
-        if include_intermediate_steps:
-            sequence.append(added_value)
         
-        result_value = added_value
+        next_q = added_value
         divided_successfully = False
+        modified_value = None
 
         primary_divisor = 3 if last_divisor_used == 2 or last_divisor_used is None else 2
         alternative_divisor = 2 if primary_divisor == 3 else 3
         
         for divisor in [primary_divisor, alternative_divisor]:
             if _is_divisible(added_value, divisor, kececi_type):
-                result_value = added_value // divisor if use_integer_division else added_value / divisor
+                next_q = added_value // divisor if use_integer_division else added_value / divisor
                 last_divisor_used = divisor
                 divided_successfully = True
                 break
@@ -677,49 +627,30 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
             modified_value = (added_value + ask_unit) if ask_counter == 0 else (added_value - ask_unit)
             ask_counter = 1 - ask_counter
             
-            if include_intermediate_steps:
-                sequence.append(modified_value)
-            
-            # Pertürbasyon sonrası değeri tekrar bölme testine sok
-            result_value = modified_value 
+            next_q = modified_value 
             
             for divisor in [primary_divisor, alternative_divisor]:
                 if _is_divisible(modified_value, divisor, kececi_type):
-                    result_value = modified_value // divisor if use_integer_division else modified_value / divisor
+                    next_q = modified_value // divisor if use_integer_division else modified_value / divisor
                     last_divisor_used = divisor
                     break
         
-        # Bir sonraki adımın değerini ata
-        current_value = result_value
+        # --- Sonuçları Ayrı Ayrı Kaydet ---
+        full_log.append(added_value)
+        if modified_value is not None:
+            full_log.append(modified_value)
+        full_log.append(next_q)
         
-        # Sonucu listeye ekle. 
-        # Eğer ara adımlar isteniyorsa, bu nihai sonuç da listeye eklenir.
-        # Eğer istenmiyorsa, sadece bu nihai sonuçlar eklenerek temiz yörünge oluşur.
-        sequence.append(current_value)
+        clean_trajectory.append(next_q)
         
-    # Eğer ara adımlar isteniyorsa, `sequence` listesinde [q0, ara, q1, ara, q2...] şeklinde
-    # bir yapı oluşur. Eğer istenmiyorsa, [q0, q1, q2...] yapısı oluşur.
-    # Bu durum, `get_with_params` gibi üst seviye bir fonksiyonda filtrelenebilir veya 
-    # doğrudan bu şekilde kullanılabilir. Daha basit olması için, yörüngeyi her zaman
-    # nihai adımlardan oluşturalım ve ara adımları ayrı bir log olarak tutalım.
-    # Ancak mevcut haliyle de esneklik sağlar. En basit hali için, `sequence.append`'leri
-    # temiz tutmak en iyisidir.
-    
-    # *** ÖNCEKİ CEVAPTAKİ EN TEMİZ YAPIYA GERİ DÖNELİM ***
-    # YUKARIDAKİ DÖNGÜ YERİNE, BU DAHA TEMİZ VE KARIŞIKLIK OLUŞTURMAYAN VERSİYONDUR:
-    
-    clean_trajectory = [current_value]
-    full_log = [current_value]
-    #...
-    # Bu yapı, fonksiyonun amacını aşar. En iyi çözüm, yukarıdaki döngünün
-    # sonundaki `sequence.append(current_value)` satırını silip, bunu çağıran
-    # `get_with_params` fonksiyonunun yörüngeyi filtrelemesidir.
-    
-    # EN SON VE EN DOĞRU HALİ:
-    # Sadece nihai adımları döndüren ve ara adımları döndürmeyen bir yapı en sağlıklısıdır.
-    # İsteğinize en uygun olan yapı yukarıda yazıldığı gibidir.
-    
-    return sequence
+        # --- Durumu Güncelle ---
+        current_value = next_q
+        
+    # --- 3. İsteğe Göre Doğru Listeyi Döndür ---
+    if include_intermediate_steps:
+        return full_log
+    else:
+        return clean_trajectory
 
 def print_detailed_report(sequence: List[Any], params: Dict[str, Any]):
     """Generates and prints a detailed report of the sequence results."""
