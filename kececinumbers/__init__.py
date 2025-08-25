@@ -40,6 +40,7 @@ __all__ = [
     'get_interactive',
     'get_random_type',
     '_get_integer_representation',
+    'generate_kececi_vectorial',
 
     # --- Core Generation and Analysis ---
     'unified_generator',
@@ -85,6 +86,7 @@ try:
         get_interactive,
         get_random_type,
         _get_integer_representation,
+        generate_kececi_vectorial,
         unified_generator,
         is_prime,
         find_period,
