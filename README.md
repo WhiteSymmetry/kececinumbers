@@ -1,4 +1,4 @@
-# Keçeci Numbers: Keçeci Sayıları
+# Keçeci Numbers: Keçeci Sayıları (Keçeci Conjecture)
 ---
 
 [![PyPI version](https://badge.fury.io/py/kececinumbers.svg)](https://badge.fury.io/py/kececinumbers/)
