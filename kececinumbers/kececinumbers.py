@@ -573,6 +573,7 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
 
     # --- 1. Değişkenlerin Başlatılması ---
     try:
+        # Her sayı tipi, kendi `elif` bloğu içinde kendi girdisini işler.
         if kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL]:
             current_value = int(float(start_input_raw)); add_value_typed = int(float(add_input_raw)); ask_unit = 1; use_integer_division = True
         elif kececi_type == TYPE_FLOAT:
@@ -597,7 +598,7 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
         print(f"ERROR: Failed to initialize type {kececi_type} with start='{start_input_raw}' and increment='{add_input_raw}': {e}")
         return []
 
-    # --- 2. Üreteç Döngüsü (Nihai ve Hata Tekrarını Önleyen Mantık) ---
+    # --- 2. Üreteç Döngüsü ---
     clean_trajectory = [current_value]
     full_log = [current_value]
     
