@@ -40,6 +40,7 @@ __all__ = [
     'get_interactive',
     'get_random_type',
     '_get_integer_representation',
+    '_parse_quaternion_from_csv',
     'generate_kececi_vectorial',
 
     # --- Core Generation and Analysis ---
@@ -86,6 +87,7 @@ try:
         get_interactive,
         get_random_type,
         _get_integer_representation,
+        _parse_quaternion_from_csv,
         generate_kececi_vectorial,
         unified_generator,
         is_prime,
