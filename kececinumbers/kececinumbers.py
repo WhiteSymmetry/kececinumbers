@@ -482,6 +482,57 @@ def get_random_type(num_iterations: int, fixed_start_raw: str = "0", fixed_add_b
         add_value_base_scalar=fixed_add_base_scalar
     )
 
+def generate_kececi_vectorial(q0_str, c_str, u_str, iterations):
+    """
+    Keçeci Haritası'nı tam vektörel toplama ile üreten geliştirilmiş fonksiyon.
+    Bu, kütüphanenin ana üretim fonksiyonu olabilir.
+    Tüm girdileri metin (string) olarak alarak esneklik sağlar.
+    """
+    try:
+        # Girdi metinlerini kuaterniyon nesnelerine dönüştür
+        w, x, y, z = map(float, q0_str.split(','))
+        q0 = np.quaternion(w, x, y, z)
+        
+        cw, cx, cy, cz = map(float, c_str.split(','))
+        c = np.quaternion(cw, cx, cy, cz)
+
+        uw, ux, uy, uz = map(float, u_str.split(','))
+        u = np.quaternion(uw, ux, uy, uz)
+
+    except (ValueError, IndexError):
+        raise ValueError("Girdi metinleri 'w,x,y,z' formatında olmalıdır.")
+
+    trajectory = [q0]
+    prime_events = []
+    current_q = q0
+
+    for i in range(iterations):
+        y = current_q + c
+        processing_val = y
+
+        while True:
+            scalar_int = int(processing_val.w)
+
+            if scalar_int % 2 == 0:
+                next_q = processing_val / 2.0
+                break
+            elif scalar_int % 3 == 0:
+                next_q = processing_val / 3.0
+                break
+            elif is_prime(scalar_int):
+                if processing_val == y:
+                    prime_events.append((i, scalar_int))
+                processing_val += u
+                continue
+            else:
+                next_q = processing_val
+                break
+        
+        trajectory.append(next_q)
+        current_q = next_q
+        
+    return trajectory, prime_events
+
 # ==============================================================================
 # --- CORE GENERATOR ---
 # ==============================================================================
