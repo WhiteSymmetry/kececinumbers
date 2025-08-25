@@ -533,6 +533,17 @@ def generate_kececi_vectorial(q0_str, c_str, u_str, iterations):
         
     return trajectory, prime_events
 
+def _parse_quaternion_from_csv(s: str) -> np.quaternion:
+    """Parses a comma-separated string 'w,x,y,z' into a quaternion."""
+    try:
+        parts = [float(p.strip()) for p in s.split(',')]
+        if len(parts) != 4:
+            raise ValueError("Girdi 4 bileşen içermelidir.")
+        # *parts -> (parts[0], parts[1], parts[2], parts[3])
+        return np.quaternion(*parts)
+    except (ValueError, IndexError) as e:
+        raise ValueError(f"Geçersiz virgülle ayrılmış kuaterniyon formatı: '{s}'.") from e
+
 # ==============================================================================
 # --- CORE GENERATOR ---
 # ==============================================================================
@@ -596,9 +607,13 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_base_sca
             current_value = NeutrosophicBicomplexNumber(s_complex.real, s_complex.imag, 0, 0, 0, 0, 0, 0)
             add_value_typed = NeutrosophicBicomplexNumber(a_float, 0, 0, 0, 0, 0, 0, 0)
             ask_unit = NeutrosophicBicomplexNumber(*([1.0] * 8))
+        #elif kececi_type == TYPE_QUATERNION:
+            #current_value = _parse_quaternion(start_input_raw)
+            #add_value_typed = np.quaternion(a_float, a_float, a_float, a_float)
+            #ask_unit = np.quaternion(1, 1, 1, 1)
         elif kececi_type == TYPE_QUATERNION:
-            current_value = _parse_quaternion(start_input_raw)
-            add_value_typed = np.quaternion(a_float, a_float, a_float, a_float)
+            current_value = _parse_quaternion_from_csv(start_input_raw)
+            add_value_typed = _parse_quaternion_from_csv(add_input_base_scalar) # Değişiklik burada
             ask_unit = np.quaternion(1, 1, 1, 1)
 
     except (ValueError, TypeError) as e:
@@ -694,13 +709,22 @@ def print_detailed_report(sequence: List[Any], params: Dict[str, Any]):
 # --- HIGH-LEVEL CONTROL FUNCTIONS ---
 # ==============================================================================
 
-def get_with_params(kececi_type_choice: int, iterations: int, start_value_raw: str = "0", add_value_base_scalar: float = 9.0) -> List[Any]:
-    """Generates Keçeci Numbers with specified parameters."""
+#def get_with_params(kececi_type_choice: int, iterations: int, start_value_raw: str = "0", add_value_base_scalar: float = 9.0) -> List[Any]:
+#    """Generates Keçeci Numbers with specified parameters."""
+#    print(f"\n--- Generating Sequence: Type {kececi_type_choice}, Steps {iterations} ---")
+#    print(f"Start: '{start_value_raw}', Increment: {add_value_base_scalar}")
+
+#    generated_sequence = unified_generator(
+#        kececi_type_choice, start_value_raw, add_value_base_scalar, iterations
+#    )
+
+def get_with_params(kececi_type_choice: int, iterations: int, start_value_raw: str = "0.0,0.0,0.0,0.0", add_value_raw: str = "1.3,-2.1,0.5,3.4") -> List[Any]:
+    """Generates Keçeci Numbers with specified parameters, supporting full vectorial addition."""
     print(f"\n--- Generating Sequence: Type {kececi_type_choice}, Steps {iterations} ---")
-    print(f"Start: '{start_value_raw}', Increment: {add_value_base_scalar}")
+    print(f"Start: '{start_value_raw}', Increment: '{add_value_raw}'")
 
     generated_sequence = unified_generator(
-        kececi_type_choice, start_value_raw, add_value_base_scalar, iterations
+        kececi_type_choice, start_value_raw, add_value_raw, iterations
     )
     
     if generated_sequence:
@@ -748,7 +772,12 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
     
     start_prompt = prompts.get(type_choice, "Enter starting value: ")
     start_input_val_raw = input(start_prompt)
-    add_base_scalar_val = float(input("Enter base scalar increment (e.g., 9.0): "))
+    #add_base_scalar_val = float(input("Enter base scalar increment (e.g., 9.0): "))
+    if type_choice == TYPE_QUATERNION:
+        add_input_val_raw = input("Enter quaternion increment (e.g., '1.3,-2.1,0.5,3.4'): ")
+    else:
+        # Diğer tipler için eski mantık devam edebilir veya hepsi için string istenir
+        add_input_val_raw = input("Enter increment value: ")
     num_kececi_steps = int(input("Enter number of Keçeci steps (e.g., 15): "))
     
     sequence = get_with_params(type_choice, num_kececi_steps, start_input_val_raw, add_base_scalar_val)
