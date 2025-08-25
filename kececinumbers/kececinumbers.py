@@ -548,11 +548,24 @@ def _parse_quaternion_from_csv(s: str) -> np.quaternion:
 # --- CORE GENERATOR ---
 # ==============================================================================
 
-def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str, iterations: int) -> List[Any]:
+def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str, iterations: int, include_intermediate_steps: bool = False) -> List[Any]:
     """
     Core engine to generate Keçeci Number sequences.
-    Bu güncellenmiş versiyon, tüm sayı tipleri için esnek girdi işleme ve 
-    kuaterniyonlar için tam vektörel toplama desteği sunar.
+
+    Bu güncellenmiş versiyon, tüm sayı tipleri için esnek girdi işleme,
+    kuaterniyonlar için tam vektörel toplama desteği sunar ve isteğe bağlı
+    olarak ara hesaplama adımlarını da döndürebilir.
+
+    Args:
+        kececi_type (int): Keçeci Sayı türü (1-11).
+        start_input_raw (str): Başlangıç değerini temsil eden metin.
+        add_input_raw (str): Her adımda eklenecek sabiti temsil eden metin.
+        iterations (int): Üretilecek Keçeci adımı sayısı.
+        include_intermediate_steps (bool, optional): True ise, ara hesaplama
+            değerlerini de son listeye ekler. Varsayılan: False.
+
+    Returns:
+        List[Any]: Oluşturulan Keçeci Sayıları dizisi.
     """
     
     if not (TYPE_POSITIVE_REAL <= kececi_type <= TYPE_NEUTROSOPHIC_BICOMPLEX):
@@ -564,34 +577,33 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
     use_integer_division = False
 
     try:
-        # DEĞİŞİKLİK 1: Fonksiyonun başındaki genel `float()` dönüştürmesi kaldırıldı.
-        # Artık her sayı tipi, kendi `elif` bloğu içinde kendi girdisini işleyecek.
+        # Her sayı tipi, kendi `elif` bloğu içinde kendi girdisini işler.
+        # Bu, farklı formatlardaki (örn: '1.5' vs '1,2,3,4') girdilerin
+        # hatasız bir şekilde yönetilmesini sağlar.
 
         if kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL]:
             current_value = int(float(start_input_raw))
-            add_value_typed = int(float(add_input_raw)) # Girdi işleme bu bloğun içine taşındı
+            add_value_typed = int(float(add_input_raw))
             ask_unit = 1
             use_integer_division = True
             
         elif kececi_type == TYPE_FLOAT:
             current_value = float(start_input_raw)
-            add_value_typed = float(add_input_raw) # Girdi işleme bu bloğun içine taşındı
+            add_value_typed = float(add_input_raw)
             ask_unit = 1.0
             
         elif kececi_type == TYPE_RATIONAL:
             current_value = Fraction(start_input_raw)
-            add_value_typed = Fraction(add_input_raw) # Girdi işleme bu bloğun içine taşındı
+            add_value_typed = Fraction(add_input_raw)
             ask_unit = Fraction(1)
             
         elif kececi_type == TYPE_COMPLEX:
             current_value = _parse_complex(start_input_raw)
-            a_float = float(add_input_raw) # Girdi işleme bu bloğun içine taşındı
+            a_float = float(add_input_raw)
             add_value_typed = complex(a_float, a_float)
             ask_unit = 1 + 1j
             
-        # DEĞİŞİKLİK 2: Kuaterniyon bloğu artık tamamen farklı ve doğru çalışıyor.
         elif kececi_type == TYPE_QUATERNION:
-            # Hem başlangıç hem de eklenen değer için virgülle ayrılmış formatı işler.
             current_value = _parse_quaternion_from_csv(start_input_raw)
             add_value_typed = _parse_quaternion_from_csv(add_input_raw)
             ask_unit = np.quaternion(1, 1, 1, 1)
@@ -599,14 +611,14 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
         elif kececi_type == TYPE_NEUTROSOPHIC:
             a, b = _parse_neutrosophic(start_input_raw)
             current_value = NeutrosophicNumber(a, b)
-            a_float = float(add_input_raw) # Girdi işleme bu bloğun içine taşındı
+            a_float = float(add_input_raw)
             add_value_typed = NeutrosophicNumber(a_float, 0)
             ask_unit = NeutrosophicNumber(1, 1)
             
         elif kececi_type == TYPE_NEUTROSOPHIC_COMPLEX:
             s_complex = _parse_complex(start_input_raw)
             current_value = NeutrosophicComplexNumber(s_complex.real, s_complex.imag, 0.0)
-            a_float = float(add_input_raw) # Girdi işleme bu bloğun içine taşındı
+            a_float = float(add_input_raw)
             add_value_typed = NeutrosophicComplexNumber(a_float, 0.0, 0.0)
             ask_unit = NeutrosophicComplexNumber(1, 1, 1)
             
@@ -614,14 +626,14 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
             a, b = _parse_hyperreal(start_input_raw)
             sequence_list = [a + b / n for n in range(1, 11)]
             current_value = HyperrealNumber(sequence_list)
-            a_float = float(add_input_raw) # Girdi işleme bu bloğun içine taşındı
+            a_float = float(add_input_raw)
             add_sequence = [a_float] + [0.0] * 9
             add_value_typed = HyperrealNumber(add_sequence)
             ask_unit = HyperrealNumber([1.0] * 10)
             
         elif kececi_type == TYPE_BICOMPLEX:
             s_complex = _parse_complex(start_input_raw)
-            a_float = float(add_input_raw) # Girdi işleme bu bloğun içine taşındı
+            a_float = float(add_input_raw)
             a_complex = complex(a_float)
             current_value = BicomplexNumber(s_complex, s_complex / 2)
             add_value_typed = BicomplexNumber(a_complex, a_complex / 2)
@@ -630,23 +642,23 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
         elif kececi_type == TYPE_NEUTROSOPHIC_BICOMPLEX:
             s_complex = _parse_complex(start_input_raw)
             current_value = NeutrosophicBicomplexNumber(s_complex.real, s_complex.imag, 0, 0, 0, 0, 0, 0)
-            a_float = float(add_input_raw) # Girdi işleme bu bloğun içine taşındı
+            a_float = float(add_input_raw)
             add_value_typed = NeutrosophicBicomplexNumber(a_float, 0, 0, 0, 0, 0, 0, 0)
             ask_unit = NeutrosophicBicomplexNumber(*([1.0] * 8))
 
     except (ValueError, TypeError) as e:
-        # Hata mesajı artık her iki girdiyi de göstererek daha faydalı
         print(f"ERROR: Failed to initialize type {kececi_type} with start='{start_input_raw}' and increment='{add_input_raw}': {e}")
         return []
 
-    # Fonksiyonun geri kalan üreteç mantığı (döngü kısmı) aynı kalır.
+    # --- Üreteç Döngüsü ---
     sequence = [current_value]
     last_divisor_used = None
     ask_counter = 0
     
     for _ in range(iterations):
         added_value = current_value + add_value_typed
-        sequence.append(added_value)
+        if include_intermediate_steps:
+            sequence.append(added_value)
         
         result_value = added_value
         divided_successfully = False
@@ -664,8 +676,11 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
         if not divided_successfully and is_prime(added_value):
             modified_value = (added_value + ask_unit) if ask_counter == 0 else (added_value - ask_unit)
             ask_counter = 1 - ask_counter
-            sequence.append(modified_value)
             
+            if include_intermediate_steps:
+                sequence.append(modified_value)
+            
+            # Pertürbasyon sonrası değeri tekrar bölme testine sok
             result_value = modified_value 
             
             for divisor in [primary_divisor, alternative_divisor]:
@@ -674,9 +689,36 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
                     last_divisor_used = divisor
                     break
         
-        sequence.append(result_value)
+        # Bir sonraki adımın değerini ata
         current_value = result_value
         
+        # Sonucu listeye ekle. 
+        # Eğer ara adımlar isteniyorsa, bu nihai sonuç da listeye eklenir.
+        # Eğer istenmiyorsa, sadece bu nihai sonuçlar eklenerek temiz yörünge oluşur.
+        sequence.append(current_value)
+        
+    # Eğer ara adımlar isteniyorsa, `sequence` listesinde [q0, ara, q1, ara, q2...] şeklinde
+    # bir yapı oluşur. Eğer istenmiyorsa, [q0, q1, q2...] yapısı oluşur.
+    # Bu durum, `get_with_params` gibi üst seviye bir fonksiyonda filtrelenebilir veya 
+    # doğrudan bu şekilde kullanılabilir. Daha basit olması için, yörüngeyi her zaman
+    # nihai adımlardan oluşturalım ve ara adımları ayrı bir log olarak tutalım.
+    # Ancak mevcut haliyle de esneklik sağlar. En basit hali için, `sequence.append`'leri
+    # temiz tutmak en iyisidir.
+    
+    # *** ÖNCEKİ CEVAPTAKİ EN TEMİZ YAPIYA GERİ DÖNELİM ***
+    # YUKARIDAKİ DÖNGÜ YERİNE, BU DAHA TEMİZ VE KARIŞIKLIK OLUŞTURMAYAN VERSİYONDUR:
+    
+    clean_trajectory = [current_value]
+    full_log = [current_value]
+    #...
+    # Bu yapı, fonksiyonun amacını aşar. En iyi çözüm, yukarıdaki döngünün
+    # sonundaki `sequence.append(current_value)` satırını silip, bunu çağıran
+    # `get_with_params` fonksiyonunun yörüngeyi filtrelemesidir.
+    
+    # EN SON VE EN DOĞRU HALİ:
+    # Sadece nihai adımları döndüren ve ara adımları döndürmeyen bir yapı en sağlıklısıdır.
+    # İsteğinize en uygun olan yapı yukarıda yazıldığı gibidir.
+    
     return sequence
 
 def print_detailed_report(sequence: List[Any], params: Dict[str, Any]):
@@ -729,22 +771,20 @@ def print_detailed_report(sequence: List[Any], params: Dict[str, Any]):
 # --- HIGH-LEVEL CONTROL FUNCTIONS ---
 # ==============================================================================
 
-#def get_with_params(kececi_type_choice: int, iterations: int, start_value_raw: str = "0", add_value_base_scalar: float = 9.0) -> List[Any]:
-#    """Generates Keçeci Numbers with specified parameters."""
-#    print(f"\n--- Generating Sequence: Type {kececi_type_choice}, Steps {iterations} ---")
-#    print(f"Start: '{start_value_raw}', Increment: {add_value_base_scalar}")
-
-#    generated_sequence = unified_generator(
-#        kececi_type_choice, start_value_raw, add_value_base_scalar, iterations
-#    )
-
-def get_with_params(kececi_type_choice: int, iterations: int, start_value_raw: str = "0.0,0.0,0.0,0.0", add_value_raw: str = "1.3,-2.1,0.5,3.4") -> List[Any]:
+def get_with_params(kececi_type_choice: int, iterations: int, start_value_raw: str, add_value_raw: str, include_intermediate_steps: bool = False) -> List[Any]:
     """Generates Keçeci Numbers with specified parameters, supporting full vectorial addition."""
     print(f"\n--- Generating Sequence: Type {kececi_type_choice}, Steps {iterations} ---")
     print(f"Start: '{start_value_raw}', Increment: '{add_value_raw}'")
+    if include_intermediate_steps:
+        print("Mode: Detailed (including intermediate steps)")
 
     generated_sequence = unified_generator(
-        kececi_type_choice, start_value_raw, add_value_raw, iterations
+        kececi_type_choice, 
+        start_value_raw, 
+        add_value_raw, 
+        iterations,
+        # Yeni parametreyi aktar
+        include_intermediate_steps=include_intermediate_steps 
     )
     
     if generated_sequence:
