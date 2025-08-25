@@ -548,8 +548,12 @@ def _parse_quaternion_from_csv(s: str) -> np.quaternion:
 # --- CORE GENERATOR ---
 # ==============================================================================
 
-def unified_generator(kececi_type: int, start_input_raw: str, add_input_base_scalar: float, iterations: int) -> List[Any]:
-    """Core engine to generate Keçeci Number sequences."""
+def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str, iterations: int) -> List[Any]:
+    """
+    Core engine to generate Keçeci Number sequences.
+    Bu güncellenmiş versiyon, tüm sayı tipleri için esnek girdi işleme ve 
+    kuaterniyonlar için tam vektörel toplama desteği sunar.
+    """
     
     if not (TYPE_POSITIVE_REAL <= kececi_type <= TYPE_NEUTROSOPHIC_BICOMPLEX):
         raise ValueError(f"Invalid Keçeci Number Type: {kececi_type}. Must be between {TYPE_POSITIVE_REAL} and {TYPE_NEUTROSOPHIC_BICOMPLEX}.")
@@ -560,66 +564,82 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_base_sca
     use_integer_division = False
 
     try:
-        a_float = float(add_input_base_scalar)
+        # DEĞİŞİKLİK 1: Fonksiyonun başındaki genel `float()` dönüştürmesi kaldırıldı.
+        # Artık her sayı tipi, kendi `elif` bloğu içinde kendi girdisini işleyecek.
 
         if kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL]:
             current_value = int(float(start_input_raw))
-            add_value_typed = int(a_float)
+            add_value_typed = int(float(add_input_raw)) # Girdi işleme bu bloğun içine taşındı
             ask_unit = 1
             use_integer_division = True
+            
         elif kececi_type == TYPE_FLOAT:
             current_value = float(start_input_raw)
-            add_value_typed = a_float
+            add_value_typed = float(add_input_raw) # Girdi işleme bu bloğun içine taşındı
             ask_unit = 1.0
+            
         elif kececi_type == TYPE_RATIONAL:
             current_value = Fraction(start_input_raw)
-            add_value_typed = Fraction(add_input_base_scalar)
+            add_value_typed = Fraction(add_input_raw) # Girdi işleme bu bloğun içine taşındı
             ask_unit = Fraction(1)
+            
         elif kececi_type == TYPE_COMPLEX:
             current_value = _parse_complex(start_input_raw)
+            a_float = float(add_input_raw) # Girdi işleme bu bloğun içine taşındı
             add_value_typed = complex(a_float, a_float)
             ask_unit = 1 + 1j
+            
+        # DEĞİŞİKLİK 2: Kuaterniyon bloğu artık tamamen farklı ve doğru çalışıyor.
+        elif kececi_type == TYPE_QUATERNION:
+            # Hem başlangıç hem de eklenen değer için virgülle ayrılmış formatı işler.
+            current_value = _parse_quaternion_from_csv(start_input_raw)
+            add_value_typed = _parse_quaternion_from_csv(add_input_raw)
+            ask_unit = np.quaternion(1, 1, 1, 1)
+            
         elif kececi_type == TYPE_NEUTROSOPHIC:
             a, b = _parse_neutrosophic(start_input_raw)
             current_value = NeutrosophicNumber(a, b)
+            a_float = float(add_input_raw) # Girdi işleme bu bloğun içine taşındı
             add_value_typed = NeutrosophicNumber(a_float, 0)
             ask_unit = NeutrosophicNumber(1, 1)
+            
         elif kececi_type == TYPE_NEUTROSOPHIC_COMPLEX:
             s_complex = _parse_complex(start_input_raw)
             current_value = NeutrosophicComplexNumber(s_complex.real, s_complex.imag, 0.0)
+            a_float = float(add_input_raw) # Girdi işleme bu bloğun içine taşındı
             add_value_typed = NeutrosophicComplexNumber(a_float, 0.0, 0.0)
             ask_unit = NeutrosophicComplexNumber(1, 1, 1)
+            
         elif kececi_type == TYPE_HYPERREAL:
             a, b = _parse_hyperreal(start_input_raw)
             sequence_list = [a + b / n for n in range(1, 11)]
             current_value = HyperrealNumber(sequence_list)
+            a_float = float(add_input_raw) # Girdi işleme bu bloğun içine taşındı
             add_sequence = [a_float] + [0.0] * 9
             add_value_typed = HyperrealNumber(add_sequence)
             ask_unit = HyperrealNumber([1.0] * 10)
+            
         elif kececi_type == TYPE_BICOMPLEX:
             s_complex = _parse_complex(start_input_raw)
+            a_float = float(add_input_raw) # Girdi işleme bu bloğun içine taşındı
             a_complex = complex(a_float)
             current_value = BicomplexNumber(s_complex, s_complex / 2)
             add_value_typed = BicomplexNumber(a_complex, a_complex / 2)
             ask_unit = BicomplexNumber(complex(1, 1), complex(0.5, 0.5))
+            
         elif kececi_type == TYPE_NEUTROSOPHIC_BICOMPLEX:
             s_complex = _parse_complex(start_input_raw)
             current_value = NeutrosophicBicomplexNumber(s_complex.real, s_complex.imag, 0, 0, 0, 0, 0, 0)
+            a_float = float(add_input_raw) # Girdi işleme bu bloğun içine taşındı
             add_value_typed = NeutrosophicBicomplexNumber(a_float, 0, 0, 0, 0, 0, 0, 0)
             ask_unit = NeutrosophicBicomplexNumber(*([1.0] * 8))
-        #elif kececi_type == TYPE_QUATERNION:
-            #current_value = _parse_quaternion(start_input_raw)
-            #add_value_typed = np.quaternion(a_float, a_float, a_float, a_float)
-            #ask_unit = np.quaternion(1, 1, 1, 1)
-        elif kececi_type == TYPE_QUATERNION:
-            current_value = _parse_quaternion_from_csv(start_input_raw)
-            add_value_typed = _parse_quaternion_from_csv(add_input_base_scalar) # Değişiklik burada
-            ask_unit = np.quaternion(1, 1, 1, 1)
 
     except (ValueError, TypeError) as e:
-        print(f"ERROR: Failed to initialize type {kececi_type} with input '{start_input_raw}': {e}")
+        # Hata mesajı artık her iki girdiyi de göstererek daha faydalı
+        print(f"ERROR: Failed to initialize type {kececi_type} with start='{start_input_raw}' and increment='{add_input_raw}': {e}")
         return []
 
+    # Fonksiyonun geri kalan üreteç mantığı (döngü kısmı) aynı kalır.
     sequence = [current_value]
     last_divisor_used = None
     ask_counter = 0
