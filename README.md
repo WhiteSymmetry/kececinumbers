@@ -120,19 +120,39 @@ pip install kececinumbers
 The following example creates and visualizes a Keçeci sequence with POSITIVE_REAL numbers.
 
 ```python
+import kececinumbers as kn
+import matplotlib.pyplot as plt
+from typing import Any, Dict, List, Tuple
+
+if __name__ == "__main__":
+    # Call the interactive function from the Keçeci Numbers module
+    generated_sequence, used_params = kn.get_interactive()
+    
+    # If a sequence was successfully generated, print the results and plot the graph
+    if generated_sequence:
+        print("\n--- Results ---")
+        print(f"Parameters Used: {used_params}")
+        print(f"Generated Sequence (first 30 elements): {generated_sequence[:30]}")
+        
+        # Optionally, plot the graph
+        kn.plot_numbers(generated_sequence)
+        plt.show()
+```
+
+or
+
+```python
 import matplotlib.pyplot as plt
 import kececinumbers as kn
 
-# Generate a Keçeci sequence with specific parameters
-# FIX: Renamed 'add_value_base_scalar' to 'add_value_raw' and converted the value to a string.
 sequence = kn.get_with_params(
     kececi_type_choice=kn.TYPE_POSITIVE_REAL,
-    iterations=20,
-    start_value_raw="1",
-    add_value_raw="9.0"  # <-- The change is here
+    iterations=30,
+    start_value_raw="0",
+    add_value_raw="9.0",
+    include_intermediate_steps=True
 )
 
-# If the sequence was generated successfully, plot it
 if sequence:
     kn.plot_numbers(sequence, title="My First POSITIVE_REAL Keçeci Sequence")
     plt.show()
@@ -159,7 +179,8 @@ sequence = kn.get_with_params(
     kececi_type_choice=kn.TYPE_COMPLEX,
     iterations=60,
     start_value_raw="1+2j",
-    add_value_base_scalar=3.0
+    add_value_raw=3.0,
+    include_intermediate_steps=True
 )
 
 # If the sequence was generated successfully, plot it
@@ -378,7 +399,8 @@ seq_fixed = kn.get_with_params(
     kececi_type_choice=kn.TYPE_COMPLEX, 
     iterations=60, 
     start_value_raw="1+2j", 
-    add_value_base_scalar=3.0
+    add_value_raw=3.0,
+    include_intermediate_steps=True
 )
 if seq_fixed:
     kn.plot_numbers(seq_fixed, "Fixed Params (Complex) Keçeci Numbers")
