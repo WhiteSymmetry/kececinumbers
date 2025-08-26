@@ -761,7 +761,7 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
         3: "Enter complex start (e.g., '3+4j' or '3' for 3+3j): ",
         4: "Enter float start (e.g., '3.14'): ",
         5: "Enter rational start (e.g., '7/2' or '5'): ",
-        6: "Enter quaternion (e.g., '1+2i-3j+k' or '2.5'): ",
+        6: "Enter quaternion (e.g., 'w,x,y,z': '1.0,2.0,-3.0,1.0'): ",
         7: "Enter neutrosophic start (e.g., '5+2I' or '7'): ",
         8: "Enter complex base for neutro-complex (e.g., '1-2j'): ",
         9: "Enter hyperreal start (e.g., '5+3e' or '10'): ",
