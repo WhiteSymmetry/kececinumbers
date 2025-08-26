@@ -479,7 +479,7 @@ def get_random_type(num_iterations: int, fixed_start_raw: str = "0", fixed_add_b
         kececi_type_choice=random_type_choice, 
         iterations=num_iterations,
         start_value_raw=fixed_start_raw,
-        add_value_base_scalar=fixed_add_base_scalar
+        add_value_raw=fixed_add_base_scalar
     )
 
 def generate_kececi_vectorial(q0_str, c_str, u_str, iterations):
