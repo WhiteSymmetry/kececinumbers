@@ -739,52 +739,66 @@ def get_with_params(kececi_type_choice: int, iterations: int, start_value_raw: s
     return generated_sequence
 
 def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
-    """Interactively gets parameters from the user to generate a sequence."""
-    print("\n--- Keçeci Number Interactive Generator ---")
+    """
+    Interactively gets parameters from the user to generate a Keçeci Numbers sequence.
+    This version is improved for code clarity and compatibility with the module's
+    current interface.
+    """
+    print("\n--- Keçeci Numbers Interactive Generator ---")
     print("  1: Positive Real    2: Negative Real     3: Complex")
     print("  4: Float            5: Rational          6: Quaternion")
     print("  7: Neutrosophic     8: Neutro-Complex   9: Hyperreal")
     print(" 10: Bicomplex        11: Neutro-Bicomplex")
     
+    # Get a valid number type from the user
     while True:
         try:
-            type_choice = int(input("Select Keçeci Number Type (1-11): "))
+            type_choice = int(input("Select a Keçeci Number Type (1-11): "))
             if 1 <= type_choice <= 11:
                 break
             print("Invalid type. Please enter a number between 1 and 11.")
         except ValueError:
             print("Invalid input. Please enter a number.")
         
-    prompts = {
+    # User prompts for the starting value
+    start_prompts = {
         1: "Enter positive integer start (e.g., '10'): ",
         2: "Enter negative integer start (e.g., '-5'): ",
-        3: "Enter complex start (e.g., '3+4j' or '3' for 3+3j): ",
+        3: "Enter complex start (e.g., '3+4j'): ",
         4: "Enter float start (e.g., '3.14'): ",
-        5: "Enter rational start (e.g., '7/2' or '5'): ",
-        6: "Enter quaternion (e.g., 'w,x,y,z': '1.0,2.0,-3.0,1.0'): ",
-        7: "Enter neutrosophic start (e.g., '5+2I' or '7'): ",
+        5: "Enter rational start (e.g., '7/2'): ",
+        6: "Enter quaternion start (in 'w,x,y,z' format, e.g., '1.0,2.0,-3.0,1.0'): ",
+        7: "Enter neutrosophic start (e.g., '5+2I'): ",
         8: "Enter complex base for neutro-complex (e.g., '1-2j'): ",
-        9: "Enter hyperreal start (e.g., '5+3e' or '10'): ",
+        9: "Enter hyperreal start (e.g., '5+3e'): ",
         10: "Enter complex base for bicomplex (e.g., '2+1j'): ",
         11: "Enter complex base for neutro-bicomplex (e.g., '1+2j'): "
     }
     
-    start_prompt = prompts.get(type_choice, "Enter starting value: ")
-    start_input_val_raw = input(start_prompt)
-    #add_base_scalar_val = float(input("Enter base scalar increment (e.g., 9.0): "))
-    if type_choice == TYPE_QUATERNION:
-        add_input_val_raw = input("Enter quaternion increment (e.g., '1.3,-2.1,0.5,3.4'): ")
-    else:
-        # Diğer tipler için eski mantık devam edebilir veya hepsi için string istenir
-        add_input_val_raw = input("Enter increment value: ")
+    # User prompts for the increment value
+    add_prompts = {
+        TYPE_QUATERNION: "Enter quaternion increment (in 'w,x,y,z' format, e.g., '1.3,-2.1,0.5,3.4'): "
+    }
+    default_add_prompt = "Enter increment value (e.g., '9.0'): "
+    
+    # Get inputs from the user
+    start_input_val_raw = input(start_prompts.get(type_choice, "Enter starting value: "))
+    add_input_val_raw = input(add_prompts.get(type_choice, default_add_prompt))
     num_kececi_steps = int(input("Enter number of Keçeci steps (e.g., 15): "))
     
-    sequence = get_with_params(type_choice, num_kececi_steps, start_input_val_raw, add_base_scalar_val)
+    # Generate the sequence with the correct parameter names and values
+    sequence = get_with_params(
+        kececi_type_choice=type_choice,
+        iterations=num_kececi_steps,
+        start_value_raw=start_input_val_raw,
+        add_value_raw=add_input_val_raw
+    )
     
+    # Gather the parameters in a dictionary to return
     params = {
         "type_choice": type_choice,
         "start_val": start_input_val_raw,
-        "add_val": add_base_scalar_val,
+        "add_val": add_input_val_raw,
         "steps": num_kececi_steps
     }
     return sequence, params
