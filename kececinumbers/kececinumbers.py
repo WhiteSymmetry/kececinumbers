@@ -785,6 +785,9 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
     start_input_val_raw = input(start_prompts.get(type_choice, "Enter starting value: "))
     add_input_val_raw = input(add_prompts.get(type_choice, default_add_prompt))
     num_kececi_steps = int(input("Enter number of Keçeci steps (e.g., 15): "))
+
+    show_details_input = input("Do you want to include the intermediate calculation steps? (y/n): ").lower().strip()
+    show_details = (show_details_input == 'y')
     
     # Generate the sequence with the correct parameter names and values
     sequence = get_with_params(
@@ -792,6 +795,7 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
         iterations=num_kececi_steps,
         start_value_raw=start_input_val_raw,
         add_value_raw=add_input_val_raw
+        include_intermediate_steps=show_details
     )
     
     # Gather the parameters in a dictionary to return
@@ -800,6 +804,7 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
         "start_val": start_input_val_raw,
         "add_val": add_input_val_raw,
         "steps": num_kececi_steps
+        "detailed_view": show_details
     }
     return sequence, params
 
