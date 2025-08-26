@@ -794,7 +794,7 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
         kececi_type_choice=type_choice,
         iterations=num_kececi_steps,
         start_value_raw=start_input_val_raw,
-        add_value_raw=add_input_val_raw
+        add_value_raw=add_input_val_raw,
         include_intermediate_steps=show_details
     )
     
@@ -803,7 +803,7 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
         "type_choice": type_choice,
         "start_val": start_input_val_raw,
         "add_val": add_input_val_raw,
-        "steps": num_kececi_steps
+        "steps": num_kececi_steps,
         "detailed_view": show_details
     }
     return sequence, params
