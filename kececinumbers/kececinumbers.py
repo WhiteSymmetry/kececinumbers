@@ -762,8 +762,8 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
         
     # User prompts for the starting value
     start_prompts = {
-        1: "Enter positive integer start (e.g., '10'): ",
-        2: "Enter negative integer start (e.g., '-5'): ",
+        1: "Enter positive integer start (e.g., '10.0'): ",
+        2: "Enter negative integer start (e.g., '-5.0'): ",
         3: "Enter complex start (e.g., '3+4j'): ",
         4: "Enter float start (e.g., '3.14'): ",
         5: "Enter rational start (e.g., '7/2'): ",
@@ -784,7 +784,7 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
     # Get inputs from the user
     start_input_val_raw = input(start_prompts.get(type_choice, "Enter starting value: "))
     add_input_val_raw = input(add_prompts.get(type_choice, default_add_prompt))
-    num_kececi_steps = int(input("Enter number of Keçeci steps (e.g., 15): "))
+    num_kececi_steps = int(input("Enter number of Keçeci steps (e.g., 30): "))
 
     show_details_input = input("Do you want to include the intermediate calculation steps? (y/n): ").lower().strip()
     show_details = (show_details_input == 'y')
