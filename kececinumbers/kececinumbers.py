@@ -572,6 +572,10 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
         raise ValueError(f"Invalid Keçeci Number Type: {kececi_type}. Must be between {TYPE_POSITIVE_REAL} and {TYPE_NEUTROSOPHIC_BICOMPLEX}.")
 
     # --- 1. Değişkenlerin Başlatılması ---
+    # Varsayılan bölme türünü ondalıklı olarak ayarla.
+    # Tamsayı tipleri (POSITIVE/NEGATIVE_REAL) bu değeri kendi blokları içinde ezecektir.
+    use_integer_division = False
+    
     try:
         # Her sayı tipi, kendi `elif` bloğu içinde kendi girdisini işler.
         if kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL]:
