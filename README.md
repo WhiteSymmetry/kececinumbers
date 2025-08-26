@@ -124,11 +124,12 @@ import matplotlib.pyplot as plt
 import kececinumbers as kn
 
 # Generate a Keçeci sequence with specific parameters
+# FIX: Renamed 'add_value_base_scalar' to 'add_value_raw' and converted the value to a string.
 sequence = kn.get_with_params(
     kececi_type_choice=kn.TYPE_POSITIVE_REAL,
     iterations=20,
     start_value_raw="1",
-    add_value_base_scalar=9.0
+    add_value_raw="9.0"  # <-- The change is here
 )
 
 # If the sequence was generated successfully, plot it
