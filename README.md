@@ -148,7 +148,7 @@ import kececinumbers as kn
 sequence = kn.get_with_params(
     kececi_type_choice=kn.TYPE_POSITIVE_REAL,
     iterations=30,
-    start_value_raw="0",
+    start_value_raw="0.0",
     add_value_raw="9.0",
     include_intermediate_steps=True
 )
