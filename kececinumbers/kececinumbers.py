@@ -39,6 +39,9 @@ import numpy as np
 import quaternion
 import random
 import re
+from scipy.fft import fft, fftfreq
+from scipy.signal import find_peaks
+from scipy.stats import ks_2samp
 import sympy
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -543,6 +546,299 @@ def _parse_quaternion_from_csv(s: str) -> np.quaternion:
         return np.quaternion(*parts)
     except (ValueError, IndexError) as e:
         raise ValueError(f"Geçersiz virgülle ayrılmış kuaterniyon formatı: '{s}'.") from e
+
+def _load_zeta_zeros(filename="zeta.txt"):
+    """
+    zeta.txt dosyasından Riemann zeta sıfırlarını yükle.
+    Her satırda bir tane sanal kısım (t_n) olmalı.
+    """
+    try:
+        with open(filename, 'r', encoding='utf-8') as file:
+            lines = file.readlines()
+        zeta_zeros = []
+        for line in lines:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            try:
+                zeta_zeros.append(float(line))
+            except ValueError:
+                print(f"Geçersiz satır atlandı: {line}")
+        print(f"{len(zeta_zeros)} adet zeta sıfırı yüklendi.")
+        return np.array(zeta_zeros)
+    except FileNotFoundError:
+        print(f"'{filename}' dosyası bulunamadı.")
+        return np.array([])
+
+def _compute_gue_similarity(sequence, tolerance=0.5):
+    """
+    Keçeci dizisinin GUE (Gaussian Unitary Ensemble) istatistiğine ne kadar benzediğini ölçer.
+    """
+    from . import _get_integer_representation  # Döngüsel import için gecikmeli import
+
+    values = [val for z in sequence if (val := _get_integer_representation(z)) is not None]
+    if len(values) < 10:
+        return 0.0, 0.0
+
+    values = np.array(values) - np.mean(values)
+    N = len(values)
+    powers = np.abs(fft(values))**2
+    freqs = fftfreq(N)
+
+    mask = (freqs > 0)
+    freqs_pos = freqs[mask]
+    powers_pos = powers[mask]
+
+    if len(powers_pos) == 0:
+        return 0.0, 0.0
+
+    peaks, _ = find_peaks(powers_pos, height=np.max(powers_pos)*1e-7)
+    strong_freqs = freqs_pos[peaks]
+
+    if len(strong_freqs) < 2:
+        return 0.0, 0.0
+
+    # Ölçekleme: en güçlü pik → 14.134725
+    peak_freq = strong_freqs[np.argmax(powers_pos[peaks])]
+    scale_factor = 14.134725 / peak_freq
+    scaled_freqs = np.sort(strong_freqs * scale_factor)
+
+    # Level spacings (frekans farkları)
+    if len(scaled_freqs) < 2:
+        return 0.0, 0.0
+    diffs = np.diff(scaled_freqs)
+    if np.mean(diffs) == 0:
+        return 0.0, 0.0
+    diffs_norm = diffs / np.mean(diffs)
+
+    # GUE örnek üret (Wigner-Dyson)
+    def wigner_dyson(s):
+        return (32 / np.pi) * s**2 * np.exp(-4 * s**2 / np.pi)
+
+    s_gue = np.linspace(0.01, 3.0, 1000)
+    p_gue = wigner_dyson(s_gue)
+    p_gue = p_gue / np.sum(p_gue)
+    sample_gue = np.random.choice(s_gue, size=1000, p=p_gue)
+
+    # KS test: Keçeci vs GUE
+    ks_stat, ks_p = ks_2samp(diffs_norm, sample_gue)
+    similarity_score = 1.0 - ks_stat  # Ne kadar küçükse, o kadar benzer
+
+    return similarity_score, ks_p
+
+def _find_kececi_zeta_zeros(sequence, tolerance=0.5):
+    """
+    Keçeci dizisinin spektrumundan zeta sıfırlarını tahmin et.
+    """
+    from . import _get_integer_representation
+
+    values = [val for z in sequence if (val := _get_integer_representation(z)) is not None]
+    if len(values) < 10:
+        return [], 0.0
+
+    values = np.array(values) - np.mean(values)
+    N = len(values)
+    powers = np.abs(fft(values))**2
+    freqs = fftfreq(N)
+
+    mask = (freqs > 0)
+    freqs_pos = freqs[mask]
+    powers_pos = powers[mask]
+
+    if len(powers_pos) == 0:
+        return [], 0.0
+
+    peaks, _ = find_peaks(powers_pos, height=np.max(powers_pos)*1e-7)
+    strong_freqs = freqs_pos[peaks]
+
+    if len(strong_freqs) < 2:
+        return [], 0.0
+
+    # Ölçekleme: en güçlü pik → 14.134725
+    peak_freq = strong_freqs[np.argmax(powers_pos[peaks])]
+    scale_factor = 14.134725 / peak_freq
+    scaled_freqs = np.sort(strong_freqs * scale_factor)
+
+    # Sıfır adayları (minimumlar)
+    t_vals = np.linspace(0, 650, 10000)
+    zeta_vals = np.array([sum((scaled_freqs + 1e-10)**(- (0.5 + 1j * t))) for t in t_vals])
+    minima, _ = find_peaks(-np.abs(zeta_vals), height=-0.5*np.max(np.abs(zeta_vals)), distance=5)
+    kececi_zeta_zeros = t_vals[minima]
+
+    # Eşleşme kontrolü
+    zeta_zeros_imag = _load_zeta_zeros("zeta.txt")
+    if len(zeta_zeros_imag) == 0:
+        return kececi_zeta_zeros, 0.0
+
+    close_matches = [kz for kz in kececi_zeta_zeros if min(abs(kz - zeta_zeros_imag)) < tolerance]
+    score = len(close_matches) / len(kececi_zeta_zeros) if kececi_zeta_zeros.size > 0 else 0.0
+
+    return kececi_zeta_zeros, score
+
+def analyze_all_types(iterations=120):
+    """
+    11 Keçeci sayı türü için otomatik GUE ve Riemann Zeta karşılaştırması yap.
+    Sonuçları sıralar ve grafiklerle gösterir.
+    """
+
+    from . import (
+        get_with_params,
+        TYPE_POSITIVE_REAL,
+        TYPE_NEGATIVE_REAL,
+        TYPE_COMPLEX,
+        TYPE_FLOAT,
+        TYPE_RATIONAL,
+        TYPE_QUATERNION,
+        TYPE_NEUTROSOPHIC,
+        TYPE_NEUTROSOPHIC_COMPLEX,
+        TYPE_HYPERREAL,
+        TYPE_BICOMPLEX,
+        TYPE_NEUTROSOPHIC_BICOMPLEX
+    )
+
+
+    print("🔍 11 Keçeci Türü için Otomatik Analiz")
+    print("="*80)
+
+    include_intermediate = True
+    results = []
+
+    # Parametre setleri
+    param_sets = [
+        ('0.0', '9.0'),
+        ('1.0', '7.0'),
+        ('2.0', '5.0'),
+        ('3.0', '11.0'),
+        ('1+1j', '9.0'),
+        ('0.0001412', '0.037')
+    ]
+
+    type_names = {
+        1: "Positive Real",
+        2: "Negative Real",
+        3: "Complex",
+        4: "Float",
+        5: "Rational",
+        6: "Quaternion",
+        7: "Neutrosophic",
+        8: "Neutro-Complex",
+        9: "Hyperreal",
+        10: "Bicomplex",
+        11: "Neutro-Bicomplex"
+    }
+
+    for kececi_type in range(1, 12):
+        name = type_names[kececi_type]
+        best_zeta_score = 0.0
+        best_gue_score = 0.0
+        best_params = None
+
+        print(f"🔄 Tür {kececi_type} ({name}) taranıyor...")
+
+        for start, add in param_sets:
+            try:
+                # Özel formatlar
+                if kececi_type == 3 and '+' not in start:
+                    start = f"{start}+{start}j"
+                if kececi_type == 10 and '+' not in start:
+                    start = f"{start}+{start}j"
+
+                sequence = get_with_params(
+                    kececi_type_choice=kececi_type,
+                    iterations=iterations,
+                    start_value_raw=start,
+                    add_value_raw=add,
+                    include_intermediate_steps=include_intermediate
+                )
+
+                if not sequence or len(sequence) < 50:
+                    continue
+
+                _, zeta_score = _find_kececi_zeta_zeros(sequence, tolerance=0.5)
+                _, gue_score = _compute_gue_similarity(sequence)
+
+                if zeta_score > best_zeta_score:
+                    best_zeta_score = zeta_score
+                    best_gue_score = gue_score
+                    best_params = (start, add)
+
+            except Exception as e:
+                continue
+
+        if best_params:
+            results.append({
+                'type': kececi_type,
+                'name': name,
+                'start': best_params[0],
+                'add': best_params[1],
+                'zeta_score': best_zeta_score,
+                'gue_score': best_gue_score
+            })
+
+    # Sonuçları sırala
+    sorted_by_zeta = sorted(results, key=lambda x: x['zeta_score'], reverse=True)
+    sorted_by_gue = sorted(results, key=lambda x: x['gue_score'], reverse=True)
+
+    print("\n" + "="*100)
+    print("   EN YÜKSEK RİEMANN ZETA EŞLEŞME SKORLARI (TOP 11)")
+    print("="*100)
+    print(f"{'Tür':<20} {'Skor':<8} {'Başlangıç':<12} {'Artım':<12}")
+    print("-" * 100)
+    for r in sorted_by_zeta:
+        print(f"{r['name']:<20} {r['zeta_score']:<8.3f} {r['start']:<12} {r['add']:<12}")
+
+    print("\n" + "="*100)
+    print("   EN YÜKSEK GUE BENZERLİK SKORLARI (TOP 11)")
+    print("="*100)
+    print(f"{'Tür':<20} {'Skor':<8} {'Başlangıç':<12} {'Artım':<12}")
+    print("-" * 100)
+    for r in sorted_by_gue:
+        print(f"{r['name']:<20} {r['gue_score']:<8.3f} {r['start']:<12} {r['add']:<12}")
+
+    # Grafikler
+    _plot_comparison(sorted_by_zeta, sorted_by_gue)
+
+    return sorted_by_zeta, sorted_by_gue
+
+def _plot_comparison(zeta_results, gue_results):
+    """İki sonuç setini karşılaştırmak için grafikler çizer."""
+    # --- Riemann Zeta Eşleşme Grafiği ---
+    plt.figure(figsize=(14, 7))
+    types = [r['name'] for r in zeta_results]
+    scores = [r['zeta_score'] for r in zeta_results]
+    colors = ['skyblue'] * len(scores)
+    if scores:
+        colors[0] = 'red'  # En iyi olanı kırmızı yap
+    bars = plt.bar(types, scores, color=colors, edgecolor='black', alpha=0.8)
+    plt.xticks(rotation=45, ha='right')
+    plt.ylabel("Riemann Zeta Eşleşme Oranı")
+    plt.title("Keçeci Türlerinin Riemann Zeta Sıfırlarıyla Eşleşmesi")
+    plt.grid(True, alpha=0.3)
+    # En iyi barı kalın yap (eğer varsa)
+    if bars:
+        bars[0].set_edgecolor('darkred')
+        bars[0].set_linewidth(1.5)
+    plt.tight_layout()
+    plt.show()
+
+    # --- GUE Benzerlik Grafiği ---
+    plt.figure(figsize=(14, 7))
+    types = [r['name'] for r in gue_results]
+    scores = [r['gue_score'] for r in gue_results]
+    colors = ['skyblue'] * len(scores)
+    if scores:
+        colors[0] = 'red'  # En iyi olanı kırmızı yap
+    bars = plt.bar(types, scores, color=colors, edgecolor='black', alpha=0.8)
+    plt.xticks(rotation=45, ha='right')
+    plt.ylabel("GUE Benzerlik Skoru")
+    plt.title("Keçeci Türlerinin GUE İstatistiğine Benzerliği")
+    plt.grid(True, alpha=0.3)
+    # En iyi barı kalın yap (eğer varsa)
+    if bars:
+        bars[0].set_edgecolor('darkred')
+        bars[0].set_linewidth(1.5)
+    plt.tight_layout()
+    plt.show()
 
 # ==============================================================================
 # --- CORE GENERATOR ---
