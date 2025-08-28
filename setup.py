@@ -53,6 +53,7 @@ setup(
         "numpy",
         "matplotlib",
         "numpy-quaternion",
+        "scipy",
         "sympy",
     ],
     extras_require={
