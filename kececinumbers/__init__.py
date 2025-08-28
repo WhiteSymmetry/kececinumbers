@@ -22,7 +22,7 @@ import warnings
     # importlib.reload(kececinumbers) # F821 undefined name 'kececinumbers'
 
 # Paket sürüm numarası
-__version__ = "0.6.3"
+__version__ = "0.6.4"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 
@@ -42,6 +42,11 @@ __all__ = [
     '_get_integer_representation',
     '_parse_quaternion_from_csv',
     'generate_kececi_vectorial',
+    '_plot_comparison',
+    '_find_kececi_zeta_zeros',
+    '_compute_gue_similarity',
+    '_load_zeta_zeros',
+    'analyze_all_types',
 
     # --- Core Generation and Analysis ---
     'unified_generator',
@@ -95,6 +100,12 @@ try:
         find_kececi_prime_number,
         plot_numbers,
         print_detailed_report,
+        _plot_comparison,
+        _find_kececi_zeta_zeros,
+        _compute_gue_similarity,
+        _load_zeta_zeros,
+        analyze_all_types,
+        
     
         # Constants
         TYPE_POSITIVE_REAL,
