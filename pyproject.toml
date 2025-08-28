@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kececinumbers"
-version = "0.6.3"
+version = "0.6.4"
 
 # Diğer proje bilgileri (isteğe bağlı ama tavsiye edilir)
 authors = [
@@ -29,6 +29,7 @@ dependencies = [
     "numpy",
     "matplotlib",
     "numpy-quaternion",
+    "scipy",
     "sympy",
 ]
 
@@ -41,6 +42,7 @@ test = [
     "numpy",
     "matplotlib",
     "numpy-quaternion",
+    "scipy",
     "sympy",
 ]
 
