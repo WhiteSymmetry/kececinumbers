@@ -549,8 +549,11 @@ def _parse_quaternion_from_csv(s: str) -> np.quaternion:
 
 def _load_zeta_zeros(filename="zeta.txt"):
     """
-    zeta.txt dosyasından Riemann zeta sıfırlarını yükle.
-    Her satırda bir tane sanal kısım (t_n) olmalı.
+    Loads Riemann zeta zeros from a text file.
+    Each line should contain one floating-point number representing the imaginary part of a zeta zero.
+    Lines that are empty or start with '#' are ignored.
+    Returns:
+        numpy.ndarray: Array of zeta zeros, or empty array if file not found.
     """
     try:
         with open(filename, 'r', encoding='utf-8') as file:
@@ -563,18 +566,25 @@ def _load_zeta_zeros(filename="zeta.txt"):
             try:
                 zeta_zeros.append(float(line))
             except ValueError:
-                print(f"Geçersiz satır atlandı: {line}")
-        print(f"{len(zeta_zeros)} adet zeta sıfırı yüklendi.")
+                print(f"Invalid line skipped: {line}")
+        print(f"{len(zeta_zeros)} zeta zeros loaded.")
         return np.array(zeta_zeros)
     except FileNotFoundError:
-        print(f"'{filename}' dosyası bulunamadı.")
+        print(f"'{filename}' not found.")
         return np.array([])
+
 
 def _compute_gue_similarity(sequence, tolerance=0.5):
     """
-    Keçeci dizisinin GUE (Gaussian Unitary Ensemble) istatistiğine ne kadar benzediğini ölçer.
+    Measures how closely the frequency spectrum of a Keçeci sequence matches the GUE (Gaussian Unitary Ensemble) statistics.
+    Uses Kolmogorov-Smirnov test against Wigner-Dyson distribution.
+    Args:
+        sequence (list): The Keçeci number sequence.
+        tolerance (float): Not used here; kept for interface consistency.
+    Returns:
+        tuple: (similarity_score, p_value)
     """
-    from . import _get_integer_representation  # Döngüsel import için gecikmeli import
+    from . import _get_integer_representation
 
     values = [val for z in sequence if (val := _get_integer_representation(z)) is not None]
     if len(values) < 10:
@@ -598,12 +608,12 @@ def _compute_gue_similarity(sequence, tolerance=0.5):
     if len(strong_freqs) < 2:
         return 0.0, 0.0
 
-    # Ölçekleme: en güçlü pik → 14.134725
+    # Scale so the strongest peak aligns with the first Riemann zeta zero
     peak_freq = strong_freqs[np.argmax(powers_pos[peaks])]
     scale_factor = 14.134725 / peak_freq
     scaled_freqs = np.sort(strong_freqs * scale_factor)
 
-    # Level spacings (frekans farkları)
+    # Compute level spacings
     if len(scaled_freqs) < 2:
         return 0.0, 0.0
     diffs = np.diff(scaled_freqs)
@@ -611,7 +621,7 @@ def _compute_gue_similarity(sequence, tolerance=0.5):
         return 0.0, 0.0
     diffs_norm = diffs / np.mean(diffs)
 
-    # GUE örnek üret (Wigner-Dyson)
+    # Generate GUE sample using Wigner-Dyson distribution
     def wigner_dyson(s):
         return (32 / np.pi) * s**2 * np.exp(-4 * s**2 / np.pi)
 
@@ -620,15 +630,22 @@ def _compute_gue_similarity(sequence, tolerance=0.5):
     p_gue = p_gue / np.sum(p_gue)
     sample_gue = np.random.choice(s_gue, size=1000, p=p_gue)
 
-    # KS test: Keçeci vs GUE
+    # Perform KS test
     ks_stat, ks_p = ks_2samp(diffs_norm, sample_gue)
-    similarity_score = 1.0 - ks_stat  # Ne kadar küçükse, o kadar benzer
+    similarity_score = 1.0 - ks_stat
 
     return similarity_score, ks_p
 
+
 def _find_kececi_zeta_zeros(sequence, tolerance=0.5):
     """
-    Keçeci dizisinin spektrumundan zeta sıfırlarını tahmin et.
+    Estimates the zeros of the Keçeci Zeta Function from the spectral peaks of the sequence.
+    Compares them to known Riemann zeta zeros.
+    Args:
+        sequence (list): The Keçeci number sequence.
+        tolerance (float): Maximum distance for a match between Keçeci and Riemann zeros.
+    Returns:
+        tuple: (list of Keçeci zeta zeros, matching score)
     """
     from . import _get_integer_representation
 
@@ -654,33 +671,39 @@ def _find_kececi_zeta_zeros(sequence, tolerance=0.5):
     if len(strong_freqs) < 2:
         return [], 0.0
 
-    # Ölçekleme: en güçlü pik → 14.134725
+    # Scale so the strongest peak aligns with the first Riemann zeta zero
     peak_freq = strong_freqs[np.argmax(powers_pos[peaks])]
     scale_factor = 14.134725 / peak_freq
     scaled_freqs = np.sort(strong_freqs * scale_factor)
 
-    # Sıfır adayları (minimumlar)
+    # Find candidate zeros by analyzing the Keçeci Zeta Function
     t_vals = np.linspace(0, 650, 10000)
     zeta_vals = np.array([sum((scaled_freqs + 1e-10)**(- (0.5 + 1j * t))) for t in t_vals])
     minima, _ = find_peaks(-np.abs(zeta_vals), height=-0.5*np.max(np.abs(zeta_vals)), distance=5)
     kececi_zeta_zeros = t_vals[minima]
 
-    # Eşleşme kontrolü
+    # Load Riemann zeta zeros for comparison
     zeta_zeros_imag = _load_zeta_zeros("zeta.txt")
     if len(zeta_zeros_imag) == 0:
         return kececi_zeta_zeros, 0.0
 
+    # Calculate matching score
     close_matches = [kz for kz in kececi_zeta_zeros if min(abs(kz - zeta_zeros_imag)) < tolerance]
     score = len(close_matches) / len(kececi_zeta_zeros) if kececi_zeta_zeros.size > 0 else 0.0
 
     return kececi_zeta_zeros, score
 
+
 def analyze_all_types(iterations=120):
     """
-    11 Keçeci sayı türü için otomatik GUE ve Riemann Zeta karşılaştırması yap.
-    Sonuçları sıralar ve grafiklerle gösterir.
+    Performs automated analysis on all 11 Keçeci number types.
+    For each type, it tests multiple parameter sets, computes similarity to Riemann zeta zeros and GUE statistics,
+    then reports and plots the results.
+    Args:
+        iterations (int): Number of Keçeci steps to generate for each sequence.
+    Returns:
+        tuple: (sorted_by_zeta, sorted_by_gue) - Lists of results sorted by performance.
     """
-
     from . import (
         get_with_params,
         TYPE_POSITIVE_REAL,
@@ -696,14 +719,13 @@ def analyze_all_types(iterations=120):
         TYPE_NEUTROSOPHIC_BICOMPLEX
     )
 
-
-    print("🔍 11 Keçeci Türü için Otomatik Analiz")
-    print("="*80)
+    print("Automated Analysis for 11 Keçeci Types")
+    print("=" * 80)
 
     include_intermediate = True
     results = []
 
-    # Parametre setleri
+    # Parameter sets to test
     param_sets = [
         ('0.0', '9.0'),
         ('1.0', '7.0'),
@@ -733,11 +755,11 @@ def analyze_all_types(iterations=120):
         best_gue_score = 0.0
         best_params = None
 
-        print(f"🔄 Tür {kececi_type} ({name}) taranıyor...")
+        print(f"Analyzing type {kececi_type} ({name})...")
 
         for start, add in param_sets:
             try:
-                # Özel formatlar
+                # Special formatting for complex types
                 if kececi_type == 3 and '+' not in start:
                     start = f"{start}+{start}j"
                 if kececi_type == 10 and '+' not in start:
@@ -775,70 +797,197 @@ def analyze_all_types(iterations=120):
                 'gue_score': best_gue_score
             })
 
-    # Sonuçları sırala
+    # Sort results
     sorted_by_zeta = sorted(results, key=lambda x: x['zeta_score'], reverse=True)
     sorted_by_gue = sorted(results, key=lambda x: x['gue_score'], reverse=True)
 
-    print("\n" + "="*100)
-    print("   EN YÜKSEK RİEMANN ZETA EŞLEŞME SKORLARI (TOP 11)")
-    print("="*100)
-    print(f"{'Tür':<20} {'Skor':<8} {'Başlangıç':<12} {'Artım':<12}")
+    print("\n" + "=" * 100)
+    print("HIGHEST RIEMANN ZETA MATCHING SCORES (TOP 11)")
+    print("=" * 100)
+    print(f"{'Type':<20} {'Score':<8} {'Start':<12} {'Increment':<12}")
     print("-" * 100)
     for r in sorted_by_zeta:
         print(f"{r['name']:<20} {r['zeta_score']:<8.3f} {r['start']:<12} {r['add']:<12}")
 
-    print("\n" + "="*100)
-    print("   EN YÜKSEK GUE BENZERLİK SKORLARI (TOP 11)")
-    print("="*100)
-    print(f"{'Tür':<20} {'Skor':<8} {'Başlangıç':<12} {'Artım':<12}")
+    print("\n" + "=" * 100)
+    print("HIGHEST GUE SIMILARITY SCORES (TOP 11)")
+    print("=" * 100)
+    print(f"{'Type':<20} {'Score':<8} {'Start':<12} {'Increment':<12}")
     print("-" * 100)
     for r in sorted_by_gue:
         print(f"{r['name']:<20} {r['gue_score']:<8.3f} {r['start']:<12} {r['add']:<12}")
 
-    # Grafikler
+    # Plot results
     _plot_comparison(sorted_by_zeta, sorted_by_gue)
 
     return sorted_by_zeta, sorted_by_gue
 
+
 def _plot_comparison(zeta_results, gue_results):
-    """İki sonuç setini karşılaştırmak için grafikler çizer."""
-    # --- Riemann Zeta Eşleşme Grafiği ---
+    """
+    Creates bar charts comparing the performance of Keçeci types in matching Riemann zeta zeros and GUE statistics.
+    Args:
+        zeta_results (list): Results sorted by zeta matching score.
+        gue_results (list): Results sorted by GUE similarity score.
+    """
+    # Riemann Zeta Matching Plot
     plt.figure(figsize=(14, 7))
     types = [r['name'] for r in zeta_results]
     scores = [r['zeta_score'] for r in zeta_results]
     colors = ['skyblue'] * len(scores)
     if scores:
-        colors[0] = 'red'  # En iyi olanı kırmızı yap
+        colors[0] = 'red'
     bars = plt.bar(types, scores, color=colors, edgecolor='black', alpha=0.8)
     plt.xticks(rotation=45, ha='right')
-    plt.ylabel("Riemann Zeta Eşleşme Oranı")
-    plt.title("Keçeci Türlerinin Riemann Zeta Sıfırlarıyla Eşleşmesi")
+    plt.ylabel("Riemann Zeta Matching Score")
+    plt.title("Keçeci Types vs Riemann Zeta Zeros")
     plt.grid(True, alpha=0.3)
-    # En iyi barı kalın yap (eğer varsa)
     if bars:
         bars[0].set_edgecolor('darkred')
         bars[0].set_linewidth(1.5)
     plt.tight_layout()
     plt.show()
 
-    # --- GUE Benzerlik Grafiği ---
+    # GUE Similarity Plot
     plt.figure(figsize=(14, 7))
     types = [r['name'] for r in gue_results]
     scores = [r['gue_score'] for r in gue_results]
     colors = ['skyblue'] * len(scores)
     if scores:
-        colors[0] = 'red'  # En iyi olanı kırmızı yap
+        colors[0] = 'red'
     bars = plt.bar(types, scores, color=colors, edgecolor='black', alpha=0.8)
     plt.xticks(rotation=45, ha='right')
-    plt.ylabel("GUE Benzerlik Skoru")
-    plt.title("Keçeci Türlerinin GUE İstatistiğine Benzerliği")
+    plt.ylabel("GUE Similarity Score")
+    plt.title("Keçeci Types vs GUE Statistics")
     plt.grid(True, alpha=0.3)
-    # En iyi barı kalın yap (eğer varsa)
     if bars:
         bars[0].set_edgecolor('darkred')
         bars[0].set_linewidth(1.5)
     plt.tight_layout()
     plt.show()
+
+def _pair_correlation(ordered_zeros, max_gap=3.0, bin_size=0.1):
+    """
+    Computes the pair correlation of a list of ordered zeros.
+    This function calculates the normalized spacings between all pairs of zeros
+    and returns a histogram of their distribution.
+    Args:
+        ordered_zeros (numpy.ndarray): Sorted array of zero locations (e.g., Keçeci or Riemann zeta zeros).
+        max_gap (float): Maximum normalized gap to consider.
+        bin_size (float): Size of bins for the histogram.
+    Returns:
+        tuple: (bin_centers, histogram) - The centers of the bins and the normalized histogram values.
+    """
+    n = len(ordered_zeros)
+    if n < 2:
+        return np.array([]), np.array([])
+
+    # Compute average spacing for normalization
+    avg_spacing = np.mean(np.diff(ordered_zeros))
+    normalized_zeros = ordered_zeros / avg_spacing
+
+    # Compute all pairwise gaps within max_gap
+    gaps = []
+    for i in range(n):
+        for j in range(i + 1, n):
+            gap = abs(normalized_zeros[j] - normalized_zeros[i])
+            if gap <= max_gap:
+                gaps.append(gap)
+
+    # Create histogram
+    bins = np.arange(0, max_gap + bin_size, bin_size)
+    hist, _ = np.histogram(gaps, bins=bins, density=True)
+    bin_centers = (bins[:-1] + bins[1:]) / 2
+
+    return bin_centers, hist
+
+
+def _gue_pair_correlation(s):
+    """
+    Theoretical pair correlation function for the Gaussian Unitary Ensemble (GUE).
+    This function is used as a reference for comparing the statistical distribution
+    of eigenvalues (or zeta zeros) in quantum chaotic systems.
+    Args:
+        s (numpy.ndarray or float): Normalized spacing(s).
+    Returns:
+        numpy.ndarray or float: The GUE pair correlation value(s) at s.
+    """
+    return 1 - np.sinc(s)**2
+
+
+def analyze_pair_correlation(sequence, title="Pair Correlation of Keçeci Zeta Zeros"):
+    """
+    Analyzes and plots the pair correlation of Keçeci Zeta zeros derived from a Keçeci sequence.
+    Compares the empirical pair correlation to the theoretical GUE prediction.
+    Performs a Kolmogorov-Smirnov test to quantify the similarity.
+    Args:
+        sequence (list): A Keçeci number sequence.
+        title (str): Title for the resulting plot.
+    """
+    from . import _get_integer_representation
+
+    # Extract integer representations and remove DC component
+    values = [val for z in sequence if (val := _get_integer_representation(z)) is not None]
+    if len(values) < 10:
+        print("Insufficient data.")
+        return
+
+    values = np.array(values) - np.mean(values)
+    N = len(values)
+    powers = np.abs(fft(values))**2
+    freqs = fftfreq(N)
+
+    # Filter positive frequencies
+    mask = (freqs > 0)
+    freqs_pos = freqs[mask]
+    powers_pos = powers[mask]
+
+    if len(powers_pos) == 0:
+        print("No positive frequencies found.")
+        return
+
+    # Find spectral peaks
+    peaks, _ = find_peaks(powers_pos, height=np.max(powers_pos)*1e-7)
+    strong_freqs = freqs_pos[peaks]
+
+    if len(strong_freqs) < 2:
+        print("Insufficient frequency peaks.")
+        return
+
+    # Scale frequencies so the strongest peak aligns with the first Riemann zeta zero
+    peak_freq = strong_freqs[np.argmax(powers_pos[peaks])]
+    scale_factor = 14.134725 / peak_freq
+    scaled_freqs = np.sort(strong_freqs * scale_factor)
+
+    # Estimate Keçeci Zeta zeros by finding minima of |ζ_Kececi(0.5 + it)|
+    t_vals = np.linspace(0, 650, 10000)
+    zeta_vals = np.array([sum((scaled_freqs + 1e-10)**(- (0.5 + 1j * t))) for t in t_vals])
+    minima, _ = find_peaks(-np.abs(zeta_vals), height=-0.5*np.max(np.abs(zeta_vals)), distance=5)
+    kececi_zeta_zeros = t_vals[minima]
+
+    if len(kececi_zeta_zeros) < 2:
+        print("Insufficient Keçeci zeta zeros found.")
+        return
+
+    # Compute pair correlation
+    bin_centers, hist = _pair_correlation(kececi_zeta_zeros, max_gap=3.0, bin_size=0.1)
+    gue_corr = _gue_pair_correlation(bin_centers)
+
+    # Plot results
+    plt.figure(figsize=(12, 6))
+    plt.plot(bin_centers, hist, 'o-', label="Keçeci Zeta Zeros", linewidth=2)
+    plt.plot(bin_centers, gue_corr, 'r-', label="GUE (Theoretical)", linewidth=2)
+    plt.title(title)
+    plt.xlabel("Normalized Spacing (s)")
+    plt.ylabel("Pair Correlation Density")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.show()
+
+    # Perform Kolmogorov-Smirnov test
+    ks_stat, ks_p = ks_2samp(hist, gue_corr)
+    print(f"Pair Correlation KS Test: Statistic={ks_stat:.4f}, p-value={ks_p:.4f}")
 
 # ==============================================================================
 # --- CORE GENERATOR ---
