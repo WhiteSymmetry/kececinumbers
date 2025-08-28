@@ -22,7 +22,7 @@ import warnings
     # importlib.reload(kececinumbers) # F821 undefined name 'kececinumbers'
 
 # Paket sürüm numarası
-__version__ = "0.6.4"
+__version__ = "0.6.5"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 
@@ -47,6 +47,9 @@ __all__ = [
     '_compute_gue_similarity',
     '_load_zeta_zeros',
     'analyze_all_types',
+    'analyze_pair_correlation',
+    '_gue_pair_correlation',
+    '_pair_correlation',
 
     # --- Core Generation and Analysis ---
     'unified_generator',
@@ -105,6 +108,9 @@ try:
         _compute_gue_similarity,
         _load_zeta_zeros,
         analyze_all_types,
+        analyze_pair_correlation,
+        _gue_pair_correlation,
+        _pair_correlation,
         
     
         # Constants
