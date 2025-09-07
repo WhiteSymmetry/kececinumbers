@@ -457,6 +457,8 @@ If this library was useful to you in your research, please cite us. Following th
 
 ```
 
+Loeb, F., & Keçeci, M. (2025). Chaos Slicer: Keçeci Number System. Github. https://github.com/numberwonderman/Collatz-box-universes/blob/main/chaosSlicer.html
+
 Keçeci, M. (2025). Keçeci Varsayımının Kuramsal ve Karşılaştırmalı Analizi. ResearchGate. https://dx.doi.org/10.13140/RG.2.2.21825.88165
 
 Keçeci, M. (2025). Keçeci Varsayımı'nın Hesaplanabilirliği: Sonlu Adımda Kararlı Yapıya Yakınsama Sorunu. WorkflowHub. https://doi.org/10.48546/workflowhub.document.44.1
