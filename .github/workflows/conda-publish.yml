@@ -49,7 +49,7 @@ jobs:
         run: |
           PACKAGE_FILE=$(ls dist/*.conda | head -n 1)
           conda install -n test-env -y "$PACKAGE_FILE"
-          conda run -n test-env python -c "import kececinumbers; print('✅ Import successful for Python ${{ matrix.python-version }}!')"
+          conda run -n test-env python -c "import kececinumbers; print('Import successful for Python ${{ matrix.python-version }}!')"
 
       - name: Build the package
         run: |
