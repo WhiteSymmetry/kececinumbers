@@ -1,4 +1,4 @@
-name: Build, Test, and Publish Package-Conda
+name: Conda-Build, Test, and Publish Package
 
 on:
   workflow_dispatch:
@@ -8,10 +8,9 @@ on:
 jobs:
   build-publish:
     runs-on: ubuntu-latest
-    # Matrix stratejisini burada tanımlıyoruz
     strategy:
       matrix:
-        python-version: ["3.11"] # Hangi Python versiyonları için çalıştırılacak
+        python-version: ["3.11"]
 
     steps:
       - name: Checkout repository
@@ -21,7 +20,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           auto-activate-base: false
-          python-version: "${{ matrix.python-version }}" # Matrix'ten gelen versiyonu kullan
+          python-version: "${{ matrix.python-version }}"
           channels: conda-forge,defaults
           channel-priority: strict
 
@@ -29,9 +28,12 @@ jobs:
         run: conda install -n base conda-build -y
 
       - name: Build the package for Python ${{ matrix.python-version }}
-        # Artık variant config'e ihtiyacımız yok, Python versiyonunu doğrudan belirtiyoruz
         run: |
+          export PKG_VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')
+          echo "Building version: $PKG_VERSION for Python ${{ matrix.python-version }}"
+          
           conda build . --python ${{ matrix.python-version }} --output-folder ./dist
+          
           if [ -z "$(ls -A dist)" ]; then
             echo "HATA: Hiçbir conda paketi oluşturulmadı."
             exit 1
@@ -39,28 +41,27 @@ jobs:
           echo "Oluşturulan paket:"
           ls -l dist
 
-      - name: Create a test environment
+      - name: Create test environment and install dependencies
         run: |
-          conda create -n test-env -y python=${{ matrix.python-version }}
-          conda install -n test-env -y numpy matplotlib sympy
-          conda run -n test-env pip install numpy-quaternion
-      
+          conda create -n test-env -y python=${{ matrix.python-version }} numpy matplotlib scipy sympy pytest pytest-cov
+          
+          # Platforma özel quaternion kurulumu
+          if [[ "$RUNNER_OS" == "Linux" || "$RUNNER_OS" == "macOS" ]]; then
+            conda install -n test-env -y -c conda-forge quaternion
+          else
+            conda install -n test-env -y numpy-quaternion
+          fi
+
+      - name: Run development tests
+        run: |
+          conda run -n test-env --no-capture-output python -m pytest tests/ --cov=kececinumbers
+
       - name: Install and test the built package
         run: |
           PACKAGE_FILE=$(ls dist/*.conda | head -n 1)
           conda install -n test-env -y "$PACKAGE_FILE"
-          conda run -n test-env python -c "import kececinumbers; print('Import successful for Python ${{ matrix.python-version }}!')"
+          conda run -n test-env --no-capture-output python -c "import kececinumbers; print('Import successful for Python ${{ matrix.python-version }}!')"
 
-      - name: Build the package
-        run: |
-          export PKG_VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')
-          echo "Building version: $PKG_VERSION"
-          # Hata durumunda bile devam etmesi için || true ekleyerek build loglarını görelim
-          conda build . --output-folder ./dist || true
-      
-      # ===================================================================
-      # === YENİ HATA AYIKLAMA ADIMI ===
-      # Bu adım, upload'dan önce dosya sisteminin durumunu bize gösterecek
       - name: Debug - List files in the workspace
         run: |
           echo "--- Current Working Directory ---"
@@ -68,31 +69,28 @@ jobs:
           echo "--- Recursive file listing ---"
           ls -R
           echo "--- End of file listing ---"
-      # ===================================================================
 
       - name: Upload to Anaconda Cloud
         if: success()
         env:
           ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
         run: |
-          # 'find' komutu ile dist klasörünün içindeki tüm .conda dosyalarını bul
           PACKAGE_FILES=$(find dist -name "*.conda")
           
-          # Bulunan dosya(lar)ın varlığını kontrol et
           if [ -z "$PACKAGE_FILES" ]; then
-            echo "HATA: Yüklenecek .conda dosyası bulunamadı! Build adımı başarısız olmuş olabilir."
+            echo "HATA: Yüklenecek .conda dosyası bulunamadı!"
             exit 1
           fi
 
-          echo "Yüklenecek paketler bulundu:"
+          echo "Yüklenecek paketler:"
           echo "$PACKAGE_FILES"
           
           conda install -n base -y anaconda-client
-          # $PACKAGE_FILES değişkenini kullanarak bulunan dosyaları yükle
           conda run -n base anaconda -t $ANACONDA_TOKEN upload \
             $PACKAGE_FILES \
             --label main \
             --skip-existing
+
       - name: Cleanup test environment
         if: always()
         run: conda env remove -n test-env || true
