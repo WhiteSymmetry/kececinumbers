@@ -110,7 +110,7 @@ class TestKececiNumbers(unittest.TestCase):
         """Test sequence generation for quaternions."""
         seq = unified_generator(
             kececi_type=TYPE_QUATERNION,
-            start_input_raw="1+2i-3j+k",
+            start_input_raw="1,2,3,4",
             add_input_raw=1.0,
             iterations=self.iterations
         )
