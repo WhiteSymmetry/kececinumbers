@@ -8,32 +8,64 @@ jobs:
   publish-to-zenodo:
     runs-on: ubuntu-latest
     steps:
-      # 1. Kodu checkout et
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Yüklenecek arşivi oluştur
       - name: Create release archive
-        run: zip -r release.zip . -x ".git/*" -x ".github/*"
+        run: |
+          # Daha temiz bir arşiv oluştur
+          zip -r release.zip . \
+            -x ".git/*" \
+            -x ".github/*" \
+            -x "*.pyc" \
+            -x "__pycache__/*" \
+            -x ".DS_Store" \
+            -x "*.egg-info/*" \
+            -x "dist/*" \
+            -x "build/*"
 
-      # 3. Zenodo'ya yükle
-      - name: Upload New Version to Zenodo
-        uses: ein-sc/action-zenodo-upload@v1 # Bu, en kararlı ve güncel action'dır
-        with:
-          # ÖNEMLİ: Bu action, Concept ID'yi 'conceptrecid' olarak adlandırır.
-          # GitHub Secrets'ınızdaki ZENODO_CONCEPT_ID'yi kullanıyoruz.
-          conceptrecid: ${{ secrets.ZENODO_CONCEPT_ID }}
+      - name: Upload to Zenodo using API
+        env:
+          ZENODO_TOKEN: ${{ secrets.ZENODO_TOKEN }}
+          ZENODO_DEPOSITION_ID: ${{ secrets.ZENODO_DEPOSITION_ID }}
+        run: |
+          # Zenodo API'sini doğrudan kullan
+          echo "Uploading to Zenodo..."
           
-          # Zenodo token'ı
-          zenodo_token: ${{ secrets.ZENODO_TOKEN }}
+          # 1. Mevcut deposition'ı al
+          response=$(curl -s -H "Authorization: Bearer $ZENODO_TOKEN" \
+            "https://zenodo.org/api/deposit/depositions/$ZENODO_DEPOSITION_ID")
           
-          # Yüklenecek dosya(lar)
-          upload_files: 'release.zip'
+          # 2. Yeni versiyon oluştur
+          new_deposition=$(curl -s -X POST -H "Authorization: Bearer $ZENODO_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://zenodo.org/api/deposit/depositions/$ZENODO_DEPOSITION_ID/actions/newversion")
           
-          # Bu parametre, action'a yeni bir versiyon oluşturup onu yayınlamasını söyler.
-          # Bu, 'create_new_version: true' ve 'publish: true' adımlarının birleşimidir.
-          publish: true 
+          # 3. Yeni deposition ID'sini al
+          new_deposition_id=$(echo $new_deposition | jq -r '.id')
+          echo "New deposition ID: $new_deposition_id"
           
-          # GitHub sürümündeki notları Zenodo'daki "release notes" alanına ekle
-          # Bu, dokümantasyonu otomatik olarak senkronize eder.
-          notes: ${{ github.event.release.body }}
+          # 4. Dosyayı yükle
+          curl -X POST -H "Authorization: Bearer $ZENODO_TOKEN" \
+            -F "file=@release.zip" \
+            "https://zenodo.org/api/deposit/depositions/$new_deposition_id/files"
+          
+          # 5. Metadata güncelle (opsiyonel)
+          metadata='{
+            "metadata": {
+              "title": "'"${{ github.event.repository.name }}"'",
+              "version": "'"${{ github.event.release.tag_name }}"'",
+              "description": "'"${{ github.event.release.body }}"'",
+              "upload_type": "software",
+              "publication_date": "'"$(date -u +%Y-%m-%d)"'"
+            }
+          }'
+          
+          curl -X PUT -H "Authorization: Bearer $ZENODO_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$metadata" \
+            "https://zenodo.org/api/deposit/depositions/$new_deposition_id"
+          
+          # 6. Yayınla
+          curl -X POST -H "Authorization: Bearer $ZENODO_TOKEN" \
+            "https://zenodo.org/api/deposit/depositions/$new_deposition_id/actions/publish"
