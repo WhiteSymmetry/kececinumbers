@@ -1026,7 +1026,8 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
         if kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL]:
             current_value = int(float(start_input_raw)); 
             add_value_typed = int(float(add_input_raw)); 
-            ask_unit = 1; use_integer_division = True
+            ask_unit = 1; 
+            use_integer_division = True
         elif kececi_type == TYPE_FLOAT:
             current_value = float(start_input_raw); 
             add_value_typed = float(add_input_raw); 
@@ -1037,7 +1038,8 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
             ask_unit = Fraction(1)
         elif kececi_type == TYPE_COMPLEX:
             current_value = _parse_complex(start_input_raw); 
-            a_float = float(add_input_raw); add_value_typed = complex(a_float, a_float); 
+            a_float = float(add_input_raw); 
+            add_value_typed = complex(a_float, a_float); 
             ask_unit = 1 + 1j
         elif kececi_type == TYPE_QUATERNION:
             current_value = _parse_quaternion_from_csv(start_input_raw); 
@@ -1058,7 +1060,8 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
         elif kececi_type == TYPE_HYPERREAL:
             a, b = _parse_hyperreal(start_input_raw); 
             sequence_list = [a + b / n for n in range(1, 11)]; current_value = HyperrealNumber(sequence_list); 
-            a_float = float(add_input_raw); add_sequence = [a_float] + [0.0] * 9; add_value_typed = HyperrealNumber(add_sequence); 
+            a_float = float(add_input_raw); add_sequence = [a_float] + [0.0] * 9; 
+            add_value_typed = HyperrealNumber(add_sequence); 
             ask_unit = HyperrealNumber([1.0] * 10)
         elif kececi_type == TYPE_BICOMPLEX:
             s_complex = _parse_complex(start_input_raw); 
