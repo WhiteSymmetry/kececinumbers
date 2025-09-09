@@ -38,7 +38,7 @@ quaternion-conda = ["quaternion"]
 test = ["pytest", "pytest-cov", "pytest-mock", "ruff", "numpy", "matplotlib", "scipy", "sympy",]
 
 [tool.setuptools]
-extras_require = {
+extras-require = {
     "all": ["numpy-quaternion"]  # Varsayılan
 }
 
