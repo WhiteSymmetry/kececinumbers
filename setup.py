@@ -52,13 +52,17 @@ setup(
     install_requires=[
         "numpy",
         "matplotlib",
-        "numpy-quaternion",
-        # pip instal numpy-quaternion # conda install -c conda-forge quaternion
         "scipy",
         "sympy",
     ],
     extras_require={
-
+        'quaternion': ["numpy-quaternion"],  # pip için
+        'quaternion-conda': ["quaternion"],  # conda için
+        'all': ["numpy-quaternion"],  # Varsayılan pip
+        'test': [
+            "pytest",
+            "pytest-cov",
+        ]
     },
     classifiers=[
         "Programming Language :: Python :: 3",
