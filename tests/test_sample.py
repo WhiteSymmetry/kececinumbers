@@ -50,6 +50,7 @@ class TestKececiNumbers(unittest.TestCase):
         seq = unified_generator(
             kececi_type=TYPE_POSITIVE_REAL,
             start_input_raw="5",
+            add_input_raw=3.0,
             iterations=self.iterations
         )
         self.assertTrue(len(seq) > 0)
@@ -61,6 +62,7 @@ class TestKececiNumbers(unittest.TestCase):
         seq = unified_generator(
             kececi_type=TYPE_NEGATIVE_REAL,
             start_input_raw="-7",
+            add_input_raw=2.0,
             iterations=self.iterations
         )
         self.assertTrue(len(seq) > 0)
@@ -72,6 +74,7 @@ class TestKececiNumbers(unittest.TestCase):
         seq = unified_generator(
             kececi_type=TYPE_FLOAT,
             start_input_raw="3.14",
+            add_input_raw=1.5,
             iterations=self.iterations
         )
         self.assertTrue(len(seq) > 0)
@@ -82,6 +85,7 @@ class TestKececiNumbers(unittest.TestCase):
         seq = unified_generator(
             kececi_type=TYPE_COMPLEX,
             start_input_raw="2+3j",
+            add_input_raw=1.0,
             iterations=self.iterations
         )
         self.assertTrue(len(seq) > 0)
@@ -94,6 +98,7 @@ class TestKececiNumbers(unittest.TestCase):
         seq = unified_generator(
             kececi_type=TYPE_RATIONAL,
             start_input_raw="7/3",
+            add_input_raw=2.0,
             iterations=self.iterations
         )
         self.assertTrue(len(seq) > 0)
@@ -106,6 +111,7 @@ class TestKececiNumbers(unittest.TestCase):
         seq = unified_generator(
             kececi_type=TYPE_QUATERNION,
             start_input_raw="1+2i-3j+k",
+            add_input_raw=1.0,
             iterations=self.iterations
         )
         self.assertTrue(len(seq) > 0)
@@ -122,6 +128,7 @@ class TestKececiNumbers(unittest.TestCase):
         seq = unified_generator(
             kececi_type=TYPE_NEUTROSOPHIC,
             start_input_raw="5+2I",
+            add_input_raw=1.0,
             iterations=self.iterations
         )
         self.assertTrue(len(seq) > 0)
@@ -134,6 +141,7 @@ class TestKececiNumbers(unittest.TestCase):
         seq = unified_generator(
             kececi_type=TYPE_NEUTROSOPHIC_COMPLEX,
             start_input_raw="1-2j",
+            add_input_raw=1.0,
             iterations=self.iterations
         )
         self.assertTrue(len(seq) > 0)
@@ -147,6 +155,7 @@ class TestKececiNumbers(unittest.TestCase):
         seq = unified_generator(
             kececi_type=TYPE_HYPERREAL,
             start_input_raw="5+3e",
+            add_input_raw=1.0,
             iterations=self.iterations
         )
         self.assertTrue(len(seq) > 0)
@@ -158,6 +167,7 @@ class TestKececiNumbers(unittest.TestCase):
         seq = unified_generator(
             kececi_type=TYPE_BICOMPLEX,
             start_input_raw="2+1j",
+            add_input_raw=1.0,
             iterations=self.iterations
         )
         self.assertTrue(len(seq) > 0)
@@ -171,6 +181,7 @@ class TestKececiNumbers(unittest.TestCase):
         seq = unified_generator(
             kececi_type=TYPE_NEUTROSOPHIC_BICOMPLEX,
             start_input_raw="1+2j",
+            add_input_raw=1.0,
             iterations=self.iterations
         )
         self.assertTrue(len(seq) > 0)
@@ -238,6 +249,7 @@ class TestKececiNumbers(unittest.TestCase):
         seq = unified_generator(
             kececi_type=TYPE_POSITIVE_REAL,
             start_input_raw="10",
+            add_input_raw=2.0,
             iterations=5
         )
         self.assertGreater(len(seq), 5)
@@ -250,6 +262,7 @@ class TestKececiNumbers(unittest.TestCase):
         seq = unified_generator(
             kececi_type=TYPE_FLOAT,
             start_input_raw="",  # empty
+            add_input_raw=1.0,
             iterations=1
         )
         self.assertEqual(len(seq), 0)  # should fail gracefully
@@ -260,10 +273,10 @@ class TestKececiNumbers(unittest.TestCase):
             unified_generator(
                 kececi_type=99,  # invalid
                 start_input_raw="0",
+                add_input_raw=1.0,
                 iterations=1
             )
 
 
 if __name__ == '__main__':
     unittest.main()
-
