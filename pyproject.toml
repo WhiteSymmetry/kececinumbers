@@ -37,10 +37,7 @@ quaternion-pip = ["numpy-quaternion"]
 quaternion-conda = ["quaternion"]
 test = ["pytest", "pytest-cov", "pytest-mock", "ruff", "numpy", "matplotlib", "scipy", "sympy",]
 
-[tool.setuptools]
-extras-require = {
-    "all": ["numpy-quaternion"]  # Varsayılan
-}
+all = ["numpy-quaternion"]  # Varsayılan pip bağımlılığı
 
 [tool.setuptools.packages.find]
 where = ["."]
