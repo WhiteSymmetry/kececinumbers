@@ -110,7 +110,7 @@ class TestKececiNumbers(unittest.TestCase):
         """Test sequence generation for quaternions."""
         seq = unified_generator(
             kececi_type=TYPE_QUATERNION,
-            start_input_raw="1,2,3,4",
+            start_input_raw="1.0,2.0,3.0,4.0",
             add_input_raw="1.0,0,0,0",
             iterations=self.iterations
         )
@@ -120,8 +120,8 @@ class TestKececiNumbers(unittest.TestCase):
         q = seq[0]
         self.assertAlmostEqual(q.w, 1.0)
         self.assertAlmostEqual(q.x, 2.0)
-        self.assertAlmostEqual(q.y, -3.0)
-        self.assertAlmostEqual(q.z, 1.0)
+        self.assertAlmostEqual(q.y, 3.0)
+        self.assertAlmostEqual(q.z, 4.0)
 
     def test_neutrosophic_generation(self):
         """Test sequence generation for neutrosophic numbers."""
