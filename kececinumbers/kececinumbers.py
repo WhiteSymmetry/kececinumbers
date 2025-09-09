@@ -1059,8 +1059,10 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
             ask_unit = NeutrosophicComplexNumber(1, 1, 1)
         elif kececi_type == TYPE_HYPERREAL:
             a, b = _parse_hyperreal(start_input_raw); 
-            sequence_list = [a + b / n for n in range(1, 11)]; current_value = HyperrealNumber(sequence_list); 
-            a_float = float(add_input_raw); add_sequence = [a_float] + [0.0] * 9; 
+            sequence_list = [a + b / n for n in range(1, 11)]; 
+            current_value = HyperrealNumber(sequence_list); 
+            a_float = float(add_input_raw); 
+            add_sequence = [a_float] + [0.0] * 9; 
             add_value_typed = HyperrealNumber(add_sequence); 
             ask_unit = HyperrealNumber([1.0] * 10)
         elif kececi_type == TYPE_BICOMPLEX:
