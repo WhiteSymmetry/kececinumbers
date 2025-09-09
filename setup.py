@@ -53,6 +53,7 @@ setup(
         "numpy",
         "matplotlib",
         "numpy-quaternion",
+        # pip instal numpy-quaternion # conda install -c conda-forge quaternion
         "scipy",
         "sympy",
     ],
