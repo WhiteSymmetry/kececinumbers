@@ -111,7 +111,7 @@ class TestKececiNumbers(unittest.TestCase):
         seq = unified_generator(
             kececi_type=TYPE_QUATERNION,
             start_input_raw="1,2,3,4",
-            add_input_raw=1.0,0,0,0,
+            add_input_raw="1.0,0,0,0",
             iterations=self.iterations
         )
         self.assertTrue(len(seq) > 0)
