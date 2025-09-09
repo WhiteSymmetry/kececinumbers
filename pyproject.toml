@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kececinumbers"
-version = "0.6.5"
+version = "0.6.6"
 
 # Diğer proje bilgileri (isteğe bağlı ama tavsiye edilir)
 authors = [
@@ -28,25 +28,19 @@ classifiers = [
 dependencies = [
     "numpy",
     "matplotlib",
-    "numpy-quaternion",
-    # pip instal numpy-quaternion # conda install -c conda-forge quaternion
     "scipy",
     "sympy",
 ]
 
 [project.optional-dependencies]
-test = [
-    "pytest",
-    "pytest-cov",
-    "pytest-mock",
-    "ruff",
-    "numpy",
-    "matplotlib",
-    "numpy-quaternion",
-    # pip instal numpy-quaternion # conda install -c conda-forge quaternion
-    "scipy",
-    "sympy",
-]
+quaternion-pip = ["numpy-quaternion"]
+quaternion-conda = ["quaternion"]
+test = ["pytest", "pytest-cov", "pytest-mock", "ruff", "numpy", "matplotlib", "scipy", "sympy",]
+
+[tool.setuptools]
+extras_require = {
+    "all": ["numpy-quaternion"]  # Varsayılan
+}
 
 [tool.setuptools.packages.find]
 where = ["."]
