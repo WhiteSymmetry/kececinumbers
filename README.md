@@ -100,24 +100,40 @@ This flexible mechanism provides a rich framework for studying the behavior of n
 *   **Interactive and Programmatic Usage:** Supports both interactive parameter input (`get_interactive`) and direct use in scripts (`get_with_params`).
 
 ---
-# ==============================================================================
-# --- MODULE CONSTANTS: KEÇECI NUMBER TYPES ---
-# ==============================================================================
+
+## MODULE CONSTANTS: KEÇECİ NUMBER TYPES
+
+
 TYPE_POSITIVE_REAL = 1
+
 TYPE_NEGATIVE_REAL = 2
+
 TYPE_COMPLEX = 3
+
 TYPE_FLOAT = 4
+
 TYPE_RATIONAL = 5
+
 TYPE_QUATERNION = 6
+
 TYPE_NEUTROSOPHIC = 7
+
 TYPE_NEUTROSOPHIC_COMPLEX = 8
+
 TYPE_HYPERREAL = 9
+
 TYPE_BICOMPLEX = 10
+
 TYPE_NEUTROSOPHIC_BICOMPLEX = 11
+
 TYPE_OCTONION = 12
+
 TYPE_SEDENION = 13
+
 TYPE_CLIFFORD = 14
+
 TYPE_DUAL = 15
+
 TYPE_SPLIT_COMPLEX = 16
 
 ---
