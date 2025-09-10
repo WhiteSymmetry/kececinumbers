@@ -98,7 +98,7 @@ This flexible mechanism provides a rich framework for studying the behavior of n
 *   **Advanced Visualization:** Provides a multi-dimensional `plot_numbers` function tailored to the nature of each number system.
 *   **Keçeci Prime Number (KPN) Analysis:** Identifies the most recurring prime representation in sequences to analyze their convergence behavior.
 *   **Interactive and Programmatic Usage:** Supports both interactive parameter input (`get_interactive`) and direct use in scripts (`get_with_params`).
-*   0.6.8: 16 Nubers
+*   0.6.9: 16 Nubers
 *   0.6.7: 11 Numbers
 
 ---
