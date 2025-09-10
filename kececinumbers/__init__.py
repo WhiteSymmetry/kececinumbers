@@ -22,7 +22,7 @@ import warnings
     # importlib.reload(kececinumbers) # F821 undefined name 'kececinumbers'
 
 # Paket sürüm numarası
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 
@@ -82,6 +82,7 @@ __all__ = [
     '_is_complex_like',
     'is_prime_like',
     'is_near_integer',
+    '_plot_component_distribution',
     
 
     # --- Core Generation and Analysis ---
@@ -180,6 +181,7 @@ try:
         _is_complex_like,
         is_prime_like,
         is_near_integer,
+        _plot_component_distribution,
          
     
         # Constants
