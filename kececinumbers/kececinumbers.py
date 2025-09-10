@@ -33,7 +33,7 @@ import collections
 from dataclasses import dataclass
 from fractions import Fraction
 import math
-from matplotlib.gridspec import GridSpec
+#from matplotlib.gridspec import GridSpec
 import matplotlib.pyplot as plt
 import numbers
 #from numbers import Real
@@ -49,6 +49,13 @@ from typing import Any, Dict, List, Optional, Tuple
 
 # numpy ve diğer Keçeci tipleri için gerekli importlar
 # Eğer bu kütüphaneler yüklü değilse, pip install numpy gibi komutlarla yüklemeniz gerekebilir.
+try:
+    from matplotlib.gridspec import GridSpec
+except ModuleNotFoundError:
+    import matplotlib
+    print(f"Matplotlib path: {matplotlib.__file__}")
+    from matplotlib.gridspec import GridSpec
+
 try:
     import numpy as np
     # numpy.quaternion'ın eski adı np.quaternion. Yeni versiyonlarda quaternion modülü ayrı olabilir.
@@ -863,10 +870,56 @@ def _extract_numeric_part(s: str) -> str:
     # Hiç sayı bulunamazsa orijinal string'i döndür
     return s
 
-def _parse_complex(s: str) -> complex:
-    """Bir string'i complex sayıya dönüştürür.
+def _parse_complex(s) -> complex:
+    """Bir string'i veya sayıyı complex sayıya dönüştürür.
     "real,imag", "real+imag(i/j)", "real", "imag(i/j)" formatlarını destekler.
+    Float ve int tiplerini de doğrudan kabul eder.
     """
+    # Eğer zaten complex sayıysa doğrudan döndür
+    if isinstance(s, complex):
+        return s
+    
+    # Eğer float veya int ise doğrudan complex'e dönüştür
+    if isinstance(s, (float, int)):
+        return complex(s)
+    
+    # String işlemleri için önce string'e dönüştür
+    if isinstance(s, str):
+        s = s.strip().replace('J', 'j').replace('i', 'j') # Hem J hem i yerine j kullan
+    else:
+        s = str(s).strip().replace('J', 'j').replace('i', 'j')
+    
+    # 1. Eğer "real,imag" formatındaysa
+    if ',' in s:
+        parts = s.split(',')
+        if len(parts) == 2:
+            try:
+                return complex(float(parts[0]), float(parts[1]))
+            except ValueError:
+                pass # Devam et
+
+    # 2. Python'ın kendi complex() dönüştürücüsünü kullanmayı dene (örn: "1+2j", "3j", "-5")
+    try:
+        return complex(s)
+    except ValueError:
+        # 3. Sadece real kısmı varsa (örn: "5")
+        try:
+            return complex(float(s), 0)
+        except ValueError:
+            # 4. Sadece sanal kısmı varsa (örn: "2j", "j")
+            if s.endswith('j'):
+                try:
+                    imag_val = float(s[:-1]) if s[:-1] else 1.0 # "j" -> 1.0j
+                    return complex(0, imag_val)
+                except ValueError:
+                    pass
+            
+            raise ValueError(f"Geçersiz kompleks sayı formatı: '{s}'")
+"""
+def _parse_complex(s: str) -> complex:
+    #Bir string'i complex sayıya dönüştürür.
+    # "real,imag", "real+imag(i/j)", "real", "imag(i/j)" formatlarını destekler.
+    
     s = s.strip().replace('J', 'j').replace('i', 'j') # Hem J hem i yerine j kullan
 
     # 1. Eğer "real,imag" formatındaysa
@@ -895,6 +948,7 @@ def _parse_complex(s: str) -> complex:
                     pass
             
             raise ValueError(f"Geçersiz kompleks sayı formatı: '{s}'")
+"""
 
 def convert_to_float(value):
     """Convert various Keçeci number types to a float or raise an error if not possible."""
@@ -959,8 +1013,20 @@ def safe_add(added_value, ask_unit, direction):
         raise TypeError(f"{msg} → {type(e).__name__}: {e}") from e
 
 
-def _parse_neutrosophic(s: str) -> Tuple[float, float, float]:
+def _parse_neutrosophic(s) -> Tuple[float, float, float]:
     """Parses neutrosophic string into (t, i, f) tuple."""
+    # Eğer zaten tuple ise doğrudan döndür
+    if isinstance(s, (tuple, list)) and len(s) >= 3:
+        return float(s[0]), float(s[1]), float(s[2])
+    
+    # Sayısal tipse sadece t değeri olarak işle
+    if isinstance(s, (float, int, complex)):
+        return float(s), 0.0, 0.0
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
     s_clean = s.strip().replace(" ", "").upper()
     
     # VİRGÜL formatı: t,i,f (3 parametre)
@@ -1002,8 +1068,20 @@ def _parse_neutrosophic(s: str) -> Tuple[float, float, float]:
     except ValueError:
         return 0.0, 0.0, 0.0  # Default
 
-def _parse_hyperreal(s: str) -> Tuple[float, float]:
+def _parse_hyperreal(s) -> Tuple[float, float]:
     """Parses hyperreal string into (finite, infinitesimal) tuple."""
+    # Eğer zaten tuple ise doğrudan döndür
+    if isinstance(s, (tuple, list)) and len(s) >= 2:
+        return float(s[0]), float(s[1])
+    
+    # Sayısal tipse sadece finite değeri olarak işle
+    if isinstance(s, (float, int, complex)):
+        return float(s), 0.0
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
     s_clean = s.strip().replace(" ", "")
     
     # VİRGÜL formatı: finite,infinitesimal
@@ -1036,10 +1114,20 @@ def _parse_hyperreal(s: str) -> Tuple[float, float]:
     except ValueError:
         return 0.0, 0.0  # Default
 
-def _parse_quaternion_from_csv(s: str) -> np.quaternion:
-    """Virgülle ayrılmış string'i Quaternion'a dönüştürür.
-    "w,x,y,z" veya sadece "w" (skaler) formatlarını destekler.
-    """
+def _parse_quaternion_from_csv(s) -> np.quaternion:
+    """Virgülle ayrılmış string'i veya sayıyı Quaternion'a dönüştürür."""
+    # Eğer zaten quaternion ise doğrudan döndür
+    if isinstance(s, np.quaternion):
+        return s
+    
+    # Sayısal tipse skaler quaternion olarak işle
+    if isinstance(s, (float, int, complex)):
+        return np.quaternion(float(s), 0, 0, 0)
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
     s = s.strip()
     parts_str = s.split(',')
     
@@ -1056,15 +1144,29 @@ def _parse_quaternion_from_csv(s: str) -> np.quaternion:
     else:
         raise ValueError(f"Geçersiz quaternion formatı. 1 veya 4 bileşen bekleniyor: '{s}'")
 
-
-def _has_comma_format(s: str) -> bool:
+def _has_comma_format(s) -> bool:
     """String'in virgül içerip içermediğini kontrol eder."""
+    if not isinstance(s, str):
+        s = str(s)
     return ',' in s
 
-def _parse_neutrosophic_bicomplex(s: str) -> NeutrosophicBicomplexNumber:
+def _parse_neutrosophic_bicomplex(s) -> NeutrosophicBicomplexNumber:
     """
-    Parses string like "a,b,c,d,e,f,g,h" into 8 components.
+    Parses string or numbers into NeutrosophicBicomplexNumber.
     """
+    # Eğer zaten NeutrosophicBicomplexNumber ise doğrudan döndür
+    if isinstance(s, NeutrosophicBicomplexNumber):
+        return s
+    
+    # Sayısal tipse tüm bileşenler 0, sadece ilk bileşen değerli
+    if isinstance(s, (float, int, complex)):
+        values = [float(s)] + [0.0] * 7
+        return NeutrosophicBicomplexNumber(*values)
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
     try:
         parts = s.split(',')
         if len(parts) != 8:
@@ -1073,9 +1175,143 @@ def _parse_neutrosophic_bicomplex(s: str) -> NeutrosophicBicomplexNumber:
         return NeutrosophicBicomplexNumber(*values)
     except Exception as e:
         raise ValueError(f"Invalid NeutrosophicBicomplex format: '{s}' → {e}")
+"""
+def _parse_neutrosophic(s: str) -> Tuple[float, float, float]:
+    #Parses neutrosophic string into (t, i, f) tuple.
+    s_clean = s.strip().replace(" ", "").upper()
+    
+    # VİRGÜL formatı: t,i,f (3 parametre)
+    if ',' in s_clean:
+        parts = s_clean.split(',')
+        try:
+            if len(parts) >= 3:
+                return float(parts[0]), float(parts[1]), float(parts[2])
+            elif len(parts) == 2:
+                return float(parts[0]), float(parts[1]), 0.0
+            elif len(parts) == 1:
+                return float(parts[0]), 0.0, 0.0
+        except ValueError:
+            pass
 
-def _parse_octonion(s: str) -> OctonionNumber:
-    """'w,x,y,z,e,f,g,h' formatındaki stringi OctonionNumber'a çevirir."""
+    # Eski formatları destekle
+    try:
+        if 'I' in s_clean or 'F' in s_clean:
+            # Basit parsing
+            t_part = s_clean
+            i_val, f_val = 0.0, 0.0
+            
+            if 'I' in s_clean:
+                parts = s_clean.split('I')
+                t_part = parts[0]
+                i_val = float(parts[1]) if parts[1] and parts[1] not in ['', '+', '-'] else 1.0
+            
+            if 'F' in t_part:
+                parts = t_part.split('F')
+                t_val = float(parts[0]) if parts[0] and parts[0] not in ['', '+', '-'] else 0.0
+                f_val = float(parts[1]) if len(parts) > 1 and parts[1] not in ['', '+', '-'] else 1.0
+            else:
+                t_val = float(t_part) if t_part not in ['', '+', '-'] else 0.0
+            
+            return t_val, i_val, f_val
+        else:
+            # Sadece sayısal değer
+            return float(s_clean), 0.0, 0.0
+    except ValueError:
+        return 0.0, 0.0, 0.0  # Default
+"""
+"""
+def _parse_hyperreal(s: str) -> Tuple[float, float]:
+    #Parses hyperreal string into (finite, infinitesimal) tuple.
+    s_clean = s.strip().replace(" ", "")
+    
+    # VİRGÜL formatı: finite,infinitesimal
+    if ',' in s_clean:
+        parts = s_clean.split(',')
+        if len(parts) >= 2:
+            try:
+                return float(parts[0]), float(parts[1])
+            except ValueError:
+                pass
+        elif len(parts) == 1:
+            try:
+                return float(parts[0]), 0.0
+            except ValueError:
+                pass
+
+    # Eski 'a+be' formatını destekle
+    if 'e' in s_clean:
+        try:
+            parts = s_clean.split('e')
+            finite = float(parts[0]) if parts[0] not in ['', '+', '-'] else 0.0
+            infinitesimal = float(parts[1]) if len(parts) > 1 and parts[1] not in ['', '+', '-'] else 1.0
+            return finite, infinitesimal
+        except ValueError:
+            pass
+    
+    # Sadece sayısal değer
+    try:
+        return float(s_clean), 0.0
+    except ValueError:
+        return 0.0, 0.0  # Default
+"""
+"""
+def _parse_quaternion_from_csv(s: str) -> np.quaternion:
+    #Virgülle ayrılmış string'i Quaternion'a dönüştürür.
+    #"w,x,y,z" veya sadece "w" (skaler) formatlarını destekler.
+
+    s = s.strip()
+    parts_str = s.split(',')
+    
+    # Tüm parçaları float'a dönüştürmeyi dene
+    try:
+        parts_float = [float(p.strip()) for p in parts_str]
+    except ValueError:
+        raise ValueError(f"Quaternion bileşenleri sayı olmalı: '{s}'")
+
+    if len(parts_float) == 4:
+        return np.quaternion(*parts_float)
+    elif len(parts_float) == 1: # Sadece skaler değer
+        return np.quaternion(parts_float[0], 0, 0, 0)
+    else:
+        raise ValueError(f"Geçersiz quaternion formatı. 1 veya 4 bileşen bekleniyor: '{s}'")
+"""
+"""
+def _has_comma_format(s: str) -> bool:
+    #String'in virgül içerip içermediğini kontrol eder.
+    return ',' in s
+"""
+"""
+def _parse_neutrosophic_bicomplex(s: str) -> NeutrosophicBicomplexNumber:
+
+    #Parses string like "a,b,c,d,e,f,g,h" into 8 components.
+
+    try:
+        parts = s.split(',')
+        if len(parts) != 8:
+            raise ValueError(f"Expected 8 components, got {len(parts)}")
+        values = [float(part.strip()) for part in parts]
+        return NeutrosophicBicomplexNumber(*values)
+    except Exception as e:
+        raise ValueError(f"Invalid NeutrosophicBicomplex format: '{s}' → {e}")
+"""
+
+def _parse_octonion(s) -> OctonionNumber:
+    """String'i veya sayıyı OctonionNumber'a dönüştürür.
+    w,x,y,z,e,f,g,h:e0,e1,e2,e3,e4,e5,e6,e7
+    """
+    # Eğer zaten OctonionNumber ise doğrudan döndür
+    if isinstance(s, OctonionNumber):
+        return s
+    
+    # Eğer sayısal tipse (float, int, complex) skaler olarak işle
+    if isinstance(s, (float, int, complex)):
+        scalar = float(s)
+        return OctonionNumber(scalar, 0, 0, 0, 0, 0, 0, 0)
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
     s_clean = s.strip()
     
     # Eğer virgül içermiyorsa, skaler olarak kabul et
@@ -1097,10 +1333,47 @@ def _parse_octonion(s: str) -> OctonionNumber:
             return OctonionNumber(scalar, 0, 0, 0, 0, 0, 0, 0)
     except ValueError as e:
         raise ValueError(f"Invalid octonion format: '{s}'") from e
+"""
+def _parse_octonion(s: str) -> OctonionNumber:
+    #'w,x,y,z,e,f,g,h' formatındaki stringi OctonionNumber'a çevirir.
+    s_clean = s.strip()
+    
+    # Eğer virgül içermiyorsa, skaler olarak kabul et
+    if ',' not in s_clean:
+        try:
+            scalar = float(s_clean)
+            return OctonionNumber(scalar, 0, 0, 0, 0, 0, 0, 0)
+        except ValueError:
+            raise ValueError(f"Invalid octonion format: '{s}'")
+    
+    # Virgülle ayrılmışsa
+    try:
+        parts = [float(p.strip()) for p in s_clean.split(',')]
+        if len(parts) == 8:
+            return OctonionNumber(*parts)  # 8 parametre olarak gönder
+        else:
+            # Eksik veya fazla bileşen için default
+            scalar = parts[0] if parts else 0.0
+            return OctonionNumber(scalar, 0, 0, 0, 0, 0, 0, 0)
+    except ValueError as e:
+        raise ValueError(f"Invalid octonion format: '{s}'") from e
+"""
 
-
-def _parse_sedenion(s: str) -> SedenionNumber:
-    """String'i SedenionNumber'a dönüştürür."""
+def _parse_sedenion(s) -> SedenionNumber:
+    """String'i veya sayıyı SedenionNumber'a dönüştürür."""
+    # Eğer zaten SedenionNumber ise doğrudan döndür
+    if isinstance(s, SedenionNumber):
+        return s
+    
+    # Eğer sayısal tipse (float, int, complex) skaler olarak işle
+    if isinstance(s, (float, int, complex)):
+        scalar_val = float(s)
+        return SedenionNumber([scalar_val] + [0.0] * 15)
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
     s = s.strip()
     parts = [p.strip() for p in s.split(',')]
 
@@ -1117,9 +1390,41 @@ def _parse_sedenion(s: str) -> SedenionNumber:
             raise ValueError(f"Geçersiz skaler sedenion değeri: '{s}' -> {e}") from e
             
     raise ValueError(f"Sedenion için 16 bileşen veya tek skaler bileşen gerekir. Verilen: '{s}' ({len(parts)} bileşen)")
+"""
+def _parse_sedenion(s: str) -> SedenionNumber:
+    #String'i SedenionNumber'a dönüştürür.
+    s = s.strip()
+    parts = [p.strip() for p in s.split(',')]
 
-def _parse_clifford(s: str) -> CliffordNumber:
-    """Algebraik string'i CliffordNumber'a dönüştürür (ör: '1.0+2.0e1')."""
+    if len(parts) == 16:
+        try:
+            return SedenionNumber(list(map(float, parts)))
+        except ValueError as e:
+            raise ValueError(f"Geçersiz sedenion bileşen değeri: '{s}' -> {e}") from e
+    elif len(parts) == 1: # Sadece skaler değer girildiğinde
+        try:
+            scalar_val = float(parts[0])
+            return SedenionNumber([scalar_val] + [0.0] * 15)
+        except ValueError as e:
+            raise ValueError(f"Geçersiz skaler sedenion değeri: '{s}' -> {e}") from e
+            
+    raise ValueError(f"Sedenion için 16 bileşen veya tek skaler bileşen gerekir. Verilen: '{s}' ({len(parts)} bileşen)")
+"""
+
+def _parse_clifford(s) -> CliffordNumber:
+    """Algebraik string'i veya sayıyı CliffordNumber'a dönüştürür (ör: '1.0+2.0e1')."""
+    # Eğer zaten CliffordNumber ise doğrudan döndür
+    if isinstance(s, CliffordNumber):
+        return s
+    
+    # Eğer sayısal tipse (float, int, complex) skaler olarak işle
+    if isinstance(s, (float, int, complex)):
+        return CliffordNumber({'': float(s)})
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
     s = s.strip().replace(' ', '')
     basis_dict = {'': 0.0}  # Skaler kısım
     
@@ -1158,9 +1463,63 @@ def _parse_clifford(s: str) -> CliffordNumber:
         remaining_s = remaining_s[match.end():]
 
     return CliffordNumber(basis_dict)
+"""
+def _parse_clifford(s: str) -> CliffordNumber:
+    #Algebraik string'i CliffordNumber'a dönüştürür (ör: '1.0+2.0e1').
+    s = s.strip().replace(' ', '')
+    basis_dict = {'': 0.0}  # Skaler kısım
+    
+    terms_pattern = re.compile(r"([+-]?)(\d*\.?\d+(?:[eE][+-]?\d+)?)?(e\d*)?")
+    remaining_s = s
+    
+    while remaining_s:
+        match = terms_pattern.match(remaining_s)
+        if not match or (match.group(2) is None and match.group(3) is None):
+            if remaining_s.startswith('+') or remaining_s.startswith('-'):
+                current_sign = remaining_s[0]
+                remaining_s = remaining_s[1:]
+                if not remaining_s:
+                    coeff = 1.0 if current_sign == '+' else -1.0
+                    basis_dict[''] = basis_dict.get('', 0.0) + coeff
+                continue
+            raise ValueError(f"Geçersiz Clifford terim formatı: '{remaining_s}'")
 
-def _parse_dual(s: str) -> DualNumber:
-    """Virgülle ayrılmış string'i DualNumber'a dönüştürür."""
+        sign_str, coeff_str, basis_str_with_e = match.groups()
+        current_sign = 1.0
+        if sign_str == '-': current_sign = -1.0
+        
+        coeff = 1.0
+        if coeff_str: coeff = float(coeff_str)
+        elif not sign_str: coeff = 1.0
+        elif sign_str and not coeff_str: coeff = 1.0
+
+        coeff *= current_sign
+
+        if basis_str_with_e:
+            basis_key = basis_str_with_e.lstrip('e')
+            basis_dict[basis_key] = basis_dict.get(basis_key, 0.0) + coeff
+        else:
+            basis_dict[''] = basis_dict.get('', 0.0) + coeff
+        
+        remaining_s = remaining_s[match.end():]
+
+    return CliffordNumber(basis_dict)
+"""
+
+def _parse_dual(s) -> DualNumber:
+    """String'i veya sayıyı DualNumber'a dönüştürür."""
+    # Eğer zaten DualNumber ise doğrudan döndür
+    if isinstance(s, DualNumber):
+        return s
+    
+    # Eğer sayısal tipse (float, int, complex) real kısım olarak işle
+    if isinstance(s, (float, int, complex)):
+        return DualNumber(float(s), 0.0)
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
     s = s.strip()
     parts = [p.strip() for p in s.split(',')]
     
@@ -1177,9 +1536,41 @@ def _parse_dual(s: str) -> DualNumber:
             pass
             
     raise ValueError(f"Geçersiz Dual sayı formatı: '{s}' (Real, Dual veya sadece Real bekleniyor)")
+"""
+def _parse_dual(s: str) -> DualNumber:
+    #Virgülle ayrılmış string'i DualNumber'a dönüştürür.
+    s = s.strip()
+    parts = [p.strip() for p in s.split(',')]
+    
+    # Sadece ilk iki bileşeni al
+    if len(parts) >= 2:
+        try:
+            return DualNumber(float(parts[0]), float(parts[1]))
+        except ValueError:
+            pass
+    elif len(parts) == 1: # Sadece real kısım verilmiş
+        try:
+            return DualNumber(float(parts[0]), 0.0)
+        except ValueError:
+            pass
+            
+    raise ValueError(f"Geçersiz Dual sayı formatı: '{s}' (Real, Dual veya sadece Real bekleniyor)")
+"""
 
-def _parse_splitcomplex(s: str) -> SplitcomplexNumber:
-    """Virgülle ayrılmış string'i SplitcomplexNumber'a dönüştürür."""
+def _parse_splitcomplex(s) -> SplitcomplexNumber:
+    """String'i veya sayıyı SplitcomplexNumber'a dönüştürür."""
+    # Eğer zaten SplitcomplexNumber ise doğrudan döndür
+    if isinstance(s, SplitcomplexNumber):
+        return s
+    
+    # Eğer sayısal tipse (float, int, complex) real kısım olarak işle
+    if isinstance(s, (float, int, complex)):
+        return SplitcomplexNumber(float(s), 0.0)
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
     s = s.strip()
     parts = [p.strip() for p in s.split(',')]
 
@@ -1195,7 +1586,25 @@ def _parse_splitcomplex(s: str) -> SplitcomplexNumber:
             pass
             
     raise ValueError(f"Geçersiz Split-Complex sayı formatı: '{s}' (Real, Split veya sadece Real bekleniyor)")
+"""
+def _parse_splitcomplex(s: str) -> SplitcomplexNumber:
+    #Virgülle ayrılmış string'i SplitcomplexNumber'a dönüştürür.
+    s = s.strip()
+    parts = [p.strip() for p in s.split(',')]
 
+    if len(parts) == 2:
+        try:
+            return SplitcomplexNumber(float(parts[0]), float(parts[1]))
+        except ValueError:
+            pass
+    elif len(parts) == 1: # Sadece real kısım verilmiş
+        try:
+            return SplitcomplexNumber(float(parts[0]), 0.0)
+        except ValueError:
+            pass
+            
+    raise ValueError(f"Geçersiz Split-Complex sayı formatı: '{s}' (Real, Split veya sadece Real bekleniyor)")
+"""
 
 class Constants:
     """Oktonyon sabitleri."""
@@ -2485,8 +2894,8 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
         9: "Enter Hyperreal start (in 'finite,infinitesimal' format, e.g., '0.0,0.0001'): ",
         10: "Enter Bicomplex start (in 'z1_real,z1_imag,z2_real,z2_imag' format, e.g., '1.0,2.0,3.0,4.0', '1.0,2.0', '3.0', '1.0+1.0j'): ",
         11: "Enter Neutro-Bicomplex start (in 'r,i,nr,ni,jr,ji,jnr,jni' format, e.g., '1,2,0.1,0.2,0.3,0.4,0.5,0.6', '0.1'): ",
-        12: "Enter Octonion start (in 'e0,e1,e2,e3,e4,e5,e6,e7' format, e.g., '1.0,0.5,-0.2,0.3,0.1,-0.4,0.2,0.0'): ",
-        13: "Enter Sedenion start (in 'e0,e1,...,e15' format, e.g., '1.0', '0.0'): ",
+        12: "Enter Octonion start (in 'w,x,y,z,e,f,g,h':'e0,e1,e2,e3,e4,e5,e6,e7' format, e.g., '1.0,0.5,-0.2,0.3,0.1,-0.4,0.2,0.0'): ",
+        13: "Enter Sedenion start (in 'e0,e1,...,e15' format, e.g., '1.0,2.0,3.0,0,0,0,0,0,0,0,0,0,0,0,0,0', '0.0'): ",
         14: "Enter Clifford start (in 'scalar,e1,e2,e12,...' format, e.g., '0.1+0.2e1', '1.0+2.0e1+3.0e12'): ",
         15: "Enter Dual start (in 'real,dual' format, e.g., '2.0,0.5'): ",
         16: "Enter Split-Complex start (in 'real,split' format, e.g., '1.0,0.8'): ",
@@ -2505,8 +2914,8 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
         9: "Enter Hyperreal increment (in 'finite,infinitesimal' format, e.g., '0.0,0.0001'): ",
         10: "Enter Bicomplex increment (in 'z1_real,z1_imag,z2_real,z2_imag' format, e.g., '1.0,2.0,3.0,4.0', '1.0,2.0', '3.0', '1.0+1.0j'): ",
         11: "Enter Neutro-Bicomplex increment (in 'r,i,nr,ni,jr,ji,jnr,jni' format, e.g., '1,2,0.1,0.2,0.3,0.4,0.5,0.6', '0.1')): ",
-        12: "Enter Octonion increment (in 'e0,e1,e2,e3,e4,e5,e6,e7' format, e.g., '0.1', '0.0'): ",
-        13: "Enter Sedenion increment (in 'e0,e1,...,e15' format, e.g., '0.1', '0.0'): ",
+        12: "Enter Octonion increment (in 'w,x,y,z,e,f,g,h':'e0,e1,e2,e3,e4,e5,e6,e7' format, e.g., '1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0', '0.0'): ",
+        13: "Enter Sedenion increment (in 'e0,e1,...,e15' format, e.g., '1.0,2.0,3.0,0,0,0,0,0,0,0,0,0,0,0,0,0', '0.0'): ",
         14: "Enter Clifford increment (in 'scalar,e1,e2,e12,...' format, e.g., '0.1+0.2e1', '1.0+2.0e1+3.0e12'): ",
         15: "Enter Dual increment (in 'real,dual' format, e.g., 1.0, '0.1,0.0'): ",
         16: "Enter Split-Complex increment (in 'real,split' format, e.g., '0.1,0.0'): ",
@@ -2617,6 +3026,13 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
     if not sequence:
         print("Sequence is empty. Nothing to plot.")
         return
+
+    try:
+        from sklearn.decomposition import PCA
+        use_pca = True
+    except ImportError:
+        use_pca = False
+        print("scikit-learn kurulu değil. PCA olmadan çizim yapılıyor...")
 
     fig = plt.figure(figsize=(18, 14), constrained_layout=True)
     fig.suptitle(title, fontsize=18, fontweight='bold')
