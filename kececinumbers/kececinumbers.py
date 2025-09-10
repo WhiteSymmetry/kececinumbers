@@ -63,7 +63,7 @@ except ImportError:
 
 
 # ==============================================================================
-# --- MODULE CONSTANTS: KEÇECI NUMBER TYPES ---
+# --- MODULE CONSTANTS: Keçeci NUMBER TYPES ---
 # ==============================================================================
 TYPE_POSITIVE_REAL = 1
 TYPE_NEGATIVE_REAL = 2
@@ -81,8 +81,6 @@ TYPE_SEDENION = 13
 TYPE_CLIFFORD = 14
 TYPE_DUAL = 15
 TYPE_SPLIT_COMPLEX = 16
-
-
 
 # ==============================================================================
 # --- CUSTOM NUMBER CLASS DEFINITIONS ---
