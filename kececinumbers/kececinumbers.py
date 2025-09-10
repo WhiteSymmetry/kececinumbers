@@ -642,17 +642,123 @@ class SedenionNumber:
 
 @dataclass
 class CliffordNumber:
+    def __init__(self, basis_dict: Dict[str, float]):
+        """CliffordNumber constructor."""
+        # Sadece sıfır olmayan değerleri sakla
+        self.basis = {k: float(v) for k, v in basis_dict.items() if abs(float(v)) > 1e-10}
+    
+    @property
+    def dimension(self) -> int:
+        """Vector space dimension'ını otomatik hesaplar."""
+        max_index = 0
+        for key in self.basis.keys():
+            if key:  # scalar değilse
+                # '12', '123' gibi string'lerden maksimum rakamı bul
+                if key.isdigit():
+                    max_index = max(max_index, max(int(c) for c in key))
+        return max_index
+
+    def __add__(self, other):
+        if isinstance(other, CliffordNumber):
+            new_basis = self.basis.copy()
+            for k, v in other.basis.items():
+                new_basis[k] = new_basis.get(k, 0.0) + v
+                # Sıfıra yakın değerleri temizle
+                if abs(new_basis[k]) < 1e-10:
+                    del new_basis[k]
+            return CliffordNumber(new_basis)
+        elif isinstance(other, (int, float)):
+            new_basis = self.basis.copy()
+            new_basis[''] = new_basis.get('', 0.0) + other
+            return CliffordNumber(new_basis)
+        return NotImplemented
+
+    def __sub__(self, other):
+        if isinstance(other, CliffordNumber):
+            new_basis = self.basis.copy()
+            for k, v in other.basis.items():
+                new_basis[k] = new_basis.get(k, 0.0) - v
+                if abs(new_basis[k]) < 1e-10:
+                    del new_basis[k]
+            return CliffordNumber(new_basis)
+        elif isinstance(other, (int, float)):
+            new_basis = self.basis.copy()
+            new_basis[''] = new_basis.get('', 0.0) - other
+            return CliffordNumber(new_basis)
+        return NotImplemented
+
+    def __mul__(self, other):
+        if isinstance(other, (int, float)):
+            return CliffordNumber({k: v * other for k, v in self.basis.items()})
+        elif isinstance(other, CliffordNumber):
+            # Basit Clifford çarpımı (e_i^2 = +1 varsayımıyla)
+            new_basis = {}
+            
+            for k1, v1 in self.basis.items():
+                for k2, v2 in other.basis.items():
+                    # Skaler çarpım
+                    if k1 == '':
+                        product_key = k2
+                        sign = 1.0
+                    elif k2 == '':
+                        product_key = k1
+                        sign = 1.0
+                    else:
+                        # Vektör çarpımı: e_i * e_j
+                        combined = sorted(k1 + k2)
+                        product_key = ''.join(combined)
+                        
+                        # Basitleştirilmiş: e_i^2 = +1, anti-commutative
+                        sign = 1.0
+                        # Burada gerçek Clifford cebir kuralları uygulanmalı
+                    
+                    new_basis[product_key] = new_basis.get(product_key, 0.0) + sign * v1 * v2
+            
+            return CliffordNumber(new_basis)
+        return NotImplemented
+
+    def __truediv__(self, other):
+        if isinstance(other, (int, float)):
+            if other == 0:
+                raise ZeroDivisionError("Division by zero")
+            return CliffordNumber({k: v / other for k, v in self.basis.items()})
+        return NotImplemented
+
+    def __str__(self):
+        parts = []
+        if '' in self.basis and abs(self.basis['']) > 1e-10:
+            parts.append(f"{self.basis['']:.2f}")
+        
+        sorted_keys = sorted([k for k in self.basis if k != ''], key=lambda x: (len(x), x))
+        for k in sorted_keys:
+            v = self.basis[k]
+            if abs(v) > 1e-10:
+                sign = '+' if v > 0 and parts else ''
+                parts.append(f"{sign}{v:.2f}e{k}")
+        
+        result = "".join(parts).replace("+-", "-")
+        return result if result else "0.0"
+
+    @classmethod
+    def parse(cls, s) -> 'CliffordNumber':
+        """Class method olarak parse metodu"""
+        return _parse_clifford(s)
+
+    def __repr__(self):
+        return self.__str__()
+"""
+class CliffordNumber:
 
     def __init__(self, basis_dict):
-        """
-        CliffordNumber constructor - sadece basis_dict alır.
-        Dimension property olarak hesaplanabilir.
-        """
+
+        #CliffordNumber constructor - sadece basis_dict alır.
+        #Dimension property olarak hesaplanabilir.
+
         self.basis = {k: float(v) for k, v in basis_dict.items()}
     
     @property
     def dimension(self):
-        """Vector space dimension'ını otomatik hesaplar."""
+        #Vector space dimension'ını otomatik hesaplar.
         if not self.basis:
             return 0
         max_index = 0
@@ -734,6 +840,7 @@ class CliffordNumber:
         if not parts:
             return "0.0"
         return "".join(parts).replace("+-", "-")
+"""
 
 
 @dataclass
@@ -1412,7 +1519,52 @@ def _parse_sedenion(s: str) -> SedenionNumber:
 """
 
 def _parse_clifford(s) -> CliffordNumber:
-    """Algebraik string'i veya sayıyı CliffordNumber'a dönüştürür (ör: '1.0+2.0e1')."""
+    """Algebraik string'i CliffordNumber'a dönüştürür (ör: '1.0+2.0e1')."""
+    if isinstance(s, CliffordNumber):
+        return s
+    
+    if isinstance(s, (float, int, complex)):
+        return CliffordNumber({'': float(s)})
+    
+    if not isinstance(s, str):
+        s = str(s)
+    
+    s = s.strip().replace(' ', '').replace('^', '')  # ^ işaretini kaldır
+    basis_dict = {}
+    
+    # Daha iyi regex pattern: +-1.23e12 formatını yakala
+    pattern = r'([+-]?)(\d*\.?\d+)(?:e(\d+))?|([+-]?)(?:e(\d+))'
+    matches = re.findall(pattern, s)
+    
+    for match in matches:
+        sign_str, coeff_str, basis1, sign_str2, basis2 = match
+        
+        # Hangi grup match oldu?
+        if coeff_str or basis1:
+            sign = -1.0 if sign_str == '-' else 1.0
+            coeff = float(coeff_str) if coeff_str else 1.0
+            basis_key = basis1 if basis1 else ''
+        else:
+            sign = -1.0 if sign_str2 == '-' else 1.0
+            coeff = 1.0
+            basis_key = basis2
+        
+        value = sign * coeff
+        basis_dict[basis_key] = basis_dict.get(basis_key, 0.0) + value
+    
+    # Ayrıca +e1, -e2 gibi ifadeleri yakala
+    pattern2 = r'([+-])e(\d+)'
+    matches2 = re.findall(pattern2, s)
+    
+    for sign_str, basis_key in matches2:
+        sign = -1.0 if sign_str == '-' else 1.0
+        basis_dict[basis_key] = basis_dict.get(basis_key, 0.0) + sign
+    
+    return CliffordNumber(basis_dict)
+"""
+
+def _parse_clifford(s) -> CliffordNumber:
+    #Algebraik string'i veya sayıyı CliffordNumber'a dönüştürür (ör: '1.0+2.0e1').
     # Eğer zaten CliffordNumber ise doğrudan döndür
     if isinstance(s, CliffordNumber):
         return s
@@ -1463,6 +1615,7 @@ def _parse_clifford(s) -> CliffordNumber:
         remaining_s = remaining_s[match.end():]
 
     return CliffordNumber(basis_dict)
+"""
 """
 def _parse_clifford(s: str) -> CliffordNumber:
     #Algebraik string'i CliffordNumber'a dönüştürür (ör: '1.0+2.0e1').
@@ -3019,6 +3172,36 @@ def is_neutrosophic_like(obj):
            (hasattr(obj, 'value') and hasattr(obj, 'indeterminacy')) or \
            (hasattr(obj, 'determinate') and hasattr(obj, 'indeterminate'))
 
+# Yardımcı fonksiyon: Bileşen dağılımı grafiği
+def _plot_component_distribution(ax, elem, all_keys, seq_length=1):
+    """Bileşen dağılımını gösterir"""
+    if seq_length == 1:
+        # Tek veri noktası için bileşen değerleri
+        components = []
+        values = []
+        
+        for key in all_keys:
+            if key == '':
+                components.append('Scalar')
+            else:
+                components.append(f'e{key}')
+            values.append(elem.basis.get(key, 0.0))
+        
+        bars = ax.bar(components, values, alpha=0.7, color='tab:blue')
+        ax.set_title("Component Values")
+        ax.tick_params(axis='x', rotation=45)
+        
+        for bar in bars:
+            height = bar.get_height()
+            if height != 0:
+                ax.text(bar.get_x() + bar.get_width()/2., height,
+                       f'{height:.2f}', ha='center', va='bottom')
+    else:
+        # Çoklu veri ama PCA yapılamıyor
+        ax.text(0.5, 0.5, f"Need ≥2 data points and ≥2 features\n(Current: {seq_length} points, {len(all_keys)} features)", 
+               ha='center', va='center', transform=ax.transAxes, fontsize=11)
+        ax.set_title("Insufficient for PCA")
+
 def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Analysis"):
     """
     Tüm 16 Keçeci Sayı türü için detaylı görselleştirme sağlar.
@@ -3206,33 +3389,100 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         values = {k: [elem.basis.get(k, 0.0) for elem in sequence] for k in all_keys}
         scalar = values.get('', [0]*len(sequence))
         vector_keys = [k for k in all_keys if len(k) == 1]
-        gs = GridSpec(2, 2, figure=fig)
-
-        ax1 = fig.add_subplot(gs[0, 0])
-        ax1.plot(scalar, 'o-', label='Scalar', color='black')
-        for k in vector_keys[:3]:
-            ax1.plot(values[k], label=f'Vec {k}', alpha=0.7)
-        ax1.set_title("Scalar & Vectors")
-        ax1.legend()
-
-        ax2 = fig.add_subplot(gs[0, 1])
-        bivector_mags = [sum(v**2 for k, v in elem.basis.items() if len(k) == 2)**0.5 for elem in sequence]
-        ax2.plot(bivector_mags, 'o-', color='tab:green')
-        ax2.set_title("Bivector Magnitude")
-
+        
+        # numpy import et
         try:
-            from sklearn.decomposition import PCA
-            matrix = np.array([list(v.values()) for v in values.values()]).T
-            pca = PCA(n_components=2)
-            if len(sequence) > 1:
+            import numpy as np
+            numpy_available = True
+        except ImportError:
+            numpy_available = False
+        
+        # GERÇEK özellik sayısını hesapla (sıfır olmayan bileşenler)
+        non_zero_features = 0
+        for key in all_keys:
+            if any(abs(elem.basis.get(key, 0.0)) > 1e-10 for elem in sequence):
+                non_zero_features += 1
+        
+        print(f"Debug: Total keys: {len(all_keys)}, Non-zero features: {non_zero_features}")
+        
+        # Her zaman 2x2 grid kullan
+        fig = plt.figure(figsize=(12, 10))
+        gs = GridSpec(2, 2, figure=fig)
+        ax1 = fig.add_subplot(gs[0, 0])
+        ax2 = fig.add_subplot(gs[0, 1])
+        ax3 = fig.add_subplot(gs[1, :])
+
+        # 1. Grafik: Skaler ve Vektör Bileşenleri
+        ax1.plot(scalar, 'o-', label='Scalar', color='black', linewidth=2)
+        
+        # Sadece sıfır olmayan vektör bileşenlerini göster
+        visible_vectors = 0
+        for k in vector_keys:
+            if any(abs(v) > 1e-10 for v in values[k]):
+                ax1.plot(values[k], 'o-', label=f'Vec {k}', alpha=0.7, linewidth=1.5)
+                visible_vectors += 1
+            if visible_vectors >= 3:
+                break
+        
+        ax1.set_title("Scalar & Vector Components Over Time")
+        ax1.legend()
+        ax1.grid(True, alpha=0.3)
+
+        # 2. Grafik: Bivector Magnitude
+        bivector_mags = [sum(v**2 for k, v in elem.basis.items() if len(k) == 2)**0.5 for elem in sequence]
+        ax2.plot(bivector_mags, 'o-', color='tab:green', linewidth=2, label='Bivector Magnitude')
+        ax2.set_title("Bivector Magnitude Over Time")
+        ax2.legend()
+        ax2.grid(True, alpha=0.3)
+
+        # 3. Grafik: PCA - ARTIK PCA GÖSTERİYORUZ
+        if len(sequence) >= 2 and non_zero_features >= 2:
+            # PCA yapılabilir durumda
+            try:
+                from sklearn.decomposition import PCA
+                
+                # Tüm bileşenleri içeren matris oluştur
+                matrix_data = []
+                for elem in sequence:
+                    row = []
+                    for key in all_keys:
+                        row.append(elem.basis.get(key, 0.0))
+                    matrix_data.append(row)
+                
+                if numpy_available:
+                    matrix = np.array(matrix_data)
+                else:
+                    import numpy as np
+                    matrix = np.array(matrix_data)
+                
+                # PCA uygula
+                pca = PCA(n_components=min(2, matrix.shape[1]))
                 proj = pca.fit_transform(matrix)
-                ax3 = fig.add_subplot(gs[1, :])
-                sc = ax3.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='plasma')
-                ax3.set_title("Clifford PCA")
-                plt.colorbar(sc, ax=ax3, label="Component")
-        except:
-            ax3 = fig.add_subplot(gs[1, :])
-            ax3.text(0.5, 0.5, "Install sklearn for PCA", ha='center')
+                
+                sc = ax3.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), 
+                               cmap='plasma', s=50, alpha=0.8)
+                ax3.set_title(f"PCA Projection ({non_zero_features} features)\nVariance: {pca.explained_variance_ratio_[0]:.3f}, {pca.explained_variance_ratio_[1]:.3f}")
+                
+                cbar = plt.colorbar(sc, ax=ax3)
+                cbar.set_label("Time Step")
+                
+                ax3.plot(proj[:, 0], proj[:, 1], 'gray', linestyle='--', alpha=0.5)
+                ax3.grid(True, alpha=0.3)
+                    
+            except ImportError:
+                ax3.text(0.5, 0.5, "Install sklearn for PCA", 
+                        ha='center', va='center', transform=ax3.transAxes)
+            except Exception as e:
+                ax3.text(0.5, 0.5, f"PCA Error: {str(e)[:30]}", 
+                        ha='center', va='center', transform=ax3.transAxes)
+        else:
+            # PCA yapılamazsa bilgi göster
+            ax3.text(0.5, 0.5, f"Need ≥2 data points and ≥2 features\n(Current: {len(sequence)} points, {non_zero_features} features)", 
+                   ha='center', va='center', transform=ax3.transAxes)
+            ax3.set_title("Insufficient for PCA")
+
+        #plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
+
 
     # --- 8. DualNumber
     elif hasattr(first_elem, 'real') and hasattr(first_elem, 'dual'):
