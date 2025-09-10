@@ -24,7 +24,7 @@ Welcome to Keçeci Numbers's Documentation!
 
 **Keçeci Numbers** is a Python library for generating, analyzing, and visualizing dynamic sequences inspired by the Collatz Conjecture across diverse number systems.
 
-This library provides a unified algorithm that operates on 11 different number types, from standard integers to complex algebraic structures like quaternions and neutrosophic numbers. It is designed as a tool for academic research and exploration in number theory.
+This library provides a unified algorithm that operates on 16 different number types, from standard integers to complex algebraic structures like quaternions and neutrosophic numbers. It is designed as a tool for academic research and exploration in number theory.
 
 .. toctree::
    :maxdepth: 2
@@ -69,7 +69,7 @@ Keçeci Numbers are sequences generated from a specific starting value using a r
 Key Features
 ============
 
-*   **11 Different Number Types:** Supports integers, rationals, complex numbers, quaternions, neutrosophic numbers, and more.
+*   **16 Different Number Types:** Supports integers, rationals, complex numbers, quaternions, neutrosophic numbers, and more.
 *   **Unified Generator:** Uses a single, consistent ``unified_generator`` algorithm for all number types.
 *   **Advanced Visualization:** Provides a multi-dimensional ``plot_numbers`` function tailored to the nature of each number system.
 *   **Keçeci Prime Number (KPN) Analysis:** Identifies the most recurring prime representation in sequences to analyze their convergence behavior.
