@@ -69,7 +69,7 @@
 
 **Keçeci Numbers** is a Python library for generating, analyzing, and visualizing dynamic sequences inspired by the Collatz Conjecture across diverse number systems.
 
-This library provides a unified algorithm that operates on 11 different number types, from standard integers to complex algebraic structures like quaternions and neutrosophic numbers. It is designed as a tool for academic research and exploration in number theory.
+This library provides a unified algorithm that operates on 16 different number types, from standard integers to complex algebraic structures like quaternions and neutrosophic numbers. It is designed as a tool for academic research and exploration in number theory.
 
 <details>
 <summary>🇹🇷 Türkçe Açıklama (Click to expand)</summary>
@@ -93,11 +93,32 @@ This flexible mechanism provides a rich framework for studying the behavior of n
 
 ## Key Features
 
-*   **11 Different Number Types:** Supports integers, rationals, complex numbers, quaternions, neutrosophic numbers, and more.
+*   **16 Different Number Types:** Supports integers, rationals, complex numbers, quaternions, neutrosophic numbers, and more.
 *   **Unified Generator:** Uses a single, consistent `unified_generator` algorithm for all number types.
 *   **Advanced Visualization:** Provides a multi-dimensional `plot_numbers` function tailored to the nature of each number system.
 *   **Keçeci Prime Number (KPN) Analysis:** Identifies the most recurring prime representation in sequences to analyze their convergence behavior.
 *   **Interactive and Programmatic Usage:** Supports both interactive parameter input (`get_interactive`) and direct use in scripts (`get_with_params`).
+
+---
+# ==============================================================================
+# --- MODULE CONSTANTS: KEÇECI NUMBER TYPES ---
+# ==============================================================================
+TYPE_POSITIVE_REAL = 1
+TYPE_NEGATIVE_REAL = 2
+TYPE_COMPLEX = 3
+TYPE_FLOAT = 4
+TYPE_RATIONAL = 5
+TYPE_QUATERNION = 6
+TYPE_NEUTROSOPHIC = 7
+TYPE_NEUTROSOPHIC_COMPLEX = 8
+TYPE_HYPERREAL = 9
+TYPE_BICOMPLEX = 10
+TYPE_NEUTROSOPHIC_BICOMPLEX = 11
+TYPE_OCTONION = 12
+TYPE_SEDENION = 13
+TYPE_CLIFFORD = 14
+TYPE_DUAL = 15
+TYPE_SPLIT_COMPLEX = 16
 
 ---
 
@@ -343,7 +364,18 @@ Keçeci Number Types:
 
 11: Neutro-Bicomplex
 
-Please select Keçeci Number Type (1-11):  1
+12: Octonion (in 'e0,e1,e2,e3,e4,e5,e6,e7' format, e.g., '1.0,0.5,-0.2,0.3,0.1,-0.4,0.2,0.0')
+        
+13: "Sedenion(in 'e0,e1,...,e15' format, e.g., '1.0', '0.0'): ",
+        
+14: "Clifford(in 'scalar,e1,e2,e12,...' format, e.g., '0.1+0.2e1', '1.0+2.0e1+3.0e12')
+        
+15: "Dual(in 'real,dual' format, e.g., '2.0,0.5')
+        
+16: "Split-Complex(in 'real,split' format, e.g., '1.0,0.8')
+
+
+Please select Keçeci Number Type (1-16):  1
 
 Enter the starting number (e.g., 0 or 2.5, complex:3+4j, rational: 3/4, quaternions: 1)  :  0
 
