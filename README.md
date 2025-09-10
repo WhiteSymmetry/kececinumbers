@@ -74,7 +74,7 @@ This library provides a unified algorithm that operates on 16 different number t
 <details>
 <summary>🇹🇷 Türkçe Açıklama (Click to expand)</summary>
 
-**Keçeci Sayıları**, Collatz Varsayımı'ndan esinlenen ve farklı sayı sistemlerinde dinamik diziler üreten, analiz eden ve görselleştiren bir Python kütüphanesidir. Bu kütüphane, tamsayılardan karmaşık sayılara, kuaterniyonlardan nötrosofik sayılara kadar 11 farklı sayı türü üzerinde çalışan birleşik bir algoritma sunar. Akademik araştırmalar ve sayı teorisindeki keşifler için bir araç olarak tasarlanmıştır.
+**Keçeci Sayıları**, Collatz Varsayımı'ndan esinlenen ve farklı sayı sistemlerinde dinamik diziler üreten, analiz eden ve görselleştiren bir Python kütüphanesidir. Bu kütüphane, tamsayılardan karmaşık sayılara, kuaterniyonlardan nötrosofik sayılara kadar 16 farklı sayı türü üzerinde çalışan birleşik bir algoritma sunar. Akademik araştırmalar ve sayı teorisindeki keşifler için bir araç olarak tasarlanmıştır.
 
 </details>
 
