@@ -27,7 +27,7 @@ requirements:
     - setuptools
     # Other build tools
   run:
-    - python >=3.10,<3.13
+    - python >=3.10
     - numpy
     - matplotlib
     - sympy
@@ -35,7 +35,7 @@ requirements:
     - quaternion    
     # Other runtime dependencies
   build:
-    - python >=3.10,<3.14
+    - python >=3.10
     - pip
     - setuptools
     - numpy
