@@ -36,8 +36,21 @@ requirements:
     - numpy
 
 test:
+  requires:
+    - matplotlib
+    - scipy
+    - sympy
+    - numpy
+    - quaternion
   imports:
     - kececinumbers
+    - matplotlib.pyplot
+    - matplotlib.gridspec
+    - scipy.fft
+    - scipy.signal
+    - scipy.stats
+    - numpy
+    - quaternion
 
 about:
   home: https://github.com/WhiteSymmetry/kececinumbers
