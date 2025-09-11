@@ -5,7 +5,7 @@
 Keçeci Numbers: A Comprehensive Framework for Number Sequence Analysis.
 
 This package provides tools for generating, analyzing, and visualizing
-11 different types of Keçeci Number sequences, from standard integers
+16 different types of Keçeci Number sequences, from standard integers
 to complex algebraic structures like quaternions and neutrosophic numbers.
 
 Bu dosya paketin başlangıç noktası olarak çalışır.
