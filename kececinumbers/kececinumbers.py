@@ -33,12 +33,13 @@ import collections
 from dataclasses import dataclass
 from fractions import Fraction
 import math
-#from matplotlib.gridspec import GridSpec
+from matplotlib.gridspec import GridSpec
 import matplotlib.pyplot as plt
 import numbers
 #from numbers import Real
 import numpy as np
-import quaternion   # pip instal numpy-quaternion # conda install -c conda-forge quaternion
+import quaternion   
+# pip instal numpy-quaternion # conda install -c conda-forge quaternion
 import random
 import re
 from scipy.fft import fft, fftfreq
@@ -46,26 +47,6 @@ from scipy.signal import find_peaks
 from scipy.stats import ks_2samp
 import sympy
 from typing import Any, Dict, List, Optional, Tuple
-
-# numpy ve diğer Keçeci tipleri için gerekli importlar
-# Eğer bu kütüphaneler yüklü değilse, pip install numpy gibi komutlarla yüklemeniz gerekebilir.
-try:
-    from matplotlib.gridspec import GridSpec
-except ModuleNotFoundError:
-    import matplotlib
-    print(f"Matplotlib path: {matplotlib.__file__}")
-    from matplotlib.gridspec import GridSpec
-
-try:
-    import numpy as np
-    # numpy.quaternion'ın eski adı np.quaternion. Yeni versiyonlarda quaternion modülü ayrı olabilir.
-    # Eğer sorun yaşarsanız, 'pip install numpy-quaternion' ve 'import quaternion as np_quaternion' kullanabilirsiniz.
-except ImportError:
-    print("NumPy not found. Quaternion functionality might be limited.")
-    class DummyQuaternion: # Placeholder for np.quaternion
-        def __init__(self, w, x, y, z): self.w = w
-        def __add__(self, other): return self
-    np = type('module', (object,), {'quaternion': DummyQuaternion})
 
 
 
@@ -1561,103 +1542,7 @@ def _parse_clifford(s) -> CliffordNumber:
         basis_dict[basis_key] = basis_dict.get(basis_key, 0.0) + sign
     
     return CliffordNumber(basis_dict)
-"""
 
-def _parse_clifford(s) -> CliffordNumber:
-    #Algebraik string'i veya sayıyı CliffordNumber'a dönüştürür (ör: '1.0+2.0e1').
-    # Eğer zaten CliffordNumber ise doğrudan döndür
-    if isinstance(s, CliffordNumber):
-        return s
-    
-    # Eğer sayısal tipse (float, int, complex) skaler olarak işle
-    if isinstance(s, (float, int, complex)):
-        return CliffordNumber({'': float(s)})
-    
-    # String işlemleri için önce string'e dönüştür
-    if not isinstance(s, str):
-        s = str(s)
-    
-    s = s.strip().replace(' ', '')
-    basis_dict = {'': 0.0}  # Skaler kısım
-    
-    terms_pattern = re.compile(r"([+-]?)(\d*\.?\d+(?:[eE][+-]?\d+)?)?(e\d*)?")
-    remaining_s = s
-    
-    while remaining_s:
-        match = terms_pattern.match(remaining_s)
-        if not match or (match.group(2) is None and match.group(3) is None):
-            if remaining_s.startswith('+') or remaining_s.startswith('-'):
-                current_sign = remaining_s[0]
-                remaining_s = remaining_s[1:]
-                if not remaining_s:
-                    coeff = 1.0 if current_sign == '+' else -1.0
-                    basis_dict[''] = basis_dict.get('', 0.0) + coeff
-                continue
-            raise ValueError(f"Geçersiz Clifford terim formatı: '{remaining_s}'")
-
-        sign_str, coeff_str, basis_str_with_e = match.groups()
-        current_sign = 1.0
-        if sign_str == '-': current_sign = -1.0
-        
-        coeff = 1.0
-        if coeff_str: coeff = float(coeff_str)
-        elif not sign_str: coeff = 1.0
-        elif sign_str and not coeff_str: coeff = 1.0
-
-        coeff *= current_sign
-
-        if basis_str_with_e:
-            basis_key = basis_str_with_e.lstrip('e')
-            basis_dict[basis_key] = basis_dict.get(basis_key, 0.0) + coeff
-        else:
-            basis_dict[''] = basis_dict.get('', 0.0) + coeff
-        
-        remaining_s = remaining_s[match.end():]
-
-    return CliffordNumber(basis_dict)
-"""
-"""
-def _parse_clifford(s: str) -> CliffordNumber:
-    #Algebraik string'i CliffordNumber'a dönüştürür (ör: '1.0+2.0e1').
-    s = s.strip().replace(' ', '')
-    basis_dict = {'': 0.0}  # Skaler kısım
-    
-    terms_pattern = re.compile(r"([+-]?)(\d*\.?\d+(?:[eE][+-]?\d+)?)?(e\d*)?")
-    remaining_s = s
-    
-    while remaining_s:
-        match = terms_pattern.match(remaining_s)
-        if not match or (match.group(2) is None and match.group(3) is None):
-            if remaining_s.startswith('+') or remaining_s.startswith('-'):
-                current_sign = remaining_s[0]
-                remaining_s = remaining_s[1:]
-                if not remaining_s:
-                    coeff = 1.0 if current_sign == '+' else -1.0
-                    basis_dict[''] = basis_dict.get('', 0.0) + coeff
-                continue
-            raise ValueError(f"Geçersiz Clifford terim formatı: '{remaining_s}'")
-
-        sign_str, coeff_str, basis_str_with_e = match.groups()
-        current_sign = 1.0
-        if sign_str == '-': current_sign = -1.0
-        
-        coeff = 1.0
-        if coeff_str: coeff = float(coeff_str)
-        elif not sign_str: coeff = 1.0
-        elif sign_str and not coeff_str: coeff = 1.0
-
-        coeff *= current_sign
-
-        if basis_str_with_e:
-            basis_key = basis_str_with_e.lstrip('e')
-            basis_dict[basis_key] = basis_dict.get(basis_key, 0.0) + coeff
-        else:
-            basis_dict[''] = basis_dict.get('', 0.0) + coeff
-        
-        remaining_s = remaining_s[match.end():]
-
-    return CliffordNumber(basis_dict)
-"""
 
 def _parse_dual(s) -> DualNumber:
     """String'i veya sayıyı DualNumber'a dönüştürür."""
@@ -1770,7 +1655,6 @@ class Constants:
     F = OctonionNumber(0, 0, 0, 0, 0, 1, 0, 0)
     G = OctonionNumber(0, 0, 0, 0, 0, 0, 1, 0)
     H = OctonionNumber(0, 0, 0, 0, 0, 0, 0, 1)
-
 
 
 def generate_octonion(w, x, y, z, e, f, g, h):
@@ -2433,9 +2317,9 @@ def analyze_all_types(iterations=120, additional_params=None):
 
     return sorted_by_zeta, sorted_by_gue
 
-
+"""
 def _parse_quaternion_from_csv(s: str) -> np.quaternion:
-    """Parses a comma-separated string 'w,x,y,z' into a quaternion."""
+    #Parses a comma-separated string 'w,x,y,z' into a quaternion.
     try:
         parts = [float(p.strip()) for p in s.split(',')]
         if len(parts) != 4:
@@ -2444,6 +2328,7 @@ def _parse_quaternion_from_csv(s: str) -> np.quaternion:
         return np.quaternion(*parts)
     except (ValueError, IndexError) as e:
         raise ValueError(f"Geçersiz virgülle ayrılmış kuaterniyon formatı: '{s}'.") from e
+"""
 
 def _extract_numeric_part(s: str) -> str:
     """String'den sadece sayısal kısmı çıkarır"""
@@ -3292,7 +3177,7 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax4.grid(True, alpha=0.3)
 
     # --- 4. Quaternion
-    elif hasattr(first_elem, 'components') and len(getattr(first_elem, 'components', [])) == 4:
+    if hasattr(first_elem, 'components') and len(getattr(first_elem, 'components', [])) == 4:
         try:
             comp = np.array([getattr(q, 'components', [q.w, q.x, q.y, q.z]) for q in sequence])
             w, x, y, z = comp.T
@@ -3317,9 +3202,11 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
             ax3.set_title("3D Trajectory (x,y,z)")
             ax3.set_xlabel("x"); ax3.set_ylabel("y"); ax3.set_zlabel("z")
             ax3.legend()
+
         except Exception as e:
             ax = fig.add_subplot(1, 1, 1)
             ax.text(0.5, 0.5, f"Error: {e}", ha='center', va='center', color='red')
+
 
     # --- 5. OctonionNumber
     elif hasattr(first_elem, 'coeffs') and len(first_elem.coeffs) == 8:
