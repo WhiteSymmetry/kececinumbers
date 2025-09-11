@@ -22,7 +22,7 @@ import warnings
     # importlib.reload(kececinumbers) # F821 undefined name 'kececinumbers'
 
 # Paket sürüm numarası
-__version__ = "0.7.1"
+__version__ = "0.7.2"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 
