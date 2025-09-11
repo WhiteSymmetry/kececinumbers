@@ -22,7 +22,7 @@ import warnings
     # importlib.reload(kececinumbers) # F821 undefined name 'kececinumbers'
 
 # Paket sürüm numarası
-__version__ = "0.7.3"
+__version__ = "0.7.2"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 
@@ -47,6 +47,7 @@ __all__ = [
     'get_interactive',
     'get_random_type',
     '_get_integer_representation',
+    '_parse_quaternion',
     '_parse_quaternion_from_csv',
     'generate_kececi_vectorial',
     '_plot_comparison',  # DÜZELTİLDİ: '_plot_comparsion' -> '_plot_comparison'
@@ -142,6 +143,7 @@ try:
         get_interactive,
         get_random_type,
         _get_integer_representation,
+        _parse_quaternion,
         _parse_quaternion_from_csv,
         generate_kececi_vectorial,
         unified_generator,
@@ -218,98 +220,3 @@ def eski_fonksiyon():
         category=DeprecationWarning,
         stacklevel=2
     )
-"""
-# Explicit import for critical functions to avoid cache issues
-try:
-    from .kececinumbers import (
-        NeutrosophicNumber,
-        NeutrosophicComplexNumber,
-        HyperrealNumber,
-        BicomplexNumber,
-        NeutrosophicBicomplexNumber,
-        OctonionNumber,
-        Constants,
-        SedenionNumber,
-        CliffordNumber,
-        DualNumber,
-        SplitcomplexNumber,
-        # Functions
-        get_with_params,
-        get_interactive,
-        get_random_type,
-        _get_integer_representation,
-        _parse_quaternion_from_csv,
-        generate_kececi_vectorial,
-        unified_generator,
-        is_prime,
-        find_period,
-        find_kececi_prime_number,
-        plot_numbers,
-        _plot_comparison,
-        _find_kececi_zeta_zeros,
-        _compute_gue_similarity,
-        _load_zeta_zeros,
-        analyze_all_types,
-        analyze_pair_correlation,
-        _gue_pair_correlation,
-        _pair_correlation,
-        _parse_octonion,
-        generate_octonion,
-        ZERO,
-        ONE,
-        I,
-        J,
-        K,
-        E,
-        F,
-        G,
-        H,
-        # Constants
-        TYPE_POSITIVE_REAL,
-        TYPE_NEGATIVE_REAL,
-        TYPE_COMPLEX,
-        TYPE_FLOAT,
-        TYPE_RATIONAL,
-        TYPE_QUATERNION,
-        TYPE_NEUTROSOPHIC,
-        TYPE_NEUTROSOPHIC_COMPLEX,
-        TYPE_HYPERREAL,
-        TYPE_BICOMPLEX,
-        TYPE_NEUTROSOPHIC_BICOMPLEX,
-        TYPE_OCTONION,
-        TYPE_SEDENION,
-        TYPE_CLIFFORD,
-        TYPE_DUAL,
-        TYPE_SPLIT_COMPLEX
-    )
-    
-    # Explicit olarak global namespace'e ekle
-    globals().update({
-        'analyze_all_types': analyze_all_types,
-        '_plot_comparison': _plot_comparison,
-        'TYPE_OCTONION': TYPE_OCTONION,
-        'TYPE_FLOAT': TYPE_FLOAT
-    })
-    
-except ImportError as e:
-    warnings.warn(f"Kritik fonksiyonlar import edilemedi: {e}", ImportWarning)
-"""
-"""
-def __getattr__(name):
-    #Dynamic attribute access for better compatibility
-    if name in ['analyze_all_types', '_plot_comparison']:
-        try:
-            from .kececinumbers import analyze_all_types, _plot_comparison, TYPE_OCTONION, TYPE_FLOAT
-            if name == 'analyze_all_types':
-                return analyze_all_types
-            elif name == '_plot_comparison':
-                return _plot_comparison
-            elif name == 'TYPE_OCTONION':
-                return TYPE_OCTONION
-            elif name == 'TYPE_FLOAT':
-                return TYPE_FLOAT
-        except ImportError:
-            pass
-    
-    raise AttributeError(f"module 'kececinumbers' has no attribute '{name}'")
-"""
