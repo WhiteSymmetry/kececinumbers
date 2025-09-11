@@ -3,7 +3,7 @@
 Keçeci Numbers Module (kececinumbers.py)
 
 This module provides a comprehensive framework for generating, analyzing, and
-visualizing Keçeci Numbers across various number systems. It supports 11
+visualizing Keçeci Numbers across various number systems. It supports 16
 distinct types, from standard integers and complex numbers to more exotic
 constructs like neutrosophic and bicomplex numbers.
 
