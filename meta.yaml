@@ -6,7 +6,7 @@ package:
 
 source:
   path: .  # Derlemeyi bu meta.yaml dosyasının bulunduğu dizinden yap
-  url:https://files.pythonhosted.org/packages/ef/af/207bc2340f7bde8e5984164e5e25bd63ce783f18d6c5b6c018d4a4887b8f/kececinumbers-0.7.2.tar.gz
+  url: https://files.pythonhosted.org/packages/ef/af/207bc2340f7bde8e5984164e5e25bd63ce783f18d6c5b6c018d4a4887b8f/kececinumbers-0.7.2.tar.gz
   sha256: 6fa84692fa22fe341ecbbcf6797d7d445d48cfc118ec76b32c7cba12af961111
 
 channels:
@@ -29,6 +29,10 @@ requirements:
   run:
     - python >=3.10,<3.13
     - numpy
+    - matplotlib
+    - sympy
+    - numpy
+    - quaternion    
     # Other runtime dependencies
   build:
     - python >=3.10,<3.14
