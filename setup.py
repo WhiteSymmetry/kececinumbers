@@ -36,7 +36,7 @@ def get_version():
 
 setup(
     name="kececinumbers",
-    #version="0.4.1",
+    #version="0.7.6",
     description="Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -54,6 +54,7 @@ setup(
         "matplotlib",
         "quaternion",
         "scipy",
+        "scikit-learn",
         "sympy",
     ],
     extras_require={
