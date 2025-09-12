@@ -6,8 +6,8 @@ package:
 
 source:
   path: .  # Derlemeyi bu meta.yaml dosyasının bulunduğu dizinden yap
-  url: https://files.pythonhosted.org/packages/66/e2/fb3a21e2e874e48a74f4d2e6690f575cf73b49f2600fd08e7f006a93535b/kececinumbers-0.7.5.tar.gz
-  sha256: 5160d19dfa92a9a6df34b7496f139ddf1b2fb241397f59252f127beaaac8a4a2
+  url: https://files.pythonhosted.org/packages/9f/8c/58c3070401ec44d297d1303f15dd575bfdcfa01aec0daba29ffbce9c46a3/kececinumbers-0.7.6.tar.gz
+  sha256: da851137e884d05aa5dcc5a65e1d4c732f2ba6092ee57d4e761aa37be9817eba
 
 channels:
   - conda-forge
