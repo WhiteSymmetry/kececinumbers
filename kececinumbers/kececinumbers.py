@@ -727,101 +727,6 @@ class CliffordNumber:
 
     def __repr__(self):
         return self.__str__()
-"""
-class CliffordNumber:
-
-    def __init__(self, basis_dict):
-
-        #CliffordNumber constructor - sadece basis_dict alır.
-        #Dimension property olarak hesaplanabilir.
-
-        self.basis = {k: float(v) for k, v in basis_dict.items()}
-    
-    @property
-    def dimension(self):
-        #Vector space dimension'ını otomatik hesaplar.
-        if not self.basis:
-            return 0
-        max_index = 0
-        for key in self.basis.keys():
-            if key:  # scalar değilse
-                indices = [int(c) for c in key if c.isdigit()]
-                if indices:
-                    max_index = max(max_index, max(indices))
-        return max_index
-
-    def __add__(self, other):
-        if isinstance(other, CliffordNumber):
-            new_basis = self.basis.copy()
-            for k, v in other.basis.items():
-                new_basis[k] = new_basis.get(k, 0.0) + v
-            return CliffordNumber(new_basis)
-        elif isinstance(other, (int, float)):
-            new_basis = self.basis.copy()
-            new_basis[''] = new_basis.get('', 0.0) + other
-            return CliffordNumber(new_basis)
-        return NotImplemented
-
-    def __sub__(self, other):
-        if isinstance(other, CliffordNumber):
-            new_basis = self.basis.copy()
-            for k, v in other.basis.items():
-                new_basis[k] = new_basis.get(k, 0.0) - v
-            return CliffordNumber(new_basis)
-        elif isinstance(other, (int, float)):
-            new_basis = self.basis.copy()
-            new_basis[''] = new_basis.get('', 0.0) - other
-            return CliffordNumber(new_basis)
-        return NotImplemented
-
-    def __mul__(self, other):
-        if isinstance(other, (int, float)):
-            return CliffordNumber({k: v * other for k, v in self.basis.items()})
-        elif isinstance(other, CliffordNumber):
-            # Clifford çarpımı: e_i * e_i = +1 veya -1 olabilir ama burada basitleştirme
-            # Genel durum için çarpım kuralları tanımlanmalı (örneğin e1^2 = 1, e2^2 = -1 vs)
-            # Burada sadece cebirsel çarpım desteklenmiyor çünkü kurallar eksik.
-            return NotImplemented  # Gerçek Clifford çarpımı için kurallar gerekir
-        return NotImplemented
-
-    def __truediv__(self, other):
-        if isinstance(other, (int, float)):
-            if other == 0:
-                raise ZeroDivisionError("Division by zero")
-            return CliffordNumber({k: v / other for k, v in self.basis.items()})
-        return NotImplemented
-
-    def __str__(self):
-        parts = []
-        if '' in self.basis and self.basis[''] != 0.0:
-            parts.append(f"{self.basis['']:.2f}")
-        
-        sorted_keys = sorted([k for k in self.basis if k != ''], key=lambda x: (len(x), x))
-        for k in sorted_keys:
-            v = self.basis[k]
-            if abs(v) > 1e-10:  # sıfıra çok yakın olanları atla
-                sign = '+' if v > 0 and parts else ''
-                parts.append(f"{sign}{v:.2f}e{k}")
-        
-        result = "".join(parts).replace("+-", "-")
-        return result if result else "0.0"
-
-    def __repr__(self):
-        parts = []
-        if '' in self.basis and self.basis[''] != 0.0:
-            parts.append(str(self.basis['']))
-        
-        sorted_keys = sorted([k for k in self.basis if k != ''], key=lambda x: (len(x), x))
-        for k in sorted_keys:
-            v = self.basis[k]
-            if v != 0.0:
-                sign = '+' if v > 0 and parts else ''
-                parts.append(f"{sign}{v}e{k}")
-        
-        if not parts:
-            return "0.0"
-        return "".join(parts).replace("+-", "-")
-"""
 
 
 @dataclass
@@ -1003,40 +908,7 @@ def _parse_complex(s) -> complex:
                     pass
             
             raise ValueError(f"Geçersiz kompleks sayı formatı: '{s}'")
-"""
-def _parse_complex(s: str) -> complex:
-    #Bir string'i complex sayıya dönüştürür.
-    # "real,imag", "real+imag(i/j)", "real", "imag(i/j)" formatlarını destekler.
-    
-    s = s.strip().replace('J', 'j').replace('i', 'j') # Hem J hem i yerine j kullan
 
-    # 1. Eğer "real,imag" formatındaysa
-    if ',' in s:
-        parts = s.split(',')
-        if len(parts) == 2:
-            try:
-                return complex(float(parts[0]), float(parts[1]))
-            except ValueError:
-                pass # Devam et
-
-    # 2. Python'ın kendi complex() dönüştürücüsünü kullanmayı dene (örn: "1+2j", "3j", "-5")
-    try:
-        return complex(s)
-    except ValueError:
-        # 3. Sadece real kısmı varsa (örn: "5")
-        try:
-            return complex(float(s), 0)
-        except ValueError:
-            # 4. Sadece sanal kısmı varsa (örn: "2j", "j")
-            if s.endswith('j'):
-                try:
-                    imag_val = float(s[:-1]) if s[:-1] else 1.0 # "j" -> 1.0j
-                    return complex(0, imag_val)
-                except ValueError:
-                    pass
-            
-            raise ValueError(f"Geçersiz kompleks sayı formatı: '{s}'")
-"""
 
 def convert_to_float(value):
     """Convert various Keçeci number types to a float or raise an error if not possible."""
@@ -1263,125 +1135,7 @@ def _parse_neutrosophic_bicomplex(s) -> NeutrosophicBicomplexNumber:
         return NeutrosophicBicomplexNumber(*values)
     except Exception as e:
         raise ValueError(f"Invalid NeutrosophicBicomplex format: '{s}' → {e}")
-"""
-def _parse_neutrosophic(s: str) -> Tuple[float, float, float]:
-    #Parses neutrosophic string into (t, i, f) tuple.
-    s_clean = s.strip().replace(" ", "").upper()
-    
-    # VİRGÜL formatı: t,i,f (3 parametre)
-    if ',' in s_clean:
-        parts = s_clean.split(',')
-        try:
-            if len(parts) >= 3:
-                return float(parts[0]), float(parts[1]), float(parts[2])
-            elif len(parts) == 2:
-                return float(parts[0]), float(parts[1]), 0.0
-            elif len(parts) == 1:
-                return float(parts[0]), 0.0, 0.0
-        except ValueError:
-            pass
 
-    # Eski formatları destekle
-    try:
-        if 'I' in s_clean or 'F' in s_clean:
-            # Basit parsing
-            t_part = s_clean
-            i_val, f_val = 0.0, 0.0
-            
-            if 'I' in s_clean:
-                parts = s_clean.split('I')
-                t_part = parts[0]
-                i_val = float(parts[1]) if parts[1] and parts[1] not in ['', '+', '-'] else 1.0
-            
-            if 'F' in t_part:
-                parts = t_part.split('F')
-                t_val = float(parts[0]) if parts[0] and parts[0] not in ['', '+', '-'] else 0.0
-                f_val = float(parts[1]) if len(parts) > 1 and parts[1] not in ['', '+', '-'] else 1.0
-            else:
-                t_val = float(t_part) if t_part not in ['', '+', '-'] else 0.0
-            
-            return t_val, i_val, f_val
-        else:
-            # Sadece sayısal değer
-            return float(s_clean), 0.0, 0.0
-    except ValueError:
-        return 0.0, 0.0, 0.0  # Default
-"""
-"""
-def _parse_hyperreal(s: str) -> Tuple[float, float]:
-    #Parses hyperreal string into (finite, infinitesimal) tuple.
-    s_clean = s.strip().replace(" ", "")
-    
-    # VİRGÜL formatı: finite,infinitesimal
-    if ',' in s_clean:
-        parts = s_clean.split(',')
-        if len(parts) >= 2:
-            try:
-                return float(parts[0]), float(parts[1])
-            except ValueError:
-                pass
-        elif len(parts) == 1:
-            try:
-                return float(parts[0]), 0.0
-            except ValueError:
-                pass
-
-    # Eski 'a+be' formatını destekle
-    if 'e' in s_clean:
-        try:
-            parts = s_clean.split('e')
-            finite = float(parts[0]) if parts[0] not in ['', '+', '-'] else 0.0
-            infinitesimal = float(parts[1]) if len(parts) > 1 and parts[1] not in ['', '+', '-'] else 1.0
-            return finite, infinitesimal
-        except ValueError:
-            pass
-    
-    # Sadece sayısal değer
-    try:
-        return float(s_clean), 0.0
-    except ValueError:
-        return 0.0, 0.0  # Default
-"""
-"""
-def _parse_quaternion_from_csv(s: str) -> np.quaternion:
-    #Virgülle ayrılmış string'i Quaternion'a dönüştürür.
-    #"w,x,y,z" veya sadece "w" (skaler) formatlarını destekler.
-
-    s = s.strip()
-    parts_str = s.split(',')
-    
-    # Tüm parçaları float'a dönüştürmeyi dene
-    try:
-        parts_float = [float(p.strip()) for p in parts_str]
-    except ValueError:
-        raise ValueError(f"Quaternion bileşenleri sayı olmalı: '{s}'")
-
-    if len(parts_float) == 4:
-        return np.quaternion(*parts_float)
-    elif len(parts_float) == 1: # Sadece skaler değer
-        return np.quaternion(parts_float[0], 0, 0, 0)
-    else:
-        raise ValueError(f"Geçersiz quaternion formatı. 1 veya 4 bileşen bekleniyor: '{s}'")
-"""
-"""
-def _has_comma_format(s: str) -> bool:
-    #String'in virgül içerip içermediğini kontrol eder.
-    return ',' in s
-"""
-"""
-def _parse_neutrosophic_bicomplex(s: str) -> NeutrosophicBicomplexNumber:
-
-    #Parses string like "a,b,c,d,e,f,g,h" into 8 components.
-
-    try:
-        parts = s.split(',')
-        if len(parts) != 8:
-            raise ValueError(f"Expected 8 components, got {len(parts)}")
-        values = [float(part.strip()) for part in parts]
-        return NeutrosophicBicomplexNumber(*values)
-    except Exception as e:
-        raise ValueError(f"Invalid NeutrosophicBicomplex format: '{s}' → {e}")
-"""
 
 def _parse_octonion(s) -> OctonionNumber:
     """String'i veya sayıyı OctonionNumber'a dönüştürür.
@@ -1421,31 +1175,7 @@ def _parse_octonion(s) -> OctonionNumber:
             return OctonionNumber(scalar, 0, 0, 0, 0, 0, 0, 0)
     except ValueError as e:
         raise ValueError(f"Invalid octonion format: '{s}'") from e
-"""
-def _parse_octonion(s: str) -> OctonionNumber:
-    #'w,x,y,z,e,f,g,h' formatındaki stringi OctonionNumber'a çevirir.
-    s_clean = s.strip()
-    
-    # Eğer virgül içermiyorsa, skaler olarak kabul et
-    if ',' not in s_clean:
-        try:
-            scalar = float(s_clean)
-            return OctonionNumber(scalar, 0, 0, 0, 0, 0, 0, 0)
-        except ValueError:
-            raise ValueError(f"Invalid octonion format: '{s}'")
-    
-    # Virgülle ayrılmışsa
-    try:
-        parts = [float(p.strip()) for p in s_clean.split(',')]
-        if len(parts) == 8:
-            return OctonionNumber(*parts)  # 8 parametre olarak gönder
-        else:
-            # Eksik veya fazla bileşen için default
-            scalar = parts[0] if parts else 0.0
-            return OctonionNumber(scalar, 0, 0, 0, 0, 0, 0, 0)
-    except ValueError as e:
-        raise ValueError(f"Invalid octonion format: '{s}'") from e
-"""
+
 
 def _parse_sedenion(s) -> SedenionNumber:
     """String'i veya sayıyı SedenionNumber'a dönüştürür."""
@@ -1476,28 +1206,9 @@ def _parse_sedenion(s) -> SedenionNumber:
             return SedenionNumber([scalar_val] + [0.0] * 15)
         except ValueError as e:
             raise ValueError(f"Geçersiz skaler sedenion değeri: '{s}' -> {e}") from e
-            
-    raise ValueError(f"Sedenion için 16 bileşen veya tek skaler bileşen gerekir. Verilen: '{s}' ({len(parts)} bileşen)")
-"""
-def _parse_sedenion(s: str) -> SedenionNumber:
-    #String'i SedenionNumber'a dönüştürür.
-    s = s.strip()
-    parts = [p.strip() for p in s.split(',')]
 
-    if len(parts) == 16:
-        try:
-            return SedenionNumber(list(map(float, parts)))
-        except ValueError as e:
-            raise ValueError(f"Geçersiz sedenion bileşen değeri: '{s}' -> {e}") from e
-    elif len(parts) == 1: # Sadece skaler değer girildiğinde
-        try:
-            scalar_val = float(parts[0])
-            return SedenionNumber([scalar_val] + [0.0] * 15)
-        except ValueError as e:
-            raise ValueError(f"Geçersiz skaler sedenion değeri: '{s}' -> {e}") from e
-            
     raise ValueError(f"Sedenion için 16 bileşen veya tek skaler bileşen gerekir. Verilen: '{s}' ({len(parts)} bileşen)")
-"""
+
 
 def _parse_clifford(s) -> CliffordNumber:
     """Algebraik string'i CliffordNumber'a dönüştürür (ör: '1.0+2.0e1')."""
@@ -1540,7 +1251,7 @@ def _parse_clifford(s) -> CliffordNumber:
     for sign_str, basis_key in matches2:
         sign = -1.0 if sign_str == '-' else 1.0
         basis_dict[basis_key] = basis_dict.get(basis_key, 0.0) + sign
-    
+
     return CliffordNumber(basis_dict)
 
 
@@ -1572,28 +1283,9 @@ def _parse_dual(s) -> DualNumber:
             return DualNumber(float(parts[0]), 0.0)
         except ValueError:
             pass
-            
+
     raise ValueError(f"Geçersiz Dual sayı formatı: '{s}' (Real, Dual veya sadece Real bekleniyor)")
-"""
-def _parse_dual(s: str) -> DualNumber:
-    #Virgülle ayrılmış string'i DualNumber'a dönüştürür.
-    s = s.strip()
-    parts = [p.strip() for p in s.split(',')]
-    
-    # Sadece ilk iki bileşeni al
-    if len(parts) >= 2:
-        try:
-            return DualNumber(float(parts[0]), float(parts[1]))
-        except ValueError:
-            pass
-    elif len(parts) == 1: # Sadece real kısım verilmiş
-        try:
-            return DualNumber(float(parts[0]), 0.0)
-        except ValueError:
-            pass
-            
-    raise ValueError(f"Geçersiz Dual sayı formatı: '{s}' (Real, Dual veya sadece Real bekleniyor)")
-"""
+
 
 def _parse_splitcomplex(s) -> SplitcomplexNumber:
     """String'i veya sayıyı SplitcomplexNumber'a dönüştürür."""
@@ -1622,39 +1314,8 @@ def _parse_splitcomplex(s) -> SplitcomplexNumber:
             return SplitcomplexNumber(float(parts[0]), 0.0)
         except ValueError:
             pass
-            
-    raise ValueError(f"Geçersiz Split-Complex sayı formatı: '{s}' (Real, Split veya sadece Real bekleniyor)")
-"""
-def _parse_splitcomplex(s: str) -> SplitcomplexNumber:
-    #Virgülle ayrılmış string'i SplitcomplexNumber'a dönüştürür.
-    s = s.strip()
-    parts = [p.strip() for p in s.split(',')]
 
-    if len(parts) == 2:
-        try:
-            return SplitcomplexNumber(float(parts[0]), float(parts[1]))
-        except ValueError:
-            pass
-    elif len(parts) == 1: # Sadece real kısım verilmiş
-        try:
-            return SplitcomplexNumber(float(parts[0]), 0.0)
-        except ValueError:
-            pass
-            
     raise ValueError(f"Geçersiz Split-Complex sayı formatı: '{s}' (Real, Split veya sadece Real bekleniyor)")
-"""
-
-class Constants:
-    """Oktonyon sabitleri."""
-    ZERO = OctonionNumber(0, 0, 0, 0, 0, 0, 0, 0)
-    ONE = OctonionNumber(1, 0, 0, 0, 0, 0, 0, 0)
-    I = OctonionNumber(0, 1, 0, 0, 0, 0, 0, 0)
-    J = OctonionNumber(0, 0, 1, 0, 0, 0, 0, 0)
-    K = OctonionNumber(0, 0, 0, 1, 0, 0, 0, 0)
-    E = OctonionNumber(0, 0, 0, 0, 1, 0, 0, 0)
-    F = OctonionNumber(0, 0, 0, 0, 0, 1, 0, 0)
-    G = OctonionNumber(0, 0, 0, 0, 0, 0, 1, 0)
-    H = OctonionNumber(0, 0, 0, 0, 0, 0, 0, 1)
 
 
 def generate_octonion(w, x, y, z, e, f, g, h):
@@ -2380,18 +2041,6 @@ def analyze_all_types(iterations=120, additional_params=None):
 
     return sorted_by_zeta, sorted_by_gue
 
-"""
-def _parse_quaternion_from_csv(s: str) -> np.quaternion:
-    #Parses a comma-separated string 'w,x,y,z' into a quaternion.
-    try:
-        parts = [float(p.strip()) for p in s.split(',')]
-        if len(parts) != 4:
-            raise ValueError("Girdi 4 bileşen içermelidir.")
-        # *parts -> (parts[0], parts[1], parts[2], parts[3])
-        return np.quaternion(*parts)
-    except (ValueError, IndexError) as e:
-        raise ValueError(f"Geçersiz virgülle ayrılmış kuaterniyon formatı: '{s}'.") from e
-"""
 
 def _extract_numeric_part(s: str) -> str:
     """String'den sadece sayısal kısmı çıkarır"""
@@ -2959,57 +2608,7 @@ def get_with_params(
         import traceback
         traceback.print_exc()
         return []
-"""
-def get_with_params(
-    kececi_type_choice: int,
-    iterations: int,
-    start_value_raw: str,
-    add_value_raw: str,
-    include_intermediate_steps: bool = False
-) -> List[Any]:
 
-    #Tüm 16 sayı sistemi için ortak arayüz.
-    #Keçeci mantığı (ask, bölme, asallık) unified_generator ile uygulanır.
-    #Sadece toplama değil, koşullu değişimler de yapılır.
-
-    print(f"\n--- Generating Sequence: Type {kececi_type_choice}, Steps {iterations} ---")
-    print(f"Start: '{start_value_raw}', Addition: '{add_value_raw}'")
-
-    # --- unified_generator'ı doğrudan çağır ---
-    # (İlk başta basit toplama döngüsü yapma!)
-
-
-    try:
-        generated_sequence = unified_generator(
-            kececi_type=kececi_type_choice,
-            start_input_raw=start_value_raw,
-            add_input_raw=add_value_raw,
-            iterations=iterations,
-            include_intermediate_steps=include_intermediate_steps
-        )
-
-        if generated_sequence:
-            print(f"Generated {len(generated_sequence)} numbers.")
-            preview = [str(x) for x in generated_sequence[:40]]  # okunabilirlik için
-            print(f"Preview: {preview}...")
-            
-            # Keçeci Prime Number kontrolü (varsa)
-            kpn = find_kececi_prime_number(generated_sequence)
-            if kpn is not None:
-                print(f"Keçeci Prime Number found: {kpn}")
-            else:
-                print("No Keçeci Prime Number found.")
-        else:
-            print("Sequence generation failed or returned empty.")
-
-        return generated_sequence
-
-    except Exception as e:
-        print(f"ERROR during sequence generation: {e}")
-        import traceback
-        traceback.print_exc()
-        return []
-"""
 
 def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
     """
@@ -3412,7 +3011,9 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
             ax3.scatter(x[0], y[0], z[0], c='g', s=100, label='Start')
             ax3.scatter(x[-1], y[-1], z[-1], c='r', s=100, label='End')
             ax3.set_title("3D Trajectory (x,y,z)")
-            ax3.set_xlabel("x"); ax3.set_ylabel("y"); ax3.set_zlabel("z")
+            ax3.set_xlabel("x");
+            ax3.set_ylabel("y");
+            ax3.set_zlabel("z")
             ax3.legend()
 
         except Exception as e:
@@ -3445,7 +3046,9 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax4 = fig.add_subplot(gs[1, 1], projection='3d')
         ax4.plot(coeffs[:, 1], coeffs[:, 2], coeffs[:, 3], alpha=0.7)
         ax4.set_title("3D (e1,e2,e3)")
-        ax4.set_xlabel("e1"); ax4.set_ylabel("e2"); ax4.set_zlabel("e3")
+        ax4.set_xlabel("e1");
+        ax4.set_ylabel("e2");
+        ax4.set_zlabel("e3")
 
     # --- 6. SedenionNumber
     elif isinstance(first_elem, SedenionNumber):
