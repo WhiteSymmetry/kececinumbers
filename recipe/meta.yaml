@@ -30,7 +30,6 @@ requirements:
     - numpy
     - matplotlib
     - sympy
-    - numpy
     - quaternion    
     # Other runtime dependencies
   build:
@@ -38,6 +37,9 @@ requirements:
     - pip
     - setuptools
     - numpy
+    - matplotlib
+    - sympy
+    - quaternion
 
 test:
   requires:
