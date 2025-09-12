@@ -52,9 +52,9 @@ setup(
     install_requires=[
         "numpy",
         "matplotlib",
+        "numpy-quaternion",
         "scipy",
         "sympy",
-        "numpy-quaternion",
     ],
     extras_require={
         'quaternion': ["numpy-quaternion"],  # pip için
