@@ -29,8 +29,9 @@ requirements:
     - python >=3.10
     - numpy
     - matplotlib
+    - quaternion
+    - scipy
     - sympy
-    - quaternion    
     # Other runtime dependencies
   build:
     - python >=3.10
@@ -38,8 +39,9 @@ requirements:
     - setuptools
     - numpy
     - matplotlib
-    - sympy
     - quaternion
+    - scipy
+    - sympy
 
 test:
   requires:
