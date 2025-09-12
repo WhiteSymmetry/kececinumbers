@@ -1,4 +1,4 @@
-{% set version = "0.7.5" %}
+{% set version = "0.7.6" %}
 
 package:
   name: kececinumbers
@@ -32,6 +32,7 @@ requirements:
     - matplotlib
     - quaternion
     - scipy
+    - scikit-learn
     - sympy
     # Other runtime dependencies
   build:
@@ -42,12 +43,14 @@ requirements:
     - matplotlib
     - quaternion
     - scipy
+    - scikit-learn
     - sympy
 
 test:
   requires:
     - matplotlib
     - scipy
+    - scikit-learn
     - sympy
     - numpy
     - quaternion
@@ -58,6 +61,7 @@ test:
     - scipy.fft
     - scipy.signal
     - scipy.stats
+    - scikit-learn
     - numpy
     - quaternion
 
