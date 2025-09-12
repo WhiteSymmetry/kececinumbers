@@ -1,4 +1,4 @@
-{% set version = "0.7.5" %}
+{% set version = "0.7.6" %}
 
 package:
   name: kececinumbers
@@ -8,13 +8,14 @@ source:
   path: .  # Derlemeyi bu meta.yaml dosyasının bulunduğu dizinden yap
   url: https://files.pythonhosted.org/packages/66/e2/fb3a21e2e874e48a74f4d2e6690f575cf73b49f2600fd08e7f006a93535b/kececinumbers-0.7.5.tar.gz
   sha256: 5160d19dfa92a9a6df34b7496f139ddf1b2fb241397f59252f127beaaac8a4a2
-  
+
 channels:
   - conda-forge
 
 build:
   noarch: python  # Platformdan bağımsız bir paket oluşturur
-  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed"
+  #script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed"
+  script: "{{ PYTHON }} -m pip install . -vv"
   number: 0
   entry_points:
     - kececinumbers = kececinumbers.__main__:main
@@ -31,6 +32,7 @@ requirements:
     - matplotlib
     - quaternion
     - scipy
+    - scikit-learn
     - sympy
     # Other runtime dependencies
   build:
@@ -41,12 +43,14 @@ requirements:
     - matplotlib
     - quaternion
     - scipy
+    - scikit-learn
     - sympy
 
 test:
   requires:
     - matplotlib
     - scipy
+    - scikit-learn
     - sympy
     - numpy
     - quaternion
@@ -57,6 +61,7 @@ test:
     - scipy.fft
     - scipy.signal
     - scipy.stats
+    - scikit-learn
     - numpy
     - quaternion
 
