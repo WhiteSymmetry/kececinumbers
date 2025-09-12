@@ -22,7 +22,7 @@ import warnings
     # importlib.reload(kececinumbers) # F821 undefined name 'kececinumbers'
 
 # Paket sürüm numarası
-__version__ = "0.7.4"
+__version__ = "0.7.5"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 
@@ -118,7 +118,6 @@ __all__ = [
 # F401 hatasını önlemek için sadece kullanacağınız şeyleri dışa aktarın
 # Aksi halde linter'lar "imported but unused" uyarısı verir
 from .kececinumbers import *
-
 try:
     #from .kececinumbers import *  # gerekirse burada belirli fonksiyonları seçmeli yapmak daha güvenlidir
     #from . import kececinumbers  # Modülün kendisine doğrudan erişim isteniyorsa
