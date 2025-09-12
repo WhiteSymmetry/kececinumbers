@@ -52,14 +52,14 @@ setup(
     install_requires=[
         "numpy",
         "matplotlib",
-        "numpy-quaternion",
+        "quaternion",
         "scipy",
         "sympy",
     ],
     extras_require={
-        'quaternion': ["numpy-quaternion"],  # pip için
+        'quaternion': ["numpy-quaternion"],  # pip kurulumu bazen hata veriyor
         'quaternion-conda': ["quaternion"],  # conda için
-        'all': ["numpy-quaternion"],  # Varsayılan pip
+        'all': ["quaternion"],  # Varsayılan conda
         'test': [
             "pytest",
             "pytest-cov",
