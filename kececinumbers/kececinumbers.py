@@ -3,7 +3,7 @@
 Keçeci Numbers Module (kececinumbers.py)
 
 This module provides a comprehensive framework for generating, analyzing, and
-visualizing Keçeci Numbers across various number systems. It supports 16
+visualizing Keçeci Numbers across various number systems. It supports 11
 distinct types, from standard integers and complex numbers to more exotic
 constructs like neutrosophic and bicomplex numbers.
 
@@ -2103,15 +2103,78 @@ def analyze_all_types(iterations=120, additional_params=None):
         BicomplexNumber,
         NeutrosophicBicomplexNumber,
         OctonionNumber,
+        Constants,
         SedenionNumber,
         CliffordNumber,
         DualNumber,
         SplitcomplexNumber,
-        analyze_all_types,
+        
+    
+        # Functions
         get_with_params,
+        get_interactive,
+        get_random_type,
+        _get_integer_representation,
+        _parse_quaternion,
+        _parse_quaternion_from_csv,
+        generate_kececi_vectorial,
+        unified_generator,
+        is_prime,
+        find_period,
+        find_kececi_prime_number,
+        plot_numbers,
+        print_detailed_report,
+        _plot_comparison,
         _find_kececi_zeta_zeros,
         _compute_gue_similarity,
-        _plot_comparison,
+        _load_zeta_zeros,
+        analyze_all_types,
+        analyze_pair_correlation,
+        _gue_pair_correlation,
+        _pair_correlation,
+        _parse_octonion,
+        generate_octonion,
+        is_quaternion_like,
+        is_neutrosophic_like,
+        _has_bicomplex_format,
+        _parse_bicomplex,
+        coeffs,
+        convert_to_float,
+        safe_add,
+        ZERO,
+        ONE,
+        I,
+        J,
+        K,
+        E,
+        F,
+        G,
+        H,
+        _extract_numeric_part,
+        _has_comma_format,
+        _is_complex_like,
+        is_prime_like,
+        is_near_integer,
+        _plot_component_distribution,
+         
+    
+        # Constants
+        TYPE_POSITIVE_REAL,
+        TYPE_NEGATIVE_REAL,
+        TYPE_COMPLEX,
+        TYPE_FLOAT,
+        TYPE_RATIONAL,
+        TYPE_QUATERNION,
+        TYPE_NEUTROSOPHIC,
+        TYPE_NEUTROSOPHIC_COMPLEX,
+        TYPE_HYPERREAL,
+        TYPE_BICOMPLEX,
+        TYPE_NEUTROSOPHIC_BICOMPLEX,
+        TYPE_OCTONION,
+        TYPE_SEDENION,
+        TYPE_CLIFFORD,
+        TYPE_DUAL,
+        TYPE_SPLIT_COMPLEX,
     )
     
     print("Automated Analysis for Keçeci Types")
@@ -2831,11 +2894,84 @@ def get_with_params(
     add_value_raw: str,
     include_intermediate_steps: bool = False
 ) -> List[Any]:
+
     """
     Tüm 16 sayı sistemi için ortak arayüz.
     Keçeci mantığı (ask, bölme, asallık) unified_generator ile uygulanır.
     Sadece toplama değil, koşullu değişimler de yapılır.
     """
+    print(f"\n--- Generating Keçeci Sequence: Type {kececi_type_choice}, Steps {iterations} ---")
+    print(f"Start: '{start_value_raw}', Addition: '{add_value_raw}'")
+    print(f"Include intermediate steps: {include_intermediate_steps}")
+
+    try:
+        # unified_generator'ı doğru şekilde çağır
+        generated_sequence = unified_generator(
+            kececi_type=kececi_type_choice,
+            start_input_raw=start_value_raw,
+            add_input_raw=add_value_raw,
+            iterations=iterations,
+            include_intermediate_steps=include_intermediate_steps
+        )
+
+        if not generated_sequence:
+            print("Sequence generation failed or returned empty.")
+            return []
+
+        print(f"Successfully generated {len(generated_sequence)} numbers.")
+        
+        # Önizleme için ilk 40 ve son 10 elemanı göster
+        preview_start = [str(x) for x in generated_sequence[:40]]
+        preview_end = [str(x) for x in generated_sequence[-10:]] if len(generated_sequence) > 5 else []
+        
+        print(f"First 40: {preview_start}")
+        if preview_end:
+            print(f"Last 10: {preview_end}")
+        
+        # Keçeci Prime Number kontrolü - GÜVENLİ VERSİYON
+        kpn = find_kececi_prime_number(generated_sequence)
+        if kpn is not None:
+            # index() hatasını önlemek için güvenli arama
+            try:
+                kpn_index = generated_sequence.index(kpn)
+                print(f"Keçeci Prime Number found at step {kpn_index}: {kpn}")
+            except ValueError:
+                # Eğer kpn listede bulunamazsa (nadir bir durum)
+                print(f"Keçeci Prime Number found: {kpn} (but not in the main sequence)")
+        else:
+            print("No Keçeci Prime Number found in the sequence.")
+        
+        # İstatistikler (opsiyonel)
+        if len(generated_sequence) > 0:
+            try:
+                # Sayısal değerler için basit istatistik
+                if hasattr(generated_sequence[0], 'real'):
+                    real_parts = [x.real for x in generated_sequence if hasattr(x, 'real')]
+                    if real_parts:
+                        print(f"Real parts range: {min(real_parts):.3f} to {max(real_parts):.3f}")
+            except:
+                pass  # İstatistik hesaplanamazsa devam et
+
+        return generated_sequence
+
+    except Exception as e:
+        print(f"ERROR during sequence generation: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+"""
+def get_with_params(
+    kececi_type_choice: int,
+    iterations: int,
+    start_value_raw: str,
+    add_value_raw: str,
+    include_intermediate_steps: bool = False
+) -> List[Any]:
+
+    #Tüm 16 sayı sistemi için ortak arayüz.
+    #Keçeci mantığı (ask, bölme, asallık) unified_generator ile uygulanır.
+    #Sadece toplama değil, koşullu değişimler de yapılır.
+
     print(f"\n--- Generating Sequence: Type {kececi_type_choice}, Steps {iterations} ---")
     print(f"Start: '{start_value_raw}', Addition: '{add_value_raw}'")
 
@@ -2873,13 +3009,12 @@ def get_with_params(
         import traceback
         traceback.print_exc()
         return []
-
+"""
 
 def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
     """
     Interactively gets parameters from the user to generate a Keçeci Numbers sequence.
-    This version is improved for code clarity and compatibility with the module's
-    current interface.
+    This version includes default values for all inputs.
     """
 
     # Tip sabitleri
@@ -2909,71 +3044,131 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
     print(" 13: Sedenion        14: Clifford          15: Dual")
     print(" 16: Split-Complex")
     
-    # Get a valid number type from the user
+    # Varsayılan değerler
+    DEFAULT_TYPE = 3  # Complex
+    DEFAULT_STEPS = 40
+    DEFAULT_SHOW_DETAILS = "yes"
+    
+    # Tip seçimi için varsayılan değerler
+    default_start_values = {
+        1: "2.5",      # Positive Real
+        2: "-5.0",     # Negative Real
+        3: "1+1j",     # Complex
+        4: "0.0",      # Float
+        5: "0.5",      # Rational
+        6: "1.0,0.0,0.0,0.0",  # Quaternion
+        7: "0.6,0.2,0.1",  # Neutrosophic
+        8: "1+1j",     # Neutro-Complex
+        9: "0.0,0.001",  # Hyperreal
+        10: "1.0,0.5,0.3,0.2",  # Bicomplex
+        11: "1.0,0.0,0.1,0.0,0.0,0.0,0.0,0.0",  # Neutro-Bicomplex
+        12: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",  # Octonion
+        13: "1.0" + ",0.0" * 15,  # Sedenion
+        14: "1.0",     # Clifford
+        15: "1.0,0.1", # Dual
+        16: "1.0,0.5"  # Split-Complex
+    }
+    
+    default_add_values = {
+        1: "0.5",      # Positive Real
+        2: "-0.5",     # Negative Real
+        3: "0.1+0.1j", # Complex
+        4: "0.1",      # Float
+        5: "0.1",      # Rational
+        6: "0.1,0.0,0.0,0.0",  # Quaternion
+        7: "0.1,0.0,0.0",  # Neutrosophic
+        8: "0.1+0.1j", # Neutro-Complex
+        9: "0.0,0.001",  # Hyperreal
+        10: "0.1,0.0,0.0,0.0",  # Bicomplex
+        11: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",  # Neutro-Bicomplex
+        12: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",  # Octonion
+        13: "0.1" + ",0.0" * 15,  # Sedenion
+        14: "0.1",     # Clifford
+        15: "0.1,0.0", # Dual
+        16: "0.1,0.0"  # Split-Complex
+    }
+    
+    # Get a valid number type from the user with default
     while True:
         try:
-            type_choice = int(input("Select a Keçeci Number Type (1-16): "))
+            type_input = input(f"Select a Keçeci Number Type (1-16) [default: {DEFAULT_TYPE}]: ").strip()
+            if type_input == "":
+                type_choice = DEFAULT_TYPE
+                break
+            type_choice = int(type_input)
             if 1 <= type_choice <= 16:
                 break
             print("Invalid type. Please enter a number between 1 and 16.")
         except ValueError:
             print("Invalid input. Please enter a number.")
-        
-    # User prompts for the starting value
+    
+    # User prompts for the starting value with default
     start_prompts = {
-        1: "Enter Positive Real start (e.g., '10.0', '5', '3.14'): ",
-        2: "Enter Negative Real start (e.g., '-5.0', '-2', '-1.5'): ",
-        3: "Enter Complex start (e.g., '1.0+1.0j', '3+4j'): ",
-        4: "Enter Float start (e.g., '0.0001412', '3.14', '2.718'): ",
-        5: "Enter Rational start (e.g., '0.5', '7/2', '3/4'): ",
-        6: "Enter Quaternion start (in 'w,x,y,z' format, e.g., '1.0,2.0,-3.0,1.0'): ",
-        7: "Enter Neutrosophic start (in 't,i,f' format, e.g., '0.1,0.0,0.0'): ",
-        8: "Enter Neutro-Complex start (in 'real,imag,neut' format, e.g., '2+3j'): ",
-        9: "Enter Hyperreal start (in 'finite,infinitesimal' format, e.g., '0.0,0.0001'): ",
-        10: "Enter Bicomplex start (in 'z1_real,z1_imag,z2_real,z2_imag' format, e.g., '1.0,2.0,3.0,4.0', '1.0,2.0', '3.0', '1.0+1.0j'): ",
-        11: "Enter Neutro-Bicomplex start (in 'r,i,nr,ni,jr,ji,jnr,jni' format, e.g., '1,2,0.1,0.2,0.3,0.4,0.5,0.6', '0.1'): ",
-        12: "Enter Octonion start (in 'w,x,y,z,e,f,g,h':'e0,e1,e2,e3,e4,e5,e6,e7' format, e.g., '1.0,0.5,-0.2,0.3,0.1,-0.4,0.2,0.0'): ",
-        13: "Enter Sedenion start (in 'e0,e1,...,e15' format, e.g., '1.0,2.0,3.0,0,0,0,0,0,0,0,0,0,0,0,0,0', '0.0'): ",
-        14: "Enter Clifford start (in 'scalar,e1,e2,e12,...' format, e.g., '0.1+0.2e1', '1.0+2.0e1+3.0e12'): ",
-        15: "Enter Dual start (in 'real,dual' format, e.g., '2.0,0.5'): ",
-        16: "Enter Split-Complex start (in 'real,split' format, e.g., '1.0,0.8'): ",
+        1: f"Enter Positive Real start [default: '{default_start_values[1]}']: ",
+        2: f"Enter Negative Real start [default: '{default_start_values[2]}']: ",
+        3: f"Enter Complex start [default: '{default_start_values[3]}']: ",
+        4: f"Enter Float start [default: '{default_start_values[4]}']: ",
+        5: f"Enter Rational start [default: '{default_start_values[5]}']: ",
+        6: f"Enter Quaternion start [default: '{default_start_values[6]}']: ",
+        7: f"Enter Neutrosophic start [default: '{default_start_values[7]}']: ",
+        8: f"Enter Neutro-Complex start [default: '{default_start_values[8]}']: ",
+        9: f"Enter Hyperreal start [default: '{default_start_values[9]}']: ",
+        10: f"Enter Bicomplex start [default: '{default_start_values[10]}']: ",
+        11: f"Enter Neutro-Bicomplex start [default: '{default_start_values[11]}']: ",
+        12: f"Enter Octonion start [default: '{default_start_values[12]}']: ",
+        13: f"Enter Sedenion start [default: '{default_start_values[13]}']: ",
+        14: f"Enter Clifford start [default: '{default_start_values[14]}']: ",
+        15: f"Enter Dual start [default: '{default_start_values[15]}']: ",
+        16: f"Enter Split-Complex start [default: '{default_start_values[16]}']: ",
     }
     
-    # User prompts for the increment value
+    # User prompts for the increment value with default
     add_prompts = {
-        1: "Enter Positive Real increment (e.g., '2.0', '1.5'): ",
-        2: "Enter Negative Real increment (e.g., '-1.0', '-0.5'): ",
-        3: "Enter Complex increment (e.g., '0.5+0.5j', '3+4j'): ",
-        4: "Enter Float increment (e.g., '0.1', '2.5'): ",
-        5: "Enter Rational increment (e.g., '1/3', '0.25'): ",
-        6: "Enter Quaternion increment (in 'w,x,y,z' format, e.g., '0.1,-0.2,0.3,0.0'): ",
-        7: "Enter Neutrosophic increment (in 't,i,f' format, e.g., '0.1,0.0,0.0'): ",
-        8: "Enter Neutro-Complex increment (in 'real,imag,neut' format, e.g., '2+3j', 5): ",
-        9: "Enter Hyperreal increment (in 'finite,infinitesimal' format, e.g., '0.0,0.0001'): ",
-        10: "Enter Bicomplex increment (in 'z1_real,z1_imag,z2_real,z2_imag' format, e.g., '1.0,2.0,3.0,4.0', '1.0,2.0', '3.0', '1.0+1.0j'): ",
-        11: "Enter Neutro-Bicomplex increment (in 'r,i,nr,ni,jr,ji,jnr,jni' format, e.g., '1,2,0.1,0.2,0.3,0.4,0.5,0.6', '0.1')): ",
-        12: "Enter Octonion increment (in 'w,x,y,z,e,f,g,h':'e0,e1,e2,e3,e4,e5,e6,e7' format, e.g., '1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0', '0.0'): ",
-        13: "Enter Sedenion increment (in 'e0,e1,...,e15' format, e.g., '1.0,2.0,3.0,0,0,0,0,0,0,0,0,0,0,0,0,0', '0.0'): ",
-        14: "Enter Clifford increment (in 'scalar,e1,e2,e12,...' format, e.g., '0.1+0.2e1', '1.0+2.0e1+3.0e12'): ",
-        15: "Enter Dual increment (in 'real,dual' format, e.g., 1.0, '0.1,0.0'): ",
-        16: "Enter Split-Complex increment (in 'real,split' format, e.g., '0.1,0.0'): ",
+        1: f"Enter Positive Real increment [default: '{default_add_values[1]}']: ",
+        2: f"Enter Negative Real increment [default: '{default_add_values[2]}']: ",
+        3: f"Enter Complex increment [default: '{default_add_values[3]}']: ",
+        4: f"Enter Float increment [default: '{default_add_values[4]}']: ",
+        5: f"Enter Rational increment [default: '{default_add_values[5]}']: ",
+        6: f"Enter Quaternion increment [default: '{default_add_values[6]}']: ",
+        7: f"Enter Neutrosophic increment [default: '{default_add_values[7]}']: ",
+        8: f"Enter Neutro-Complex increment [default: '{default_add_values[8]}']: ",
+        9: f"Enter Hyperreal increment [default: '{default_add_values[9]}']: ",
+        10: f"Enter Bicomplex increment [default: '{default_add_values[10]}']: ",
+        11: f"Enter Neutro-Bicomplex increment [default: '{default_add_values[11]}']: ",
+        12: f"Enter Octonion increment [default: '{default_add_values[12]}']: ",
+        13: f"Enter Sedenion increment [default: '{default_add_values[13]}']: ",
+        14: f"Enter Clifford increment [default: '{default_add_values[14]}']: ",
+        15: f"Enter Dual increment [default: '{default_add_values[15]}']: ",
+        16: f"Enter Split-Complex increment [default: '{default_add_values[16]}']: ",
     }
     
-    # Get inputs from the user
-    start_input_val_raw = input(start_prompts.get(type_choice, "Enter starting value: "))
-    add_input_val_raw = input(add_prompts.get(type_choice, "Enter increment value: "))
+    # Get inputs from the user with defaults
+    start_input = input(start_prompts.get(type_choice, "Enter starting value: ")).strip()
+    start_input_val_raw = start_input if start_input else default_start_values[type_choice]
     
-    while True:
+    add_input = input(add_prompts.get(type_choice, "Enter increment value: ")).strip()
+    add_input_val_raw = add_input if add_input else default_add_values[type_choice]
+    
+    # Steps with default
+    steps_input = input(f"Enter number of Keçeci steps [default: {DEFAULT_STEPS}]: ").strip()
+    if steps_input:
         try:
-            num_kececi_steps = int(input("Enter number of Keçeci steps (e.g., 40, 60): "))
-            if num_kececi_steps > 0:
-                break
-            print("Please enter a positive integer.")
+            num_kececi_steps = int(steps_input)
+            if num_kececi_steps <= 0:
+                print("Please enter a positive integer. Using default.")
+                num_kececi_steps = DEFAULT_STEPS
         except ValueError:
-            print("Invalid input. Please enter a number.")
-
-    show_details_input = input("Do you want to include the intermediate calculation steps? (y/n): ").lower().strip()
-    show_details = (show_details_input == 'y' or show_details_input == 'yes')
+            print("Invalid input. Using default.")
+            num_kececi_steps = DEFAULT_STEPS
+    else:
+        num_kececi_steps = DEFAULT_STEPS
+    
+    # Show details with default
+    show_details_input = input(f"Do you want to include the intermediate calculation steps? (y/n) [default: {DEFAULT_SHOW_DETAILS}]: ").lower().strip()
+    if not show_details_input:
+        show_details = (DEFAULT_SHOW_DETAILS == 'y' or DEFAULT_SHOW_DETAILS == 'yes')
+    else:
+        show_details = (show_details_input == 'y' or show_details_input == 'yes')
     
     # Generate the sequence with the correct parameter names and values
     sequence = get_with_params(
@@ -2992,6 +3187,9 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
         "steps": num_kececi_steps,
         "detailed_view": show_details
     }
+    
+    print(f"\nUsing parameters: Type={type_choice}, Start='{start_input_val_raw}', Add='{add_input_val_raw}', Steps={num_kececi_steps}, Details={show_details}")
+    
     return sequence, params
 
 # ==============================================================================
@@ -3091,8 +3289,16 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
     """
     Tüm 16 Keçeci Sayı türü için detaylı görselleştirme sağlar.
     """
+
     if not sequence:
         print("Sequence is empty. Nothing to plot.")
+        return
+
+    # Ensure numpy is available for plotting functions
+    try:
+        import numpy as np
+    except ImportError:
+        print("Numpy not installed. Cannot plot effectively.")
         return
 
     try:
@@ -3101,6 +3307,7 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
     except ImportError:
         use_pca = False
         print("scikit-learn kurulu değil. PCA olmadan çizim yapılıyor...")
+
 
     fig = plt.figure(figsize=(18, 14), constrained_layout=True)
     fig.suptitle(title, fontsize=18, fontweight='bold')
@@ -3177,9 +3384,14 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax4.grid(True, alpha=0.3)
 
     # --- 4. Quaternion
-    if hasattr(first_elem, 'components') and len(getattr(first_elem, 'components', [])) == 4:
+    # Check for numpy-quaternion's quaternion type, or a custom one with 'components' or 'w,x,y,z'
+    elif isinstance(first_elem, quaternion.quaternion) or (hasattr(first_elem, 'components') and len(getattr(first_elem, 'components', [])) == 4) or \
+         (hasattr(first_elem, 'w') and hasattr(first_elem, 'x') and hasattr(first_elem, 'y') and hasattr(first_elem, 'z')):
         try:
-            comp = np.array([getattr(q, 'components', [q.w, q.x, q.y, q.z]) for q in sequence])
+            comp = np.array([
+                (q.w, q.x, q.y, q.z) if hasattr(q, 'w') else q.components
+                for q in sequence
+            ])
             w, x, y, z = comp.T
             magnitudes = np.linalg.norm(comp, axis=1)
             gs = GridSpec(2, 2, figure=fig)
@@ -3209,7 +3421,7 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
 
     # --- 5. OctonionNumber
-    elif hasattr(first_elem, 'coeffs') and len(first_elem.coeffs) == 8:
+    elif isinstance(first_elem, OctonionNumber):
         coeffs = np.array([x.coeffs for x in sequence])
         magnitudes = np.linalg.norm(coeffs, axis=1)
         gs = GridSpec(2, 2, figure=fig)
@@ -3236,7 +3448,7 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax4.set_xlabel("e1"); ax4.set_ylabel("e2"); ax4.set_zlabel("e3")
 
     # --- 6. SedenionNumber
-    elif hasattr(first_elem, 'coeffs') and len(first_elem.coeffs) == 16:
+    elif isinstance(first_elem, SedenionNumber):
         coeffs = np.array([x.coeffs for x in sequence])
         magnitudes = np.linalg.norm(coeffs, axis=1)
         gs = GridSpec(2, 2, figure=fig)
@@ -3257,41 +3469,35 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax3.plot(magnitudes, 'o-', color='tab:purple')
         ax3.set_title("Magnitude |s|")
 
-        try:
-            from sklearn.decomposition import PCA
-            pca = PCA(n_components=2)
-            if len(sequence) > 2:
-                proj = pca.fit_transform(coeffs)
+        if use_pca:
+            try:
+                pca = PCA(n_components=2)
+                if len(sequence) > 2:
+                    proj = pca.fit_transform(coeffs)
+                    ax4 = fig.add_subplot(gs[1, 1])
+                    sc = ax4.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
+                    ax4.set_title(f"PCA Projection (Var: {sum(pca.explained_variance_ratio_):.3f})")
+                    plt.colorbar(sc, ax=ax4, label="Iteration")
+            except Exception as e:
                 ax4 = fig.add_subplot(gs[1, 1])
-                sc = ax4.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
-                ax4.set_title(f"PCA Projection (Var: {sum(pca.explained_variance_ratio_):.3f})")
-                plt.colorbar(sc, ax=ax4, label="Iteration")
-        except ImportError:
+                ax4.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=10)
+        else:
             ax4 = fig.add_subplot(gs[1, 1])
             ax4.text(0.5, 0.5, "Install sklearn\nfor PCA", ha='center', va='center', fontsize=10)
 
     # --- 7. CliffordNumber
-    elif hasattr(first_elem, 'basis') and isinstance(first_elem.basis, dict):
+    elif isinstance(first_elem, CliffordNumber):
         all_keys = sorted(first_elem.basis.keys(), key=lambda x: (len(x), x))
         values = {k: [elem.basis.get(k, 0.0) for elem in sequence] for k in all_keys}
         scalar = values.get('', [0]*len(sequence))
         vector_keys = [k for k in all_keys if len(k) == 1]
-        
-        # numpy import et
-        try:
-            import numpy as np
-            numpy_available = True
-        except ImportError:
-            numpy_available = False
-        
+
         # GERÇEK özellik sayısını hesapla (sıfır olmayan bileşenler)
         non_zero_features = 0
         for key in all_keys:
             if any(abs(elem.basis.get(key, 0.0)) > 1e-10 for elem in sequence):
                 non_zero_features += 1
-        
-        print(f"Debug: Total keys: {len(all_keys)}, Non-zero features: {non_zero_features}")
-        
+
         # Her zaman 2x2 grid kullan
         fig = plt.figure(figsize=(12, 10))
         gs = GridSpec(2, 2, figure=fig)
@@ -3301,7 +3507,7 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
         # 1. Grafik: Skaler ve Vektör Bileşenleri
         ax1.plot(scalar, 'o-', label='Scalar', color='black', linewidth=2)
-        
+
         # Sadece sıfır olmayan vektör bileşenlerini göster
         visible_vectors = 0
         for k in vector_keys:
@@ -3310,7 +3516,7 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
                 visible_vectors += 1
             if visible_vectors >= 3:
                 break
-        
+
         ax1.set_title("Scalar & Vector Components Over Time")
         ax1.legend()
         ax1.grid(True, alpha=0.3)
@@ -3323,11 +3529,8 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax2.grid(True, alpha=0.3)
 
         # 3. Grafik: PCA - ARTIK PCA GÖSTERİYORUZ
-        if len(sequence) >= 2 and non_zero_features >= 2:
-            # PCA yapılabilir durumda
+        if use_pca and len(sequence) >= 2 and non_zero_features >= 2:
             try:
-                from sklearn.decomposition import PCA
-                
                 # Tüm bileşenleri içeren matris oluştur
                 matrix_data = []
                 for elem in sequence:
@@ -3335,44 +3538,38 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
                     for key in all_keys:
                         row.append(elem.basis.get(key, 0.0))
                     matrix_data.append(row)
-                
-                if numpy_available:
-                    matrix = np.array(matrix_data)
-                else:
-                    import numpy as np
-                    matrix = np.array(matrix_data)
-                
+
+                matrix = np.array(matrix_data)
+
                 # PCA uygula
                 pca = PCA(n_components=min(2, matrix.shape[1]))
                 proj = pca.fit_transform(matrix)
-                
-                sc = ax3.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), 
+
+                sc = ax3.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)),
                                cmap='plasma', s=50, alpha=0.8)
                 ax3.set_title(f"PCA Projection ({non_zero_features} features)\nVariance: {pca.explained_variance_ratio_[0]:.3f}, {pca.explained_variance_ratio_[1]:.3f}")
-                
+
                 cbar = plt.colorbar(sc, ax=ax3)
                 cbar.set_label("Time Step")
-                
+
                 ax3.plot(proj[:, 0], proj[:, 1], 'gray', linestyle='--', alpha=0.5)
                 ax3.grid(True, alpha=0.3)
-                    
-            except ImportError:
-                ax3.text(0.5, 0.5, "Install sklearn for PCA", 
-                        ha='center', va='center', transform=ax3.transAxes)
+
             except Exception as e:
-                ax3.text(0.5, 0.5, f"PCA Error: {str(e)[:30]}", 
+                ax3.text(0.5, 0.5, f"PCA Error: {str(e)[:30]}",
                         ha='center', va='center', transform=ax3.transAxes)
         else:
             # PCA yapılamazsa bilgi göster
-            ax3.text(0.5, 0.5, f"Need ≥2 data points and ≥2 features\n(Current: {len(sequence)} points, {non_zero_features} features)", 
+            ax3.text(0.5, 0.5, f"Need ≥2 data points and ≥2 features\n(Current: {len(sequence)} points, {non_zero_features} features)",
                    ha='center', va='center', transform=ax3.transAxes)
+            if not use_pca:
+                ax3.text(0.5, 0.65, "Install sklearn for PCA",
+                        ha='center', va='center', transform=ax3.transAxes)
             ax3.set_title("Insufficient for PCA")
-
-        #plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
 
 
     # --- 8. DualNumber
-    elif hasattr(first_elem, 'real') and hasattr(first_elem, 'dual'):
+    elif isinstance(first_elem, DualNumber):
         real_vals = [x.real for x in sequence]
         dual_vals = [x.dual for x in sequence]
         gs = GridSpec(2, 2, figure=fig)
@@ -3397,7 +3594,7 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax4.set_title("Dual/Real Ratio")
 
     # --- 9. SplitcomplexNumber
-    elif hasattr(first_elem, 'real') and hasattr(first_elem, 'split'):
+    elif isinstance(first_elem, SplitcomplexNumber):
         real_vals = [x.real for x in sequence]
         split_vals = [x.split for x in sequence]
         u_vals = [r + s for r, s in zip(real_vals, split_vals)]
@@ -3424,22 +3621,28 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax4.legend()
 
     # --- 10. NeutrosophicNumber
-    elif is_neutrosophic_like(first_elem):
-        # t, i, f değerlerini al
-        if hasattr(first_elem, 't'):
+    elif isinstance(first_elem, NeutrosophicNumber):
+        # NeutrosophicNumber sınıfının arayüzünü biliyoruz, hasattr gerekmez
+        # Sınıfın public attribute'larına doğrudan erişim
+        try:
             t_vals = [x.t for x in sequence]
             i_vals = [x.i for x in sequence]
             f_vals = [x.f for x in sequence]
-        elif hasattr(first_elem, 'a'):
-            t_vals = [x.a for x in sequence]
-            i_vals = [x.b for x in sequence]
-            f_vals = [0] * len(sequence)  # f yoksa sıfır
-        elif hasattr(first_elem, 'value'):
-            t_vals = [x.value for x in sequence]
-            i_vals = [x.indeterminacy for x in sequence]
-            f_vals = [0] * len(sequence)
-        else:
-            t_vals = i_vals = f_vals = []
+        except AttributeError:
+            # Eğer attribute yoksa, alternatif arayüzleri deneyebiliriz
+            # Veya hata fırlatabiliriz
+            try:
+                t_vals = [x.a for x in sequence]
+                i_vals = [x.b for x in sequence]
+                f_vals = [0] * len(sequence)  # f yoksa sıfır
+            except AttributeError:
+                try:
+                    t_vals = [x.value for x in sequence]
+                    i_vals = [x.indeterminacy for x in sequence]
+                    f_vals = [0] * len(sequence)
+                except AttributeError:
+                    # Hiçbiri yoksa boş liste
+                    t_vals = i_vals = f_vals = []
 
         gs = GridSpec(2, 2, figure=fig)
 
@@ -3477,10 +3680,9 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax4.set_title("Magnitude √(t²+i²+f²)")
         ax4.set_ylabel("|n|")
 
-    # --- 11. NeutrosophiccomplexNumber
-    elif (hasattr(first_elem, 'real') and hasattr(first_elem, 'imag') and 
-          hasattr(first_elem, 'indeterminacy')):
-        
+    # --- 11. NeutrosophicComplexNumber
+    elif isinstance(first_elem, NeutrosophicComplexNumber):
+        # Sınıfın arayüzünü biliyoruz
         real_parts = [x.real for x in sequence]
         imag_parts = [x.imag for x in sequence]
         indeter_parts = [x.indeterminacy for x in sequence]
@@ -3522,7 +3724,8 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         plt.colorbar(sc2, ax=ax4, label="Indeterminacy")
 
     # --- 12. HyperrealNumber
-    elif hasattr(first_elem, 'sequence') and isinstance(first_elem.sequence, (list, np.ndarray)):
+    elif isinstance(first_elem, HyperrealNumber):
+        # Sınıfın arayüzünü biliyoruz
         seq_len = min(len(first_elem.sequence), 5)  # İlk 5 bileşen
         data = np.array([x.sequence[:seq_len] for x in sequence])
         gs = GridSpec(2, 2, figure=fig)
@@ -3551,7 +3754,8 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         plt.colorbar(sc, ax=ax4, label="Step")
 
     # --- 13. BicomplexNumber
-    elif hasattr(first_elem, 'z1') and hasattr(first_elem, 'z2'):
+    elif isinstance(first_elem, BicomplexNumber):
+        # Sınıfın arayüzünü biliyoruz
         z1_real = [x.z1.real for x in sequence]
         z1_imag = [x.z1.imag for x in sequence]
         z2_real = [x.z2.real for x in sequence]
@@ -3582,14 +3786,14 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax4.set_xlabel("Re(z2)")
         ax4.set_ylabel("Im(z2)")
 
-    # --- 13. NeutrosophicBicomplexNumber ---
-    elif hasattr(first_elem, 'real') and hasattr(first_elem, 'neut_real'):
+    # --- 14. NeutrosophicBicomplexNumber ---
+    elif isinstance(first_elem, NeutrosophicBicomplexNumber):
+        # Sınıfın - a, b, c, d, e, f, g, h attribute'ları var
         try:
-            # Güvenli float dönüşümü
+            # Doğru attribute isimlerini kullanıyoruz
             comps = np.array([
                 [float(getattr(x, attr))
-                 for attr in ['real', 'imag', 'neut_real', 'neut_imag',
-                             'j_real', 'j_imag', 'j_neut_real', 'j_neut_imag']]
+                 for attr in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']]
                 for x in sequence
             ])
             magnitudes = np.linalg.norm(comps, axis=1)
@@ -3624,6 +3828,7 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
             ax.set_xticks([])
             ax.set_yticks([])
 
+
     # --- 15. Bilinmeyen tip
     else:
         ax = fig.add_subplot(1, 1, 1)
@@ -3634,7 +3839,6 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax.set_yticks([])
 
     plt.show()
-
 
 # ==============================================================================
 # --- MAIN EXECUTION BLOCK ---
