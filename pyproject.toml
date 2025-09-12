@@ -29,13 +29,14 @@ dependencies = [
     "numpy",
     "matplotlib",
     "scipy",
+    "scikit-learn",
     "sympy",
     "quaternion",
 ]
 
 [project.optional-dependencies]
 quaternion-conda = ["quaternion"]
-test = ["pytest", "pytest-cov", "pytest-mock", "ruff", "numpy", "matplotlib", "quaternion", "scipy", "sympy",]
+test = ["pytest", "pytest-cov", "pytest-mock", "ruff", "numpy", "matplotlib", "quaternion", "scipy", "scikit-learn", "sympy",]
 
 all = ["quaternion"]  # Varsayılan conda bağımlılığı
 
