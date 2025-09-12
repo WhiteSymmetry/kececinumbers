@@ -38,13 +38,14 @@ import matplotlib.pyplot as plt
 import numbers
 #from numbers import Real
 import numpy as np
-import quaternion   
+from quaternion import quaternion  
 # pip install numpy-quaternion # conda install -c conda-forge quaternion
 import random
 import re
 from scipy.fft import fft, fftfreq
 from scipy.signal import find_peaks
 from scipy.stats import ks_2samp
+from sklearn.decomposition import PCA
 import sympy
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -1089,15 +1090,15 @@ def _parse_hyperreal(s) -> Tuple[float, float]:
     except ValueError:
         return 0.0, 0.0  # Default
 
-def _parse_quaternion_from_csv(s) -> np.quaternion:
+def _parse_quaternion_from_csv(s) -> quaternion:
     """Virgülle ayrılmış string'i veya sayıyı Quaternion'a dönüştürür."""
     # Eğer zaten quaternion ise doğrudan döndür
-    if isinstance(s, np.quaternion):
+    if isinstance(s, quaternion):
         return s
     
     # Sayısal tipse skaler quaternion olarak işle
     if isinstance(s, (float, int, complex)):
-        return np.quaternion(float(s), 0, 0, 0)
+        return quaternion(float(s), 0, 0, 0)
     
     # String işlemleri için önce string'e dönüştür
     if not isinstance(s, str):
@@ -1113,9 +1114,9 @@ def _parse_quaternion_from_csv(s) -> np.quaternion:
         raise ValueError(f"Quaternion bileşenleri sayı olmalı: '{s}'")
 
     if len(parts_float) == 4:
-        return np.quaternion(*parts_float)
+        return quaternion(*parts_float)
     elif len(parts_float) == 1: # Sadece skaler değer
-        return np.quaternion(parts_float[0], 0, 0, 0)
+        return quaternion(parts_float[0], 0, 0, 0)
     else:
         raise ValueError(f"Geçersiz quaternion formatı. 1 veya 4 bileşen bekleniyor: '{s}'")
 
@@ -1349,7 +1350,7 @@ G = OctonionNumber(0, 0, 0, 0, 0, 0, 1, 0)
 H = OctonionNumber(0, 0, 0, 0, 0, 0, 0, 1)
 
 
-def _parse_quaternion(s: str) -> np.quaternion:
+def _parse_quaternion(s: str) -> quaternion:
     """Parses user string ('a+bi+cj+dk' or scalar) into a quaternion."""
     s_clean = s.replace(" ", "").lower()
     if not s_clean:
@@ -1357,7 +1358,7 @@ def _parse_quaternion(s: str) -> np.quaternion:
 
     try:
         val = float(s_clean)
-        return np.quaternion(val, val, val, val)
+        return quaternion(val, val, val, val)
     except ValueError:
         pass
     
@@ -1382,7 +1383,7 @@ def _parse_quaternion(s: str) -> np.quaternion:
         else:
             parts['w'] += value
             
-    return np.quaternion(parts['w'], parts['x'], parts['y'], parts['z'])
+    return quaternion(parts['w'], parts['x'], parts['y'], parts['z'])
 
 def get_random_type(num_iterations: int, fixed_start_raw: str = "0", fixed_add_base_scalar: float = 9.0) -> List[Any]:
     """Generates Keçeci Numbers for a randomly selected type."""
@@ -1557,7 +1558,7 @@ def _get_integer_representation(n_input: Any) -> Optional[int]:
             return None
         
         # NumPy Quaternion özel kontrolü
-        if hasattr(np, 'quaternion') and isinstance(n_input, np.quaternion):
+        if hasattr(np, 'quaternion') and isinstance(n_input, quaternion):
             if is_near_integer(n_input.w):
                 return abs(int(round(n_input.w)))
             return None
@@ -1720,13 +1721,13 @@ def generate_kececi_vectorial(q0_str, c_str, u_str, iterations):
     try:
         # Girdi metinlerini kuaterniyon nesnelerine dönüştür
         w, x, y, z = map(float, q0_str.split(','))
-        q0 = np.quaternion(w, x, y, z)
+        q0 = quaternion(w, x, y, z)
         
         cw, cx, cy, cz = map(float, c_str.split(','))
-        c = np.quaternion(cw, cx, cy, cz)
+        c = quaternion(cw, cx, cy, cz)
 
         uw, ux, uy, uz = map(float, u_str.split(','))
-        u = np.quaternion(uw, ux, uy, uz)
+        u = quaternion(uw, ux, uy, uz)
 
     except (ValueError, IndexError):
         raise ValueError("Girdi metinleri 'w,x,y,z' formatında olmalıdır.")
@@ -2426,7 +2427,7 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
         elif kececi_type == TYPE_QUATERNION:
             current_value = _parse_quaternion_from_csv(start_input_raw)
             add_value_typed = _parse_quaternion_from_csv(add_input_raw)
-            ask_unit = np.quaternion(1, 1, 1, 1)
+            ask_unit = quaternion(1, 1, 1, 1)
 
         elif kececi_type == TYPE_NEUTROSOPHIC:
             t, i, f = _parse_neutrosophic(start_input_raw)
@@ -2558,7 +2559,6 @@ def get_with_params(
     add_value_raw: str,
     include_intermediate_steps: bool = False
 ) -> List[Any]:
-
     """
     Tüm 16 sayı sistemi için ortak arayüz.
     Keçeci mantığı (ask, bölme, asallık) unified_generator ile uygulanır.
@@ -2584,24 +2584,35 @@ def get_with_params(
 
         print(f"Successfully generated {len(generated_sequence)} numbers.")
         
-        # Önizleme için ilk 40 ve son 10 elemanı göster
-        preview_start = [str(x) for x in generated_sequence[:40]]
-        preview_end = [str(x) for x in generated_sequence[-10:]] if len(generated_sequence) > 5 else []
+        # Önizleme için ilk 5 ve son 5 elemanı göster
+        preview_start = [str(x) for x in generated_sequence[:5]]
+        preview_end = [str(x) for x in generated_sequence[-5:]] if len(generated_sequence) > 5 else []
         
-        print(f"First 40: {preview_start}")
+        print(f"First 5: {preview_start}")
         if preview_end:
-            print(f"Last 10: {preview_end}")
+            print(f"Last 5: {preview_end}")
         
-        # Keçeci Prime Number kontrolü - GÜVENLİ VERSİYON
+        # Keçeci Prime Number kontrolü - ÇOK DAHA GÜVENLİ VERSİYON
         kpn = find_kececi_prime_number(generated_sequence)
         if kpn is not None:
-            # index() hatasını önlemek için güvenli arama
+            # Önce kpn'nin doğru tip ve değerde olduğundan emin ol
             try:
-                kpn_index = generated_sequence.index(kpn)
-                print(f"Keçeci Prime Number found at step {kpn_index}: {kpn}")
-            except ValueError:
-                # Eğer kpn listede bulunamazsa (nadir bir durum)
-                print(f"Keçeci Prime Number found: {kpn} (but not in the main sequence)")
+                # String karşılaştırması yap - daha güvenli
+                kpn_str = str(kpn)
+                found_index = None
+                
+                for i, item in enumerate(generated_sequence):
+                    if str(item) == kpn_str:
+                        found_index = i
+                        break
+                
+                if found_index is not None:
+                    print(f"Keçeci Prime Number found at step {found_index}: {kpn}")
+                else:
+                    print(f"Keçeci Prime Number found: {kpn} (but not in the main sequence)")
+                    
+            except Exception as inner_e:
+                print(f"Keçeci Prime Number found: {kpn} (error locating index: {inner_e})")
         else:
             print("No Keçeci Prime Number found in the sequence.")
         
@@ -2609,12 +2620,21 @@ def get_with_params(
         if len(generated_sequence) > 0:
             try:
                 # Sayısal değerler için basit istatistik
-                if hasattr(generated_sequence[0], 'real'):
+                first_elem = generated_sequence[0]
+                if hasattr(first_elem, 'real'):
                     real_parts = [x.real for x in generated_sequence if hasattr(x, 'real')]
                     if real_parts:
                         print(f"Real parts range: {min(real_parts):.3f} to {max(real_parts):.3f}")
-            except:
-                pass  # İstatistik hesaplanamazsa devam et
+                
+                # Quaternion özel istatistikler
+                if hasattr(first_elem, 'w') and hasattr(first_elem, 'x'):
+                    norms = [np.sqrt(x.w**2 + x.x**2 + x.y**2 + x.z**2) for x in generated_sequence 
+                           if hasattr(x, 'w') and hasattr(x, 'x')]
+                    if norms:
+                        print(f"Quaternion norms range: {min(norms):.3f} to {max(norms):.3f}")
+                        
+            except Exception as stats_e:
+                print(f"Statistics calculation skipped: {stats_e}")
 
         return generated_sequence
 
@@ -2851,7 +2871,7 @@ def find_period(sequence: List[Any], min_repeats: int = 3) -> Optional[List[Any]
     return None
 
 def is_quaternion_like(obj):
-    if isinstance(obj, np.quaternion):
+    if isinstance(obj, quaternion):
         return True
     if hasattr(obj, 'components'):
         comp = np.array(obj.components)
@@ -2999,7 +3019,7 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
     # --- 4. Quaternion
     # Check for numpy-quaternion's quaternion type, or a custom one with 'components' or 'w,x,y,z'
-    elif isinstance(first_elem, quaternion.quaternion) or (hasattr(first_elem, 'components') and len(getattr(first_elem, 'components', [])) == 4) or \
+    elif isinstance(first_elem, quaternion) or (hasattr(first_elem, 'components') and len(getattr(first_elem, 'components', [])) == 4) or \
          (hasattr(first_elem, 'w') and hasattr(first_elem, 'x') and hasattr(first_elem, 'y') and hasattr(first_elem, 'z')):
         try:
             comp = np.array([
