@@ -39,7 +39,7 @@ import numbers
 #from numbers import Real
 import numpy as np
 import quaternion   
-# pip instal numpy-quaternion # conda install -c conda-forge quaternion
+# pip install numpy-quaternion # conda install -c conda-forge quaternion
 import random
 import re
 from scipy.fft import fft, fftfreq
