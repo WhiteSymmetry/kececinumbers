@@ -739,38 +739,53 @@ class DualNumber:
         self.real = float(real)
         self.dual = float(dual)
     def __add__(self, other):
-        if isinstance(other, DualNumber): return DualNumber(self.real + other.real, self.dual + other.dual)
-        elif isinstance(other, (int, float)): return DualNumber(self.real + other, self.dual)
+        if isinstance(other, DualNumber):
+            return DualNumber(self.real + other.real, self.dual + other.dual)
+        elif isinstance(other, (int, float)):
+            return DualNumber(self.real + other, self.dual)
         raise TypeError
     def __sub__(self, other):
-        if isinstance(other, DualNumber): return DualNumber(self.real - other.real, self.dual - other.dual)
-        elif isinstance(other, (int, float)): return DualNumber(self.real - other, self.dual)
+        if isinstance(other, DualNumber):
+            return DualNumber(self.real - other.real, self.dual - other.dual)
+        elif isinstance(other, (int, float)):
+            return DualNumber(self.real - other, self.dual)
         raise TypeError
     def __mul__(self, other):
-        if isinstance(other, DualNumber): return DualNumber(self.real * other.real, self.real * other.dual + self.dual * other.real)
-        elif isinstance(other, (int, float)): return DualNumber(self.real * other, self.dual * other)
+        if isinstance(other, DualNumber):
+            return DualNumber(self.real * other.real, self.real * other.dual + self.dual * other.real)
+        elif isinstance(other, (int, float)):
+            return DualNumber(self.real * other, self.dual * other)
         raise TypeError
-    def __rmul__(self, other): return self.__mul__(other)
+    def __rmul__(self, other):
+        return self.__mul__(other)
     def __truediv__(self, other):
         if isinstance(other, (int, float)):
-            if other == 0: raise ZeroDivisionError
+            if other == 0:
+                raise ZeroDivisionError
             return DualNumber(self.real / other, self.dual / other)
         elif isinstance(other, DualNumber):
-            if other.real == 0: raise ZeroDivisionError
+            if other.real == 0:
+                raise ZeroDivisionError
             return DualNumber(self.real / other.real, (self.dual * other.real - self.real * other.dual) / (other.real ** 2))
         raise TypeError
     def __floordiv__(self, other):
         if isinstance(other, (int, float)):
-            if other == 0: raise ZeroDivisionError
+            if other == 0:
+                raise ZeroDivisionError
             return DualNumber(self.real // other, self.dual // other)
         raise TypeError
     def __eq__(self, other):
-        if isinstance(other, DualNumber): return self.real == other.real and self.dual == other.dual
-        elif isinstance(other, (int, float)): return self.real == other and self.dual == 0
+        if isinstance(other, DualNumber):
+            return self.real == other.real and self.dual == other.dual
+        elif isinstance(other, (int, float)):
+            return self.real == other and self.dual == 0
         return False
-    def __str__(self): return f"{self.real} + {self.dual}ε"
-    def __repr__(self): return self.__str__() # __repr__ eklenmiş
-    def __int__(self): return int(self.real) # int() dönüşümü eklenmiş
+    def __str__(self):
+        return f"{self.real} + {self.dual}ε"
+    def __repr__(self):
+        return self.__str__() # __repr__ eklenmiş
+    def __int__(self):
+        return int(self.real) # int() dönüşümü eklenmiş
     def __radd__(self, other):
        return self.__add__(other)  # commutative
     def __rsub__(self, other):
