@@ -22,7 +22,7 @@ import warnings
     # importlib.reload(kececinumbers) # F821 undefined name 'kececinumbers'
 
 # Paket sürüm numarası
-__version__ = "0.7.6"
+__version__ = "0.7.7"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 
@@ -49,8 +49,18 @@ __all__ = [
     '_get_integer_representation',
     '_parse_quaternion',
     '_parse_quaternion_from_csv',
+    '_parse_complex',
+    '_parse_bicomplex',
+    '_parse_octonion',
+    '_parse_sedenion',
+    '_parse_neutrosophic',
+    '_parse_neutrosophic_bicomplex',
+    '_parse_hyperreal',
+    '_parse_clifford',
+    '_parse_dual',
+    '_parse_splitcomplex',
     'generate_kececi_vectorial',
-    '_plot_comparison',  # DÜZELTİLDİ: '_plot_comparsion' -> '_plot_comparison'
+    '_plot_comparison', 
     '_find_kececi_zeta_zeros',
     '_compute_gue_similarity',
     '_load_zeta_zeros',
@@ -59,13 +69,11 @@ __all__ = [
     'print_detailed_report',
     '_gue_pair_correlation',
     '_pair_correlation',
-    '_parse_octonion',
     'generate_octonion',
     'OctonionNumber',
     'is_quaternion_like',
     'is_neutrosophic_like',
     '_has_bicomplex_format',
-    '_parse_bicomplex',
     'coeffs',
     'convert_to_float',
     'safe_add',
@@ -144,6 +152,16 @@ try:
         _get_integer_representation,
         _parse_quaternion,
         _parse_quaternion_from_csv,
+        _parse_complex,
+        _parse_bicomplex,
+        _parse_octonion,
+        _parse_sedenion,
+        _parse_neutrosophic,
+        _parse_neutrosophic_bicomplex,
+        _parse_hyperreal,
+        _parse_clifford,
+        _parse_dual,
+        _parse_splitcomplex,
         generate_kececi_vectorial,
         unified_generator,
         is_prime,
@@ -159,12 +177,10 @@ try:
         analyze_pair_correlation,
         _gue_pair_correlation,
         _pair_correlation,
-        _parse_octonion,
         generate_octonion,
         is_quaternion_like,
         is_neutrosophic_like,
         _has_bicomplex_format,
-        _parse_bicomplex,
         coeffs,
         convert_to_float,
         safe_add,
