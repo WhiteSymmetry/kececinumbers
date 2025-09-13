@@ -73,17 +73,6 @@ TYPE_Pathion = 17
 TYPE_Chingon = 18
 TYPE_Routon = 19
 TYPE_Voudon = 20
-TYPE_P_ADIC = 21          # p-sel sayılar
-TYPE_SURREAL = 22         # Sürreel sayılar
-TYPE_TESSARINE = 23       # Tessarine sayılar
-TYPE_MOTOR = 24           # Motor sayılar
-TYPE_FUZZY = 25           # Bulanık sayılar
-TYPE_INTERVAL = 26        # Aralık sayılar
-TYPE_GEOMETRIC = 27       # Geometrik cebir
-TYPE_DUAL_QUATERNION = 28 # Dual kuaterniyonlar
-TYPE_GAUSSIAN_INT = 29    # Gauss tamsayıları
-TYPE_HURWITZ = 30         # Hurwitz kuaterniyonları
-TYPE_QUANTUM = 31
 
 
 # ==============================================================================
