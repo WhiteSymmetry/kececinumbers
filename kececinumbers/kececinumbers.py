@@ -3,7 +3,7 @@
 Keçeci Numbers Module (kececinumbers.py)
 
 This module provides a comprehensive framework for generating, analyzing, and
-visualizing Keçeci Numbers across various number systems. It supports 11
+visualizing Keçeci Numbers across various number systems. It supports 20
 distinct types, from standard integers and complex numbers to more exotic
 constructs like neutrosophic and bicomplex numbers.
 
@@ -12,7 +12,7 @@ specific algorithm for creating Keçeci Number sequences. High-level functions
 are available for easy interaction, parameter-based generation, and plotting.
 
 Key Features:
-- Generation of 16 types of Keçeci Numbers.
+- Generation of 20 types of Keçeci Numbers.
 - A robust, unified algorithm for all number types.
 - Helper functions for mathematical properties like primality and divisibility.
 - Advanced plotting capabilities tailored to each number system.
@@ -50,7 +50,6 @@ import sympy
 from typing import Any, Dict, List, Optional, Tuple
 
 
-
 # ==============================================================================
 # --- MODULE CONSTANTS: Keçeci NUMBER TYPES ---
 # ==============================================================================
@@ -70,10 +69,392 @@ TYPE_SEDENION = 13
 TYPE_CLIFFORD = 14
 TYPE_DUAL = 15
 TYPE_SPLIT_COMPLEX = 16
+TYPE_Pathion = 17
+TYPE_Chingon = 18
+TYPE_Routon = 19
+TYPE_Voudon = 20
+TYPE_P_ADIC = 21          # p-sel sayılar
+TYPE_SURREAL = 22         # Sürreel sayılar
+TYPE_TESSARINE = 23       # Tessarine sayılar
+TYPE_MOTOR = 24           # Motor sayılar
+TYPE_FUZZY = 25           # Bulanık sayılar
+TYPE_INTERVAL = 26        # Aralık sayılar
+TYPE_GEOMETRIC = 27       # Geometrik cebir
+TYPE_DUAL_QUATERNION = 28 # Dual kuaterniyonlar
+TYPE_GAUSSIAN_INT = 29    # Gauss tamsayıları
+TYPE_HURWITZ = 30         # Hurwitz kuaterniyonları
+TYPE_QUANTUM = 31
+
 
 # ==============================================================================
 # --- CUSTOM NUMBER CLASS DEFINITIONS ---
 # ==============================================================================
+
+class PathionNumber:
+    """32-bileşenli Pathion sayısı"""
+    
+    def __init__(self, *coeffs):
+        if len(coeffs) == 1 and hasattr(coeffs[0], '__iter__') and not isinstance(coeffs[0], str):
+            coeffs = coeffs[0]
+        
+        if len(coeffs) != 32:
+            coeffs = list(coeffs) + [0.0] * (32 - len(coeffs))
+            if len(coeffs) > 32:
+                coeffs = coeffs[:32]
+        
+        self.coeffs = [float(c) for c in coeffs]
+    
+    @property
+    def real(self):
+        """Gerçek kısım (ilk bileşen)"""
+        return self.coeffs[0]
+    
+    def __iter__(self):
+        return iter(self.coeffs)
+    
+    def __getitem__(self, index):
+        return self.coeffs[index]
+    
+    def __len__(self):
+        return len(self.coeffs)
+    
+    def __str__(self):
+        return f"PathionNumber({', '.join(map(str, self.coeffs))})"
+    
+    def __repr__(self):
+        return f"PathionNumber({self.coeffs})"
+    
+    def __add__(self, other):
+        if isinstance(other, PathionNumber):
+            return PathionNumber([a + b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            # Skaler toplama
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] += float(other)
+            return PathionNumber(new_coeffs)
+    
+    def __sub__(self, other):
+        if isinstance(other, PathionNumber):
+            return PathionNumber([a - b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] -= float(other)
+            return PathionNumber(new_coeffs)
+    
+    def __mul__(self, other):
+        if isinstance(other, PathionNumber):
+            # Basitçe bileşen bazlı çarpma (gerçek Cayley-Dickson çarpımı yerine)
+            return PathionNumber([a * b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            # Skaler çarpma
+            return PathionNumber([c * float(other) for c in self.coeffs])
+    
+    def __mod__(self, divisor):
+        return PathionNumber([c % divisor for c in self.coeffs])
+    
+    def __eq__(self, other):
+        if isinstance(other, PathionNumber):
+            return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
+        return False
+
+    def __truediv__(self, other):
+        """Bölme operatörü: / """
+        if isinstance(other, (int, float)):
+            # Skaler bölme
+            return PathionNumber([c / other for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: 'PathionNumber' and '{type(other).__name__}'")
+    
+    def __floordiv__(self, other):
+        """Tam sayı bölme operatörü: // """
+        if isinstance(other, (int, float)):
+            # Skaler tam sayı bölme
+            return PathionNumber([c // other for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for //: 'PathionNumber' and '{type(other).__name__}'")
+    
+    def __rtruediv__(self, other):
+        """Sağdan bölme: other / PathionNumber"""
+        if isinstance(other, (int, float)):
+            # Bu daha karmaşık olabilir, basitçe bileşen bazlı bölme
+            return PathionNumber([other / c if c != 0 else float('inf') for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'PathionNumber'")
+
+
+class ChingonNumber:
+    """64-bileşenli Chingon sayısı"""  # Açıklama düzeltildi
+    
+    def __init__(self, *coeffs):
+        if len(coeffs) == 1 and hasattr(coeffs[0], '__iter__') and not isinstance(coeffs[0], str):
+            coeffs = coeffs[0]
+        
+        if len(coeffs) != 64:
+            coeffs = list(coeffs) + [0.0] * (64 - len(coeffs))
+            if len(coeffs) > 64:
+                coeffs = coeffs[:64]
+        
+        self.coeffs = [float(c) for c in coeffs]
+    
+    @property
+    def real(self):
+        """Gerçek kısım (ilk bileşen)"""
+        return self.coeffs[0]
+    
+    def __iter__(self):
+        return iter(self.coeffs)
+    
+    def __getitem__(self, index):
+        return self.coeffs[index]
+    
+    def __len__(self):
+        return len(self.coeffs)
+    
+    def __str__(self):
+        return f"ChingonNumber({', '.join(map(str, self.coeffs))})"
+    
+    def __repr__(self):
+        return f"ChingonNumber({self.coeffs})"
+    
+    def __add__(self, other):
+        if isinstance(other, ChingonNumber):
+            return ChingonNumber([a + b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            # Skaler toplama
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] += float(other)
+            return ChingonNumber(new_coeffs)
+    
+    def __sub__(self, other):
+        if isinstance(other, ChingonNumber):
+            return ChingonNumber([a - b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] -= float(other)
+            return ChingonNumber(new_coeffs)
+    
+    def __mul__(self, other):
+        if isinstance(other, ChingonNumber):
+            # Basitçe bileşen bazlı çarpma
+            return ChingonNumber([a * b for a, b in zip(self.coeffs, other.coeffs)])  # ChingonNumber döndür
+        else:
+            # Skaler çarpma
+            return ChingonNumber([c * float(other) for c in self.coeffs])  # ChingonNumber döndür
+    
+    def __mod__(self, divisor):
+        return ChingonNumber([c % divisor for c in self.coeffs])  # ChingonNumber döndür
+    
+    def __eq__(self, other):
+        if isinstance(other, ChingonNumber):  # ChingonNumber ile karşılaştır
+            return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
+        return False
+
+    def __truediv__(self, other):
+        """Bölme operatörü: / """
+        if isinstance(other, (int, float)):
+            # Skaler bölme
+            return ChingonNumber([c / other for c in self.coeffs])  # ChingonNumber döndür
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: 'ChingonNumber' and '{type(other).__name__}'")  # ChingonNumber
+    
+    def __floordiv__(self, other):
+        """Tam sayı bölme operatörü: // """
+        if isinstance(other, (int, float)):
+            # Skaler tam sayı bölme
+            return ChingonNumber([c // other for c in self.coeffs])  # ChingonNumber döndür
+        else:
+            raise TypeError(f"Unsupported operand type(s) for //: 'ChingonNumber' and '{type(other).__name__}'")  # ChingonNumber
+    
+    def __rtruediv__(self, other):
+        """Sağdan bölme: other / ChingonNumber"""
+        if isinstance(other, (int, float)):
+            return ChingonNumber([other / c if c != 0 else float('inf') for c in self.coeffs])  # ChingonNumber döndür
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'ChingonNumber'")  # ChingonNumber
+
+
+class RoutonNumber:
+    """128-bileşenli Pathion sayısı"""
+    
+    def __init__(self, *coeffs):
+        if len(coeffs) == 1 and hasattr(coeffs[0], '__iter__') and not isinstance(coeffs[0], str):
+            coeffs = coeffs[0]
+        
+        if len(coeffs) != 128:
+            coeffs = list(coeffs) + [0.0] * (128 - len(coeffs))
+            if len(coeffs) > 128:
+                coeffs = coeffs[:128]
+        
+        self.coeffs = [float(c) for c in coeffs]
+    
+    @property
+    def real(self):
+        """Gerçek kısım (ilk bileşen)"""
+        return self.coeffs[0]
+    
+    def __iter__(self):
+        return iter(self.coeffs)
+    
+    def __getitem__(self, index):
+        return self.coeffs[index]
+    
+    def __len__(self):
+        return len(self.coeffs)
+    
+    def __str__(self):
+        return f"RoutonNumber({', '.join(map(str, self.coeffs))})"
+    
+    def __repr__(self):
+        return f"RoutonNumber({self.coeffs})"
+    
+    def __add__(self, other):
+        if isinstance(other, RoutonNumber):
+            return RoutonNumber([a + b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            # Skaler toplama
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] += float(other)
+            return RoutonNumber(new_coeffs)
+    
+    def __sub__(self, other):
+        if isinstance(other, RoutonNumber):
+            return RoutonNumber([a - b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] -= float(other)
+            return RoutonNumber(new_coeffs)
+    
+    def __mul__(self, other):
+        if isinstance(other, RoutonNumber):
+            # Basitçe bileşen bazlı çarpma (gerçek Cayley-Dickson çarpımı yerine)
+            return RoutonNumber([a * b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            # Skaler çarpma
+            return RoutonNumber([c * float(other) for c in self.coeffs])
+    
+    def __mod__(self, divisor):
+        return RoutonNumber([c % divisor for c in self.coeffs])
+    
+    def __eq__(self, other):
+        if isinstance(other, RoutonNumber):
+            return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
+        return False
+
+    def __truediv__(self, other):
+        """Bölme operatörü: / """
+        if isinstance(other, (int, float)):
+            # Skaler bölme
+            return RoutonNumber([c / other for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: 'RoutonNumber' and '{type(other).__name__}'")
+    
+    def __floordiv__(self, other):
+        """Tam sayı bölme operatörü: // """
+        if isinstance(other, (int, float)):
+            # Skaler tam sayı bölme
+            return RoutonNumber([c // other for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for //: 'RoutonNumber' and '{type(other).__name__}'")
+    
+    def __rtruediv__(self, other):
+        """Sağdan bölme: other / RoutonNumber"""
+        if isinstance(other, (int, float)):
+            # Bu daha karmaşık olabilir, basitçe bileşen bazlı bölme
+            return RoutonNumber([other / c if c != 0 else float('inf') for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'RoutonNumber'")
+
+
+class VoudonNumber:
+    """256-bileşenli Pathion sayısı"""
+    
+    def __init__(self, *coeffs):
+        if len(coeffs) == 1 and hasattr(coeffs[0], '__iter__') and not isinstance(coeffs[0], str):
+            coeffs = coeffs[0]
+        
+        if len(coeffs) != 256:
+            coeffs = list(coeffs) + [0.0] * (256 - len(coeffs))
+            if len(coeffs) > 256:
+                coeffs = coeffs[:256]
+        
+        self.coeffs = [float(c) for c in coeffs]
+    
+    @property
+    def real(self):
+        """Gerçek kısım (ilk bileşen)"""
+        return self.coeffs[0]
+    
+    def __iter__(self):
+        return iter(self.coeffs)
+    
+    def __getitem__(self, index):
+        return self.coeffs[index]
+    
+    def __len__(self):
+        return len(self.coeffs)
+    
+    def __str__(self):
+        return f"VoudonNumber({', '.join(map(str, self.coeffs))})"
+    
+    def __repr__(self):
+        return f"VoudonNumber({self.coeffs})"
+    
+    def __add__(self, other):
+        if isinstance(other, VoudonNumber):
+            return VoudonNumber([a + b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            # Skaler toplama
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] += float(other)
+            return VoudonNumber(new_coeffs)
+    
+    def __sub__(self, other):
+        if isinstance(other, VoudonNumber):
+            return VoudonNumber([a - b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] -= float(other)
+            return VoudonNumber(new_coeffs)
+    
+    def __mul__(self, other):
+        if isinstance(other, VoudonNumber):
+            # Basitçe bileşen bazlı çarpma (gerçek Cayley-Dickson çarpımı yerine)
+            return VoudonNumber([a * b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            # Skaler çarpma
+            return VoudonNumber([c * float(other) for c in self.coeffs])
+    
+    def __mod__(self, divisor):
+        return VoudonNumber([c % divisor for c in self.coeffs])
+    
+    def __eq__(self, other):
+        if isinstance(other, VoudonNumber):
+            return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
+        return False
+
+    def __truediv__(self, other):
+        """Bölme operatörü: / """
+        if isinstance(other, (int, float)):
+            # Skaler bölme
+            return VoudonNumber([c / other for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: 'VoudonNumber' and '{type(other).__name__}'")
+    
+    def __floordiv__(self, other):
+        """Tam sayı bölme operatörü: // """
+        if isinstance(other, (int, float)):
+            # Skaler tam sayı bölme
+            return VoudonNumber([c // other for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for //: 'VoudonNumber' and '{type(other).__name__}'")
+    
+    def __rtruediv__(self, other):
+        """Sağdan bölme: other / VoudonNumber"""
+        if isinstance(other, (int, float)):
+            # Bu daha karmaşık olabilir, basitçe bileşen bazlı bölme
+            return VoudonNumber([other / c if c != 0 else float('inf') for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'VoudonNumber'")
 
 @dataclass
 class OctonionNumber:
@@ -1225,6 +1606,142 @@ def _parse_sedenion(s) -> SedenionNumber:
 
     raise ValueError(f"Sedenion için 16 bileşen veya tek skaler bileşen gerekir. Verilen: '{s}' ({len(parts)} bileşen)")
 
+def _parse_pathion(s) -> PathionNumber:
+    """String'i veya sayıyı PathionNumber'a dönüştürür."""
+    if isinstance(s, PathionNumber):
+        return s
+    
+    if isinstance(s, (float, int, complex)):
+        return PathionNumber(float(s), *[0.0] * 31)
+    
+    if hasattr(s, '__iter__') and not isinstance(s, str):
+        return PathionNumber(s)
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
+    s = s.strip()
+    # Köşeli parantezleri kaldır (eğer varsa)
+    s = s.strip('[]')
+    parts = [p.strip() for p in s.split(',')]
+
+    if len(parts) == 32:  # Pathion 32 bileşenli olmalı
+        try:
+            return PathionNumber(*map(float, parts))  # 32 parametre
+        except ValueError as e:
+            raise ValueError(f"Geçersiz pathion bileşen değeri: '{s}' -> {e}") from e
+    elif len(parts) == 1:  # Sadece skaler değer girildiğinde
+        try:
+            scalar_val = float(parts[0])
+            return PathionNumber(scalar_val, *[0.0] * 31)  # 32 parametre
+        except ValueError as e:
+            raise ValueError(f"Geçersiz skaler pathion değeri: '{s}' -> {e}") from e
+
+    raise ValueError(f"Pathion için 32 bileşen veya tek skaler bileşen gerekir. Verilen: '{s}' ({len(parts)} bileşen)")
+
+def _parse_chingon(s) -> ChingonNumber:
+    """String'i veya sayıyı ChingonNumber'a dönüştürür."""
+    if isinstance(s, ChingonNumber):
+        return s
+    
+    if isinstance(s, (float, int, complex)):
+        return ChingonNumber(float(s), *[0.0] * 63)
+    
+    if hasattr(s, '__iter__') and not isinstance(s, str):
+        return ChingonNumber(s)
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
+    s = s.strip()
+    # Köşeli parantezleri kaldır (eğer varsa)
+    s = s.strip('[]')
+    parts = [p.strip() for p in s.split(',')]
+
+    if len(parts) == 64:  # Pathion 32 bileşenli olmalı
+        try:
+            return ChingonNumber(*map(float, parts))  # 64 parametre
+        except ValueError as e:
+            raise ValueError(f"Geçersiz chingon bileşen değeri: '{s}' -> {e}") from e
+    elif len(parts) == 1:  # Sadece skaler değer girildiğinde
+        try:
+            scalar_val = float(parts[0])
+            return ChingonNumber(scalar_val, *[0.0] * 63)  # 64 parametre
+        except ValueError as e:
+            raise ValueError(f"Geçersiz skaler Chingon değeri: '{s}' -> {e}") from e
+
+    raise ValueError(f"Chingon için 64 bileşen veya tek skaler bileşen gerekir. Verilen: '{s}' ({len(parts)} bileşen)")
+
+def _parse_routon(s) -> RoutonNumber:
+    """String'i veya sayıyı RoutonNumber'a dönüştürür."""
+    if isinstance(s, RoutonNumber):
+        return s
+    
+    if isinstance(s, (float, int, complex)):
+        return RoutonNumber(float(s), *[0.0] * 127)
+    
+    if hasattr(s, '__iter__') and not isinstance(s, str):
+        return RoutonNumber(s)
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
+    s = s.strip()
+    # Köşeli parantezleri kaldır (eğer varsa)
+    s = s.strip('[]')
+    parts = [p.strip() for p in s.split(',')]
+
+    if len(parts) == 128:  # Pathion 32 bileşenli olmalı
+        try:
+            return RoutonNumber(*map(float, parts))  # 64 parametre
+        except ValueError as e:
+            raise ValueError(f"Geçersiz routon bileşen değeri: '{s}' -> {e}") from e
+    elif len(parts) == 1:  # Sadece skaler değer girildiğinde
+        try:
+            scalar_val = float(parts[0])
+            return RoutonNumber(scalar_val, *[0.0] * 127)  # 128 parametre
+        except ValueError as e:
+            raise ValueError(f"Geçersiz skaler routon değeri: '{s}' -> {e}") from e
+
+    raise ValueError(f"Routon için 64 bileşen veya tek skaler bileşen gerekir. Verilen: '{s}' ({len(parts)} bileşen)")
+
+def _parse_voudon(s) -> VoudonNumber:
+    """String'i veya sayıyı VoudonNumber'a dönüştürür."""
+    if isinstance(s, VoudonNumber):
+        return s
+    
+    if isinstance(s, (float, int, complex)):
+        return VoudonNumber(float(s), *[0.0] * 255)
+    
+    if hasattr(s, '__iter__') and not isinstance(s, str):
+        return VoudonNumber(s)
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
+    s = s.strip()
+    # Köşeli parantezleri kaldır (eğer varsa)
+    s = s.strip('[]')
+    parts = [p.strip() for p in s.split(',')]
+
+    if len(parts) == 256:  # Pathion 32 bileşenli olmalı
+        try:
+            return VoudonNumber(*map(float, parts))  # 64 parametre
+        except ValueError as e:
+            raise ValueError(f"Geçersiz voudon bileşen değeri: '{s}' -> {e}") from e
+    elif len(parts) == 1:  # Sadece skaler değer girildiğinde
+        try:
+            scalar_val = float(parts[0])
+            return VoudonNumber(scalar_val, *[0.0] * 255)  # 256 parametre
+        except ValueError as e:
+            raise ValueError(f"Geçersiz skaler voudon değeri: '{s}' -> {e}") from e
+
+    raise ValueError(f"Voudon için 64 bileşen veya tek skaler bileşen gerekir. Verilen: '{s}' ({len(parts)} bileşen)")
+
 
 def _parse_clifford(s) -> CliffordNumber:
     """Algebraik string'i CliffordNumber'a dönüştürür (ör: '1.0+2.0e1')."""
@@ -1387,11 +1904,12 @@ def _parse_quaternion(s: str) -> quaternion:
 
 def get_random_type(num_iterations: int, fixed_start_raw: str = "0", fixed_add_base_scalar: float = 9.0) -> List[Any]:
     """Generates Keçeci Numbers for a randomly selected type."""
-    random_type_choice = random.randint(1, 16)
+    random_type_choice = random.randint(1, 20)
     type_names_list = [
         "Positive Real", "Negative Real", "Complex", "Float", "Rational", 
         "Quaternion", "Neutrosophic", "Neutro-Complex", "Hyperreal", 
         "Bicomplex", "Neutro-Bicomplex", "Octonion", "Sedenion", "Clifford", "Dual", "Split-Complex",
+        "Pathion", "Chingon", "Routon", "Voudon",
     ]
     print(f"\nRandomly selected Keçeci Number Type: {random_type_choice} ({type_names_list[random_type_choice-1]})")
     
@@ -1538,6 +2056,22 @@ def _is_divisible(value: Any, divisor: int, kececi_type: int) -> bool:
             split_mod = value.split % divisor
             return (math.isclose(real_mod, 0.0, abs_tol=TOLERANCE) and
                     math.isclose(split_mod, 0.0, abs_tol=TOLERANCE))
+        elif kececi_type in [TYPE_Pathion, TYPE_Chingon, TYPE_Routon, TYPE_Voudon, TYPE_SEDENION]:
+            # Hypercomplex tipler için ortak çözüm
+            try:
+                if hasattr(value, 'coeffs'):
+                    coeffs = value.coeffs
+                else:
+                    # Hypercomplex objesini float listesine dönüştürmeye çalış
+                    coeffs = [float(getattr(value, f'e{i}', 0.0)) for i in range(32)]  # Varsayılan uzunluk
+            except (AttributeError, TypeError):
+                # Başarısız olursa, iterable olup olmadığını kontrol et
+                try:
+                    coeffs = list(value)
+                except TypeError:
+                    coeffs = [float(value)]  # Skaler değer
+            
+            return all(math.isclose(c % divisor, 0.0, abs_tol=TOLERANCE) for c in coeffs)
         else:
             return False
     except (TypeError, AttributeError, ValueError, ZeroDivisionError):
@@ -1672,33 +2206,61 @@ def is_prime_like(value, kececi_type: int) -> bool:
                 return is_prime(int(value.real))
             else:
                 return is_prime(int(value))
+
         elif kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL, TYPE_FLOAT]:
             if is_near_integer(value):
                 n = int(round(float(value)))
                 return is_prime(n)
             return False
+
         elif kececi_type == TYPE_COMPLEX:
             if is_near_integer(value.real):
                 return is_prime(value.real)
             return False
+
         elif kececi_type == TYPE_SPLIT_COMPLEX:
             if is_near_integer(value.real):
                 return is_prime(value.real)
             return False
-        elif kececi_type in [TYPE_QUATERNION, TYPE_OCTONION, TYPE_SEDENION]:
-            scalar = getattr(value, 'w', None) # Quaternion için .w, diğerleri için de varsa
-            if scalar is None and hasattr(value, 'coeffs') and value.coeffs: # Sedenion için
-                scalar = value.coeffs[0]
-            if scalar is None and hasattr(value, 'coefficients') and value.coefficients: # Alternatif Sedenion için
-                scalar = value.coefficients[0]
-            if scalar is not None and is_near_integer(scalar):
-                return is_prime(scalar)
-            return False
+
+        elif kececi_type == TYPE_QUATERNION:
+            if not all(is_near_integer(c) for c in [value.w, value.x, value.y, value.z]):
+                return False
+            return is_prime(round(value.w))
+        
+        elif kececi_type == TYPE_OCTONION:
+            if hasattr(value, 'coeffs'):
+                components = value.coeffs
+            else:
+                components = list(value)
+            if not all(is_near_integer(c) for c in components):
+                return False
+            return is_prime(round(components[0]))
+        
+        elif kececi_type == TYPE_SEDENION:
+            if hasattr(value, 'coeffs'):
+                components = value.coeffs
+            else:
+                components = list(value)
+            if not all(is_near_integer(c) for c in components):
+                return False
+            return is_prime(round(components[0]))
+        
+        elif kececi_type in [TYPE_Pathion, TYPE_Chingon, TYPE_Routon, TYPE_Voudon]:
+            if hasattr(value, 'coeffs'):
+                components = value.coeffs
+            else:
+                components = list(value)
+            if not all(is_near_integer(c) for c in components):
+                return False
+            return is_prime(round(components[0]))
+
         elif kececi_type == TYPE_CLIFFORD:
             scalar = value.basis.get('', 0.0)
             if is_near_integer(scalar):
                 return is_prime(scalar)
             return False
+
         else: # Diğer tipler için genel kural, önceki else bloğu yerine
             main_part = getattr(value, 'real', None)
             if main_part is None:
@@ -1852,6 +2414,10 @@ def analyze_all_types(iterations=120, additional_params=None):
         TYPE_CLIFFORD,
         TYPE_DUAL,
         TYPE_SPLIT_COMPLEX,
+        TYPE_Pathion,
+        TYPE_Chingon,
+        TYPE_Routon,
+        TYPE_Voudon,
     )
     
     print("Automated Analysis for Keçeci Types")
@@ -1963,6 +2529,22 @@ def analyze_all_types(iterations=120, additional_params=None):
         ('1.0,0.8', '0.1,0.0'),
         ('2.0', '0.3'), # Sadece real kısım
         ('4.0,1.0', '0.5'),
+
+        # 17. Pathion - 32 PARÇALI VİRGÜL
+        ('1.0' + ',0.0'*31, '0.1' + ',0.0'*31),
+        ('1.0', '0.1'), # Sadece skaler
+
+        # 13. Chingon - 64 PARÇALI VİRGÜL
+        ('1.0' + ',0.0'*63, '0.1' + ',0.0'*63),
+        ('1.0', '0.1'), # Sadece skaler
+
+        # 13. Routon - 128 PARÇALI VİRGÜL
+        ('1.0' + ',0.0'*127, '0.1' + ',0.0'*127),
+        ('1.0', '0.1'), # Sadece skaler
+
+        # 13. Voudon - 256 PARÇALI VİRGÜL
+        ('1.0' + ',0.0'*255, '0.1' + ',0.0'*255),
+        ('1.0', '0.1'), # Sadece skaler
     ]
 
     # If additional parameters are provided, extend the default set
@@ -1986,9 +2568,13 @@ def analyze_all_types(iterations=120, additional_params=None):
         14: "Clifford",
         15: "Dual",
         16: "Split-Complex",
+        17: "Pathion",
+        18: "Chingon",
+        19: "Routon",
+        20: "Voudon",
     }
 
-    for kececi_type in range(1, 16):
+    for kececi_type in range(1, 20):
         name = type_names.get(kececi_type, "Unknown Type")
         best_zeta_score = 0.0
         best_gue_score = 0.0
@@ -2393,7 +2979,7 @@ def analyze_pair_correlation(sequence, title="Pair Correlation of Keçeci Zeta Z
 # ==============================================================================
 def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str, iterations: int, include_intermediate_steps: bool = False) -> List[Any]:
 
-    if not (TYPE_POSITIVE_REAL <= kececi_type <= TYPE_SPLIT_COMPLEX):
+    if not (TYPE_POSITIVE_REAL <= kececi_type <= TYPE_Voudon):
         raise ValueError(f"Invalid Keçeci Number Type: {kececi_type}")
 
     use_integer_division = False
@@ -2465,12 +3051,12 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
         elif kececi_type == TYPE_OCTONION:
             current_value = _parse_octonion(start_input_raw)
             add_value_typed = _parse_octonion(add_input_raw)
-            ask_unit = OctonionNumber(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
+            ask_unit = OctonionNumber([1.0] + [0.0] * 7)
 
         elif kececi_type == TYPE_SEDENION:
             current_value = _parse_sedenion(start_input_raw)
             add_value_typed = _parse_sedenion(add_input_raw)
-            ask_unit = SedenionNumber([1.0] * 16)
+            ask_unit = SedenionNumber([1.0] + [0.0] * 15)
 
         elif kececi_type == TYPE_CLIFFORD:
             current_value = _parse_clifford(start_input_raw)
@@ -2486,6 +3072,26 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
             current_value = _parse_splitcomplex(start_input_raw)
             add_value_typed = _parse_splitcomplex(add_input_raw)
             ask_unit = SplitcomplexNumber(1.0, 1.0)
+
+        elif kececi_type == TYPE_Pathion:
+            current_value = _parse_pathion(start_input_raw)
+            add_value_typed = _parse_pathion(add_input_raw)
+            ask_unit = PathionNumber([1.0] + [0.0] * 31)  # Sadece ilk bileşen 1.0
+
+        elif kececi_type == TYPE_Chingon:
+            current_value = _parse_chingon(start_input_raw)
+            add_value_typed = _parse_chingon(add_input_raw)
+            ask_unit = ChingonNumber([1.0] + [0.0] * 63)  # Sadece ilk bileşen 1.0
+
+        elif kececi_type == TYPE_Routon:
+            current_value = _parse_routon(start_input_raw)
+            add_value_typed = _parse_routon(add_input_raw)
+            ask_unit = RoutonNumber([1.0] + [0.0] * 127)  # Sadece ilk bileşen 1.0
+
+        elif kececi_type == TYPE_Voudon:
+            current_value = _parse_voudon(start_input_raw)
+            add_value_typed = _parse_voudon(add_input_raw)
+            ask_unit = VoudonNumber([1.0] + [0.0] * 255)  # Sadece ilk bileşen 1.0
 
         else:
             raise ValueError(f"Unsupported Keçeci type: {kececi_type}")
@@ -2560,7 +3166,7 @@ def get_with_params(
     include_intermediate_steps: bool = False
 ) -> List[Any]:
     """
-    Tüm 16 sayı sistemi için ortak arayüz.
+    Tüm 20 sayı sistemi için ortak arayüz.
     Keçeci mantığı (ask, bölme, asallık) unified_generator ile uygulanır.
     Sadece toplama değil, koşullu değişimler de yapılır.
     """
@@ -2668,6 +3274,10 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
     TYPE_CLIFFORD = 14
     TYPE_DUAL = 15
     TYPE_SPLIT_COMPLEX = 16
+    TYPE_Pathion = 17
+    TYPE_Chingon = 18
+    TYPE_Routon = 19
+    TYPE_Voudon = 20
 
     
     print("\n--- Keçeci Numbers Interactive Generator ---")
@@ -2676,7 +3286,9 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
     print("  7: Neutrosophic     8: Neutro-Complex     9: Hyperreal")
     print(" 10: Bicomplex       11: Neutro-Bicomplex  12: Octonion")
     print(" 13: Sedenion        14: Clifford          15: Dual")
-    print(" 16: Split-Complex")
+    print(" 16: Split-Complex   17: Pathion           18: Chingon")
+    print(" 19: Routon          20: Voudon")
+
     
     # Varsayılan değerler
     DEFAULT_TYPE = 3  # Complex
@@ -2688,8 +3300,8 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
         1: "2.5",      # Positive Real
         2: "-5.0",     # Negative Real
         3: "1+1j",     # Complex
-        4: "0.0",      # Float
-        5: "0.5",      # Rational
+        4: "3.14",      # Float
+        5: "3.5",      # Rational
         6: "1.0,0.0,0.0,0.0",  # Quaternion
         7: "0.6,0.2,0.1",  # Neutrosophic
         8: "1+1j",     # Neutro-Complex
@@ -2698,9 +3310,13 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
         11: "1.0,0.0,0.1,0.0,0.0,0.0,0.0,0.0",  # Neutro-Bicomplex
         12: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",  # Octonion
         13: "1.0" + ",0.0" * 15,  # Sedenion
-        14: "1.0",     # Clifford
+        14: "1.0+2.0e1+3.0e12",     # Clifford
         15: "1.0,0.1", # Dual
-        16: "1.0,0.5"  # Split-Complex
+        16: "1.0,0.5", # Split-Complex
+        17: "1.0" + ",0.0" * 31,  # Pathion
+        18: "1.0" + ",0.0" * 63,  # Chingon
+        19: "1.0" + ",0.0" * 127,  # Routon
+        20: "1.0" + ",0.0" * 255,  # Voudon
     }
     
     default_add_values = {
@@ -2717,22 +3333,26 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
         11: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",  # Neutro-Bicomplex
         12: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",  # Octonion
         13: "0.1" + ",0.0" * 15,  # Sedenion
-        14: "0.1",     # Clifford
+        14: "1.0+2.0e1+3.0e12",     # Clifford
         15: "0.1,0.0", # Dual
-        16: "0.1,0.0"  # Split-Complex
+        16: "0.1,0.0",  # Split-Complex
+        17: "1.0" + ",0.0" * 31,  # Pathion
+        18: "1.0" + ",0.0" * 63,  # Chingon
+        19: "1.0" + ",0.0" * 127,  # Routon
+        20: "1.0" + ",0.0" * 255,  # Voudon
     }
     
     # Get a valid number type from the user with default
     while True:
         try:
-            type_input = input(f"Select a Keçeci Number Type (1-16) [default: {DEFAULT_TYPE}]: ").strip()
+            type_input = input(f"Select a Keçeci Number Type (1-20) [default: {DEFAULT_TYPE}]: ").strip()
             if type_input == "":
                 type_choice = DEFAULT_TYPE
                 break
             type_choice = int(type_input)
-            if 1 <= type_choice <= 16:
+            if 1 <= type_choice <= 20:
                 break
-            print("Invalid type. Please enter a number between 1 and 16.")
+            print("Invalid type. Please enter a number between 1 and 20.")
         except ValueError:
             print("Invalid input. Please enter a number.")
     
@@ -2754,6 +3374,10 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
         14: f"Enter Clifford start [default: '{default_start_values[14]}']: ",
         15: f"Enter Dual start [default: '{default_start_values[15]}']: ",
         16: f"Enter Split-Complex start [default: '{default_start_values[16]}']: ",
+        17: f"Enter Pathion start [default: '{default_start_values[17]}']: ",
+        18: f"Enter Chingon start [default: '{default_start_values[18]}']: ",
+        19: f"Enter Routon start [default: '{default_start_values[19]}']: ",
+        20: f"Enter Voudon start [default: '{default_start_values[20]}']: ",
     }
     
     # User prompts for the increment value with default
@@ -2774,6 +3398,10 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
         14: f"Enter Clifford increment [default: '{default_add_values[14]}']: ",
         15: f"Enter Dual increment [default: '{default_add_values[15]}']: ",
         16: f"Enter Split-Complex increment [default: '{default_add_values[16]}']: ",
+        17: f"Enter Pathion start [default: '{default_start_values[17]}']: ",
+        18: f"Enter Chingon start [default: '{default_start_values[18]}']: ",
+        19: f"Enter Routon start [default: '{default_start_values[19]}']: ",
+        20: f"Enter Voudon start [default: '{default_start_values[20]}']: ",
     }
     
     # Get inputs from the user with defaults
@@ -2921,7 +3549,7 @@ def _plot_component_distribution(ax, elem, all_keys, seq_length=1):
 
 def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Analysis"):
     """
-    Tüm 16 Keçeci Sayı türü için detaylı görselleştirme sağlar.
+    Tüm 20 Keçeci Sayı türü için detaylı görselleştirme sağlar.
     """
 
     if not sequence:
@@ -3466,8 +4094,161 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
             ax.set_xticks([])
             ax.set_yticks([])
 
+    # --- 15. Pathion
+    elif isinstance(first_elem, PathionNumber):
+        coeffs = np.array([x.coeffs for x in sequence])
+        magnitudes = np.linalg.norm(coeffs, axis=1)
+        gs = GridSpec(2, 2, figure=fig)
 
-    # --- 15. Bilinmeyen tip
+        ax1 = fig.add_subplot(gs[0, 0])
+        for i in range(8):
+            ax1.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.8)
+        ax1.set_title("PathionNumber e0-e7")
+        ax1.legend(ncol=2, fontsize=6)
+
+        ax2 = fig.add_subplot(gs[0, 1])
+        for i in range(8, 16):
+            ax2.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.8)
+        ax2.set_title("e8-e15")
+        ax2.legend(ncol=2, fontsize=6)
+
+        ax3 = fig.add_subplot(gs[1, 0])
+        ax3.plot(magnitudes, 'o-', color='tab:red')
+        ax3.set_title("Magnitude |p|")
+
+        if use_pca:
+            try:
+                pca = PCA(n_components=2)
+                if len(sequence) > 2:
+                    proj = pca.fit_transform(coeffs)
+                    ax4 = fig.add_subplot(gs[1, 1])
+                    sc = ax4.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
+                    ax4.set_title(f"PCA Projection (Var: {sum(pca.explained_variance_ratio_):.3f})")
+                    plt.colorbar(sc, ax=ax4, label="Iteration")
+            except Exception as e:
+                ax4 = fig.add_subplot(gs[1, 1])
+                ax4.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=10)
+        else:
+            ax4 = fig.add_subplot(gs[1, 1])
+            ax4.text(0.5, 0.5, "Install sklearn\nfor PCA", ha='center', va='center', fontsize=10)
+
+    # --- 16. Chingon
+    elif isinstance(first_elem, ChingonNumber):
+        coeffs = np.array([x.coeffs for x in sequence])
+        magnitudes = np.linalg.norm(coeffs, axis=1)
+        gs = GridSpec(2, 2, figure=fig)
+
+        ax1 = fig.add_subplot(gs[0, 0])
+        for i in range(16):
+            ax1.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.5)
+        ax1.set_title("ChingonNumber e0-e15")
+        ax1.legend(ncol=4, fontsize=4)
+
+        ax2 = fig.add_subplot(gs[0, 1])
+        for i in range(16, 32):
+            ax2.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.5)
+        ax2.set_title("e16-e31")
+        ax2.legend(ncol=4, fontsize=4)
+
+        ax3 = fig.add_subplot(gs[1, 0])
+        ax3.plot(magnitudes, 'o-', color='tab:green')
+        ax3.set_title("Magnitude |c|")
+
+        if use_pca:
+            try:
+                pca = PCA(n_components=2)
+                if len(sequence) > 2:
+                    proj = pca.fit_transform(coeffs)
+                    ax4 = fig.add_subplot(gs[1, 1])
+                    sc = ax4.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
+                    ax4.set_title(f"PCA Projection (Var: {sum(pca.explained_variance_ratio_):.3f})")
+                    plt.colorbar(sc, ax=ax4, label="Iteration")
+            except Exception as e:
+                ax4 = fig.add_subplot(gs[1, 1])
+                ax4.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=10)
+        else:
+            ax4 = fig.add_subplot(gs[1, 1])
+            ax4.text(0.5, 0.5, "Install sklearn\nfor PCA", ha='center', va='center', fontsize=10)
+
+
+    # --- 17. Routon
+    elif isinstance(first_elem, RoutonNumber):
+        coeffs = np.array([x.coeffs for x in sequence])
+        magnitudes = np.linalg.norm(coeffs, axis=1)
+        gs = GridSpec(2, 2, figure=fig)
+
+        ax1 = fig.add_subplot(gs[0, 0])
+        for i in range(32):
+            ax1.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.3)
+        ax1.set_title("RoutonNumber e0-e31")
+        ax1.legend(ncol=4, fontsize=3)
+
+        ax2 = fig.add_subplot(gs[0, 1])
+        for i in range(32, 64):
+            ax2.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.3)
+        ax2.set_title("e32-e63")
+        ax2.legend(ncol=4, fontsize=3)
+
+        ax3 = fig.add_subplot(gs[1, 0])
+        ax3.plot(magnitudes, 'o-', color='tab:blue')
+        ax3.set_title("Magnitude |r|")
+
+        if use_pca:
+            try:
+                pca = PCA(n_components=2)
+                if len(sequence) > 2:
+                    proj = pca.fit_transform(coeffs)
+                    ax4 = fig.add_subplot(gs[1, 1])
+                    sc = ax4.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
+                    ax4.set_title(f"PCA Projection (Var: {sum(pca.explained_variance_ratio_):.3f})")
+                    plt.colorbar(sc, ax=ax4, label="Iteration")
+            except Exception as e:
+                ax4 = fig.add_subplot(gs[1, 1])
+                ax4.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=10)
+        else:
+            ax4 = fig.add_subplot(gs[1, 1])
+            ax4.text(0.5, 0.5, "Install sklearn\nfor PCA", ha='center', va='center', fontsize=10)
+
+    # --- 18. Voudon
+    elif isinstance(first_elem, VoudonNumber):
+        coeffs = np.array([x.coeffs for x in sequence])
+        magnitudes = np.linalg.norm(coeffs, axis=1)
+        gs = GridSpec(2, 2, figure=fig)
+
+        ax1 = fig.add_subplot(gs[0, 0])
+        for i in range(64):
+            ax1.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.2)
+        ax1.set_title("VoudonNumber e0-e63")
+        ax1.legend(ncol=4, fontsize=2)
+
+        ax2 = fig.add_subplot(gs[0, 1])
+        for i in range(64, 128):
+            ax2.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.2)
+        ax2.set_title("e64-e127")
+        ax2.legend(ncol=4, fontsize=2)
+
+        ax3 = fig.add_subplot(gs[1, 0])
+        ax3.plot(magnitudes, 'o-', color='tab:orange')
+        ax3.set_title("Magnitude |v|")
+
+        if use_pca:
+            try:
+                pca = PCA(n_components=2)
+                if len(sequence) > 2:
+                    proj = pca.fit_transform(coeffs)
+                    ax4 = fig.add_subplot(gs[1, 1])
+                    sc = ax4.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
+                    ax4.set_title(f"PCA Projection (Var: {sum(pca.explained_variance_ratio_):.3f})")
+                    plt.colorbar(sc, ax=ax4, label="Iteration")
+            except Exception as e:
+                ax4 = fig.add_subplot(gs[1, 1])
+                ax4.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=10)
+        else:
+            ax4 = fig.add_subplot(gs[1, 1])
+            ax4.text(0.5, 0.5, "Install sklearn\nfor PCA", ha='center', va='center', fontsize=10)
+
+
+    # --- 19. Bilinmeyen tip
     else:
         ax = fig.add_subplot(1, 1, 1)
         type_name = type(first_elem).__name__
@@ -3495,7 +4276,7 @@ if __name__ == "__main__":
     #     plt.show()
 
     # --- Example 2: Programmatic Generation and Plotting ---
-    print("\nRunning programmatic tests for all 16 number types...")
+    print("\nRunning programmatic tests for all 20 number types...")
     
     STEPS = 40
     START_VAL = "2.5"
@@ -3508,11 +4289,13 @@ if __name__ == "__main__":
         "Neutrosophic Complex": TYPE_NEUTROSOPHIC_COMPLEX, "Hyperreal": TYPE_HYPERREAL,
         "Bicomplex": TYPE_BICOMPLEX, "Neutrosophic Bicomplex": TYPE_NEUTROSOPHIC_BICOMPLEX,
         "Octonion": TYPE_OCTONION, "Sedenion": TYPE_SEDENION, "Clifford": TYPE_CLIFFORD, 
-        "Dual": TYPE_DUAL, "Splitcomplex": TYPE_SPLIT_COMPLEX,
+        "Dual": TYPE_DUAL, "Splitcomplex": TYPE_SPLIT_COMPLEX, "Pathion": TYPE_Pathion,
+        "Chingon": TYPE_Chingon, "Routon": TYPE_Routon, "Voudon": TYPE_Voudon,
     }
 
     types_to_plot = [
-        "Complex", "Quaternion", "Bicomplex", "Neutrosophic Complex", "Hyperreal", "Octonion", "Sedenion", "Clifford", "Dual", "Splitcompllex",
+        "Complex", "Quaternion", "Bicomplex", "Neutrosophic Complex", "Hyperreal", "Octonion", "Sedenion", "Clifford", "Dual", "Splitcompllex", 
+        "Pathion", "Chingon", "Routon", "Voudon",
     ]
     
     for name, type_id in all_types.items():
