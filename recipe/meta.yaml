@@ -1,4 +1,4 @@
-{% set version = "0.7.7" %}
+{% set version = "0.7.8" %}
 
 package:
   name: kececinumbers
@@ -28,7 +28,6 @@ requirements:
     - python >=3.10
     - numpy
     - matplotlib
-    - quaternion
     - scipy
     - scikit-learn
     - sympy
@@ -39,7 +38,6 @@ requirements:
     - setuptools
     - numpy
     - matplotlib
-    - quaternion
     - scipy
     - scikit-learn
     - sympy
@@ -51,7 +49,6 @@ test:
     - scikit-learn
     - sympy
     - numpy
-    - quaternion
   imports:
     - kececinumbers
     - matplotlib.pyplot
@@ -61,7 +58,6 @@ test:
     - scipy.stats
     - scikit-learn
     - numpy
-    - quaternion
 
 about:
   home: https://github.com/WhiteSymmetry/kececinumbers
