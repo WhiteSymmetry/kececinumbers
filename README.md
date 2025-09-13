@@ -142,7 +142,7 @@ TYPE_SPLIT_COMPLEX = 16
 
 ## Installation
 
-You can easily install the project using **Conda** or **Pip** but intall "**conda install -c conda-forge quaternion**"
+You can easily install the project using **Conda** or **Pip** but intall "**conda install -c conda-forge quaternion**" or "conda install -c conda-forge quaternion -y --force-reinstall"
 **is not isntall with pip or numpy-quaternion (error)**:
 
 ```bash
