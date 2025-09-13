@@ -22,7 +22,7 @@ import warnings
     # importlib.reload(kececinumbers) # F821 undefined name 'kececinumbers'
 
 # Paket sürüm numarası
-__version__ = "0.7.8"
+__version__ = "0.7.9"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 
@@ -92,6 +92,10 @@ __all__ = [
     'is_prime_like',
     'is_near_integer',
     '_plot_component_distribution',
+    '_parse_pathion',
+    '_parse_chingon',
+    '_parse_routon',
+    '_parse_voudon',
     
 
     # --- Core Generation and Analysis ---
@@ -120,6 +124,10 @@ __all__ = [
     'TYPE_CLIFFORD',
     'TYPE_DUAL',
     'TYPE_SPLIT_COMPLEX',
+    'TYPE_Pathion',
+    'TYPE_Chingon',
+    'TYPE_Routon',
+    'TYPE_Voudon',
 ]
 
 # Göreli modül içe aktarmaları
@@ -199,6 +207,10 @@ try:
         is_prime_like,
         is_near_integer,
         _plot_component_distribution,
+        _parse_pathion,
+        _parse_chingon,
+        _parse_routon,
+        _parse_voudon,
          
     
         # Constants
@@ -218,6 +230,10 @@ try:
         TYPE_CLIFFORD,
         TYPE_DUAL,
         TYPE_SPLIT_COMPLEX,
+        TYPE_Pathion,
+        TYPE_Chingon,
+        TYPE_Routon,
+        TYPE_Voudon,
     )
 except ImportError as e:
     warnings.warn(f"Gerekli modül yüklenemedi: {e}", ImportWarning)
