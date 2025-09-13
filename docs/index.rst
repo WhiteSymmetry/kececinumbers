@@ -69,7 +69,7 @@ Keçeci Numbers are sequences generated from a specific starting value using a r
 Key Features
 ============
 
-*   **16 Different Number Types:** Supports integers, rationals, complex numbers, quaternions, neutrosophic numbers, and more.
+*   **20 Different Number Types:** Supports integers, rationals, complex numbers, quaternions, neutrosophic numbers, and more.
 *   **Unified Generator:** Uses a single, consistent ``unified_generator`` algorithm for all number types.
 *   **Advanced Visualization:** Provides a multi-dimensional ``plot_numbers`` function tailored to the nature of each number system.
 *   **Keçeci Prime Number (KPN) Analysis:** Identifies the most recurring prime representation in sequences to analyze their convergence behavior.
