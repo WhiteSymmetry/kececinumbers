@@ -106,6 +106,29 @@ This flexible mechanism provides a rich framework for studying the behavior of n
 
 ## MODULE CONSTANTS: KEÇECİ NUMBER TYPES
 
+type_names = {
+        1: "Positive Real",
+        2: "Negative Real",
+        3: "Complex",
+        4: "Float",
+        5: "Rational",
+        6: "Quaternion",
+        7: "Neutrosophic",
+        8: "Neutro-Complex",
+        9: "Hyperreal",
+        10: "Bicomplex",
+        11: "Neutro-Bicomplex",
+        12: "Octonion",
+        13: "Sedenion",
+        14: "Clifford",
+        15: "Dual",
+        16: "Split-Complex",
+        17: "Pathion",
+        18: "Chingon",
+        19: "Routon",
+        20: "Voudon",
+    }
+
 
 TYPE_POSITIVE_REAL = 1
 
