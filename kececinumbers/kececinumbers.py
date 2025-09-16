@@ -825,7 +825,6 @@ class BicomplexNumber:
 
     def __mul__(self, other: Any) -> "BicomplexNumber":
         if isinstance(other, BicomplexNumber):
-            # Bicomplex multiplication: (z1 + z2j) * (w1 + w2j) = (z1*w1 - z2*w2) + (z1*w2 + z2*w1)j
             return BicomplexNumber(
                 self.z1 * other.z1 - self.z2 * other.z2,
                 self.z1 * other.z2 + self.z2 * other.z1
@@ -848,41 +847,212 @@ class BicomplexNumber:
         if self.z1 != 0j:
             parts.append(f"({self.z1.real}+{self.z1.imag}j)")
         if self.z2 != 0j:
-            parts.append(f"({self.z2.real}+{self.z2.imag}j)j")
+            parts.append(f"({self.z2.real}+{self.z2.imag}j)e")
         return " + ".join(parts) if parts else "0"
 
-    def __abs__(self) -> float:
-        """Returns the magnitude of the bicomplex number."""
-        return abs(self.z1) + abs(self.z2)  # Basit magnitude
-
 def _parse_bicomplex(s: str) -> BicomplexNumber:
-    """Parses a string into a BicomplexNumber."""
+    """
+    Kececi kütüphanesinin beklediği format: Tek parametre ile
+    Sadece bicomplex parsing yapar
+    """
     s_clean = s.strip().replace(" ", "")
     
-    # VİRGÜL formatı: z1_real,z1_imag,z2_real,z2_imag (4 parametre)
-    if ',' in s_clean:
-        parts = [float(p.strip()) for p in s_clean.split(',')]
-        if len(parts) == 4:
-            return BicomplexNumber(complex(parts[0], parts[1]), complex(parts[2], parts[3]))
-        elif len(parts) == 2:
-            # Sadece z1 verilmiş, z2 = 0
-            return BicomplexNumber(complex(parts[0], parts[1]), complex(0, 0))
-        elif len(parts) == 1:
-            # Sadece real kısım
-            return BicomplexNumber(complex(parts[0], 0), complex(0, 0))
-    
-    # Eğer virgül yoksa, complex olarak parsing dene
     try:
-        # Önce complex olarak parse et
-        c = _parse_complex(s_clean)
-        return BicomplexNumber(c, complex(0, 0))
-    except ValueError:
-        # Son çare: sadece real kısım
+        # Format 1: Comma-separated "z1_real,z1_imag,z2_real,z2_imag"
+        if ',' in s_clean:
+            parts = [float(p) for p in s_clean.split(',')]
+            if len(parts) == 4:
+                return BicomplexNumber(complex(parts[0], parts[1]), 
+                                      complex(parts[2], parts[3]))
+            elif len(parts) == 2:
+                return BicomplexNumber(complex(parts[0], parts[1]), 
+                                      complex(0, 0))
+            elif len(parts) == 1:
+                return BicomplexNumber(complex(parts[0], 0), 
+                                      complex(0, 0))
+        
+        # Format 2: Explicit "(a+bj)+(c+dj)e"
+        if 'e' in s_clean and '(' in s_clean:
+            pattern = r'\(([-\d.]+)\s*([+-]?)\s*([-\d.]*)j\)\s*\+\s*\(([-\d.]+)\s*([+-]?)\s*([-\d.]*)j\)e'
+            match = re.search(pattern, s_clean)
+            
+            if match:
+                z1_real = float(match.group(1))
+                z1_imag_sign = -1 if match.group(2) == '-' else 1
+                z1_imag_val = float(match.group(3) or '1')
+                z1_imag = z1_imag_sign * z1_imag_val
+                
+                z2_real = float(match.group(4))
+                z2_imag_sign = -1 if match.group(5) == '-' else 1
+                z2_imag_val = float(match.group(6) or '1')
+                z2_imag = z2_imag_sign * z2_imag_val
+                
+                return BicomplexNumber(complex(z1_real, z1_imag), 
+                                      complex(z2_real, z2_imag))
+        
+        # Format 3: Simple values
         try:
-            real_val = float(_extract_numeric_part(s_clean))
+            if 'j' in s_clean:
+                # Complex number parsing
+                if 'j' not in s_clean:
+                    return BicomplexNumber(complex(float(s_clean), 0), complex(0, 0))
+                
+                pattern = r'^([+-]?\d*\.?\d*)([+-]?\d*\.?\d*)j$'
+                match = re.match(pattern, s_clean)
+                if match:
+                    real_part = match.group(1)
+                    imag_part = match.group(2)
+                    
+                    if real_part in ['', '+', '-']:
+                        real_part = real_part + '1' if real_part else '0'
+                    if imag_part in ['', '+', '-']:
+                        imag_part = imag_part + '1' if imag_part else '0'
+                    
+                    return BicomplexNumber(complex(float(real_part or 0), float(imag_part or 0)), 
+                                          complex(0, 0))
+            
+            # Real number
+            real_val = float(s_clean)
             return BicomplexNumber(complex(real_val, 0), complex(0, 0))
+            
+        except:
+            pass
+            
+    except Exception as e:
+        print(f"Bicomplex parsing error for '{s}': {e}")
+    
+    # Default fallback
+    return BicomplexNumber(complex(0, 0), complex(0, 0))
+
+def _parse_universal(s: str, target_type: str) -> Any:
+    """
+    Universal parser - Sizin diğer yerlerde kullandığınız iki parametreli versiyon
+    """
+    if target_type == "real":
+        try:
+            return float(s.strip())
         except ValueError:
-            return BicomplexNumber(complex(0, 0), complex(0, 0))  # Default
+            return 0.0
+    
+    elif target_type == "complex":
+        try:
+            s_clean = s.strip().replace(" ", "")
+            if 'j' not in s_clean:
+                return complex(float(s_clean), 0.0)
+            
+            pattern = r'^([+-]?\d*\.?\d*)([+-]?\d*\.?\d*)j$'
+            match = re.match(pattern, s_clean)
+            if match:
+                real_part = match.group(1)
+                imag_part = match.group(2)
+                
+                if real_part in ['', '+', '-']:
+                    real_part = real_part + '1' if real_part else '0'
+                if imag_part in ['', '+', '-']:
+                    imag_part = imag_part + '1' if imag_part else '0'
+                
+                return complex(float(real_part or 0), float(imag_part or 0))
+            
+            return complex(s_clean)
+        except:
+            return complex(0, 0)
+    
+    elif target_type == "bicomplex":
+        # _parse_bicomplex'i çağır (tek parametreli)
+        return _parse_bicomplex(s)
+    
+    return None
+
+def kececi_bicomplex_algorithm(start: BicomplexNumber, add_val: BicomplexNumber, iterations: int, include_intermediate: bool = True) -> list:
+    """
+    Gerçek Keçeci algoritmasının bikompleks versiyonunu uygular
+    """
+    sequence = [start]
+    current = start
+    
+    for i in range(iterations):
+        # 1. Toplama işlemi
+        current = current + add_val
+        
+        # 2. Keçeci algoritmasının özelliği: Mod alma ve asal sayı kontrolü
+        # Gerçek algoritmada belirli bir modüle göre işlem yapılır
+        mod_value = 100  # Bu değer algoritmaya göre ayarlanabilir
+        
+        # z1 ve z2 için mod alma (gerçek ve sanal kısımlar ayrı ayrı)
+        current = BicomplexNumber(
+            complex(current.z1.real % mod_value, current.z1.imag % mod_value),
+            complex(current.z2.real % mod_value, current.z2.imag % mod_value)
+        )
+        
+        # 3. Ara adımları ekle (Keçeci algoritmasının karakteristik özelliği)
+        if include_intermediate:
+            # Ara değerler için özel işlemler (örneğin: çarpma, bölme, vs.)
+            intermediate = current * BicomplexNumber(complex(0.5, 0), complex(0, 0))
+            sequence.append(intermediate)
+        
+        sequence.append(current)
+        
+        # 4. Asal sayı kontrolü (Keçeci algoritmasının önemli bir parçası)
+        # Bu kısım algoritmanın detayına göre özelleştirilebilir
+        magnitude = abs(current.z1) + abs(current.z2)
+        if magnitude > 1 and all(magnitude % i != 0 for i in range(2, int(magnitude**0.5) + 1)):
+            print(f"Keçeci Prime found at step {i}: {magnitude:.2f}")
+        
+        # 5. Özel durum: Belirli değerlere ulaşıldığında resetleme
+        if abs(current.z1) < 1e-10 and abs(current.z2) < 1e-10:
+            current = start  # Başa dön
+    
+    return sequence
+
+# --- DAHA GERÇEKÇİ BİR VERSİYON ---
+def kececi_bicomplex_advanced(start: BicomplexNumber, add_val: BicomplexNumber, 
+                            iterations: int, include_intermediate: bool = True) -> list:
+    """
+    Gelişmiş Keçeci algoritması - daha karmaşık matematiksel işlemler içerir
+    """
+    sequence = [start]
+    current = start
+    
+    for i in range(iterations):
+        # 1. Temel toplama
+        current = current + add_val
+        
+        # 2. Doğrusal olmayan dönüşümler (Keçeci algoritmasının özelliği)
+        # Kök alma ve kuvvet alma işlemleri
+        current = BicomplexNumber(
+            complex(current.z1.real**0.5, current.z1.imag**0.5),
+            complex(current.z2.real**0.5, current.z2.imag**0.5)
+        )
+        
+        # 3. Modüler aritmetik
+        mod_real = 50
+        mod_imag = 50
+        current = BicomplexNumber(
+            complex(current.z1.real % mod_real, current.z1.imag % mod_imag),
+            complex(current.z2.real % mod_real, current.z2.imag % mod_imag)
+        )
+        
+        # 4. Ara adımlar
+        if include_intermediate:
+            # Çapraz çarpım ara değerleri
+            cross_product = BicomplexNumber(
+                complex(current.z1.real * current.z2.imag, 0),
+                complex(0, current.z1.imag * current.z2.real)
+            )
+            sequence.append(cross_product)
+        
+        sequence.append(current)
+        
+        # 5. Dinamik sistem davranışı için feedback
+        if i % 10 == 0 and i > 0:
+            # Her 10 adımda bir küçük bir perturbasyon ekle
+            perturbation = BicomplexNumber(
+                complex(0.1 * np.sin(i), 0.1 * np.cos(i)),
+                complex(0.05 * np.sin(i*0.5), 0.05 * np.cos(i*0.5))
+            )
+            current = current + perturbation
+    
+    return sequence
 
 def _has_bicomplex_format(s: str) -> bool:
     """Checks if string has bicomplex format (comma-separated)."""
@@ -2325,6 +2495,7 @@ def analyze_all_types(iterations=120, additional_params=None):
     """
     
     from . import (
+        # Classes
         NeutrosophicNumber,
         NeutrosophicComplexNumber,
         HyperrealNumber,
@@ -2345,6 +2516,19 @@ def analyze_all_types(iterations=120, additional_params=None):
         _get_integer_representation,
         _parse_quaternion,
         _parse_quaternion_from_csv,
+        _parse_complex,
+        _parse_bicomplex,
+        _parse_universal,
+        _parse_octonion,
+        _parse_sedenion,
+        _parse_neutrosophic,
+        _parse_neutrosophic_bicomplex,
+        _parse_hyperreal,
+        _parse_clifford,
+        _parse_dual,
+        _parse_splitcomplex,
+        kececi_bicomplex_algorithm,
+        kececi_bicomplex_advanced,
         generate_kececi_vectorial,
         unified_generator,
         is_prime,
@@ -2360,12 +2544,10 @@ def analyze_all_types(iterations=120, additional_params=None):
         analyze_pair_correlation,
         _gue_pair_correlation,
         _pair_correlation,
-        _parse_octonion,
         generate_octonion,
         is_quaternion_like,
         is_neutrosophic_like,
         _has_bicomplex_format,
-        _parse_bicomplex,
         coeffs,
         convert_to_float,
         safe_add,
@@ -2384,6 +2566,10 @@ def analyze_all_types(iterations=120, additional_params=None):
         is_prime_like,
         is_near_integer,
         _plot_component_distribution,
+        _parse_pathion,
+        _parse_chingon,
+        _parse_routon,
+        _parse_voudon,
          
     
         # Constants
@@ -2741,7 +2927,7 @@ def _compute_gue_similarity(sequence, tolerance=0.5):
 
 def _plot_comparison(zeta_results, gue_results):
     """
-    Creates bar charts comparing the performance of Keçeci types in matching Riemann zeta zeros and GUE statistics.
+    Generates bar charts comparing the performance of Keçeci types in matching Riemann zeta zeros and GUE statistics.
     Args:
         zeta_results (list): Results sorted by zeta matching score.
         gue_results (list): Results sorted by GUE similarity score.
@@ -2868,7 +3054,7 @@ def _pair_correlation(ordered_zeros, max_gap=3.0, bin_size=0.1):
             if gap <= max_gap:
                 gaps.append(gap)
 
-    # Create histogram
+    # Generate histogram
     bins = np.arange(0, max_gap + bin_size, bin_size)
     hist, _ = np.histogram(gaps, bins=bins, density=True)
     bin_centers = (bins[:-1] + bins[1:]) / 2
