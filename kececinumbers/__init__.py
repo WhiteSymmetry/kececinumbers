@@ -22,7 +22,7 @@ import warnings
     # importlib.reload(kececinumbers) # F821 undefined name 'kececinumbers'
 
 # Paket sürüm numarası
-__version__ = "0.7.9"
+__version__ = "0.8.0"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 
@@ -51,6 +51,7 @@ __all__ = [
     '_parse_quaternion_from_csv',
     '_parse_complex',
     '_parse_bicomplex',
+    '_parse_universal',
     '_parse_octonion',
     '_parse_sedenion',
     '_parse_neutrosophic',
@@ -59,6 +60,8 @@ __all__ = [
     '_parse_clifford',
     '_parse_dual',
     '_parse_splitcomplex',
+    'kececi_bicomplex_algorithm',
+    'kececi_bicomplex_advanced',
     'generate_kececi_vectorial',
     '_plot_comparison', 
     '_find_kececi_zeta_zeros',
@@ -162,6 +165,7 @@ try:
         _parse_quaternion_from_csv,
         _parse_complex,
         _parse_bicomplex,
+        _parse_universal,
         _parse_octonion,
         _parse_sedenion,
         _parse_neutrosophic,
@@ -170,6 +174,8 @@ try:
         _parse_clifford,
         _parse_dual,
         _parse_splitcomplex,
+        kececi_bicomplex_algorithm,
+        kececi_bicomplex_advanced,
         generate_kececi_vectorial,
         unified_generator,
         is_prime,
