@@ -1,4 +1,4 @@
-{% set version = "0.7.9" %}
+{% set version = "0.8.0" %}
 
 package:
   name: kececinumbers
@@ -6,8 +6,8 @@ package:
 
 source:
   path: .  # Derlemeyi bu meta.yaml dosyasının bulunduğu dizinden yap
-  url: https://files.pythonhosted.org/packages/e8/2e/1d75bfe80a771f680b8aa1d2d58f96884dda48797be2466d3bb890408a9f/kececinumbers-0.7.9.tar.gz
-  sha256: 8b443a82daad106f363726ecf537705f8ddfd81cd9e8c7916a2611fa0e996698
+  url: 
+  sha256: 
 
 channels:
   - conda-forge
