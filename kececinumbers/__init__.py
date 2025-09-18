@@ -22,7 +22,7 @@ import warnings
     # importlib.reload(kececinumbers) # F821 undefined name 'kececinumbers'
 
 # Paket sürüm numarası
-__version__ = "0.8.0"
+__version__ = "0.8.1"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 
@@ -41,6 +41,7 @@ __all__ = [
     'CliffordNumber',
     'DualNumber',
     'SplitcomplexNumber',
+    'BaseNumber',
 
     # --- High-Level Functions ---
     'get_with_params',
@@ -127,10 +128,10 @@ __all__ = [
     'TYPE_CLIFFORD',
     'TYPE_DUAL',
     'TYPE_SPLIT_COMPLEX',
-    'TYPE_Pathion',
-    'TYPE_Chingon',
-    'TYPE_Routon',
-    'TYPE_Voudon',
+    'TYPE_PATHION',
+    'TYPE_CHINGON',
+    'TYPE_ROUTON',
+    'TYPE_VOUDON',
 ]
 
 # Göreli modül içe aktarmaları
@@ -154,6 +155,7 @@ try:
         CliffordNumber,
         DualNumber,
         SplitcomplexNumber,
+        BaseNumber,
         
     
         # Functions
@@ -236,10 +238,10 @@ try:
         TYPE_CLIFFORD,
         TYPE_DUAL,
         TYPE_SPLIT_COMPLEX,
-        TYPE_Pathion,
-        TYPE_Chingon,
-        TYPE_Routon,
-        TYPE_Voudon,
+        TYPE_PATHION,
+        TYPE_CHINGON,
+        TYPE_ROUTON,
+        TYPE_VOUDON,
     )
 except ImportError as e:
     warnings.warn(f"Gerekli modül yüklenemedi: {e}", ImportWarning)
