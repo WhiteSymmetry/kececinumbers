@@ -2745,7 +2745,7 @@ def analyze_all_types(iterations=120, additional_params=None):
     """
     
     from . import (
-        # Classes
+            # Classes
         NeutrosophicNumber,
         NeutrosophicComplexNumber,
         HyperrealNumber,
@@ -2757,6 +2757,7 @@ def analyze_all_types(iterations=120, additional_params=None):
         CliffordNumber,
         DualNumber,
         SplitcomplexNumber,
+        BaseNumber,
         
     
         # Functions
