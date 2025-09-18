@@ -29,6 +29,8 @@ Henüz kanıtlanmamıştır ve bu modül bu varsayımı test etmek için bir çe
 """
 
 # --- Standard Library Imports ---
+from __future__ import annotations
+from abc import ABC, abstractmethod
 import collections
 from dataclasses import dataclass
 from fractions import Fraction
@@ -47,7 +49,7 @@ from scipy.signal import find_peaks
 from scipy.stats import ks_2samp
 from sklearn.decomposition import PCA
 import sympy
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Sequence, Union
 
 
 # ==============================================================================
@@ -69,15 +71,105 @@ TYPE_SEDENION = 13
 TYPE_CLIFFORD = 14
 TYPE_DUAL = 15
 TYPE_SPLIT_COMPLEX = 16
-TYPE_Pathion = 17
-TYPE_Chingon = 18
-TYPE_Routon = 19
-TYPE_Voudon = 20
+TYPE_PATHION = 17
+TYPE_CHINGON = 18
+TYPE_ROUTON = 19
+TYPE_VOUDON = 20
+
+Number = Union[int, float, complex]
 
 
 # ==============================================================================
 # --- CUSTOM NUMBER CLASS DEFINITIONS ---
 # ==============================================================================
+
+class BaseNumber(ABC):
+    """Tüm Keçeci sayı tipleri için ortak arayüz."""
+
+    def __init__(self, value: Number):
+        self._value = self._coerce(value)
+
+    @staticmethod
+    def _coerce(v: Number) -> Number:
+        if isinstance(v, (int, float, complex)):
+            return v
+        raise TypeError(f"Geçersiz sayı tipi: {type(v)}")
+
+    @property
+    def value(self) -> Number:
+        return self._value
+
+    # ------------------------------------------------------------------ #
+    # Matematiksel operator overload’ları (tek yönlü)
+    # ------------------------------------------------------------------ #
+    def __add__(self, other: Union["BaseNumber", Number]) -> "BaseNumber":
+        other_val = other.value if isinstance(other, BaseNumber) else other
+        return self.__class__(self._value + other_val)
+
+    def __radd__(self, other: Number) -> "BaseNumber":
+        return self.__add__(other)
+
+    def __sub__(self, other: Union["BaseNumber", Number]) -> "BaseNumber":
+        other_val = other.value if isinstance(other, BaseNumber) else other
+        return self.__class__(self._value - other_val)
+
+    def __rsub__(self, other: Number) -> "BaseNumber":
+        return self.__class__(other - self._value)
+
+    def __mul__(self, other: Union["BaseNumber", Number]) -> "BaseNumber":
+        other_val = other.value if isinstance(other, BaseNumber) else other
+        return self.__class__(self._value * other_val)
+
+    def __rmul__(self, other: Number) -> "BaseNumber":
+        return self.__add__(other)
+
+    def __truediv__(self, other: Union["BaseNumber", Number]) -> "BaseNumber":
+        other_val = other.value if isinstance(other, BaseNumber) else other
+        if other_val == 0:
+            raise ZeroDivisionError("division by zero")
+        return self.__class__(self._value / other_val)
+
+    def __rtruediv__(self, other: Number) -> "BaseNumber":
+        if self._value == 0:
+            raise ZeroDivisionError("division by zero")
+        return self.__class__(other / self._value)
+
+    def __mod__(self, divisor: Number) -> "BaseNumber":
+        return self.__class__(self._value % divisor)
+
+    # ------------------------------------------------------------------ #
+    # Karşılaştırmalar
+    # ------------------------------------------------------------------ #
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, BaseNumber):
+            return NotImplemented
+        return math.isclose(float(self._value), float(other._value), rel_tol=1e-12)
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self._value!r})"
+
+    # ------------------------------------------------------------------ #
+    # Alt sınıfların doldurması gereken soyut metodlar
+    # ------------------------------------------------------------------ #
+    def components(self):
+        """Bileşen listesini (Python list) döndürür."""
+        return self.coeffs.tolist()
+
+    def magnitude(self) -> float:
+        """
+        Euclidean norm = √( Σ_i coeff_i² )
+        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
+        """
+        return float(np.linalg.norm(self.coeffs))
+
+    def __hash__(self):
+        # NaN ve -0.0 gibi durumları göz önünde bulundurun
+        return hash(tuple(np.round(self.coeffs, decimals=10)))
+
+    def phase(self):
+        # compute and return the phase value
+        return self._phase   # or whatever logic you need
+
 
 class PathionNumber:
     """32-bileşenli Pathion sayısı"""
@@ -94,9 +186,12 @@ class PathionNumber:
         self.coeffs = [float(c) for c in coeffs]
     
     @property
-    def real(self):
-        """Gerçek kısım (ilk bileşen)"""
-        return self.coeffs[0]
+    def real(self) -> float:
+        """İlk bileşen – “gerçek” kısım."""
+        return float(self.coeffs[0])
+    #def real(self):
+    #    Gerçek kısım (ilk bileşen)
+    #    return self.coeffs[0]
     
     def __iter__(self):
         return iter(self.coeffs)
@@ -109,9 +204,10 @@ class PathionNumber:
     
     def __str__(self):
         return f"PathionNumber({', '.join(map(str, self.coeffs))})"
-    
+
     def __repr__(self):
-        return f"PathionNumber({self.coeffs})"
+        return f"PathionNumber({', '.join(map(str, self.coeffs))})"
+        #return f"PathionNumber({self.coeffs})"
     
     def __add__(self, other):
         if isinstance(other, PathionNumber):
@@ -142,9 +238,12 @@ class PathionNumber:
         return PathionNumber([c % divisor for c in self.coeffs])
     
     def __eq__(self, other):
-        if isinstance(other, PathionNumber):
-            return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
-        return False
+        if not isinstance(other, PathionNumber):
+            return NotImplemented
+        return np.allclose(self.coeffs, other.coeffs, atol=1e-10)
+        #if isinstance(other, PathionNumber):
+        #    return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
+        #return False
 
     def __truediv__(self, other):
         """Bölme operatörü: / """
@@ -170,6 +269,28 @@ class PathionNumber:
         else:
             raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'PathionNumber'")
 
+    # ------------------------------------------------------------------
+    # Yeni eklenen yardımcı metodlar
+    # ------------------------------------------------------------------
+    def components(self):
+        """Bileşen listesini (Python list) döndürür."""
+        return self.coeffs.tolist()
+
+    def magnitude(self) -> float:
+        """
+        Euclidean norm = √( Σ_i coeff_i² )
+        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
+        """
+        return float(np.linalg.norm(self.coeffs))
+
+    def __hash__(self):
+        # NaN ve -0.0 gibi durumları göz önünde bulundurun
+        return hash(tuple(np.round(self.coeffs, decimals=10)))
+
+    def phase(self):
+        # compute and return the phase value
+        return self._phase   # or whatever logic you need
+
 
 class ChingonNumber:
     """64-bileşenli Chingon sayısı"""  # Açıklama düzeltildi
@@ -186,9 +307,12 @@ class ChingonNumber:
         self.coeffs = [float(c) for c in coeffs]
     
     @property
-    def real(self):
-        """Gerçek kısım (ilk bileşen)"""
-        return self.coeffs[0]
+    def real(self) -> float:
+        """İlk bileşen – “gerçek” kısım."""
+        return float(self.coeffs[0])
+    #def real(self):
+    #    Gerçek kısım (ilk bileşen)
+    #    return self.coeffs[0]
     
     def __iter__(self):
         return iter(self.coeffs)
@@ -203,7 +327,8 @@ class ChingonNumber:
         return f"ChingonNumber({', '.join(map(str, self.coeffs))})"
     
     def __repr__(self):
-        return f"ChingonNumber({self.coeffs})"
+        return f"({', '.join(map(str, self.coeffs))})"
+        #return f"ChingonNumber({self.coeffs})"
     
     def __add__(self, other):
         if isinstance(other, ChingonNumber):
@@ -234,9 +359,12 @@ class ChingonNumber:
         return ChingonNumber([c % divisor for c in self.coeffs])  # ChingonNumber döndür
     
     def __eq__(self, other):
-        if isinstance(other, ChingonNumber):  # ChingonNumber ile karşılaştır
-            return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
-        return False
+        if not isinstance(other, ChingonNumber):
+            return NotImplemented
+        return np.allclose(self.coeffs, other.coeffs, atol=1e-10)
+        #if isinstance(other, ChingonNumber):  # ChingonNumber ile karşılaştır
+        #    return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
+        #return False
 
     def __truediv__(self, other):
         """Bölme operatörü: / """
@@ -261,6 +389,25 @@ class ChingonNumber:
         else:
             raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'ChingonNumber'")  # ChingonNumber
 
+    def components(self):
+        """Bileşen listesini (Python list) döndürür."""
+        return self.coeffs.tolist()
+
+    def magnitude(self) -> float:
+        """
+        Euclidean norm = √( Σ_i coeff_i² )
+        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
+        """
+        return float(np.linalg.norm(self.coeffs))
+
+    def __hash__(self):
+        # NaN ve -0.0 gibi durumları göz önünde bulundurun
+        return hash(tuple(np.round(self.coeffs, decimals=10)))
+
+    def phase(self):
+        # compute and return the phase value
+        return self._phase   # or whatever logic you need
+
 
 class RoutonNumber:
     """128-bileşenli Pathion sayısı"""
@@ -277,9 +424,12 @@ class RoutonNumber:
         self.coeffs = [float(c) for c in coeffs]
     
     @property
-    def real(self):
-        """Gerçek kısım (ilk bileşen)"""
-        return self.coeffs[0]
+    def real(self) -> float:
+        """İlk bileşen – “gerçek” kısım."""
+        return float(self.coeffs[0])
+    #def real(self):
+    #    Gerçek kısım (ilk bileşen)
+    #    return self.coeffs[0]
     
     def __iter__(self):
         return iter(self.coeffs)
@@ -294,7 +444,8 @@ class RoutonNumber:
         return f"RoutonNumber({', '.join(map(str, self.coeffs))})"
     
     def __repr__(self):
-        return f"RoutonNumber({self.coeffs})"
+        return f"({', '.join(map(str, self.coeffs))})"
+        #return f"RoutonNumber({self.coeffs})"
     
     def __add__(self, other):
         if isinstance(other, RoutonNumber):
@@ -325,9 +476,12 @@ class RoutonNumber:
         return RoutonNumber([c % divisor for c in self.coeffs])
     
     def __eq__(self, other):
-        if isinstance(other, RoutonNumber):
-            return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
-        return False
+        if not isinstance(other, RoutonNumber):
+            return NotImplemented
+        return np.allclose(self.coeffs, other.coeffs, atol=1e-10)
+        #if isinstance(other, RoutonNumber):
+        #    return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
+        #return False
 
     def __truediv__(self, other):
         """Bölme operatörü: / """
@@ -353,6 +507,25 @@ class RoutonNumber:
         else:
             raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'RoutonNumber'")
 
+    def components(self):
+        """Bileşen listesini (Python list) döndürür."""
+        return self.coeffs.tolist()
+
+    def magnitude(self) -> float:
+        """
+        Euclidean norm = √( Σ_i coeff_i² )
+        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
+        """
+        return float(np.linalg.norm(self.coeffs))
+
+    def __hash__(self):
+        # NaN ve -0.0 gibi durumları göz önünde bulundurun
+        return hash(tuple(np.round(self.coeffs, decimals=10)))
+
+    def phase(self):
+        # compute and return the phase value
+        return self._phase   # or whatever logic you need
+
 
 class VoudonNumber:
     """256-bileşenli Pathion sayısı"""
@@ -369,9 +542,12 @@ class VoudonNumber:
         self.coeffs = [float(c) for c in coeffs]
     
     @property
-    def real(self):
-        """Gerçek kısım (ilk bileşen)"""
-        return self.coeffs[0]
+    def real(self) -> float:
+        """İlk bileşen – “gerçek” kısım."""
+        return float(self.coeffs[0])
+    #def real(self):
+    #    Gerçek kısım (ilk bileşen)
+    #    return self.coeffs[0]
     
     def __iter__(self):
         return iter(self.coeffs)
@@ -386,7 +562,8 @@ class VoudonNumber:
         return f"VoudonNumber({', '.join(map(str, self.coeffs))})"
     
     def __repr__(self):
-        return f"VoudonNumber({self.coeffs})"
+        return f"({', '.join(map(str, self.coeffs))})"
+        #return f"VoudonNumber({self.coeffs})"
     
     def __add__(self, other):
         if isinstance(other, VoudonNumber):
@@ -417,9 +594,12 @@ class VoudonNumber:
         return VoudonNumber([c % divisor for c in self.coeffs])
     
     def __eq__(self, other):
-        if isinstance(other, VoudonNumber):
-            return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
-        return False
+        if not isinstance(other, VoudonNumber):
+            return NotImplemented
+        return np.allclose(self.coeffs, other.coeffs, atol=1e-10)
+        #if isinstance(other, VoudonNumber):
+        #    return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
+        #return False
 
     def __truediv__(self, other):
         """Bölme operatörü: / """
@@ -444,6 +624,25 @@ class VoudonNumber:
             return VoudonNumber([other / c if c != 0 else float('inf') for c in self.coeffs])
         else:
             raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'VoudonNumber'")
+
+    def components(self):
+        """Bileşen listesini (Python list) döndürür."""
+        return self.coeffs.tolist()
+
+    def magnitude(self) -> float:
+        """
+        Euclidean norm = √( Σ_i coeff_i² )
+        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
+        """
+        return float(np.linalg.norm(self.coeffs))
+
+    def __hash__(self):
+        # NaN ve -0.0 gibi durumları göz önünde bulundurun
+        return hash(tuple(np.round(self.coeffs, decimals=10)))
+
+    def phase(self):
+        # compute and return the phase value
+        return self._phase   # or whatever logic you need
 
 @dataclass
 class OctonionNumber:
@@ -554,7 +753,35 @@ class OctonionNumber:
         return f"Octonion({self.w:.3f}, {self.x:.3f}, {self.y:.3f}, {self.z:.3f}, {self.e:.3f}, {self.f:.3f}, {self.g:.3f}, {self.h:.3f})"
 
     def __repr__(self):
-        return str(self)
+        return f"({', '.join(map(str, self.coeffs))})"
+        #return str(self)
+
+    def components(self):
+        """Bileşen listesini (Python list) döndürür."""
+        return self.coeffs.tolist()
+
+    def magnitude(self) -> float:
+        """
+        Euclidean norm = √( Σ_i coeff_i² )
+        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
+        """
+        return float(np.linalg.norm(self.coeffs))
+
+    def __hash__(self):
+        # NaN ve -0.0 gibi durumları göz önünde bulundurun
+        return hash(tuple(np.round(self.coeffs, decimals=10)))
+
+    @property
+    def real(self) -> float:
+        """İlk bileşen – “gerçek” kısım."""
+        return float(self.coeffs[0])
+    #def real(self):
+    #    Gerçek kısım (ilk bileşen)
+    #    return self.coeffs[0]
+
+    def phase(self):
+        # compute and return the phase value
+        return self._phase   # or whatever logic you need
 
 
 @property
@@ -1161,6 +1388,29 @@ class SedenionNumber:
 
     def __repr__(self):
         return f"({', '.join(map(str, self.coeffs))})"
+
+    def components(self):
+        """Bileşen listesini (Python list) döndürür."""
+        return self.coeffs.tolist()
+
+    def magnitude(self) -> float:
+        """
+        Euclidean norm = √( Σ_i coeff_i² )
+        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
+        """
+        return float(np.linalg.norm(self.coeffs))
+
+    def __hash__(self):
+        # NaN ve -0.0 gibi durumları göz önünde bulundurun
+        return hash(tuple(np.round(self.coeffs, decimals=10)))
+
+    @property
+    def real(self) -> float:
+        """İlk bileşen – “gerçek” kısım."""
+        return float(self.coeffs[0])
+    #def real(self):
+    #    Gerçek kısım (ilk bileşen)
+    #    return self.coeffs[0]
 
 @dataclass
 class CliffordNumber:
@@ -2215,7 +2465,7 @@ def _is_divisible(value: Any, divisor: int, kececi_type: int) -> bool:
             split_mod = value.split % divisor
             return (math.isclose(real_mod, 0.0, abs_tol=TOLERANCE) and
                     math.isclose(split_mod, 0.0, abs_tol=TOLERANCE))
-        elif kececi_type in [TYPE_Pathion, TYPE_Chingon, TYPE_Routon, TYPE_Voudon, TYPE_SEDENION]:
+        elif kececi_type in [TYPE_PATHION, TYPE_CHINGON, TYPE_ROUTON, TYPE_VOUDON, TYPE_SEDENION]:
             # Hypercomplex tipler için ortak çözüm
             try:
                 if hasattr(value, 'coeffs'):
@@ -2405,7 +2655,7 @@ def is_prime_like(value, kececi_type: int) -> bool:
                 return False
             return is_prime(round(components[0]))
         
-        elif kececi_type in [TYPE_Pathion, TYPE_Chingon, TYPE_Routon, TYPE_Voudon]:
+        elif kececi_type in [TYPE_PATHION, TYPE_CHINGON, TYPE_ROUTON, TYPE_VOUDON]:
             if hasattr(value, 'coeffs'):
                 components = value.coeffs
             else:
@@ -2589,10 +2839,10 @@ def analyze_all_types(iterations=120, additional_params=None):
         TYPE_CLIFFORD,
         TYPE_DUAL,
         TYPE_SPLIT_COMPLEX,
-        TYPE_Pathion,
-        TYPE_Chingon,
-        TYPE_Routon,
-        TYPE_Voudon,
+        TYPE_PATHION,
+        TYPE_CHINGON,
+        TYPE_ROUTON,
+        TYPE_VOUDON,
     )
     
     print("Automated Analysis for Keçeci Types")
@@ -3154,7 +3404,7 @@ def analyze_pair_correlation(sequence, title="Pair Correlation of Keçeci Zeta Z
 # ==============================================================================
 def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str, iterations: int, include_intermediate_steps: bool = False) -> List[Any]:
 
-    if not (TYPE_POSITIVE_REAL <= kececi_type <= TYPE_Voudon):
+    if not (TYPE_POSITIVE_REAL <= kececi_type <= TYPE_VOUDON):
         raise ValueError(f"Invalid Keçeci Number Type: {kececi_type}")
 
     use_integer_division = False
@@ -3248,22 +3498,22 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
             add_value_typed = _parse_splitcomplex(add_input_raw)
             ask_unit = SplitcomplexNumber(1.0, 1.0)
 
-        elif kececi_type == TYPE_Pathion:
+        elif kececi_type == TYPE_PATHION:
             current_value = _parse_pathion(start_input_raw)
             add_value_typed = _parse_pathion(add_input_raw)
             ask_unit = PathionNumber([1.0] + [0.0] * 31)  # Sadece ilk bileşen 1.0
 
-        elif kececi_type == TYPE_Chingon:
+        elif kececi_type == TYPE_CHINGON:
             current_value = _parse_chingon(start_input_raw)
             add_value_typed = _parse_chingon(add_input_raw)
             ask_unit = ChingonNumber([1.0] + [0.0] * 63)  # Sadece ilk bileşen 1.0
 
-        elif kececi_type == TYPE_Routon:
+        elif kececi_type == TYPE_ROUTON:
             current_value = _parse_routon(start_input_raw)
             add_value_typed = _parse_routon(add_input_raw)
             ask_unit = RoutonNumber([1.0] + [0.0] * 127)  # Sadece ilk bileşen 1.0
 
-        elif kececi_type == TYPE_Voudon:
+        elif kececi_type == TYPE_VOUDON:
             current_value = _parse_voudon(start_input_raw)
             add_value_typed = _parse_voudon(add_input_raw)
             ask_unit = VoudonNumber([1.0] + [0.0] * 255)  # Sadece ilk bileşen 1.0
@@ -3449,10 +3699,10 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
     TYPE_CLIFFORD = 14
     TYPE_DUAL = 15
     TYPE_SPLIT_COMPLEX = 16
-    TYPE_Pathion = 17
-    TYPE_Chingon = 18
-    TYPE_Routon = 19
-    TYPE_Voudon = 20
+    TYPE_PATHION = 17
+    TYPE_CHINGON = 18
+    TYPE_ROUTON = 19
+    TYPE_VOUDON = 20
 
     
     print("\n--- Keçeci Numbers Interactive Generator ---")
@@ -3749,6 +3999,7 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
     fig = plt.figure(figsize=(18, 14), constrained_layout=True)
     fig.suptitle(title, fontsize=18, fontweight='bold')
 
+    # `sequence` is the iterable you want to visualise
     first_elem = sequence[0]
 
     # --- 1. Fraction (Rational)
@@ -3821,18 +4072,22 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax4.grid(True, alpha=0.3)
 
     # --- 4. Quaternion
-    # Check for numpy-quaternion's quaternion type, or a custom one with 'components' or 'w,x,y,z'
-    elif isinstance(first_elem, quaternion) or (hasattr(first_elem, 'components') and len(getattr(first_elem, 'components', [])) == 4) or \
+    # Check for numpy-quaternion's quaternion type, or a custom one with 'components' or 'w,x,y,z': çıkarıldı:  and len(getattr(first_elem, 'components', [])) == 4) or \
+    elif isinstance(first_elem, quaternion) or (hasattr(first_elem, 'components') == 4) or \
          (hasattr(first_elem, 'w') and hasattr(first_elem, 'x') and hasattr(first_elem, 'y') and hasattr(first_elem, 'z')):
+
         try:
             comp = np.array([
                 (q.w, q.x, q.y, q.z) if hasattr(q, 'w') else q.components
                 for q in sequence
             ])
+
             w, x, y, z = comp.T
             magnitudes = np.linalg.norm(comp, axis=1)
+            fig = plt.figure(figsize=(10, 8))
             gs = GridSpec(2, 2, figure=fig)
 
+            # Component time‑series
             ax1 = fig.add_subplot(gs[0, 0])
             labels = ['w', 'x', 'y', 'z']
             for i, label in enumerate(labels):
@@ -3840,10 +4095,12 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
             ax1.set_title("Quaternion Components")
             ax1.legend()
 
+            # Magnitude plot
             ax2 = fig.add_subplot(gs[0, 1])
             ax2.plot(magnitudes, 'o-', color='tab:purple')
             ax2.set_title("Magnitude |q|")
 
+            # 3‑D trajectory of the vector part (x, y, z)
             ax3 = fig.add_subplot(gs[1, :], projection='3d')
             ax3.plot(x, y, z, alpha=0.7)
             ax3.scatter(x[0], y[0], z[0], c='g', s=100, label='Start')
@@ -4464,8 +4721,8 @@ if __name__ == "__main__":
         "Neutrosophic Complex": TYPE_NEUTROSOPHIC_COMPLEX, "Hyperreal": TYPE_HYPERREAL,
         "Bicomplex": TYPE_BICOMPLEX, "Neutrosophic Bicomplex": TYPE_NEUTROSOPHIC_BICOMPLEX,
         "Octonion": TYPE_OCTONION, "Sedenion": TYPE_SEDENION, "Clifford": TYPE_CLIFFORD, 
-        "Dual": TYPE_DUAL, "Splitcomplex": TYPE_SPLIT_COMPLEX, "Pathion": TYPE_Pathion,
-        "Chingon": TYPE_Chingon, "Routon": TYPE_Routon, "Voudon": TYPE_Voudon,
+        "Dual": TYPE_DUAL, "Splitcomplex": TYPE_SPLIT_COMPLEX, "Pathion": TYPE_PATHION,
+        "Chingon": TYPE_CHINGON, "Routon": TYPE_ROUTON, "Voudon": TYPE_VOUDON,
     }
 
     types_to_plot = [
