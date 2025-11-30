@@ -3102,6 +3102,8 @@ def analyze_all_types(iterations=120, additional_params=None):
         DualNumber,
         SplitcomplexNumber,
         BaseNumber,
+        TernaryNumber,
+        SuperrealNumber,
         
     
         # Functions
