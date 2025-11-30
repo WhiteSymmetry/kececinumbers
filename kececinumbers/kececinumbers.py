@@ -3,16 +3,16 @@
 Keçeci Numbers Module (kececinumbers.py)
 
 This module provides a comprehensive framework for generating, analyzing, and
-visualizing Keçeci Numbers across various number systems. It supports 20
+visualizing Keçeci Numbers across various number systems. It supports 22
 distinct types, from standard integers and complex numbers to more exotic
 constructs like neutrosophic and bicomplex numbers.
 
 The core of the module is the `unified_generator`, which implements the
-specific algorithm for creating Keçeci Number sequences. High-level functions
+specific algorithm for generating Keçeci Number sequences. High-level functions
 are available for easy interaction, parameter-based generation, and plotting.
 
 Key Features:
-- Generation of 20 types of Keçeci Numbers.
+- Generation of 22 types of Keçeci Numbers.
 - A robust, unified algorithm for all number types.
 - Helper functions for mathematical properties like primality and divisibility.
 - Advanced plotting capabilities tailored to each number system.
@@ -48,6 +48,7 @@ from scipy.fft import fft, fftfreq
 from scipy.signal import find_peaks
 from scipy.stats import ks_2samp
 from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
 import sympy
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Sequence, Union
 
@@ -75,6 +76,8 @@ TYPE_PATHION = 17
 TYPE_CHINGON = 18
 TYPE_ROUTON = 19
 TYPE_VOUDON = 20
+TYPE_SUPERREAL = 21
+TYPE_TERNARY = 22
 
 Number = Union[int, float, complex]
 
@@ -82,7 +85,259 @@ Number = Union[int, float, complex]
 # ==============================================================================
 # --- CUSTOM NUMBER CLASS DEFINITIONS ---
 # ==============================================================================
+@dataclass
+class TernaryNumber:
+    def __init__(self, digits: list):
+        """
+        Üçlü sayıyı oluşturur. Verilen değer bir liste olmalıdır.
 
+        :param digits: Üçlü sayının rakamlarını temsil eden liste.
+        """
+        self.digits = digits
+
+    @classmethod
+    def from_ternary_string(cls, ternary_str: str) -> 'TernaryNumber':
+        """Üçlü sayı sistemindeki stringi TernaryNumber'a dönüştürür."""
+        ternary_str = ternary_str.strip()
+        if not all(c in '012' for c in ternary_str):
+            raise ValueError("Üçlü sayı sadece 0, 1 ve 2 rakamlarından oluşabilir.")
+        digits = [int(c) for c in ternary_str]
+        return cls(digits)
+
+    @classmethod
+    def from_decimal(cls, decimal: int) -> 'TernaryNumber':
+        """Ondalık sayıyı üçlü sayı sistemine dönüştürür."""
+        if decimal == 0:
+            return cls([0])
+        digits = []
+        while decimal > 0:
+            digits.append(decimal % 3)
+            decimal = decimal // 3
+        return cls(digits[::-1] if digits else [0])
+
+    def to_decimal(self):
+        """Üçlü sayının ondalık karşılığını döndürür."""
+        decimal_value = 0
+        for i, digit in enumerate(reversed(self.digits)):
+            decimal_value += digit * (3 ** i)
+        return decimal_value
+
+    def __repr__(self):
+        """Nesnenin yazdırılabilir temsilini döndürür."""
+        return f"TernaryNumber({self.digits})"
+
+    def __str__(self):
+        """Nesnenin string temsilini döndürür."""
+        return ''.join(map(str, self.digits))
+
+    def __add__(self, other):
+        """Toplama işlemini destekler."""
+        if isinstance(other, TernaryNumber):
+            result_decimal = self.to_decimal() + other.to_decimal()
+        elif isinstance(other, (int, str)):
+            result_decimal = self.to_decimal() + int(other)
+        else:
+            raise TypeError("TernaryNumber'ın başka bir sayıya veya TernaryNumber'e eklenebilir.")
+        return TernaryNumber.from_decimal(result_decimal)
+
+    def __radd__(self, other):
+        """Toplama işleminin sağ taraf desteklenmesini sağlar."""
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        """Çıkarma işlemini destekler."""
+        if isinstance(other, TernaryNumber):
+            result_decimal = self.to_decimal() - other.to_decimal()
+        elif isinstance(other, (int, str)):
+            result_decimal = self.to_decimal() - int(other)
+        else:
+            raise TypeError("TernaryNumber'dan başka bir sayıya veya başka bir TernaryNumber çıkartılabilir.")
+        if result_decimal < 0:
+            raise ValueError("Bir üçlü sayıdan daha büyük bir sayı çıkaramazsınız.")
+        return TernaryNumber.from_decimal(result_decimal)
+
+    def __rsub__(self, other):
+        """Çıkarma işleminin sağ taraf desteklenmesini sağlar."""
+        if isinstance(other, (int, str)):
+            result_decimal = int(other) - self.to_decimal()
+        else:
+            raise TypeError("TernaryNumber'dan bir sayı çıkartılabilir.")
+        if result_decimal < 0:
+            raise ValueError("Bir üçlü sayıdan daha büyük bir sayı çıkaramazsınız.")
+        return TernaryNumber.from_decimal(result_decimal)
+
+    def __mul__(self, scalar):
+        """Skaler çarpım işlemini destekler."""
+        if not isinstance(scalar, (int, float)):
+            raise TypeError("TernaryNumber sadece skaler ile çarpılabilir.")
+        result_decimal = self.to_decimal() * scalar
+        return TernaryNumber.from_decimal(int(result_decimal))
+
+    def __rmul__(self, other):
+        """ Çarpma işleminin sağ taraf desteklenmesini sağlar. """
+        return self.__mul__(other)
+
+    # Üçlü sayı sisteminde bölme işlemi, ondalık karşılığa dönüştürülerek yapılmalıdır.
+    def __truediv__(self, other):
+        """ Bölme işlemini destekler. """
+        if isinstance(other, TernaryNumber):
+            other_decimal = other.to_decimal()
+            if other_decimal == 0:
+                raise ZeroDivisionError("Bir TernaryNumber sıfırla bölünemez.")
+            result_decimal = self.to_decimal() / other_decimal
+            return TernaryNumber.from_decimal(int(round(result_decimal)))
+        elif isinstance(other, (int, float)):
+            if other == 0:
+                raise ZeroDivisionError("Sıfırla bölme hatası.")
+            result_decimal = self.to_decimal() / other
+            return TernaryNumber.from_decimal(int(round(result_decimal)))
+        else:
+            raise TypeError("TernaryNumber'i bir sayı veya başka bir TernaryNumber ile bölebilirsiniz.")
+
+    # üçlü sayı sisteminde bölme işlemi, ondalık karşılığa dönüştürülerek yapılmalıdır.
+    def __rtruediv__(self, other):
+        """ Bölme işleminin sağ taraf desteklenmesini sağlar. """
+        if isinstance(other, (int, float)):
+            self_decimal = self.to_decimal()
+            if self_decimal == 0:
+                raise ZeroDivisionError("Sıfırla bölme hatası.")
+            result_decimal = other / self_decimal
+            return TernaryNumber.from_decimal(int(round(result_decimal)))
+        else:
+            raise TypeError("TernaryNumber ile bir sayı bölünebilir.")
+
+    def __eq__(self, other):
+        """Eşitlik kontrolü yapar."""
+        if isinstance(other, TernaryNumber):
+            return self.digits == other.digits
+        elif isinstance(other, (int, str)):
+            return self.to_decimal() == int(other)
+        else:
+            return False
+
+    def __ne__(self, other):
+        """Eşitsizlik kontrolü yapar."""
+        return not self.__eq__(other)
+
+# Superreal Sayılar
+@dataclass
+class SuperrealNumber:
+    #def __init__(self, real_part=0.0):
+    def __init__(self, real: float, split: float = 0.0):
+        """
+        SuperrealNumber nesnesini oluşturur.
+        
+        :param real_part: Gerçek sayı bileşeni (float).
+        """
+        #self.real = real_part
+        self.real = real
+        self.split = split
+
+    def __repr__(self):
+        """ Nesnenin yazdırılabilir temsilini döndürür. """
+        return f"SuperrealNumber({self.real})"
+
+    def __str__(self):
+        """ Nesnenin string temsilini döndürür. """
+        return str(self.real)
+
+    def __add__(self, other):
+        """ Toplama işlemini destekler. """
+        if isinstance(other, SuperrealNumber):
+            return SuperrealNumber(self.real + other.real)
+        elif isinstance(other, (int, float)):
+            return SuperrealNumber(self.real + other)
+        else:
+            raise TypeError("SuperrealNumber'e bir sayı veya başka bir SuperrealNumber eklenebilir.")
+
+    def __radd__(self, other):
+        """ Toplama işleminin sağ taraf desteklenmesini sağlar. """
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        """ Çıkarma işlemini destekler. """
+        if isinstance(other, SuperrealNumber):
+            return SuperrealNumber(self.real - other.real)
+        elif isinstance(other, (int, float)):
+            return SuperrealNumber(self.real - other)
+        else:
+            raise TypeError("SuperrealNumber'dan bir sayı veya başka bir SuperrealNumber çıkarılabilir.")
+
+    def __rsub__(self, other):
+        """ Çıkarma işleminin sağ taraf desteklenmesini sağlar. """
+        return self.__neg__().__add__(other)
+
+    def __mul__(self, other):
+        """ Çarpma işlemini destekler. """
+        if isinstance(other, SuperrealNumber):
+            return SuperrealNumber(self.real * other.real)
+        elif isinstance(other, (int, float)):
+            return SuperrealNumber(self.real * other)
+        else:
+            raise TypeError("SuperrealNumber ile bir sayı veya başka bir SuperrealNumber çarpılabilir.")
+
+    def __rmul__(self, other):
+        """ Çarpma işleminin sağ taraf desteklenmesini sağlar. """
+        return self.__mul__(other)
+
+    def __truediv__(self, other):
+        """ Bölme işlemini destekler. """
+        if isinstance(other, SuperrealNumber):
+            if other.real == 0:
+                raise ZeroDivisionError("Bir SuperrealNumber sıfırla bölünemez.")
+            return SuperrealNumber(self.real / other.real)
+        elif isinstance(other, (int, float)):
+            if other == 0:
+                raise ZeroDivisionError("Sıfırla bölme hatası.")
+            return SuperrealNumber(self.real / other)
+        else:
+            raise TypeError("SuperrealNumber'i bir sayı veya başka bir SuperrealNumber ile bölebilirsiniz.")
+
+    def __rtruediv__(self, other):
+        """ Bölme işleminin sağ taraf desteklenmesini sağlar. """
+        if self.real == 0:
+            raise ZeroDivisionError("Sıfırla bölme hatası.")
+        return SuperrealNumber(other / self.real)
+
+    def __neg__(self):
+        """ Negatif değeri döndürür. """
+        return SuperrealNumber(-self.real)
+
+    def __eq__(self, other):
+        """ Eşitlik kontrolü yapar. """
+        if isinstance(other, SuperrealNumber):
+            return self.real == other.real
+        elif isinstance(other, (int, float)):
+            return self.real == other
+        else:
+            return False
+
+    def __ne__(self, other):
+        """ Eşitsizlik kontrolü yapar. """
+        return not self.__eq__(other)
+
+    def __lt__(self, other):
+        """ Küçük olma kontrolü yapar. """
+        if isinstance(other, SuperrealNumber):
+            return self.real < other.real
+        elif isinstance(other, (int, float)):
+            return self.real < other
+        else:
+            raise TypeError("SuperrealNumber ile karşılaştırılabilir.")
+
+    def __le__(self, other):
+        """ Küçük veya eşit kontrolü yapar. """
+        return self.__lt__(other) or self.__eq__(other)
+
+    def __gt__(self, other):
+        """ Büyük olma kontrolü yapar. """
+        return not self.__le__(other)
+
+    def __ge__(self, other):
+        """ Büyük veya eşit kontrolü yapar. """
+        return not self.__lt__(other)
+
+@dataclass
 class BaseNumber(ABC):
     """Tüm Keçeci sayı tipleri için ortak arayüz."""
 
@@ -170,7 +425,7 @@ class BaseNumber(ABC):
         # compute and return the phase value
         return self._phase   # or whatever logic you need
 
-
+@dataclass
 class PathionNumber:
     """32-bileşenli Pathion sayısı"""
     
@@ -291,7 +546,7 @@ class PathionNumber:
         # compute and return the phase value
         return self._phase   # or whatever logic you need
 
-
+@dataclass
 class ChingonNumber:
     """64-bileşenli Chingon sayısı"""  # Açıklama düzeltildi
     
@@ -408,7 +663,7 @@ class ChingonNumber:
         # compute and return the phase value
         return self._phase   # or whatever logic you need
 
-
+@dataclass
 class RoutonNumber:
     """128-bileşenli Pathion sayısı"""
     
@@ -526,7 +781,7 @@ class RoutonNumber:
         # compute and return the phase value
         return self._phase   # or whatever logic you need
 
-
+@dataclass
 class VoudonNumber:
     """256-bileşenli Pathion sayısı"""
     
@@ -2311,14 +2566,78 @@ def _parse_quaternion(s: str) -> quaternion:
             
     return quaternion(parts['w'], parts['x'], parts['y'], parts['z'])
 
+def _parse_superreal(s) -> SuperrealNumber:
+    """String'i veya sayıyı SuperrealNumber'a dönüştürür."""
+    if isinstance(s, SuperrealNumber):
+        return s
+
+    if isinstance(s, (float, int)):
+        return SuperrealNumber(float(s), 0.0)
+
+    if isinstance(s, complex):
+        return SuperrealNumber(s.real, s.imag)
+
+    if hasattr(s, '__iter__') and not isinstance(s, str):
+        if len(s) == 2:
+            return SuperrealNumber(float(s[0]), float(s[1]))
+        else:
+            raise ValueError("SuperrealNumber için 2 bileşen gereklidir.")
+
+    # String işlemleri
+    if not isinstance(s, str):
+        s = str(s)
+
+    s = s.strip().strip('()[]')
+    parts = [p.strip() for p in s.split(',')]
+
+    if len(parts) == 2:
+        try:
+            real = float(parts[0])
+            split = float(parts[1])
+            return SuperrealNumber(real, split)
+        except ValueError as e:
+            raise ValueError(f"Geçersiz SuperrealNumber bileşen değeri: '{s}' -> {e}") from e
+    elif len(parts) == 1:
+        try:
+            real = float(parts[0])
+            return SuperrealNumber(real, 0.0)
+        except ValueError as e:
+            raise ValueError(f"Geçersiz SuperrealNumber skaler değeri: '{s}' -> {e}") from e
+    else:
+        raise ValueError("SuperrealNumber için 1 veya 2 bileşen gereklidir.")
+
+def _parse_ternary(s) -> TernaryNumber:
+    """String'i veya sayıyı TernaryNumber'a dönüştürür."""
+    if isinstance(s, TernaryNumber):
+        return s
+
+    if isinstance(s, (float, int)):
+        # Sayıyı üçlü sayı sistemine dönüştür (örneğin, 11 -> "102")
+        # Burada basitçe skaler bir değer olarak işleniyor
+        return TernaryNumber.from_decimal(int(s))
+
+    if hasattr(s, '__iter__') and not isinstance(s, str):
+        return TernaryNumber(list(s))
+
+    # String işlemleri
+    if not isinstance(s, str):
+        s = str(s)
+
+    s = s.strip().strip('()[]')
+    # Üçlü sayı sistemindeki geçersiz karakterleri kontrol et
+    if not all(c in '012' for c in s):
+        raise ValueError(f"Geçersiz üçlü sayı formatı: '{s}'")
+
+    return TernaryNumber.from_ternary_string(s)
+
 def get_random_type(num_iterations: int, fixed_start_raw: str = "0", fixed_add_base_scalar: float = 9.0) -> List[Any]:
     """Generates Keçeci Numbers for a randomly selected type."""
-    random_type_choice = random.randint(1, 20)
+    random_type_choice = random.randint(1, 22)
     type_names_list = [
         "Positive Real", "Negative Real", "Complex", "Float", "Rational", 
         "Quaternion", "Neutrosophic", "Neutro-Complex", "Hyperreal", 
         "Bicomplex", "Neutro-Bicomplex", "Octonion", "Sedenion", "Clifford", "Dual", "Split-Complex",
-        "Pathion", "Chingon", "Routon", "Voudon",
+        "Pathion", "Chingon", "Routon", "Voudon", "Super Real", "Ternary",
     ]
     print(f"\nRandomly selected Keçeci Number Type: {random_type_choice} ({type_names_list[random_type_choice-1]})")
     
@@ -2465,6 +2784,13 @@ def _is_divisible(value: Any, divisor: int, kececi_type: int) -> bool:
             split_mod = value.split % divisor
             return (math.isclose(real_mod, 0.0, abs_tol=TOLERANCE) and
                     math.isclose(split_mod, 0.0, abs_tol=TOLERANCE))
+        elif kececi_type == TYPE_SUPERREAL:
+            real_mod = value.real % divisor
+            split_mod = value.split % divisor
+            return (math.isclose(real_mod, 0.0, abs_tol=TOLERANCE) and
+                    math.isclose(split_mod, 0.0, abs_tol=TOLERANCE))
+        elif kececi_type == TYPE_TERNARY:
+           return math.isclose(value % divisor, 0.0, abs_tol=TOLERANCE)
         elif kececi_type in [TYPE_PATHION, TYPE_CHINGON, TYPE_ROUTON, TYPE_VOUDON, TYPE_SEDENION]:
             # Hypercomplex tipler için ortak çözüm
             try:
@@ -2615,28 +2941,24 @@ def is_prime_like(value, kececi_type: int) -> bool:
                 return is_prime(int(value.real))
             else:
                 return is_prime(int(value))
-
         elif kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL, TYPE_FLOAT]:
             if is_near_integer(value):
                 n = int(round(float(value)))
                 return is_prime(n)
             return False
-
         elif kececi_type == TYPE_COMPLEX:
             if is_near_integer(value.real):
                 return is_prime(value.real)
             return False
-
         elif kececi_type == TYPE_SPLIT_COMPLEX:
             if is_near_integer(value.real):
                 return is_prime(value.real)
             return False
-
         elif kececi_type == TYPE_QUATERNION:
             if not all(is_near_integer(c) for c in [value.w, value.x, value.y, value.z]):
                 return False
             return is_prime(round(value.w))
-        
+
         elif kececi_type == TYPE_OCTONION:
             if hasattr(value, 'coeffs'):
                 components = value.coeffs
@@ -2645,7 +2967,7 @@ def is_prime_like(value, kececi_type: int) -> bool:
             if not all(is_near_integer(c) for c in components):
                 return False
             return is_prime(round(components[0]))
-        
+
         elif kececi_type == TYPE_SEDENION:
             if hasattr(value, 'coeffs'):
                 components = value.coeffs
@@ -2654,7 +2976,7 @@ def is_prime_like(value, kececi_type: int) -> bool:
             if not all(is_near_integer(c) for c in components):
                 return False
             return is_prime(round(components[0]))
-        
+
         elif kececi_type in [TYPE_PATHION, TYPE_CHINGON, TYPE_ROUTON, TYPE_VOUDON]:
             if hasattr(value, 'coeffs'):
                 components = value.coeffs
@@ -2663,13 +2985,35 @@ def is_prime_like(value, kececi_type: int) -> bool:
             if not all(is_near_integer(c) for c in components):
                 return False
             return is_prime(round(components[0]))
-
         elif kececi_type == TYPE_CLIFFORD:
             scalar = value.basis.get('', 0.0)
             if is_near_integer(scalar):
                 return is_prime(scalar)
             return False
+        elif kececi_type in [TYPE_SUPERREAL]:
+            if hasattr(value, 'real') and hasattr(value, 'split'):
+                real = value.real
+                split = value.split
+                if not (is_near_integer(real) and is_near_integer(split)):
+                    return False
+                return is_prime(round(real))
+            else:
+                raise ValueError("SuperrealNumber için 'real' ve 'split' bileşenleri gereklidir.")
+        elif kececi_type in [TYPE_TERNARY]:
+            if hasattr(value, 'digits'):
+                digits = value.digits
+            elif hasattr(value, '__iter__'):
+                digits = list(value)
+            else:
+                raise ValueError("TernaryNumber için 'digits' veya iterable bileşenler gereklidir.")
 
+            # Üçlü sayıyı ondalık sisteme çevir
+            decimal_value = 0
+            for i, digit in enumerate(reversed(digits)):
+                decimal_value += digit * (3 ** i)
+
+            # Ondalık karşılığın asal olup olmadığını kontrol et
+            return is_prime(decimal_value)
         else: # Diğer tipler için genel kural, önceki else bloğu yerine
             main_part = getattr(value, 'real', None)
             if main_part is None:
@@ -2782,7 +3126,6 @@ def analyze_all_types(iterations=120, additional_params=None):
         kececi_bicomplex_advanced,
         generate_kececi_vectorial,
         unified_generator,
-        is_prime,
         find_period,
         find_kececi_prime_number,
         plot_numbers,
@@ -2814,6 +3157,7 @@ def analyze_all_types(iterations=120, additional_params=None):
         _extract_numeric_part,
         _has_comma_format,
         _is_complex_like,
+        is_prime,
         is_prime_like,
         is_near_integer,
         _plot_component_distribution,
@@ -2821,6 +3165,14 @@ def analyze_all_types(iterations=120, additional_params=None):
         _parse_chingon,
         _parse_routon,
         _parse_voudon,
+        format_fraction,
+        test_kececi_conjecture,
+        generate_interactive_plot,
+        apply_pca_clustering,
+        analyze_kececi_sequence,
+        plot_octonion_3d,
+        _parse_ternary,
+        _parse_superreal,
          
     
         # Constants
@@ -2844,6 +3196,8 @@ def analyze_all_types(iterations=120, additional_params=None):
         TYPE_CHINGON,
         TYPE_ROUTON,
         TYPE_VOUDON,
+        TYPE_SUPERREAL,
+        TYPE_TERNARY,
     )
     
     print("Automated Analysis for Keçeci Types")
@@ -2960,17 +3314,26 @@ def analyze_all_types(iterations=120, additional_params=None):
         ('1.0' + ',0.0'*31, '0.1' + ',0.0'*31),
         ('1.0', '0.1'), # Sadece skaler
 
-        # 13. Chingon - 64 PARÇALI VİRGÜL
+        # 18. Chingon - 64 PARÇALI VİRGÜL
         ('1.0' + ',0.0'*63, '0.1' + ',0.0'*63),
         ('1.0', '0.1'), # Sadece skaler
 
-        # 13. Routon - 128 PARÇALI VİRGÜL
+        # 19. Routon - 128 PARÇALI VİRGÜL
         ('1.0' + ',0.0'*127, '0.1' + ',0.0'*127),
         ('1.0', '0.1'), # Sadece skaler
 
-        # 13. Voudon - 256 PARÇALI VİRGÜL
+        # 20. Voudon - 256 PARÇALI VİRGÜL
         ('1.0' + ',0.0'*255, '0.1' + ',0.0'*255),
         ('1.0', '0.1'), # Sadece skaler
+
+        # 21. Super Real - Format: float
+        ('3.5,0.2'), # real: Gerçek sayı (float), split: Gerçek sayı (float)
+        ('1.0,0.0'),
+
+        # 22. Ternary - Format: 012
+        ('102'), # Üçlü sayı sistemi, 0, 1, 2 rakamlarını kullanır
+        ('1201'),
+        ([1, 0, 2]),
     ]
 
     # If additional parameters are provided, extend the default set
@@ -2998,9 +3361,11 @@ def analyze_all_types(iterations=120, additional_params=None):
         18: "Chingon",
         19: "Routon",
         20: "Voudon",
+        21: "Super Real",
+        22: "Ternary",
     }
 
-    for kececi_type in range(1, 20):
+    for kececi_type in range(1, 22):
         name = type_names.get(kececi_type, "Unknown Type")
         best_zeta_score = 0.0
         best_gue_score = 0.0
@@ -3405,7 +3770,7 @@ def analyze_pair_correlation(sequence, title="Pair Correlation of Keçeci Zeta Z
 # ==============================================================================
 def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str, iterations: int, include_intermediate_steps: bool = False) -> List[Any]:
 
-    if not (TYPE_POSITIVE_REAL <= kececi_type <= TYPE_VOUDON):
+    if not (TYPE_POSITIVE_REAL <= kececi_type <= TYPE_TERNARY):
         raise ValueError(f"Invalid Keçeci Number Type: {kececi_type}")
 
     use_integer_division = False
@@ -3519,8 +3884,19 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
             add_value_typed = _parse_voudon(add_input_raw)
             ask_unit = VoudonNumber([1.0] + [0.0] * 255)  # Sadece ilk bileşen 1.0
 
+        elif kececi_type == TYPE_SUPERREAL:
+            current_value = _parse_superreal(start_input_raw)
+            add_value_typed = _parse_superreal(add_input_raw)
+            ask_unit = SuperrealNumber(1.0, 0.0)  # real=1.0, split=0.0
+
+        elif kececi_type == TYPE_TERNARY:
+            current_value = _parse_ternary(start_input_raw)
+            add_value_typed = _parse_ternary(add_input_raw)
+            ask_unit = TernaryNumber([1])  # Sadece 1 rakamından oluşan üçlü sayı
+
         else:
             raise ValueError(f"Unsupported Keçeci type: {kececi_type}")
+
 
     except (ValueError, TypeError) as e:
         print(f"ERROR: Failed to initialize type {kececi_type} with start='{start_input_raw}' and increment='{add_input_raw}': {e}")
@@ -3582,7 +3958,11 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
         current_value = next_q
 
     # --- SONUÇ ---
-    return full_log if include_intermediate_steps else clean_trajectory
+    #return full_log if include_intermediate_steps else clean_trajectory
+    # Format the result to avoid Fraction.__format__ errors
+    formatted_sequence = [format_fraction(x) if isinstance(x, Fraction) else x for x in (full_log if include_intermediate_steps else clean_trajectory)]
+
+    return formatted_sequence
 
 def get_with_params(
     kececi_type_choice: int,
@@ -3592,7 +3972,7 @@ def get_with_params(
     include_intermediate_steps: bool = False
 ) -> List[Any]:
     """
-    Tüm 20 sayı sistemi için ortak arayüz.
+    Tüm 22 sayı sistemi için ortak arayüz.
     Keçeci mantığı (ask, bölme, asallık) unified_generator ile uygulanır.
     Sadece toplama değil, koşullu değişimler de yapılır.
     """
@@ -3704,6 +4084,8 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
     TYPE_CHINGON = 18
     TYPE_ROUTON = 19
     TYPE_VOUDON = 20
+    TYPE_SUPERREAL = 21
+    TYPE_TERNARY = 22
 
     
     print("\n--- Keçeci Numbers Interactive Generator ---")
@@ -3713,7 +4095,8 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
     print(" 10: Bicomplex       11: Neutro-Bicomplex  12: Octonion")
     print(" 13: Sedenion        14: Clifford          15: Dual")
     print(" 16: Split-Complex   17: Pathion           18: Chingon")
-    print(" 19: Routon          20: Voudon")
+    print(" 19: Routon          20: Voudon            21: SuperReal")
+    print(" 22: Ternary")
 
     
     # Varsayılan değerler
@@ -3743,6 +4126,8 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
         18: "1.0" + ",0.0" * 63,  # Chingon
         19: "1.0" + ",0.0" * 127,  # Routon
         20: "1.0" + ",0.0" * 255,  # Voudon
+        21: "3.0,0.5",  # Super Real
+        22: "12",  # Ternary
     }
     
     default_add_values = {
@@ -3766,19 +4151,21 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
         18: "1.0" + ",0.0" * 63,  # Chingon
         19: "1.0" + ",0.0" * 127,  # Routon
         20: "1.0" + ",0.0" * 255,  # Voudon
+        21: "1.5,2.7",  # Super Real
+        22: "1",  # Ternary
     }
     
     # Get a valid number type from the user with default
     while True:
         try:
-            type_input = input(f"Select a Keçeci Number Type (1-20) [default: {DEFAULT_TYPE}]: ").strip()
+            type_input = input(f"Select a Keçeci Number Type (1-22) [default: {DEFAULT_TYPE}]: ").strip()
             if type_input == "":
                 type_choice = DEFAULT_TYPE
                 break
             type_choice = int(type_input)
-            if 1 <= type_choice <= 20:
+            if 1 <= type_choice <= 22:
                 break
-            print("Invalid type. Please enter a number between 1 and 20.")
+            print("Invalid type. Please enter a number between 1 and 22.")
         except ValueError:
             print("Invalid input. Please enter a number.")
     
@@ -3804,6 +4191,8 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
         18: f"Enter Chingon start [default: '{default_start_values[18]}']: ",
         19: f"Enter Routon start [default: '{default_start_values[19]}']: ",
         20: f"Enter Voudon start [default: '{default_start_values[20]}']: ",
+        21: f"Enter Super Real start [default: '{default_start_values[21]}']: ",
+        22: f"Enter Ternary start [default: '{default_start_values[22]}']: ",
     }
     
     # User prompts for the increment value with default
@@ -3828,6 +4217,8 @@ def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
         18: f"Enter Chingon start [default: '{default_start_values[18]}']: ",
         19: f"Enter Routon start [default: '{default_start_values[19]}']: ",
         20: f"Enter Voudon start [default: '{default_start_values[20]}']: ",
+        21: f"Enter Super Real start [default: '{default_start_values[21]}']: ",
+        22: f"Enter Ternary start [default: '{default_start_values[22]}']: ",
     }
     
     # Get inputs from the user with defaults
@@ -3973,9 +4364,183 @@ def _plot_component_distribution(ax, elem, all_keys, seq_length=1):
                ha='center', va='center', transform=ax.transAxes, fontsize=11)
         ax.set_title("Insufficient for PCA")
 
+def plot_octonion_3d(octonion_sequence, title="3D Octonion Trajectory"):
+    """
+    Plots the trajectory of octonion numbers in 3D space using the first three imaginary components (x, y, z).
+    Args:
+        octonion_sequence (list): List of OctonionNumber objects.
+        title (str): Title of the plot.
+    """
+    if not octonion_sequence:
+        print("Empty sequence. Nothing to plot.")
+        return
+
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Octonion bileşenlerini ayıkla (w: gerçek, x/y/z: ilk üç sanal bileşen)
+    x = [o.x for o in octonion_sequence]
+    y = [o.y for o in octonion_sequence]
+    z = [o.z for o in octonion_sequence]
+
+    # 3D uzayda çiz
+    ax.plot(x, y, z, 'b-', linewidth=2, alpha=0.7, label='Trajectory')
+    ax.scatter(x[0], y[0], z[0], c='g', s=100, label='Start', depthshade=True)
+    ax.scatter(x[-1], y[-1], z[-1], c='r', s=100, label='End', depthshade=True)
+
+    # Eksen etiketleri ve başlık
+    ax.set_xlabel('X (i)')
+    ax.set_ylabel('Y (j)')
+    ax.set_zlabel('Z (k)')
+    ax.set_title(title)
+
+    # Legend ve grid
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.show()
+
+# Otomatik Periyot Tespiti ve Keçeci Asal Analizi
+def analyze_kececi_sequence(sequence, kececi_type):
+    """
+    Analyzes a Keçeci sequence for periodicity and Keçeci Prime Numbers (KPN).
+    Args:
+        sequence (list): List of Keçeci numbers.
+        kececi_type (int): Type of Keçeci number (e.g., TYPE_OCTONION).
+    Returns:
+        dict: Analysis results including periodicity and KPNs.
+    """
+    results = {
+        "periodicity": None,
+        "kececi_primes": [],
+        "prime_indices": []
+    }
+
+    # Periyot tespiti
+    for window in range(2, len(sequence) // 2):
+        is_periodic = True
+        for i in range(len(sequence) - window):
+            if sequence[i] != sequence[i + window]:
+                is_periodic = False
+                break
+        if is_periodic:
+            results["periodicity"] = window
+            break
+
+    # Keçeci Asal sayıları tespit et
+    for idx, num in enumerate(sequence):
+        if is_prime_like(num, kececi_type):
+            integer_rep = _get_integer_representation(num)
+            if integer_rep is not None and sympy.isprime(integer_rep):
+                results["kececi_primes"].append(integer_rep)
+                results["prime_indices"].append(idx)
+
+    return results
+
+# Makine Öğrenimi Entegrasyonu: PCA ve Kümelenme Analizi
+def apply_pca_clustering(sequence, n_components=2):
+    """
+    Applies PCA and clustering to a Keçeci sequence for dimensionality reduction and pattern discovery.
+    Args:
+        sequence (list): List of Keçeci numbers.
+        n_components (int): Number of PCA components.
+    Returns:
+        tuple: (pca_result, clusters) - PCA-transformed data and cluster labels.
+    """
+    # Sayıları sayısal vektörlere dönüştür
+    vectors = []
+    for num in sequence:
+        if isinstance(num, OctonionNumber):
+            vectors.append(num.coeffs)
+        elif isinstance(num, Fraction):
+            vectors.append([float(num)])
+        else:
+            vectors.append([float(num)])
+
+    # PCA uygula
+    pca = PCA(n_components=n_components)
+    pca_result = pca.fit_transform(vectors)
+
+    # Kümelenme (K-Means)
+    kmeans = KMeans(n_clusters=3, random_state=42)
+    clusters = kmeans.fit_predict(pca_result)
+
+    return pca_result, clusters
+
+# Etkileşimli Görselleştirme (Plotly DASH)
+def generate_interactive_plot(sequence, kececi_type):
+    """
+    Generates an interactive 3D plot using Plotly for Keçeci sequences.
+    Args:
+        sequence (list): List of Keçeci numbers.
+        kececi_type (int): Type of Keçeci number.
+    """
+    import plotly.graph_objects as go
+
+    if kececi_type == TYPE_OCTONION:
+        x = [num.x for num in sequence]
+        y = [num.y for num in sequence]
+        z = [num.z for num in sequence]
+    elif kececi_type == TYPE_COMPLEX:
+        x = [num.real for num in sequence]
+        y = [num.imag for num in sequence]
+        z = [0] * len(sequence)
+    else:
+        x = range(len(sequence))
+        y = [float(num) for num in sequence]
+        z = [0] * len(sequence)
+
+    fig = go.Figure(data=[go.Scatter3d(
+        x=x, y=y, z=z,
+        mode='lines+markers',
+        marker=dict(size=5, color=z, colorscale='Viridis'),
+        line=dict(width=2)
+    )])
+
+    fig.update_layout(
+        title=f"Interactive 3D Plot: Keçeci Type {kececi_type}",
+        scene=dict(
+            xaxis_title='X',
+            yaxis_title='Y',
+            zaxis_title='Z'
+        ),
+        margin=dict(l=0, r=0, b=0, t=30)
+    )
+
+    fig.show()
+
+
+# Keçeci Varsayımı Test Aracı
+def test_kececi_conjecture(sequence, max_steps=1000):
+    """
+    Tests the Keçeci Conjecture for a given sequence.
+    Args:
+        sequence (list): List of Keçeci numbers.
+        max_steps (int): Maximum number of steps to test.
+    Returns:
+        bool: True if the conjecture holds, False otherwise.
+    """
+    #kececi_type=1
+    for i in range(max_steps):
+        if is_prime_like(sequence[-1], kececi_type):
+            return True  # Keçeci Asal sayısına ulaşıldı
+        # Yeni adıma geç
+        #add_value_raw=3
+        next_val = sequence[-1] + add_value_raw  # `add_value_raw` global olarak tanımlı olmalı
+        sequence.append(next_val)
+
+    return False  # Max adımda sonlanmış, varsayım doğrulanamadı
+
+def format_fraction(value):
+    """Fraction nesnelerini güvenli bir şekilde formatlar."""
+    if isinstance(value, Fraction):
+        return float(value)  # veya str(value)
+    return value
+
 def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Analysis"):
     """
-    Tüm 20 Keçeci Sayı türü için detaylı görselleştirme sağlar.
+    Tüm 22 Keçeci Sayı türü için detaylı görselleştirme sağlar.
     """
 
     if not sequence:
@@ -4005,30 +4570,40 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
     # --- 1. Fraction (Rational)
     if isinstance(first_elem, Fraction):
+        # Tüm elemanları `float` olarak dönüştür
         float_vals = [float(x) for x in sequence]
+        # float_vals = [float(x) if isinstance(x, (int, float, Fraction)) else float(x.value) for x in sequence]
+        # Pay ve paydaları ayrı ayrı al
         numerators = [x.numerator for x in sequence]
         denominators = [x.denominator for x in sequence]
+
+        # GridSpec ile 4 alt grafik oluştur
         gs = GridSpec(2, 2, figure=fig)
 
+        # 1. Grafik: Float değerleri
         ax1 = fig.add_subplot(gs[0, 0])
         ax1.plot(float_vals, 'o-', color='tab:blue')
         ax1.set_title("Fraction as Float")
         ax1.set_ylabel("Value")
 
+        # 2. Grafik: Pay ve payda değerleri
         ax2 = fig.add_subplot(gs[0, 1])
         ax2.plot(numerators, 's-', label='Numerator', color='tab:orange')
         ax2.plot(denominators, '^-', label='Denominator', color='tab:green')
         ax2.set_title("Numerator & Denominator")
         ax2.legend()
 
+        # 3. Grafik: Pay/Payda oranı
         ax3 = fig.add_subplot(gs[1, 0])
-        ax3.plot([n/d for n, d in zip(numerators, denominators)], 'o-', color='tab:purple')
-        ax3.set_title("Computed Ratio")
+        ratios = [n / d for n, d in zip(numerators, denominators)]
+        ax3.plot(ratios, 'o-', color='tab:purple')
+        ax3.set_title("Numerator/Denominator Ratio")
         ax3.set_ylabel("n/d")
 
+        # 4. Grafik: Pay vs Payda dağılımı
         ax4 = fig.add_subplot(gs[1, 1])
         sc = ax4.scatter(numerators, denominators, c=range(len(sequence)), cmap='plasma', s=30)
-        ax4.set_title("Num vs Den Trajectory")
+        ax4.set_title("Numerator vs Denominator Trajectory")
         ax4.set_xlabel("Numerator")
         ax4.set_ylabel("Denominator")
         plt.colorbar(sc, ax=ax4, label="Step")
@@ -4681,6 +5256,94 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
             ax4.text(0.5, 0.5, "Install sklearn\nfor PCA", ha='center', va='center', fontsize=10)
 
 
+    # --- 21. Super Real
+    elif isinstance(first_elem, SuperrealNumber):
+        # real ve split bileşenlerini ayır
+        reals = np.array([x.real for x in sequence])
+        splits = np.array([x.split for x in sequence])
+
+        gs = GridSpec(2, 2, figure=fig)  # 2 satır, 2 sütun
+        #gs = GridSpec(2, 1, figure=fig)
+
+        # Real bileşenini çizdir
+        ax1 = fig.add_subplot(gs[0, 0])
+        ax1.plot(reals, 'o-', color='tab:blue', label='Real')
+        ax1.set_title("Real Component")
+        ax1.legend()
+
+        # Split bileşenini çizdir
+        ax2 = fig.add_subplot(gs[1, 0])
+        ax2.plot(splits, 'o-', color='tab:red', label='Split')
+        ax2.set_title("Split Component")
+        ax2.legend()
+
+        if use_pca and len(sequence) > 2:
+            try:
+                # PCA için veriyi hazırla
+                data = np.column_stack((reals, splits))
+                pca = PCA(n_components=2)
+                proj = pca.fit_transform(data)
+
+                # PCA projeksiyonunu çizdir
+                ax3 = fig.add_subplot(gs[:, 1], projection='3d')  # Eğer 3D çizim yapmak isterseniz
+                sc = ax3.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
+                ax3.set_title(f"PCA Projection (Var: {sum(pca.explained_variance_ratio_):.3f})")
+                plt.colorbar(sc, ax=ax3, label="Iteration")
+            except Exception as e:
+                ax3 = fig.add_subplot(gs[:, 1])
+                ax3.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=10)
+        else:
+            ax3 = fig.add_subplot(gs[:, 1])
+            ax3.text(0.5, 0.5, "Install sklearn\nfor PCA", ha='center', va='center', fontsize=10)
+
+    # --- 22. Ternary
+    elif isinstance(first_elem, TernaryNumber):
+        # Tüm TernaryNumber nesnelerinin digits uzunluğunu belirle
+        max_length = max(len(x.digits) for x in sequence)
+
+        # Her bir TernaryNumber nesnesinin digits listesini max_length uzunluğuna tamamla
+        padded_digits = []
+        for x in sequence:
+            padded_digit = x.digits + [0] * (max_length - len(x.digits))
+            padded_digits.append(padded_digit)
+
+        # NumPy dizisine dönüştür
+        digits = np.array(padded_digits)
+
+        gs = GridSpec(2, 2, figure=fig)  # 2 satır, 2 sütun
+
+        # Her bir rakamın dağılımını çizdir
+        ax1 = fig.add_subplot(gs[0, 0])
+        for i in range(digits.shape[1]):
+            ax1.plot(digits[:, i], 'o-', alpha=0.6, label=f'digit {i}')
+        ax1.set_title("Ternary Digits")
+        ax1.legend(ncol=4, fontsize=6)
+
+        # Üçlü sayı sistemindeki değerleri ondalık sisteme çevirip çizdir
+        decimal_values = np.array([x.to_decimal() for x in sequence])
+        ax2 = fig.add_subplot(gs[0, 1])
+        ax2.plot(decimal_values, 'o-', color='tab:green')
+        ax2.set_title("Decimal Values")
+
+        if use_pca and len(sequence) > 2:
+            try:
+                # PCA için veriyi hazırla
+                pca = PCA(n_components=2)
+                proj = pca.fit_transform(digits)
+
+                # PCA projeksiyonunu çizdir
+                ax3 = fig.add_subplot(gs[1, :])  # 2. satırın tamamını kullan
+                sc = ax3.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
+                ax3.set_title(f"PCA Projection (Var: {sum(pca.explained_variance_ratio_):.3f})")
+                plt.colorbar(sc, ax=ax3, label="Iteration")
+            except Exception as e:
+                ax3 = fig.add_subplot(gs[1, :])
+                ax3.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=10)
+        else:
+            ax3 = fig.add_subplot(gs[1, :])
+            ax3.text(0.5, 0.5, "Install sklearn\nfor PCA", ha='center', va='center', fontsize=10)
+
+
     # --- 19. Bilinmeyen tip
     else:
         ax = fig.add_subplot(1, 1, 1)
@@ -4709,7 +5372,7 @@ if __name__ == "__main__":
     #     plt.show()
 
     # --- Example 2: Programmatic Generation and Plotting ---
-    print("\nRunning programmatic tests for all 20 number types...")
+    print("\nRunning programmatic tests for all 22 number types...")
     
     STEPS = 40
     START_VAL = "2.5"
@@ -4724,11 +5387,12 @@ if __name__ == "__main__":
         "Octonion": TYPE_OCTONION, "Sedenion": TYPE_SEDENION, "Clifford": TYPE_CLIFFORD, 
         "Dual": TYPE_DUAL, "Splitcomplex": TYPE_SPLIT_COMPLEX, "Pathion": TYPE_PATHION,
         "Chingon": TYPE_CHINGON, "Routon": TYPE_ROUTON, "Voudon": TYPE_VOUDON,
+        "Super Real": TYPE_SUPERREAL, "Ternary": TYPE_TERNARY,
     }
 
     types_to_plot = [
         "Complex", "Quaternion", "Bicomplex", "Neutrosophic Complex", "Hyperreal", "Octonion", "Sedenion", "Clifford", "Dual", "Splitcompllex", 
-        "Pathion", "Chingon", "Routon", "Voudon",
+        "Pathion", "Chingon", "Routon", "Voudon", "Super Real", "Ternary",
     ]
     
     for name, type_id in all_types.items():
