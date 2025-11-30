@@ -22,11 +22,10 @@ import warnings
     # importlib.reload(kececinumbers) # F821 undefined name 'kececinumbers'
 
 # Paket sürüm numarası
-__version__ = "0.8.1"
+__version__ = "0.8.2"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 
-# Public API exposed to users of the 'kececinumbers' package.
 # Public API exposed to users of the 'kececinumbers' package.
 __all__ = [
     # --- Custom Number Classes ---
@@ -93,18 +92,26 @@ __all__ = [
     '_extract_numeric_part',
     '_has_comma_format',
     '_is_complex_like',
-    'is_prime_like',
-    'is_near_integer',
     '_plot_component_distribution',
     '_parse_pathion',
     '_parse_chingon',
     '_parse_routon',
     '_parse_voudon',
+    'format_fraction',
+    'test_kececi_conjecture',
+    'generate_interactive_plot',
+    'apply_pca_clustering',
+    'analyze_kececi_sequence',
+    'plot_octonion_3d',
+    '_parse_ternary',
+    '_parse_superreal',
     
 
     # --- Core Generation and Analysis ---
     'unified_generator',
     'is_prime',
+    'is_prime_like',
+    'is_near_integer',
     'find_period',
     'find_kececi_prime_number',
 
@@ -132,6 +139,8 @@ __all__ = [
     'TYPE_CHINGON',
     'TYPE_ROUTON',
     'TYPE_VOUDON',
+    'TYPE_SUPERREAL',
+    'TYPE_TERNARY',
 ]
 
 # Göreli modül içe aktarmaları
@@ -180,7 +189,6 @@ try:
         kececi_bicomplex_advanced,
         generate_kececi_vectorial,
         unified_generator,
-        is_prime,
         find_period,
         find_kececi_prime_number,
         plot_numbers,
@@ -212,6 +220,7 @@ try:
         _extract_numeric_part,
         _has_comma_format,
         _is_complex_like,
+        is_prime,
         is_prime_like,
         is_near_integer,
         _plot_component_distribution,
@@ -219,6 +228,14 @@ try:
         _parse_chingon,
         _parse_routon,
         _parse_voudon,
+        format_fraction,
+        test_kececi_conjecture,
+        generate_interactive_plot,
+        apply_pca_clustering,
+        analyze_kececi_sequence,
+        plot_octonion_3d,
+        _parse_ternary,
+        _parse_superreal,
          
     
         # Constants
@@ -242,6 +259,8 @@ try:
         TYPE_CHINGON,
         TYPE_ROUTON,
         TYPE_VOUDON,
+        TYPE_SUPERREAL,
+        TYPE_TERNARY,
     )
 except ImportError as e:
     warnings.warn(f"Gerekli modül yüklenemedi: {e}", ImportWarning)
