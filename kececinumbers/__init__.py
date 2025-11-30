@@ -22,7 +22,7 @@ import warnings
     # importlib.reload(kececinumbers) # F821 undefined name 'kececinumbers'
 
 # Paket sürüm numarası
-__version__ = "0.8.2"
+__version__ = "0.8.3"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 
@@ -41,6 +41,8 @@ __all__ = [
     'DualNumber',
     'SplitcomplexNumber',
     'BaseNumber',
+    'TernaryNumber',
+    'SuperrealNumber',
 
     # --- High-Level Functions ---
     'get_with_params',
@@ -165,6 +167,8 @@ try:
         DualNumber,
         SplitcomplexNumber,
         BaseNumber,
+        TernaryNumber,
+        SuperrealNumber,
         
     
         # Functions
