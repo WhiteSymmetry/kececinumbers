@@ -28,7 +28,8 @@ def get_install_requires():
         "scikit-learn",
         "sympy",
     ]
-    
+
+    """
     # Quaternion bağımlılığını akıllıca ekle
     # Önce mevcut ortamı kontrol et, hangi quaternion paketinin kurulu olduğuna bak
     try:
@@ -49,6 +50,7 @@ def get_install_requires():
             else:
                 # Pip ortamı - numpy-quaternion kullan
                 return base_requires + ["numpy-quaternion"]
+    """
 
 setup(
     name="kececinumbers",
@@ -67,8 +69,8 @@ setup(
     },
     install_requires=get_install_requires(),
     extras_require={
-        'quaternion-pip': ["numpy-quaternion"],  # Pip için explicit
-        'quaternion-conda': ["quaternion"],      # Conda için explicit
+        #'quaternion-pip': ["numpy-quaternion"],  # Pip için explicit
+        #'quaternion-conda': ["quaternion"],      # Conda için explicit
         'all': ["numpy-quaternion"],             # Varsayılan pip
         'test': [
             "pytest",
