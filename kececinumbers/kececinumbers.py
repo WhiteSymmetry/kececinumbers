@@ -39,9 +39,7 @@ from matplotlib.gridspec import GridSpec
 import matplotlib.pyplot as plt
 import numbers
 #from numbers import Real
-import numpy as np
-from quaternion import quaternion  
-# conda install -c conda-forge quaternion # pip install numpy-quaternion
+import numpy as np 
 import random
 import re
 from scipy.fft import fft, fftfreq
@@ -51,6 +49,16 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 import sympy
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Sequence, Union
+
+try:
+    # numpy-quaternion kütüphanesinin sınıfını yüklemeye çalış
+    # conda install -c conda-forge quaternion # pip install numpy-quaternion
+    from quaternion import quaternion as quaternion  # type: ignore
+except Exception:
+    # Eğer yoksa `quaternion` isimli sembolü None yap, kodun diğer yerleri bunu kontrol edebilir
+    quaternion = None
+    logger.warning("numpy-quaternion paketine ulaşılamadı — quaternion tip desteği devre dışı bırakıldı.")
+
 import logging
 
 # Module logger — library code should not configure logging handlers.
@@ -5227,7 +5235,9 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
 
     # Generation loop
     clean_trajectory = [current_value]
-    full_log = [current_value]
+    # full_log = [current_value]
+    # full_log sadece include_intermediate_steps True ise tutulacak (bellek kullanımını azaltmak için)
+    full_log = [current_value] if include_intermediate_steps else None
     last_divisor_used = None
     ask_counter = 0  # 0: +ask_unit, 1: -ask_unit
 
@@ -5307,16 +5317,26 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
                         continue
 
         # 4. Logging and book-keeping
-        full_log.append(added_value)
-        if modified_value is not None:
+        #full_log.append(added_value)
+        if include_intermediate_steps:
+            full_log.append(added_value)
+        #if modified_value is not None:
+        if modified_value is not None and include_intermediate_steps:
             full_log.append(modified_value)
-        if not full_log or next_q != full_log[-1]:
-            full_log.append(next_q)
+        #if not full_log or next_q != full_log[-1]:
+        # Ve next_q eklenmeden önce veya sonra:
+        if include_intermediate_steps:
+            # next_q muhtemelen full_log son elemanı değilse yine ekle
+            if not full_log or next_q != full_log[-1]:
+                full_log.append(next_q)
 
         clean_trajectory.append(next_q)
         current_value = next_q
 
-    formatted_sequence = [format_fraction(x) if isinstance(x, Fraction) else x for x in (full_log if include_intermediate_steps else clean_trajectory)]
+    # Sonuç formatlarken:
+    #formatted_sequence = [format_fraction(x) if isinstance(x, Fraction) else x for x in (full_log if include_intermediate_steps else clean_trajectory)]
+    formatted_sequence = [format_fraction(x) if isinstance(x, Fraction) else x
+                          for x in (full_log if include_intermediate_steps else clean_trajectory)]
     return formatted_sequence
 
 def get_with_params(
