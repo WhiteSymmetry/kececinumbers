@@ -53,16 +53,16 @@ import logging
 
 # Module logger — library code should not configure logging handlers.
 logger = logging.getLogger(__name__)
-
+"""
 try:
-    # numpy-quaternion kütüphanesinin sınıfını yüklemeye çalış
+    # numpy-quaternion kütüphanesinin sınıfını yüklemeye çalış. Artık bu modüle ihtiyaç kalmadı
     # conda install -c conda-forge quaternion # pip install numpy-quaternion
     from quaternion import quaternion as quaternion  # type: ignore
 except Exception:
     # Eğer yoksa `quaternion` isimli sembolü None yap, kodun diğer yerleri bunu kontrol edebilir
     quaternion = None
     logger.warning("numpy-quaternion paketine ulaşılamadı — quaternion tip desteği devre dışı bırakıldı.")
-
+"""
 
 # ==============================================================================
 # --- MODULE CONSTANTS: Keçeci NUMBER TYPES ---
@@ -96,6 +96,447 @@ Number = Union[int, float, complex]
 # ==============================================================================
 # --- CUSTOM NUMBER CLASS DEFINITIONS ---
 # ==============================================================================
+class quaternion:
+    """
+    Kuaterniyon sınıfı: w + xi + yj + zk formatında
+    
+    Attributes:
+        w: Reel kısım
+        x: i bileşeni
+        y: j bileşeni
+        z: k bileşeni
+    """
+    
+    w: float = 1.0
+    x: float = 0.0
+    y: float = 0.0
+    z: float = 0.0
+    
+    def __init__(self, w: float = 1.0, x: float = 0.0, y: float = 0.0, z: float = 0.0):
+        """
+        Kuaterniyon oluşturur.
+        
+        Args:
+            w: Reel kısım
+            x: i bileşeni
+            y: j bileşeni
+            z: k bileşeni
+        """
+        self.w = float(w)
+        self.x = float(x)
+        self.y = float(y)
+        self.z = float(z)
+    
+    @classmethod
+    def from_axis_angle(cls, axis: Union[List[float], Tuple[float, float, float], np.ndarray], angle: float) -> 'quaternion':
+        """
+        Eksen-açı gösteriminden kuaterniyon oluşturur.
+        
+        Args:
+            axis: Dönme ekseni (3 boyutlu vektör)
+            angle: Radyan cinsinden dönme açısı
+        
+        Returns:
+            quaternion: Kuaterniyon nesnesi
+        """
+        axis = np.asarray(axis, dtype=float)
+        axis_norm = np.linalg.norm(axis)
+        
+        if axis_norm == 0:
+            raise ValueError("Eksen vektörü sıfır olamaz")
+        
+        axis = axis / axis_norm
+        half_angle = angle / 2.0
+        sin_half = math.sin(half_angle)
+        
+        return cls(
+            w=math.cos(half_angle),
+            x=axis[0] * sin_half,
+            y=axis[1] * sin_half,
+            z=axis[2] * sin_half
+        )
+    
+    @classmethod
+    def from_euler(cls, roll: float, pitch: float, yaw: float, 
+                   order: str = 'zyx') -> 'quaternion':
+        """
+        Euler açılarından kuaterniyon oluşturur.
+        
+        Args:
+            roll: X ekseni etrafında dönme (radyan)
+            pitch: Y ekseni etrafında dönme (radyan)
+            yaw: Z ekseni etrafında dönme (radyan)
+            order: Dönme sırası ('zyx', 'xyz', 'yxz', vb.)
+        
+        Returns:
+            quaternion: Kuaterniyon nesnesi
+        """
+        cy = math.cos(yaw * 0.5)
+        sy = math.sin(yaw * 0.5)
+        cp = math.cos(pitch * 0.5)
+        sp = math.sin(pitch * 0.5)
+        cr = math.cos(roll * 0.5)
+        sr = math.sin(roll * 0.5)
+        
+        if order == 'zyx':  # Yaw, Pitch, Roll
+            w = cy * cp * cr + sy * sp * sr
+            x = cy * cp * sr - sy * sp * cr
+            y = sy * cp * sr + cy * sp * cr
+            z = sy * cp * cr - cy * sp * sr
+        elif order == 'xyz':  # Roll, Pitch, Yaw
+            w = cr * cp * cy + sr * sp * sy
+            x = sr * cp * cy - cr * sp * sy
+            y = cr * sp * cy + sr * cp * sy
+            z = cr * cp * sy - sr * sp * cy
+        else:
+            raise ValueError(f"Desteklenmeyen dönme sırası: {order}")
+        
+        return cls(w, x, y, z)
+    
+    @classmethod
+    def from_rotation_matrix(cls, R: np.ndarray) -> 'quaternion':
+        """
+        Dönüşüm matrisinden kuaterniyon oluşturur.
+        
+        Args:
+            R: 3x3 dönüşüm matrisi
+        
+        Returns:
+            quaternion: Kuaterniyon nesnesi
+        """
+        if R.shape != (3, 3):
+            raise ValueError("Matris 3x3 boyutunda olmalıdır")
+        
+        trace = np.trace(R)
+        
+        if trace > 0:
+            S = math.sqrt(trace + 1.0) * 2
+            w = 0.25 * S
+            x = (R[2, 1] - R[1, 2]) / S
+            y = (R[0, 2] - R[2, 0]) / S
+            z = (R[1, 0] - R[0, 1]) / S
+        elif R[0, 0] > R[1, 1] and R[0, 0] > R[2, 2]:
+            S = math.sqrt(1.0 + R[0, 0] - R[1, 1] - R[2, 2]) * 2
+            w = (R[2, 1] - R[1, 2]) / S
+            x = 0.25 * S
+            y = (R[0, 1] + R[1, 0]) / S
+            z = (R[0, 2] + R[2, 0]) / S
+        elif R[1, 1] > R[2, 2]:
+            S = math.sqrt(1.0 + R[1, 1] - R[0, 0] - R[2, 2]) * 2
+            w = (R[0, 2] - R[2, 0]) / S
+            x = (R[0, 1] + R[1, 0]) / S
+            y = 0.25 * S
+            z = (R[1, 2] + R[2, 1]) / S
+        else:
+            S = math.sqrt(1.0 + R[2, 2] - R[0, 0] - R[1, 1]) * 2
+            w = (R[1, 0] - R[0, 1]) / S
+            x = (R[0, 2] + R[2, 0]) / S
+            y = (R[1, 2] + R[2, 1]) / S
+            z = 0.25 * S
+        
+        return cls(w, x, y, z).normalized()
+    
+    def conjugate(self) -> 'quaternion':
+        """Kuaterniyonun eşleniğini döndürür."""
+        return quaternion(self.w, -self.x, -self.y, -self.z)
+    
+    def norm(self) -> float:
+        """Kuaterniyonun normunu döndürür."""
+        return math.sqrt(self.w**2 + self.x**2 + self.y**2 + self.z**2)
+    
+    def normalized(self) -> 'quaternion':
+        """Normalize edilmiş kuaterniyonu döndürür."""
+        n = self.norm()
+        if n == 0:
+            return quaternion(1, 0, 0, 0)
+        return quaternion(self.w/n, self.x/n, self.y/n, self.z/n)
+    
+    def inverse(self) -> 'quaternion':
+        """Kuaterniyonun tersini döndürür."""
+        norm_sq = self.w**2 + self.x**2 + self.y**2 + self.z**2
+        if norm_sq == 0:
+            return quaternion(1, 0, 0, 0)
+        conj = self.conjugate()
+        return quaternion(conj.w/norm_sq, conj.x/norm_sq, conj.y/norm_sq, conj.z/norm_sq)
+    
+    def to_axis_angle(self) -> Tuple[np.ndarray, float]:
+        """
+        Kuaterniyonu eksen-açı gösterimine dönüştürür.
+        
+        Returns:
+            Tuple[np.ndarray, float]: (eksen, açı)
+        """
+        if abs(self.w) > 1:
+            q = self.normalized()
+        else:
+            q = self
+        
+        angle = 2 * math.acos(q.w)
+        
+        if abs(angle) < 1e-10:
+            return np.array([1.0, 0.0, 0.0]), 0.0
+        
+        s = math.sqrt(1 - q.w**2)
+        if s < 1e-10:
+            axis = np.array([1.0, 0.0, 0.0])
+        else:
+            axis = np.array([q.x/s, q.y/s, q.z/s])
+        
+        return axis, angle
+    
+    def to_euler(self, order: str = 'zyx') -> Tuple[float, float, float]:
+        """
+        Kuaterniyonu Euler açılarına dönüştürür.
+        
+        Args:
+            order: Dönme sırası
+        
+        Returns:
+            Tuple[float, float, float]: (roll, pitch, yaw)
+        """
+        q = self.normalized()
+        
+        if order == 'zyx':  # Yaw, Pitch, Roll
+            # Roll (x-axis rotation)
+            sinr_cosp = 2 * (q.w * q.x + q.y * q.z)
+            cosr_cosp = 1 - 2 * (q.x**2 + q.y**2)
+            roll = math.atan2(sinr_cosp, cosr_cosp)
+            
+            # Pitch (y-axis rotation)
+            sinp = 2 * (q.w * q.y - q.z * q.x)
+            if abs(sinp) >= 1:
+                pitch = math.copysign(math.pi / 2, sinp)
+            else:
+                pitch = math.asin(sinp)
+            
+            # Yaw (z-axis rotation)
+            siny_cosp = 2 * (q.w * q.z + q.x * q.y)
+            cosy_cosp = 1 - 2 * (q.y**2 + q.z**2)
+            yaw = math.atan2(siny_cosp, cosy_cosp)
+            
+            return roll, pitch, yaw
+        else:
+            raise ValueError(f"Desteklenmeyen dönme sırası: {order}")
+    
+    def to_rotation_matrix(self) -> np.ndarray:
+        """
+        Kuaterniyonu dönüşüm matrisine dönüştürür.
+        
+        Returns:
+            np.ndarray: 3x3 dönüşüm matrisi
+        """
+        q = self.normalized()
+        
+        # 3x3 dönüşüm matrisi
+        R = np.zeros((3, 3))
+        
+        # Matris elemanlarını hesapla
+        R[0, 0] = 1 - 2*(q.y**2 + q.z**2)
+        R[0, 1] = 2*(q.x*q.y - q.w*q.z)
+        R[0, 2] = 2*(q.x*q.z + q.w*q.y)
+        
+        R[1, 0] = 2*(q.x*q.y + q.w*q.z)
+        R[1, 1] = 1 - 2*(q.x**2 + q.z**2)
+        R[1, 2] = 2*(q.y*q.z - q.w*q.x)
+        
+        R[2, 0] = 2*(q.x*q.z - q.w*q.y)
+        R[2, 1] = 2*(q.y*q.z + q.w*q.x)
+        R[2, 2] = 1 - 2*(q.x**2 + q.y**2)
+        
+        return R
+    
+    def rotate_vector(self, v: Union[List[float], Tuple[float, float, float], np.ndarray]) -> np.ndarray:
+        """
+        Vektörü kuaterniyon ile döndürür.
+        
+        Args:
+            v: Döndürülecek 3 boyutlu vektör
+        
+        Returns:
+            np.ndarray: Döndürülmüş vektör
+        """
+        v = np.asarray(v, dtype=float)
+        if v.shape != (3,):
+            raise ValueError("Vektör 3 boyutlu olmalıdır")
+        
+        q = self.normalized()
+        q_vec = np.array([q.x, q.y, q.z])
+        q_w = q.w
+        
+        # Kuaterniyon çarpımı ile döndürme
+        v_rot = v + 2 * np.cross(q_vec, np.cross(q_vec, v) + q_w * v)
+        return v_rot
+    
+    def slerp(self, other: 'quaternion', t: float) -> 'quaternion':
+        """
+        Küresel lineer interpolasyon (SLERP) yapar.
+        
+        Args:
+            other: Hedef kuaterniyon
+            t: İnterpolasyon parametresi [0, 1]
+        
+        Returns:
+            quaternion: İnterpole edilmiş kuaterniyon
+        """
+        if t <= 0:
+            return self.normalized()
+        if t >= 1:
+            return other.normalized()
+        
+        q1 = self.normalized()
+        q2 = other.normalized()
+        
+        # Nokta çarpım
+        cos_half_theta = q1.w*q2.w + q1.x*q2.x + q1.y*q2.y + q1.z*q2.z
+        
+        # Eğer q1 ve q2 aynı yöndeyse
+        if abs(cos_half_theta) >= 1.0:
+            return q1
+        
+        # Eğer negatif nokta çarpım, kuaterniyonları ters çevir
+        if cos_half_theta < 0:
+            q2 = quaternion(-q2.w, -q2.x, -q2.y, -q2.z)
+            cos_half_theta = -cos_half_theta
+        
+        half_theta = math.acos(cos_half_theta)
+        sin_half_theta = math.sqrt(1.0 - cos_half_theta**2)
+        
+        if abs(sin_half_theta) < 1e-10:
+            return quaternion(
+                q1.w * 0.5 + q2.w * 0.5,
+                q1.x * 0.5 + q2.x * 0.5,
+                q1.y * 0.5 + q2.y * 0.5,
+                q1.z * 0.5 + q2.z * 0.5
+            ).normalized()
+        
+        ratio_a = math.sin((1 - t) * half_theta) / sin_half_theta
+        ratio_b = math.sin(t * half_theta) / sin_half_theta
+        
+        return quaternion(
+            q1.w * ratio_a + q2.w * ratio_b,
+            q1.x * ratio_a + q2.x * ratio_b,
+            q1.y * ratio_a + q2.y * ratio_b,
+            q1.z * ratio_a + q2.z * ratio_b
+        ).normalized()
+    
+    def __add__(self, other: 'quaternion') -> 'quaternion':
+        """Kuaterniyon toplama."""
+        if isinstance(other, quaternion):
+            return quaternion(self.w + other.w, self.x + other.x, self.y + other.y, self.z + other.z)
+        raise TypeError("Sadece quaternion ile toplanabilir")
+    
+    def __sub__(self, other: 'quaternion') -> 'quaternion':
+        """Kuaterniyon çıkarma."""
+        if isinstance(other, quaternion):
+            return quaternion(self.w - other.w, self.x - other.x, self.y - other.y, self.z - other.z)
+        raise TypeError("Sadece quaternion ile çıkarılabilir")
+    
+    def __mul__(self, other: Union['quaternion', float, int]) -> 'quaternion':
+        """Kuaterniyon çarpma veya skaler çarpma."""
+        if isinstance(other, (int, float)):
+            return quaternion(self.w * other, self.x * other, self.y * other, self.z * other)
+        elif isinstance(other, quaternion):
+            # Hamilton çarpımı
+            w = self.w*other.w - self.x*other.x - self.y*other.y - self.z*other.z
+            x = self.w*other.x + self.x*other.w + self.y*other.z - self.z*other.y
+            y = self.w*other.y - self.x*other.z + self.y*other.w + self.z*other.x
+            z = self.w*other.z + self.x*other.y - self.y*other.x + self.z*other.w
+            return quaternion(w, x, y, z)
+        raise TypeError("Sadece quaternion veya skaler ile çarpılabilir")
+    
+    def __rmul__(self, other: Union[float, int]) -> 'quaternion':
+        """Sağ taraftan skaler çarpma."""
+        return self.__mul__(other)
+    
+    def __truediv__(self, other: Union[float, int]) -> 'quaternion':
+        """Skaler bölme."""
+        if isinstance(other, (int, float)):
+            if other == 0:
+                raise ZeroDivisionError("Sıfıra bölme hatası")
+            return quaternion(self.w / other, self.x / other, self.y / other, self.z / other)
+        raise TypeError("Sadece skaler ile bölünebilir")
+    
+    def __eq__(self, other: 'quaternion') -> bool:
+        """Eşitlik kontrolü."""
+        if isinstance(other, quaternion):
+            return (math.isclose(self.w, other.w) and 
+                    math.isclose(self.x, other.x) and 
+                    math.isclose(self.y, other.y) and 
+                    math.isclose(self.z, other.z))
+        return False
+    
+    def __ne__(self, other: 'quaternion') -> bool:
+        """Eşitsizlik kontrolü."""
+        return not self.__eq__(other)
+    
+    def __neg__(self) -> 'quaternion':
+        """Negatif kuaterniyon."""
+        return quaternion(-self.w, -self.x, -self.y, -self.z)
+    
+    def __repr__(self) -> str:
+        """Nesnenin temsili."""
+        return f"quaternion(w={self.w:.6f}, x={self.x:.6f}, y={self.y:.6f}, z={self.z:.6f})"
+    
+    def __str__(self) -> str:
+        """String temsili."""
+        return f"{self.w:.6f} + {self.x:.6f}i + {self.y:.6f}j + {self.z:.6f}k"
+    
+    def to_array(self) -> np.ndarray:
+        """Kuaterniyonu numpy array'e dönüştürür."""
+        return np.array([self.w, self.x, self.y, self.z])
+    
+    def to_list(self) -> List[float]:
+        """Kuaterniyonu listeye dönüştürür."""
+        return [self.w, self.x, self.y, self.z]
+    
+    @classmethod
+    def identity(cls) -> 'quaternion':
+        """Birim kuaterniyon döndürür."""
+        return cls(1.0, 0.0, 0.0, 0.0)
+    
+    def is_identity(self, tolerance: float = 1e-10) -> bool:
+        """Birim kuaterniyon olup olmadığını kontrol eder."""
+        return (abs(self.w - 1.0) < tolerance and 
+                abs(self.x) < tolerance and 
+                abs(self.y) < tolerance and 
+                abs(self.z) < tolerance)
+    
+    @classmethod
+    def parse(cls, s) -> 'quaternion':
+        """Çeşitli formatlardan quaternion oluşturur.
+        
+        Args:
+            s: Dönüştürülecek değer
+            
+        Returns:
+            quaternion: Dönüştürülmüş kuaterniyon
+        """
+        return _parse_quaternion_from_csv(s)
+    
+    @classmethod
+    def from_csv_string(cls, s: str) -> 'quaternion':
+        """CSV string'inden quaternion oluşturur.
+        
+        Args:
+            s: Virgülle ayrılmış string ("w,x,y,z" veya "scalar")
+            
+        Returns:
+            quaternion: Dönüştürülmüş kuaterniyon
+        """
+        return _parse_quaternion_from_csv(s)
+    
+    @classmethod
+    def from_complex(cls, c: complex) -> 'quaternion':
+        """Complex sayıdan quaternion oluşturur (sadece gerçek kısım kullanılır).
+        
+        Args:
+            c: Complex sayı
+            
+        Returns:
+            quaternion: Dönüştürülmüş kuaterniyon
+        """
+        return quaternion(float(c.real), 0, 0, 0)
+
 @dataclass
 class TernaryNumber:
     def __init__(self, digits: list):
@@ -3287,7 +3728,7 @@ def convert_to_float(value: Any) -> float:
     if isinstance(value, complex):
         return float(value.real)
 
-    # Quaternion-like
+    # quaternion-like
     try:
         #if isinstance(value, quaternion):
         #    return float(value.w)
@@ -3495,34 +3936,77 @@ def _parse_hyperreal(s) -> Tuple[float, float]:
         return 0.0, 0.0  # Default
 
 def _parse_quaternion_from_csv(s) -> quaternion:
-    """Virgülle ayrılmış string'i veya sayıyı Quaternion'a dönüştürür."""
+    """Virgülle ayrılmış string'i veya sayıyı quaternion'a dönüştürür.
+    
+    Args:
+        s: Dönüştürülecek değer. Şu formatları destekler:
+            - quaternion nesnesi (doğrudan döndürülür)
+            - float, int, complex sayılar (skaler quaternion)
+            - String ("w,x,y,z" veya "scalar" formatında)
+            - Diğer tipler (string'e dönüştürülerek işlenir)
+    
+    Returns:
+        quaternion: Dönüştürülmüş kuaterniyon
+    
+    Raises:
+        ValueError: Geçersiz format veya sayısal olmayan bileşenler durumunda
+    """
     # Eğer zaten quaternion ise doğrudan döndür
     if isinstance(s, quaternion):
         return s
     
     # Sayısal tipse skaler quaternion olarak işle
-    if isinstance(s, (float, int, complex)):
+    if isinstance(s, (float, int)):
         return quaternion(float(s), 0, 0, 0)
+    
+    # Complex sayı için özel işlem
+    if isinstance(s, complex):
+        # Complex sayının sadece gerçek kısmını al
+        return quaternion(float(s.real), 0, 0, 0)
     
     # String işlemleri için önce string'e dönüştür
     if not isinstance(s, str):
         s = str(s)
     
     s = s.strip()
+    
+    # Boş string kontrolü
+    if not s:
+        raise ValueError(f"Boş string quaternion'a dönüştürülemez")
+    
+    # String'i virgülle ayır
     parts_str = s.split(',')
     
     # Tüm parçaları float'a dönüştürmeyi dene
-    try:
-        parts_float = [float(p.strip()) for p in parts_str]
-    except ValueError:
-        raise ValueError(f"Quaternion bileşenleri sayı olmalı: '{s}'")
+    parts_float = []
+    for p in parts_str:
+        p = p.strip()
+        if not p:
+            raise ValueError(f"Boş bileşen bulundu: '{s}'")
+        
+        try:
+            # Önce normal float olarak dene
+            parts_float.append(float(p))
+        except ValueError:
+            # Float olarak parse edilemezse complex olarak dene
+            try:
+                # 'i' karakterini 'j' ile değiştir (complex fonksiyonu 'j' bekler)
+                complex_str = p.replace('i', 'j').replace('I', 'J')
+                # Eğer 'j' yoksa ve sayı değilse hata ver
+                if 'j' not in complex_str.lower():
+                    raise ValueError(f"Geçersiz sayı formatı: '{p}'")
+                
+                c = complex(complex_str)
+                parts_float.append(float(c.real))
+            except ValueError:
+                raise ValueError(f"quaternion bileşeni sayı olmalı: '{p}' (string: '{s}')")
 
     if len(parts_float) == 4:
         return quaternion(*parts_float)
-    elif len(parts_float) == 1: # Sadece skaler değer
+    elif len(parts_float) == 1:  # Sadece skaler değer
         return quaternion(parts_float[0], 0, 0, 0)
     else:
-        raise ValueError(f"Geçersiz quaternion formatı. 1 veya 4 bileşen bekleniyor: '{s}'")
+        raise ValueError(f"Geçersiz quaternion formatı. 1 veya 4 bileşen bekleniyor, {len(parts_float)} alındı: '{s}'")
 
 def _has_comma_format(s: Any) -> bool:
     """
@@ -4206,8 +4690,8 @@ def _is_divisible(value: Any, divisor: int, kececi_type: int) -> bool:
             except Exception:
                 return False
 
-        # Quaternion-like (numpy quaternion or object with w,x,y,z)
-        # Quaternion branch within _is_divisible:
+        # quaternion-like (numpy quaternion or object with w,x,y,z)
+        # quaternion branch within _is_divisible:
         if kececi_type == TYPE_QUATERNION:
             try:
                 if quaternion is not None and isinstance(value, quaternion):
@@ -5955,7 +6439,7 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax4.axis('equal')
         ax4.grid(True, alpha=0.3)
 
-    # --- 4. Quaternion
+    # --- 4. quaternion
     # Check for numpy-quaternion's quaternion type, or a custom one with 'components' or 'w,x,y,z': çıkarıldı:  and len(getattr(first_elem, 'components', [])) == 4) or \
     elif isinstance(first_elem, quaternion) or (hasattr(first_elem, 'components') == 4) or \
          (hasattr(first_elem, 'w') and hasattr(first_elem, 'x') and hasattr(first_elem, 'y') and hasattr(first_elem, 'z')):
