@@ -4,8 +4,19 @@ import math
 import numpy as np
 import pytest
 from fractions import Fraction
-
 import kececinumbers as kn
+import logging
+# Module logger — library code should not configure logging handlers.
+logger = logging.getLogger(__name__)
+
+try:
+    # numpy-quaternion kütüphanesinin sınıfını yüklemeye çalış
+    # conda install -c conda-forge quaternion # pip install numpy-quaternion
+    from quaternion import quaternion as quaternion  # type: ignore
+except Exception:
+    # Eğer yoksa `quaternion` isimli sembolü None yap, kodun diğer yerleri bunu kontrol edebilir
+    quaternion = None
+    logger.warning("numpy-quaternion paketine ulaşılamadı — quaternion tip desteği devre dışı bırakıldı.")
 
 def test_get_integer_representation_basic_int():
     assert kn._get_integer_representation(5) == 5
