@@ -3241,22 +3241,79 @@ def _parse_complex(s) -> complex:
             raise ValueError(f"Geçersiz kompleks sayı formatı: '{s}'")
 
 
-def convert_to_float(value):
-    """Convert various Keçeci number types to a float or raise an error if not possible."""
-    if isinstance(value, (int, float)):
+def convert_to_float(value: Any) -> float:
+    """
+    Convert various Keçeci number types to a float (best-effort).
+    Raises TypeError if conversion is not possible.
+    Rules:
+      - int/float -> float
+      - complex -> real part (float)
+      - numpy-quaternion or objects with attribute 'w' -> float(w)
+      - objects with 'real' attribute -> float(real)
+      - objects with 'coeffs' iterable -> float(first coeff)
+      - objects with 'sequence' iterable -> float(first element)
+    """
+    # Direct numeric types
+    if isinstance(value, (int, float, np.floating, np.integer)):
         return float(value)
-    elif hasattr(value, 'real') and hasattr(value, 'imag'):
-        return value.real  # For complex-like types
-    elif hasattr(value, 'w'):  # For quaternions or similar
-        return value.w  # Assuming w is the real part
-    elif hasattr(value, 'coeffs') and isinstance(value.coeffs, list):  # For Sedenion or similar
-        return value.coeffs[0]  # Assuming first coefficient is the real part
-    elif hasattr(value, 'real_part'):  # For DualNumber or similar
-        return value.real_part  # Assuming this is how you access the real part
-    elif hasattr(value, 'value'):  # For CliffordNumber or similar
-        return value.value  # Assuming this returns the appropriate value
-    else:
-        raise TypeError(f"Cannot convert {type(value).__name__} to float.")
+
+    if isinstance(value, complex):
+        return float(value.real)
+
+    # Quaternion-like
+    try:
+        if isinstance(value, quaternion):
+            return float(value.w)
+    except Exception:
+        pass
+
+    # Generic attributes
+    if hasattr(value, 'real'):
+        try:
+            return float(getattr(value, 'real'))
+        except Exception:
+            pass
+
+    if hasattr(value, 'w'):
+        try:
+            return float(getattr(value, 'w'))
+        except Exception:
+            pass
+
+    if hasattr(value, 'coeffs'):
+        try:
+            coeffs = getattr(value, 'coeffs')
+            if isinstance(coeffs, np.ndarray):
+                if coeffs.size > 0:
+                    return float(coeffs.flatten()[0])
+            else:
+                # list/iterable
+                it = list(coeffs)
+                if it:
+                    return float(it[0])
+        except Exception:
+            pass
+
+    if hasattr(value, 'sequence'):
+        try:
+            seq = getattr(value, 'sequence')
+            if seq and len(seq) > 0:
+                return float(seq[0])
+        except Exception:
+            pass
+
+    # TernaryNumber: digits -> decimal
+    if hasattr(value, 'digits'):
+        try:
+            digits = list(value.digits)
+            dec = 0
+            for i, d in enumerate(reversed(digits)):
+                dec += int(d) * (3 ** i)
+            return float(dec)
+        except Exception:
+            pass
+
+    raise TypeError(f"Cannot convert {type(value).__name__} to float.")
 
 def safe_add(added_value, ask_unit, direction):
     """
@@ -4563,308 +4620,51 @@ def generate_kececi_vectorial(q0_str, c_str, u_str, iterations):
 def analyze_all_types(iterations=120, additional_params=None):
     """
     Performs automated analysis on all Keçeci number types.
-    Args:
-        iterations (int): Number of Keçeci steps to generate for each sequence.
-        additional_params (list): List of tuples for additional parameter sets.
+    - Uses module-level helpers (_find_kececi_zeta_zeros, _compute_gue_similarity, get_with_params, _plot_comparison).
+    - Avoids heavy imports at module import time by importing lazily where needed.
+    - Iterates over 1..TYPE_TERNARY (inclusive).
     Returns:
-        tuple: (sorted_by_zeta, sorted_by_gue) - Lists of results sorted by performance.
+        (sorted_by_zeta, sorted_by_gue)
     """
-    
-    from . import (
-            # Classes
-        NeutrosophicNumber,
-        NeutrosophicComplexNumber,
-        HyperrealNumber,
-        BicomplexNumber,
-        NeutrosophicBicomplexNumber,
-        OctonionNumber,
-        Constants,
-        SedenionNumber,
-        CliffordNumber,
-        DualNumber,
-        SplitcomplexNumber,
-        BaseNumber,
-        TernaryNumber,
-        SuperrealNumber,
-        
-    
-        # Functions
-        get_with_params,
-        get_interactive,
-        get_random_type,
-        _get_integer_representation,
-        _parse_quaternion,
-        _parse_quaternion_from_csv,
-        _parse_complex,
-        _parse_bicomplex,
-        _parse_universal,
-        _parse_octonion,
-        _parse_sedenion,
-        _parse_neutrosophic,
-        _parse_neutrosophic_bicomplex,
-        _parse_hyperreal,
-        _parse_clifford,
-        _parse_dual,
-        _parse_splitcomplex,
-        kececi_bicomplex_algorithm,
-        kececi_bicomplex_advanced,
-        generate_kececi_vectorial,
-        unified_generator,
-        find_period,
-        find_kececi_prime_number,
-        plot_numbers,
-        print_detailed_report,
-        _plot_comparison,
-        _find_kececi_zeta_zeros,
-        _compute_gue_similarity,
-        _load_zeta_zeros,
-        analyze_all_types,
-        analyze_pair_correlation,
-        _gue_pair_correlation,
-        _pair_correlation,
-        generate_octonion,
-        is_quaternion_like,
-        is_neutrosophic_like,
-        _has_bicomplex_format,
-        coeffs,
-        convert_to_float,
-        safe_add,
-        ZERO,
-        ONE,
-        I,
-        J,
-        K,
-        E,
-        F,
-        G,
-        H,
-        _extract_numeric_part,
-        _has_comma_format,
-        _is_complex_like,
-        is_prime,
-        is_prime_like,
-        is_near_integer,
-        _plot_component_distribution,
-        _parse_pathion,
-        _parse_chingon,
-        _parse_routon,
-        _parse_voudon,
-        format_fraction,
-        test_kececi_conjecture,
-        generate_interactive_plot,
-        apply_pca_clustering,
-        analyze_kececi_sequence,
-        plot_octonion_3d,
-        _parse_ternary,
-        _parse_superreal,
-         
-    
-        # Constants
-        TYPE_POSITIVE_REAL,
-        TYPE_NEGATIVE_REAL,
-        TYPE_COMPLEX,
-        TYPE_FLOAT,
-        TYPE_RATIONAL,
-        TYPE_QUATERNION,
-        TYPE_NEUTROSOPHIC,
-        TYPE_NEUTROSOPHIC_COMPLEX,
-        TYPE_HYPERREAL,
-        TYPE_BICOMPLEX,
-        TYPE_NEUTROSOPHIC_BICOMPLEX,
-        TYPE_OCTONION,
-        TYPE_SEDENION,
-        TYPE_CLIFFORD,
-        TYPE_DUAL,
-        TYPE_SPLIT_COMPLEX,
-        TYPE_PATHION,
-        TYPE_CHINGON,
-        TYPE_ROUTON,
-        TYPE_VOUDON,
-        TYPE_SUPERREAL,
-        TYPE_TERNARY,
-    )
-    
     print("Automated Analysis for Keçeci Types")
     print("=" * 80)
 
     include_intermediate = True
     results = []
 
-    # Default parameter sets
-    # Parameter sets to test
+    # Default parameter sets (keçeçi testleri için örnekler)
     param_sets = [
-        # 1. Positive Real - SADECE sayısal değerler
-        ('5.0', '2.0'),
-        ('10', '3.0'),
-        ('0.0', '1.5'),
-        ('3.14', '0.5'),
-        
-        # 2. Negative Real - SADECE sayısal değerler
-        ('-3.0', '-1.0'),
-        ('-5.0', '-2.0'),
-        ('-1.5', '-0.5'),
-        ('-2.718', '-1.0'),
-        
-        # 3. Complex - DOĞRU formatında
-        ('1+2j', '0.5+0.5j'),
-        ('3-4j', '1-2j'),
-        ('0.0+0.0j', '1.0+2.0j'),
-        ('-1.5+2.5j', '0.2-0.3j'),
-        
-        # Diğer complex örnekleri
-        ('2j', '1j'),               # Sadece imaginary
-        ('-3j', '-2j'),             # Negatif imaginary
-        ('1.5', '0.5'),             # Sadece real (otomatik complex olur)
-        ('0+1j', '0+0.5j'),         # Explicit format
-        
-        # 4. Float - SADECE sayısal değerler
-        ('0.0001412', '0.037'),
-        ('3.14159', '0.01'),
-        ('2.71828', '0.1'),
-        ('0.0', '0.001'),
-        
-        # 5. Rational - SADECE sayısal/rational değerler
-        ('1/2', '1/4'),
-        ('3/4', '1/8'),
-        ('0', '2/3'),
-        ('5/6', '1/12'),
-        
-        # 6. Quaternion - VİRGÜL formatında
-        ('1.0,0.0,0.0,0.0', '0.1,0.0,0.0,0.0'),      # Scalar addition
-        ('0.0,1.0,0.0,0.0', '0.0,0.1,0.0,0.0'),      # i component
-        ('0.0,0.0,1.0,0.0', '0.0,0.0,0.1,0.0'),      # j component
-        ('0.0,0.0,0.0,1.0', '0.0,0.0,0.0,0.1'),      # k component
-        ('0.5,0.5,0.5,0.5', '0.05,0.05,0.05,0.05'),  # All components
-        ('1.0', '0.5'),                              # Sadece skaler (otomatik 0,0,0 eklenir)
-        ('2.0,3.0,4.0,5.0', '0.1,-0.2,0.3,-0.4'),    # Karışık değerler
-        
-        # 7. Neutrosophic - DOĞRU formatında (t, i, f)
+        ('2.0', '3.0'),
+        ('1+1j', '0.5+0.5j'),
+        ('1.0,0.0,0.0,0.0', '0.1,0.0,0.0,0.0'),
         ('0.8,0.1,0.1', '0.0,0.05,0.0'),
-        ('0.6,0.2,0.2', '0.1,0.0,0.0'),
-        ('0.9,0.05,0.05', '0.0,0.0,0.02'),
-        ('0.7,0.15,0.15', '0.05,0.0,0.0'),
-        ('3.0', '0.5'), # Sadece T değeri
-        ('1.0,0.0,0.0', '0.2'), # TIF ve sadece T değeri
-
-        # 8. Neutro-Complex - Format: "complex_part_str,t,i"
-        # complex_part_str, t, i
-        ('1.0+2.0j,0.5,0.2', '0.1+0.1j,0.0,0.1'),
-        ('0.0+1.0j,1.0,0.3', '0.1+0.0j,0.0,0.0'),
-        ('2.0,0.0,0.1', '0.0+0.5j,0.5,0.0'), # complex_part olarak sadece real
-        ('0.5+0.5j,0.5,0.4', '0.1+0.1j,0.1,0.05'),
-        ('1+2j', '0.5+0.5j'), # Sadece complex kısım, diğerleri varsayılan 0
-        
-        # 9. Hyperreal - VİRGÜL formatında: finite,infinitesimal
-        ('3.0,0.001', '0.1,0.0001'),
-        ('0.0,0.0005', '1.0,0.0'),
-        ('2.0', '0.5'), # Sadece finite kısmı
-        ('1.0,0.0', '0.001'), # Finite, Infinitesimal ve sadece finite
-
-        # 10. Bicomplex - Format: "z1_str,z2_str"
-        ('1.0+0.5j,0.2+0.1j', '0.1+0.0j,0.0+0.0j'),
-        ('2.0,3.0j', '0.5,0.1j'), # z1 sadece real, z2 sadece imag
-        ('1+2j', '0.5'), # Sadece z1, z2 ve increment sadece real
-        
-        # 11. Neutrosophic Bicomplex - 8 PARÇALI VİRGÜL: r1,i1,r2,i2,T,I,F,G
-        ('1.0,2.0,0.1,0.2,0.3,0.4,0.5,0.6', '0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0'),
-        ('1.0', '0.5'), # Sadece skaler
-        
-        # 12. Octonion - 8 PARÇALI VİRGÜL
-        ('1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0', '0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0'),
-        ('1.0', '0.5'), # Sadece skaler
-        ('2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0', '0.1,-0.2,0.3,-0.4,0.5,-0.6,0.7,-0.8'),
-        
-        # 13. Sedenion - 16 PARÇALI VİRGÜL
-        ('1.0' + ',0.0'*15, '0.1' + ',0.0'*15),
-        ('1.0', '0.1'), # Sadece skaler
-        
-        # 14. Clifford - ALGEBRAIC format: scalar+e1+e2+e12
-        ('1.0+2.0e1', '0.1+0.2e1'),
-        ('2.0e1+3.0e12', '0.1e1-0.2e12'),
-        ('5.0', '0.5'), # Sadece skaler
-        ('-1.0e1', '2.0e1'),
-        
-        # 15. Dual - VİRGÜL formatında: real,dual
-        ('2.0,0.5', '0.1,0.0'),
-        ('1.0', '0.5'), # Sadece real kısım
-        ('3.0,1.0', '0.2'),
-        
-        # 16. Split-Complex - VİRGÜL formatında: real,split
-        ('1.0,0.8', '0.1,0.0'),
-        ('2.0', '0.3'), # Sadece real kısım
-        ('4.0,1.0', '0.5'),
-
-        # 17. Pathion - 32 PARÇALI VİRGÜL
-        ('1.0' + ',0.0'*31, '0.1' + ',0.0'*31),
-        ('1.0', '0.1'), # Sadece skaler
-
-        # 18. Chingon - 64 PARÇALI VİRGÜL
-        ('1.0' + ',0.0'*63, '0.1' + ',0.0'*63),
-        ('1.0', '0.1'), # Sadece skaler
-
-        # 19. Routon - 128 PARÇALI VİRGÜL
-        ('1.0' + ',0.0'*127, '0.1' + ',0.0'*127),
-        ('1.0', '0.1'), # Sadece skaler
-
-        # 20. Voudon - 256 PARÇALI VİRGÜL
-        ('1.0' + ',0.0'*255, '0.1' + ',0.0'*255),
-        ('1.0', '0.1'), # Sadece skaler
-
-        # 21. Super Real - Format: float
-        ('3.5,0.2'), # real: Gerçek sayı (float), split: Gerçek sayı (float)
-        ('1.0,0.0'),
-
-        # 22. Ternary - Format: 012
-        ('102'), # Üçlü sayı sistemi, 0, 1, 2 rakamlarını kullanır
-        ('1201'),
-        ([1, 0, 2]),
+        ('1.0', '0.1'),
+        ('102', '1'),
     ]
 
-    # If additional parameters are provided, extend the default set
     if additional_params:
         param_sets.extend(additional_params)
 
     type_names = {
-        1: "Positive Real",
-        2: "Negative Real",
-        3: "Complex",
-        4: "Float",
-        5: "Rational",
-        6: "Quaternion",
-        7: "Neutrosophic",
-        8: "Neutro-Complex",
-        9: "Hyperreal",
-        10: "Bicomplex",
-        11: "Neutro-Bicomplex",
-        12: "Octonion",
-        13: "Sedenion",
-        14: "Clifford",
-        15: "Dual",
-        16: "Split-Complex",
-        17: "Pathion",
-        18: "Chingon",
-        19: "Routon",
-        20: "Voudon",
-        21: "Super Real",
-        22: "Ternary",
+        1: "Positive Real", 2: "Negative Real", 3: "Complex", 4: "Float", 5: "Rational",
+        6: "Quaternion", 7: "Neutrosophic", 8: "Neutro-Complex", 9: "Hyperreal", 10: "Bicomplex",
+        11: "Neutro-Bicomplex", 12: "Octonion", 13: "Sedenion", 14: "Clifford", 15: "Dual",
+        16: "Split-Complex", 17: "Pathion", 18: "Chingon", 19: "Routon", 20: "Voudon",
+        21: "Super Real", 22: "Ternary",
     }
 
-    for kececi_type in range(1, 22):
-        name = type_names.get(kececi_type, "Unknown Type")
+    # Iterate all defined types (inclusive)
+    for kececi_type in range(TYPE_POSITIVE_REAL, TYPE_TERNARY + 1):
+        name = type_names.get(kececi_type, f"Type {kececi_type}")
         best_zeta_score = 0.0
         best_gue_score = 0.0
         best_params = None
 
-        print(f"Analyzing type {kececi_type} ({name})...")
+        print(f"\nAnalyzing type {kececi_type} ({name})...")
 
         for start, add in param_sets:
             try:
-                # Special formatting for complex types
-                if kececi_type == 3 and '+' not in start:
-                    start = f"{start}+{start}j"
-                if kececi_type == 10 and '+' not in start:
-                    start = f"{start}+{start}j"
-
+                # generate sequence (get_with_params is defined in this module)
                 sequence = get_with_params(
                     kececi_type_choice=kececi_type,
                     iterations=iterations,
@@ -4873,20 +4673,32 @@ def analyze_all_types(iterations=120, additional_params=None):
                     include_intermediate_steps=include_intermediate
                 )
 
-                if not sequence or len(sequence) < 50:
-                    print(f"Skipped type {kececi_type} with params {start}, {add}: insufficient sequence length")
+                if not sequence or len(sequence) < 20:
+                    # Skip too-short sequences
+                    # (analysis routines expect some minimal data)
+                    print(f"  Skipped (insufficient length): params {start}, {add}")
                     continue
 
-                _, zeta_score = _find_kececi_zeta_zeros(sequence, tolerance=0.5)
-                _, gue_score = _compute_gue_similarity(sequence)
+                # Lazy import heavy helper functions (they exist in-module)
+                try:
+                    zzeros, zeta_score = _find_kececi_zeta_zeros(sequence, tolerance=0.5)
+                except Exception as zz_err:
+                    zzeros, zeta_score = [], 0.0
+                    print(f"  Warning: _find_kececi_zeta_zeros failed for {name} with params {start},{add}: {zz_err}")
 
-                if zeta_score > best_zeta_score:
+                try:
+                    gue_score, gue_p = _compute_gue_similarity(sequence)
+                except Exception as gue_err:
+                    gue_score, gue_p = 0.0, 0.0
+                    print(f"  Warning: _compute_gue_similarity failed for {name} with params {start},{add}: {gue_err}")
+
+                if zeta_score > best_zeta_score or (zeta_score == best_zeta_score and gue_score > best_gue_score):
                     best_zeta_score = zeta_score
                     best_gue_score = gue_score
                     best_params = (start, add)
 
             except Exception as e:
-                print(f"Error analyzing type {kececi_type} with params {start}, {add}: {e}")
+                print(f"  Error analyzing params ({start}, {add}) for type {kececi_type}: {e}")
                 continue
 
         if best_params:
@@ -4898,23 +4710,19 @@ def analyze_all_types(iterations=120, additional_params=None):
                 'zeta_score': best_zeta_score,
                 'gue_score': best_gue_score
             })
+        else:
+            print(f"  No successful parameter set found for {name}.")
 
     # Sort and display results
     sorted_by_zeta = sorted(results, key=lambda x: x['zeta_score'], reverse=True)
     sorted_by_gue = sorted(results, key=lambda x: x['gue_score'], reverse=True)
 
-    print("\nHIGHEST RIEMANN ZETA MATCHING SCORES (TOP 12)")
-    print("=" * 80)
-    for r in sorted_by_zeta[:12]:
-        print(f"{r['name']:<20} {r['zeta_score']:<8.3f} {r['start']:<12} {r['add']:<12}")
-
-    print("\nHIGHEST GUE SIMILARITY SCORES (TOP 12)")
-    print("=" * 80)
-    for r in sorted_by_gue[:12]:
-        print(f"{r['name']:<20} {r['gue_score']:<8.3f} {r['start']:<12} {r['add']:<12}")
-
-    # Plot results
-    _plot_comparison(sorted_by_zeta, sorted_by_gue)
+    # Plot comparison if there are results (lazy-plot)
+    try:
+        if sorted_by_zeta or sorted_by_gue:
+            _plot_comparison(sorted_by_zeta, sorted_by_gue)
+    except Exception as plot_err:
+        print(f"Plotting failed: {plot_err}")
 
     return sorted_by_zeta, sorted_by_gue
 
@@ -5994,27 +5802,49 @@ def generate_interactive_plot(sequence, kececi_type):
 
     fig.show()
 
-
 # Keçeci Varsayımı Test Aracı
-def test_kececi_conjecture(sequence, max_steps=1000):
+def test_kececi_conjecture(sequence: List[Any], add_value: Any, kececi_type: Optional[int] = None, max_steps: int = 1000) -> bool:
     """
-    Tests the Keçeci Conjecture for a given sequence.
-    Args:
-        sequence (list): List of Keçeci numbers.
-        max_steps (int): Maximum number of steps to test.
-    Returns:
-        bool: True if the conjecture holds, False otherwise.
+    Tests the Keçeci Conjecture for a given starting `sequence`.
+    - sequence: initial list-like of Keçeci numbers (will be copied).
+    - add_value: typed increment (must be of compatible type with elements).
+    - kececi_type: optional type constant (used by is_prime_like); if None, fallback to is_prime.
+    - max_steps: maximum additional steps to try.
+    Returns True if a Keçeci-prime is reached within max_steps, otherwise False.
     """
-    #kececi_type=1
-    for i in range(max_steps):
-        if is_prime_like(sequence[-1], kececi_type):
-            return True  # Keçeci Asal sayısına ulaşıldı
-        # Yeni adıma geç
-        #add_value_raw=3
-        next_val = sequence[-1] + add_value_raw  # `add_value_raw` global olarak tanımlı olmalı
-        sequence.append(next_val)
+    traj = list(sequence)
+    if not traj:
+        raise ValueError("sequence must contain at least one element")
 
-    return False  # Max adımda sonlanmış, varsayım doğrulanamadı
+    for step in range(max_steps):
+        last = traj[-1]
+        # Check prime-like condition
+        try:
+            if kececi_type is not None:
+                if is_prime_like(last, kececi_type):
+                    return True
+            else:
+                # fallback: try is_prime on integer rep
+                if is_prime(last):
+                    return True
+        except Exception:
+            # If prime test fails, continue attempts
+            pass
+
+        # Compute next element: prefer safe_add, else try native addition
+        next_val = None
+        try:
+            next_val = safe_add(last, add_value, +1)
+        except Exception:
+            try:
+                next_val = last + add_value
+            except Exception:
+                # cannot add -> abort
+                return False
+
+        traj.append(next_val)
+
+    return False
 
 def format_fraction(value):
     """Fraction nesnelerini güvenli bir şekilde formatlar."""
