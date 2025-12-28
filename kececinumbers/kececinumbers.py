@@ -4083,83 +4083,146 @@ def _is_divisible(value: Any, divisor: int, kececi_type: int) -> bool:
         return False
 
 def _get_integer_representation(n_input: Any) -> Optional[int]:
-    """Extracts the primary integer component from any supported number type."""
+    """
+    Extracts the primary integer component from supported Keçeci number types.
+
+    Returns:
+        absolute integer value (int) when a meaningful integer representation exists,
+        otherwise None.
+    """
     try:
-        if isinstance(n_input, (int, float, Fraction)):
-            # is_near_integer kontrolü eklendi, çünkü float'tan int'e direkt dönüş hassasiyet sorunları yaratabilir
+        # None early exit
+        if n_input is None:
+            return None
+
+        # Direct ints (including numpy ints)
+        if isinstance(n_input, (int, np.integer)):
+            return abs(int(n_input))
+
+        # Fractions: only return if it's an integer fraction (denominator == 1)
+        if isinstance(n_input, Fraction):
+            if n_input.denominator == 1:
+                return abs(int(n_input.numerator))
+            return None
+
+        # Floats: accept only if near integer
+        if isinstance(n_input, (float, np.floating)):
             if is_near_integer(n_input):
                 return abs(int(round(float(n_input))))
-            return None # Tam sayıya yakın değilse None döndür
-        
+            return None
+
+        # Complex: require imag ≈ 0 and real near-integer
         if isinstance(n_input, complex):
-            if is_near_integer(n_input.real):
+            if abs(n_input.imag) < 1e-12 and is_near_integer(n_input.real):
                 return abs(int(round(n_input.real)))
             return None
-        
-        # NumPy Quaternion özel kontrolü
-        if hasattr(np, 'quaternion') and isinstance(n_input, quaternion):
-            if is_near_integer(n_input.w):
-                return abs(int(round(n_input.w)))
-            return None
-        
-        # Keçeci Sayı Tipleri
-        if isinstance(n_input, NeutrosophicNumber):
-            if is_near_integer(n_input.t):
-                return abs(int(round(n_input.t)))
-            return None
-        
-        if isinstance(n_input, NeutrosophicComplexNumber):
-            if is_near_integer(n_input.real):
-                return abs(int(round(n_input.real)))
-            return None
-        
-        if isinstance(n_input, HyperrealNumber):
-            if n_input.sequence and is_near_integer(n_input.sequence[0]):
-                return abs(int(round(n_input.sequence[0])))
-            return None
-        
-        if isinstance(n_input, BicomplexNumber):
-            if is_near_integer(n_input.z1.real):
-                return abs(int(round(n_input.z1.real)))
-            return None
-        
-        if isinstance(n_input, NeutrosophicBicomplexNumber):
-            if is_near_integer(n_input.real): # Varsayım: .real metodu var
-                return abs(int(round(n_input.real)))
-            return None
-        
-        if isinstance(n_input, OctonionNumber):
-            if is_near_integer(n_input.w):
-                return abs(int(round(n_input.w)))
-            return None
-        
-        if isinstance(n_input, SedenionNumber):
-            if n_input.coefficients and is_near_integer(n_input.coefficients[0]):
-                return abs(int(round(n_input.coefficients[0])))
-            return None
-        
-        if isinstance(n_input, CliffordNumber):
-            scalar_part = n_input.basis.get('', 0)
-            if is_near_integer(scalar_part):
-                return abs(int(round(scalar_part)))
-            return None
-        
-        if isinstance(n_input, DualNumber):
-            if is_near_integer(n_input.real):
-                return abs(int(round(n_input.real)))
-            return None
-        
-        if isinstance(n_input, SplitcomplexNumber):
-            if is_near_integer(n_input.real):
-                return abs(int(round(n_input.real)))
-            return None
-        
-        # Fallback (Bu satırın çoğu durumda ulaşılmaması beklenir)
-        if is_near_integer(n_input):
-            return abs(int(round(float(n_input))))
+
+        # numpy-quaternion or other quaternion types where 'w' is scalar part
+        try:
+            # `quaternion` type from numpy-quaternion has attribute 'w'
+            if isinstance(n_input, quaternion):
+                w = getattr(n_input, 'w', None)
+                if w is not None and is_near_integer(w):
+                    return abs(int(round(float(w))))
+                return None
+        except Exception:
+            # If quaternion type is not available or isinstance check fails, continue
+            pass
+
+        # If object exposes 'coeffs' (list/np.array), use first component
+        if hasattr(n_input, 'coeffs'):
+            coeffs = getattr(n_input, 'coeffs')
+            # numpy array
+            if isinstance(coeffs, np.ndarray):
+                if coeffs.size > 0 and is_near_integer(coeffs.flatten()[0]):
+                    return abs(int(round(float(coeffs.flatten()[0]))))
+                return None
+            # list/tuple-like
+            try:
+                # convert to list (works for many iterables)
+                c0 = list(coeffs)[0]
+                if is_near_integer(c0):
+                    return abs(int(round(float(c0))))
+                return None
+            except Exception:
+                # can't iterate coeffs reliably
+                pass
+
+        # Some classes expose 'coefficients' name instead
+        if hasattr(n_input, 'coefficients'):
+            try:
+                c0 = list(getattr(n_input, 'coefficients'))[0]
+                if is_near_integer(c0):
+                    return abs(int(round(float(c0))))
+            except Exception:
+                pass
+
+        # Try common scalar attributes in order of likelihood
+        for attr in ('w', 'real', 't', 'a', 'value'):
+            if hasattr(n_input, attr):
+                val = getattr(n_input, attr)
+                # If this is complex-like, use real part
+                if isinstance(val, complex):
+                    if abs(val.imag) < 1e-12 and is_near_integer(val.real):
+                        return abs(int(round(val.real)))
+                else:
+                    try:
+                        if is_near_integer(val):
+                            return abs(int(round(float(val))))
+                    except Exception:
+                        pass
+
+        # CliffordNumber: check basis dict scalar part ''
+        if hasattr(n_input, 'basis') and isinstance(getattr(n_input, 'basis'), dict):
+            scalar = n_input.basis.get('', 0)
+            try:
+                if is_near_integer(scalar):
+                    return abs(int(round(float(scalar))))
+            except Exception:
+                pass
+
+        # DualNumber / Superreal / others: if they expose .real attribute (and it's numeric)
+        if hasattr(n_input, 'real') and not isinstance(n_input, (complex, float, int, np.floating, np.integer)):
+            try:
+                real_val = getattr(n_input, 'real')
+                if is_near_integer(real_val):
+                    return abs(int(round(float(real_val))))
+            except Exception:
+                pass
+
+        # TernaryNumber: convert digits to decimal
+        if hasattr(n_input, 'digits'):
+            try:
+                digits = list(n_input.digits)
+                decimal_value = 0
+                for i, d in enumerate(reversed(digits)):
+                    decimal_value += int(d) * (3 ** i)
+                return abs(int(decimal_value))
+            except Exception:
+                pass
+
+        # HyperrealNumber: use finite part (sequence[0]) if present
+        if hasattr(n_input, 'sequence') and isinstance(getattr(n_input, 'sequence'), (list, tuple)):
+            seq = getattr(n_input, 'sequence')
+            if seq:
+                try:
+                    if is_near_integer(seq[0]):
+                        return abs(int(round(float(seq[0]))))
+                except Exception:
+                    pass
+
+        # Fallback: try numeric coercion + is_near_integer
+        try:
+            if is_near_integer(n_input):
+                return abs(int(round(float(n_input))))
+        except Exception:
+            pass
+
+        # If nothing matched, return None
         return None
-        
-    except (ValueError, TypeError, IndexError, AttributeError):
+
+    except Exception:
+        # On any unexpected failure, return None rather than raising
         return None
 
 
