@@ -3987,98 +3987,246 @@ def print_detailed_report(sequence: List[Any], params: Dict[str, Any]):
 
 
 def _is_divisible(value: Any, divisor: int, kececi_type: int) -> bool:
+    """
+    Robust divisibility check across Keçeci types.
+
+    Returns True if value is divisible by divisor according to the semantics
+    of the given kececi_type, otherwise False.
+    """
     TOLERANCE = 1e-12
 
-    try:
-        if kececi_type == TYPE_DUAL:
-            if isinstance(value, DualNumber):
-                return math.isclose(value.real % divisor, 0.0, abs_tol=TOLERANCE)
-            return math.isclose(value % divisor, 0.0, abs_tol=TOLERANCE)
-        elif kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL]:
-            # Tam sayılar için, sadece int tipinde ve kalansız bölünebilir mi
-            # float değerlerin int'e yuvarlanarak kontrol edilmesi gerekebilir
-            if isinstance(value, (int, float)) and is_near_integer(value):
-                return int(round(float(value))) % divisor == 0
+    if divisor == 0:
+        return False
+
+    def _float_mod_zero(x: float) -> bool:
+        try:
+            return math.isclose(float(x) % divisor, 0.0, abs_tol=TOLERANCE)
+        except Exception:
             return False
-        elif kececi_type == TYPE_FLOAT:
-            mod = value % divisor
-            return math.isclose(mod, 0.0, abs_tol=TOLERANCE)
-        elif kececi_type == TYPE_RATIONAL:
-            quotient = value / divisor
-            return quotient.denominator == 1
-        elif kececi_type == TYPE_COMPLEX:
-            real_mod = value.real % divisor
-            imag_mod = value.imag % divisor
-            return (math.isclose(real_mod, 0.0, abs_tol=TOLERANCE) and
-                    math.isclose(imag_mod, 0.0, abs_tol=TOLERANCE))
-        elif kececi_type == TYPE_QUATERNION:
-            components = [value.w, value.x, value.y, value.z]
-            return all(math.isclose(c % divisor, 0.0, abs_tol=TOLERANCE) for c in components)
-        elif kececi_type == TYPE_NEUTROSOPHIC:
-            return (math.isclose(value.a % divisor, 0.0, abs_tol=TOLERANCE) and
-                    math.isclose(value.b % divisor, 0.0, abs_tol=TOLERANCE))
-        elif kececi_type == TYPE_NEUTROSOPHIC_COMPLEX:
-            components = [value.real, value.imag, value.indeterminacy]
-            return all(math.isclose(c % divisor, 0.0, abs_tol=TOLERANCE) for c in components)
-        elif kececi_type == TYPE_HYPERREAL:
-            return all(math.isclose(x % divisor, 0.0, abs_tol=TOLERANCE) for x in value.sequence)
-        elif kececi_type == TYPE_BICOMPLEX:
-            return (_is_divisible(value.z1, divisor, TYPE_COMPLEX) and
-                    _is_divisible(value.z2, divisor, TYPE_COMPLEX))
-        elif kececi_type == TYPE_NEUTROSOPHIC_BICOMPLEX:
-            components = [
-                value.a, value.b, value.c, value.d,
-                value.e, value.f, value.g, value.h
-            ]
-            return all(math.isclose(c % divisor, 0.0, abs_tol=TOLERANCE) for c in components)
-        elif kececi_type == TYPE_OCTONION:
-            components = [
-                value.w, value.x, value.y, value.z,
-                value.e, value.f, value.g, value.h
-            ]
-            return all(math.isclose(c % divisor, 0.0, abs_tol=TOLERANCE) for c in components)
-        elif kececi_type == TYPE_SEDENION:
-            if hasattr(value, 'coeffs'):
-                coeffs = value.coeffs
-            else:
-                coeffs = list(value)
-            return all(math.isclose(c % divisor, 0.0, abs_tol=TOLERANCE) for c in coeffs)
-        elif kececi_type == TYPE_CLIFFORD:
-            if hasattr(value, 'basis') and isinstance(value.basis, dict):
-                components = value.basis.values()
-            else:
-                components = []
-            return all(math.isclose(c % divisor, 0.0, abs_tol=TOLERANCE) for c in components)
-        elif kececi_type == TYPE_SPLIT_COMPLEX:
-            real_mod = value.real % divisor
-            split_mod = value.split % divisor
-            return (math.isclose(real_mod, 0.0, abs_tol=TOLERANCE) and
-                    math.isclose(split_mod, 0.0, abs_tol=TOLERANCE))
-        elif kececi_type == TYPE_SUPERREAL:
-            real_mod = value.real % divisor
-            split_mod = value.split % divisor
-            return (math.isclose(real_mod, 0.0, abs_tol=TOLERANCE) and
-                    math.isclose(split_mod, 0.0, abs_tol=TOLERANCE))
-        elif kececi_type == TYPE_TERNARY:
-           return math.isclose(value % divisor, 0.0, abs_tol=TOLERANCE)
-        elif kececi_type in [TYPE_PATHION, TYPE_CHINGON, TYPE_ROUTON, TYPE_VOUDON, TYPE_SEDENION]:
-            # Hypercomplex tipler için ortak çözüm
+
+    def _int_mod_zero(x: int) -> bool:
+        try:
+            return int(round(x)) % divisor == 0
+        except Exception:
+            return False
+
+    def _fraction_mod_zero(fr: Fraction) -> bool:
+        # fr = n/d  -> divisible by divisor iff n % (d*divisor) == 0
+        try:
+            return fr.numerator % (fr.denominator * divisor) == 0
+        except Exception:
+            return False
+
+    def _complex_mod_zero(c: complex) -> bool:
+        return _float_mod_zero(c.real) and _float_mod_zero(c.imag)
+
+    def _iterable_mod_zero(iterable) -> bool:
+        try:
+            for c in iterable:
+                if isinstance(c, Fraction):
+                    if not _fraction_mod_zero(c):
+                        return False
+                elif isinstance(c, complex):
+                    if not _complex_mod_zero(c):
+                        return False
+                elif isinstance(c, (int, np.integer)):
+                    if not _int_mod_zero(c):
+                        return False
+                else:
+                    if not _float_mod_zero(c):
+                        return False
+            return True
+        except Exception:
+            return False
+
+    try:
+        # DualNumber: check .real
+        if kececi_type == TYPE_DUAL:
+            if hasattr(value, 'real'):
+                return _float_mod_zero(getattr(value, 'real'))
+            # fallback: element-wise if iterable
+            if hasattr(value, 'coeffs') or hasattr(value, '__iter__'):
+                return _iterable_mod_zero(getattr(value, 'coeffs', value))
+            return False
+
+        # Positive/Negative Real: only accept near-integers
+        if kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL]:
+            if isinstance(value, (int, np.integer)):
+                return _int_mod_zero(value)
+            if isinstance(value, Fraction):
+                return _fraction_mod_zero(value)
+            try:
+                val = float(value)
+                if is_near_integer(val):
+                    return _int_mod_zero(val)
+            except Exception:
+                pass
+            return False
+
+        # Float
+        if kececi_type == TYPE_FLOAT:
+            try:
+                return _float_mod_zero(float(value))
+            except Exception:
+                return False
+
+        # Rational (Fraction)
+        if kececi_type == TYPE_RATIONAL:
+            if isinstance(value, Fraction):
+                return _fraction_mod_zero(value)
+            # try to coerce
+            try:
+                fr = Fraction(value)
+                return _fraction_mod_zero(fr)
+            except Exception:
+                return False
+
+        # Complex
+        if kececi_type == TYPE_COMPLEX:
+            try:
+                c = value if isinstance(value, complex) else _parse_complex(value)
+                return _complex_mod_zero(c)
+            except Exception:
+                return False
+
+        # Quaternion-like (numpy quaternion or object with w,x,y,z)
+        if kececi_type == TYPE_QUATERNION:
+            try:
+                if isinstance(value, quaternion):
+                    comps = [value.w, value.x, value.y, value.z]
+                    return all(_float_mod_zero(c) for c in comps)
+                if hasattr(value, 'w') and hasattr(value, 'x'):
+                    comps = [getattr(value, a) for a in ('w', 'x', 'y', 'z')]
+                    return all(_float_mod_zero(c) for c in comps)
+                # fallback: iterable
+                if hasattr(value, 'coeffs') or hasattr(value, '__iter__'):
+                    return _iterable_mod_zero(getattr(value, 'coeffs', value))
+            except Exception:
+                return False
+            return False
+
+        # Neutrosophic (t,i,f) or objects with a,b attributes
+        if kececi_type == TYPE_NEUTROSOPHIC:
+            try:
+                if hasattr(value, 't') and hasattr(value, 'i'):
+                    return _float_mod_zero(value.t) and _float_mod_zero(value.i)
+                if hasattr(value, 'a') and hasattr(value, 'b'):
+                    return _float_mod_zero(value.a) and _float_mod_zero(value.b)
+            except Exception:
+                return False
+            return False
+
+        # Neutrosophic Complex
+        if kececi_type == TYPE_NEUTROSOPHIC_COMPLEX:
+            try:
+                comps = []
+                if hasattr(value, 'real') and hasattr(value, 'imag'):
+                    comps.append(value.real)
+                    comps.append(value.imag)
+                if hasattr(value, 'indeterminacy'):
+                    comps.append(value.indeterminacy)
+                return all(_float_mod_zero(c) for c in comps) if comps else False
+            except Exception:
+                return False
+
+        # Hyperreal: check all sequence components
+        if kececi_type == TYPE_HYPERREAL:
+            if hasattr(value, 'sequence') and isinstance(value.sequence, (list, tuple)):
+                return all(_float_mod_zero(x) for x in value.sequence)
+            return False
+
+        # Bicomplex
+        if kececi_type == TYPE_BICOMPLEX:
+            try:
+                if hasattr(value, 'z1') and hasattr(value, 'z2'):
+                    return _complex_mod_zero(value.z1) and _complex_mod_zero(value.z2)
+            except Exception:
+                return False
+            return False
+
+        # Neutrosophic Bicomplex
+        if kececi_type == TYPE_NEUTROSOPHIC_BICOMPLEX:
+            try:
+                comps = [getattr(value, attr) for attr in ['a','b','c','d','e','f','g','h'] if hasattr(value, attr)]
+                return all(_float_mod_zero(c) for c in comps) if comps else False
+            except Exception:
+                return False
+
+        # Octonion / Sedenion / Pathion / Chingon / Routon / Voudon / generic hypercomplex with coeffs
+        if kececi_type in [TYPE_OCTONION, TYPE_SEDENION, TYPE_PATHION, TYPE_CHINGON, TYPE_ROUTON, TYPE_VOUDON]:
             try:
                 if hasattr(value, 'coeffs'):
-                    coeffs = value.coeffs
-                else:
-                    # Hypercomplex objesini float listesine dönüştürmeye çalış
-                    coeffs = [float(getattr(value, f'e{i}', 0.0)) for i in range(32)]  # Varsayılan uzunluk
-            except (AttributeError, TypeError):
-                # Başarısız olursa, iterable olup olmadığını kontrol et
-                try:
-                    coeffs = list(value)
-                except TypeError:
-                    coeffs = [float(value)]  # Skaler değer
-            
-            return all(math.isclose(c % divisor, 0.0, abs_tol=TOLERANCE) for c in coeffs)
-        else:
+                    coeffs = getattr(value, 'coeffs')
+                    return _iterable_mod_zero(coeffs)
+                # fallback: attributes like w,x,y,z,... or iterable
+                if hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
+                    return _iterable_mod_zero(value)
+                # single scalar fallback
+                return _float_mod_zero(value)
+            except Exception:
+                return False
+
+        # Clifford
+        if kececi_type == TYPE_CLIFFORD:
+            try:
+                if hasattr(value, 'basis') and isinstance(value.basis, dict):
+                    return all(_float_mod_zero(v) for v in value.basis.values())
+                return False
+            except Exception:
+                return False
+
+        # Split-complex
+        if kececi_type == TYPE_SPLIT_COMPLEX:
+            try:
+                if hasattr(value, 'real') and hasattr(value, 'split'):
+                    return _float_mod_zero(value.real) and _float_mod_zero(value.split)
+            except Exception:
+                return False
             return False
+
+        # Superreal
+        if kececi_type == TYPE_SUPERREAL:
+            try:
+                if hasattr(value, 'real') and hasattr(value, 'split'):
+                    return _float_mod_zero(value.real) and _float_mod_zero(value.split)
+            except Exception:
+                return False
+            return False
+
+        # Ternary
+        if kececi_type == TYPE_TERNARY:
+            try:
+                if hasattr(value, 'to_decimal'):
+                    dec = value.to_decimal()
+                    return _int_mod_zero(dec)
+                if hasattr(value, 'digits'):
+                    dec = 0
+                    for i, d in enumerate(reversed(list(value.digits))):
+                        dec += int(d) * (3 ** i)
+                    return _int_mod_zero(dec)
+                # if iterable digits
+                if hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
+                    parts = list(value)
+                    dec = 0
+                    for i, d in enumerate(reversed(parts)):
+                        dec += int(d) * (3 ** i)
+                    return _int_mod_zero(dec)
+            except Exception:
+                return False
+            return False
+
+        # Fallback: try coeffs -> iterable -> numeric coercion
+        if hasattr(value, 'coeffs'):
+            return _iterable_mod_zero(getattr(value, 'coeffs'))
+        if hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
+            return _iterable_mod_zero(value)
+
+        # Last resort: numeric conversion
+        try:
+            return _float_mod_zero(float(value))
+        except Exception:
+            return False
+
     except (TypeError, AttributeError, ValueError, ZeroDivisionError):
         return False
 
@@ -4263,101 +4411,102 @@ def is_near_integer(x, tol=1e-12):
     except:
         return False
 
-def is_prime_like(value, kececi_type: int) -> bool:
+def is_prime_like(value: Any, kececi_type: int) -> bool:
     """
-    Checks if the value should be treated as a "prime" in Keçeci logic,
-    by examining its principal (scalar/real) component.
+    Heuristic to check whether `value` should be treated as a "prime candidate"
+    under Keçeci logic for the given `kececi_type`.
+
+    Strategy:
+    - Prefer using _get_integer_representation when possible.
+    - For quaternion/hypercomplex types require that component(s) are near-integers.
+    - For ternary convert to decimal first.
     """
     try:
-        if kececi_type == TYPE_DUAL:
-            if isinstance(value, DualNumber):
-                return is_prime(int(value.real))
-            else:
-                return is_prime(int(value))
-        elif kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL, TYPE_FLOAT]:
-            if is_near_integer(value):
-                n = int(round(float(value)))
-                return is_prime(n)
-            return False
-        elif kececi_type == TYPE_COMPLEX:
-            if is_near_integer(value.real):
-                return is_prime(value.real)
-            return False
-        elif kececi_type == TYPE_SPLIT_COMPLEX:
-            if is_near_integer(value.real):
-                return is_prime(value.real)
-            return False
-        elif kececi_type == TYPE_QUATERNION:
-            if not all(is_near_integer(c) for c in [value.w, value.x, value.y, value.z]):
-                return False
-            return is_prime(round(value.w))
+        # First, try a general integer extraction
+        n = _get_integer_representation(value)
+        if n is not None:
+            return sympy.isprime(int(n))
 
-        elif kececi_type == TYPE_OCTONION:
-            if hasattr(value, 'coeffs'):
-                components = value.coeffs
-            else:
-                components = list(value)
-            if not all(is_near_integer(c) for c in components):
-                return False
-            return is_prime(round(components[0]))
-
-        elif kececi_type == TYPE_SEDENION:
-            if hasattr(value, 'coeffs'):
-                components = value.coeffs
-            else:
-                components = list(value)
-            if not all(is_near_integer(c) for c in components):
-                return False
-            return is_prime(round(components[0]))
-
-        elif kececi_type in [TYPE_PATHION, TYPE_CHINGON, TYPE_ROUTON, TYPE_VOUDON]:
-            if hasattr(value, 'coeffs'):
-                components = value.coeffs
-            else:
-                components = list(value)
-            if not all(is_near_integer(c) for c in components):
-                return False
-            return is_prime(round(components[0]))
-        elif kececi_type == TYPE_CLIFFORD:
-            scalar = value.basis.get('', 0.0)
-            if is_near_integer(scalar):
-                return is_prime(scalar)
-            return False
-        elif kececi_type in [TYPE_SUPERREAL]:
-            if hasattr(value, 'real') and hasattr(value, 'split'):
-                real = value.real
-                split = value.split
-                if not (is_near_integer(real) and is_near_integer(split)):
+        # Handle quaternion specifically: require all components near-integer then test skalar
+        if kececi_type == TYPE_QUATERNION:
+            try:
+                if isinstance(value, quaternion):
+                    comps = [value.w, value.x, value.y, value.z]
+                elif hasattr(value, 'w') and hasattr(value, 'x'):
+                    comps = [getattr(value, a) for a in ('w','x','y','z')]
+                elif hasattr(value, 'coeffs'):
+                    comps = list(getattr(value, 'coeffs'))
+                else:
                     return False
-                return is_prime(round(real))
-            else:
-                raise ValueError("SuperrealNumber için 'real' ve 'split' bileşenleri gereklidir.")
-        elif kececi_type in [TYPE_TERNARY]:
-            if hasattr(value, 'digits'):
-                digits = value.digits
-            elif hasattr(value, '__iter__'):
-                digits = list(value)
-            else:
-                raise ValueError("TernaryNumber için 'digits' veya iterable bileşenler gereklidir.")
+                if not all(is_near_integer(c) for c in comps):
+                    return False
+                return sympy.isprime(int(round(float(comps[0]))))
+            except Exception:
+                return False
 
-            # Üçlü sayıyı ondalık sisteme çevir
-            decimal_value = 0
-            for i, digit in enumerate(reversed(digits)):
-                decimal_value += digit * (3 ** i)
+        # Hypercomplex families: check coeffs exist and are integer-like, test first (scalar) component
+        if kececi_type in [TYPE_OCTONION, TYPE_SEDENION, TYPE_PATHION, TYPE_CHINGON, TYPE_ROUTON, TYPE_VOUDON]:
+            try:
+                if hasattr(value, 'coeffs'):
+                    coeffs = list(getattr(value, 'coeffs'))
+                elif hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
+                    coeffs = list(value)
+                else:
+                    return False
+                if not coeffs:
+                    return False
+                if not all(is_near_integer(c) for c in coeffs):
+                    return False
+                return sympy.isprime(int(round(float(coeffs[0]))))
+            except Exception:
+                return False
 
-            # Ondalık karşılığın asal olup olmadığını kontrol et
-            return is_prime(decimal_value)
-        else: # Diğer tipler için genel kural, önceki else bloğu yerine
-            main_part = getattr(value, 'real', None)
-            if main_part is None:
-                main_part = getattr(value, 'a', None) # Neutrosophic için
-            if main_part is None:
-                main_part = getattr(value, 'w', None) # Diğer bazı tipler için
-            if main_part is not None and is_near_integer(main_part):
-                return is_prime(main_part)
-            return False
-    except Exception as e: # Geniş yakalama yerine spesifik yakalama önerilir
-        # print(f"Error in is_prime_like: {e}") # Hata ayıklama için
+        # Ternary
+        if kececi_type == TYPE_TERNARY:
+            try:
+                if hasattr(value, 'to_decimal'):
+                    dec = value.to_decimal()
+                elif hasattr(value, 'digits'):
+                    dec = 0
+                    for i, d in enumerate(reversed(list(value.digits))):
+                        dec += int(d) * (3 ** i)
+                elif hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
+                    parts = list(value)
+                    dec = 0
+                    for i, d in enumerate(reversed(parts)):
+                        dec += int(d) * (3 ** i)
+                else:
+                    return False
+                return sympy.isprime(int(dec))
+            except Exception:
+                return False
+
+        # Clifford: scalar basis part
+        if kececi_type == TYPE_CLIFFORD:
+            try:
+                if hasattr(value, 'basis') and isinstance(value.basis, dict):
+                    scalar = value.basis.get('', 0)
+                    if is_near_integer(scalar):
+                        return sympy.isprime(int(round(float(scalar))))
+                return False
+            except Exception:
+                return False
+
+        # Superreal: require integer-like real (and optional split)
+        if kececi_type == TYPE_SUPERREAL:
+            try:
+                if hasattr(value, 'real'):
+                    real = getattr(value, 'real')
+                    if is_near_integer(real):
+                        return sympy.isprime(int(round(float(real))))
+                return False
+            except Exception:
+                return False
+
+        # Fallback conservative behavior: not prime-like
+        return False
+
+    except Exception:
         return False
 
 def generate_kececi_vectorial(q0_str, c_str, u_str, iterations):
