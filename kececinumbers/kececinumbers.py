@@ -49,6 +49,10 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 import sympy
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Sequence, Union
+import logging
+
+# Module logger — library code should not configure logging handlers.
+logger = logging.getLogger(__name__)
 
 try:
     # numpy-quaternion kütüphanesinin sınıfını yüklemeye çalış
@@ -58,11 +62,6 @@ except Exception:
     # Eğer yoksa `quaternion` isimli sembolü None yap, kodun diğer yerleri bunu kontrol edebilir
     quaternion = None
     logger.warning("numpy-quaternion paketine ulaşılamadı — quaternion tip desteği devre dışı bırakıldı.")
-
-import logging
-
-# Module logger — library code should not configure logging handlers.
-logger = logging.getLogger(__name__)
 
 
 # ==============================================================================
@@ -4112,9 +4111,13 @@ def _is_divisible(value: Any, divisor: int, kececi_type: int) -> bool:
     if divisor == 0:
         return False
 
-    def _float_mod_zero(x: float) -> bool:
+    def _float_mod_zero(x: Any, divisor: int, tol: float = 1e-12) -> bool:
+        """
+        Module-level helper: returns True if float(x) % divisor ≈ 0 within tol.
+        Safe against exceptions (returns False on error).
+        """
         try:
-            return math.isclose(float(x) % divisor, 0.0, abs_tol=TOLERANCE)
+            return math.isclose(float(x) % divisor, 0.0, abs_tol=tol)
         except Exception:
             return False
 
@@ -4204,14 +4207,15 @@ def _is_divisible(value: Any, divisor: int, kececi_type: int) -> bool:
                 return False
 
         # Quaternion-like (numpy quaternion or object with w,x,y,z)
+        # Quaternion branch within _is_divisible:
         if kececi_type == TYPE_QUATERNION:
             try:
-                if isinstance(value, quaternion):
+                if quaternion is not None and isinstance(value, quaternion):
                     comps = [value.w, value.x, value.y, value.z]
-                    return all(_float_mod_zero(c) for c in comps)
+                    return all(_float_mod_zero(c, divisor) for c in comps)
                 if hasattr(value, 'w') and hasattr(value, 'x'):
-                    comps = [getattr(value, a) for a in ('w', 'x', 'y', 'z')]
-                    return all(_float_mod_zero(c) for c in comps)
+                    components = [getattr(value, a) for a in ('w', 'x', 'y', 'z')]
+                    return all(_float_mod_zero(c, divisor) for c in components)
                 # fallback: iterable
                 if hasattr(value, 'coeffs') or hasattr(value, '__iter__'):
                     return _iterable_mod_zero(getattr(value, 'coeffs', value))
@@ -4239,7 +4243,7 @@ def _is_divisible(value: Any, divisor: int, kececi_type: int) -> bool:
                     comps.append(value.imag)
                 if hasattr(value, 'indeterminacy'):
                     comps.append(value.indeterminacy)
-                return all(_float_mod_zero(c) for c in comps) if comps else False
+                return all(_float_mod_zero(c, divisor) for c in comps) if comps else False
             except Exception:
                 return False
 
@@ -4262,7 +4266,7 @@ def _is_divisible(value: Any, divisor: int, kececi_type: int) -> bool:
         if kececi_type == TYPE_NEUTROSOPHIC_BICOMPLEX:
             try:
                 comps = [getattr(value, attr) for attr in ['a','b','c','d','e','f','g','h'] if hasattr(value, attr)]
-                return all(_float_mod_zero(c) for c in comps) if comps else False
+                return all(_float_mod_zero(c, divisor) for c in comps) if comps else False
             except Exception:
                 return False
 
@@ -4551,7 +4555,7 @@ def is_prime_like(value: Any, kececi_type: int) -> bool:
                     #comps = [value.w, value.x, value.y, value.z]
                 if quaternion is not None and isinstance(value, quaternion):
                     comps = [value.w, value.x, value.y, value.z]
-                    return all(_float_mod_zero(c) for c in comps)
+                    return all(_float_mod_zero(c, divisor) for c in comps)
                 elif hasattr(value, 'w') and hasattr(value, 'x'):
                     comps = [getattr(value, a) for a in ('w','x','y','z')]
                 elif hasattr(value, 'coeffs'):
