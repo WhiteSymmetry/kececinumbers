@@ -42,6 +42,7 @@ from kececinumbers import (
     CliffordNumber,
     DualNumber,
     SplitcomplexNumber,
+    quaternion,
 
     # Core generator / API
     unified_generator,
