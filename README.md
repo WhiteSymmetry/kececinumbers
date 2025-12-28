@@ -26,7 +26,7 @@
 [![Linted with Ruff](https://img.shields.io/badge/Linted%20with-Ruff-green?logo=python&logoColor=white)](https://github.com/astral-sh/ruff)
 
 [![PyPI Downloads](https://static.pepy.tech/badge/kececinumbers)](https://pepy.tech/projects/kececinumbers)
-![PyPI Downloads](https://img.shields.io/pypi/dm/grikod?logo=pypi&label=PyPi%20downloads)
+![PyPI Downloads](https://img.shields.io/pypi/dm/kececinumbers?logo=pypi&label=PyPi%20downloads)
 
 ---
 
