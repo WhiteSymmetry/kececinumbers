@@ -5374,218 +5374,96 @@ def get_with_params(
         logger.exception("ERROR during sequence generation: %s", e)
         return []
 
-def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
+def get_interactive(auto_values: Optional[Dict[str, str]] = None) -> Tuple[List[Any], Dict[str, Any]]:
     """
-    Interactively gets parameters from the user to generate a Keçeci Numbers sequence.
-    This version includes default values for all inputs.
+    Interactively (or programmatically via auto_values) gets parameters to generate a Keçeci sequence.
+
+    - If auto_values is provided, keys can include:
+        'type_choice' (int or str), 'start_val' (str), 'add_val' (str), 'steps' (int or str), 'show_details' ('y'/'n')
+    - If a key is missing, the function falls back to prompting the user via input().
+    - This makes the function Jupyter-friendly (pass auto_values in notebooks) while preserving CLI interactivity.
     """
+    # Local prompt function: use auto_values if present otherwise input()
+    def _ask(key: str, prompt: str, default: str) -> str:
+        if auto_values and key in auto_values:
+            return str(auto_values[key])
+        try:
+            return input(prompt).strip() or default
+        except Exception:
+            # In non-interactive contexts where input is not available, use default
+            logger.debug("input() failed for prompt %r — using default %r", prompt, default)
+            return default
 
-    # Tip sabitleri
-    TYPE_POSITIVE_REAL = 1
-    TYPE_NEGATIVE_REAL = 2
-    TYPE_COMPLEX = 3
-    TYPE_FLOAT = 4
-    TYPE_RATIONAL = 5
-    TYPE_QUATERNION = 6
-    TYPE_NEUTROSOPHIC = 7
-    TYPE_NEUTROSOPHIC_COMPLEX = 8
-    TYPE_HYPERREAL = 9
-    TYPE_BICOMPLEX = 10
-    TYPE_NEUTROSOPHIC_BICOMPLEX = 11
-    TYPE_OCTONION = 12
-    TYPE_SEDENION = 13
-    TYPE_CLIFFORD = 14
-    TYPE_DUAL = 15
-    TYPE_SPLIT_COMPLEX = 16
-    TYPE_PATHION = 17
-    TYPE_CHINGON = 18
-    TYPE_ROUTON = 19
-    TYPE_VOUDON = 20
-    TYPE_SUPERREAL = 21
-    TYPE_TERNARY = 22
-
-    
-    print("\n--- Keçeci Numbers Interactive Generator ---")
-    print("  1: Positive Real    2: Negative Real      3: Complex")
-    print("  4: Float            5: Rational           6: Quaternion")
-    print("  7: Neutrosophic     8: Neutro-Complex     9: Hyperreal")
-    print(" 10: Bicomplex       11: Neutro-Bicomplex  12: Octonion")
-    print(" 13: Sedenion        14: Clifford          15: Dual")
-    print(" 16: Split-Complex   17: Pathion           18: Chingon")
-    print(" 19: Routon          20: Voudon            21: SuperReal")
-    print(" 22: Ternary")
-
-    
-    # Varsayılan değerler
-    DEFAULT_TYPE = 3  # Complex
+    logger.info("Keçeci Numbers Interactive Generator (interactive=%s)", bool(auto_values is None))
+    # Defaults
+    DEFAULT_TYPE = 3
     DEFAULT_STEPS = 40
-    DEFAULT_SHOW_DETAILS = "yes"
-    
-    # Tip seçimi için varsayılan değerler
+    DEFAULT_SHOW_DETAILS = "no"
+
     default_start_values = {
-        1: "2.5",      # Positive Real
-        2: "-5.0",     # Negative Real
-        3: "1+1j",     # Complex
-        4: "3.14",      # Float
-        5: "3.5",      # Rational
-        6: "1.0,0.0,0.0,0.0",  # Quaternion
-        7: "0.6,0.2,0.1",  # Neutrosophic
-        8: "1+1j",     # Neutro-Complex
-        9: "0.0,0.001",  # Hyperreal
-        10: "1.0,0.5,0.3,0.2",  # Bicomplex
-        11: "1.0,0.0,0.1,0.0,0.0,0.0,0.0,0.0",  # Neutro-Bicomplex
-        12: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",  # Octonion
-        13: "1.0" + ",0.0" * 15,  # Sedenion
-        14: "1.0+2.0e1+3.0e12",     # Clifford
-        15: "1.0,0.1", # Dual
-        16: "1.0,0.5", # Split-Complex
-        17: "1.0" + ",0.0" * 31,  # Pathion
-        18: "1.0" + ",0.0" * 63,  # Chingon
-        19: "1.0" + ",0.0" * 127,  # Routon
-        20: "1.0" + ",0.0" * 255,  # Voudon
-        21: "3.0,0.5",  # Super Real
-        22: "12",  # Ternary
+        1: "2.5", 2: "-5.0", 3: "1+1j", 4: "3.14", 5: "3.5",
+        6: "1.0,0.0,0.0,0.0", 7: "0.6,0.2,0.1", 8: "1+1j", 9: "0.0,0.001",
+        10: "1.0,0.5,0.3,0.2", 11: "1.0,0.0,0.1,0.0,0.0,0.0,0.0,0.0",
+        12: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0", 13: "1.0" + ",0.0"*15,
+        14: "1.0+2.0e1+3.0e12", 15: "1.0,0.1", 16: "1.0,0.5",
+        17: "1.0" + ",0.0"*31, 18: "1.0" + ",0.0"*63, 19: "1.0" + ",0.0"*127,
+        20: "1.0" + ",0.0"*255, 21: "3.0,0.5", 22: "12",
     }
-    
+
     default_add_values = {
-        1: "0.5",      # Positive Real
-        2: "-0.5",     # Negative Real
-        3: "0.1+0.1j", # Complex
-        4: "0.1",      # Float
-        5: "0.1",      # Rational
-        6: "0.1,0.0,0.0,0.0",  # Quaternion
-        7: "0.1,0.0,0.0",  # Neutrosophic
-        8: "0.1+0.1j", # Neutro-Complex
-        9: "0.0,0.001",  # Hyperreal
-        10: "0.1,0.0,0.0,0.0",  # Bicomplex
-        11: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",  # Neutro-Bicomplex
-        12: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",  # Octonion
-        13: "0.1" + ",0.0" * 15,  # Sedenion
-        14: "1.0+2.0e1+3.0e12",     # Clifford
-        15: "0.1,0.0", # Dual
-        16: "0.1,0.0",  # Split-Complex
-        17: "1.0" + ",0.0" * 31,  # Pathion
-        18: "1.0" + ",0.0" * 63,  # Chingon
-        19: "1.0" + ",0.0" * 127,  # Routon
-        20: "1.0" + ",0.0" * 255,  # Voudon
-        21: "1.5,2.7",  # Super Real
-        22: "1",  # Ternary
+        1: "0.5", 2: "-0.5", 3: "0.1+0.1j", 4: "0.1", 5: "0.1",
+        6: "0.1,0.0,0.0,0.0", 7: "0.1,0.0,0.0", 8: "0.1+0.1j", 9: "0.0,0.001",
+        10: "0.1,0.0,0.0,0.0", 11: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+        12: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0", 13: "0.1" + ",0.0"*15,
+        14: "0.1+0.2e1", 15: "0.1,0.0", 16: "0.1,0.0",
+        17: "1.0" + ",0.0"*31, 18: "1.0" + ",0.0"*63, 19: "1.0" + ",0.0"*127,
+        20: "1.0" + ",0.0"*255, 21: "1.5,2.7", 22: "1",
     }
-    
-    # Get a valid number type from the user with default
-    while True:
-        try:
-            type_input = input(f"Select a Keçeci Number Type (1-22) [default: {DEFAULT_TYPE}]: ").strip()
-            if type_input == "":
-                type_choice = DEFAULT_TYPE
-                break
-            type_choice = int(type_input)
-            if 1 <= type_choice <= 22:
-                break
-            print("Invalid type. Please enter a number between 1 and 22.")
-        except ValueError:
-            print("Invalid input. Please enter a number.")
-    
-    # User prompts for the starting value with default
-    start_prompts = {
-        1: f"Enter Positive Real start [default: '{default_start_values[1]}']: ",
-        2: f"Enter Negative Real start [default: '{default_start_values[2]}']: ",
-        3: f"Enter Complex start [default: '{default_start_values[3]}']: ",
-        4: f"Enter Float start [default: '{default_start_values[4]}']: ",
-        5: f"Enter Rational start [default: '{default_start_values[5]}']: ",
-        6: f"Enter Quaternion start [default: '{default_start_values[6]}']: ",
-        7: f"Enter Neutrosophic start [default: '{default_start_values[7]}']: ",
-        8: f"Enter Neutro-Complex start [default: '{default_start_values[8]}']: ",
-        9: f"Enter Hyperreal start [default: '{default_start_values[9]}']: ",
-        10: f"Enter Bicomplex start [default: '{default_start_values[10]}']: ",
-        11: f"Enter Neutro-Bicomplex start [default: '{default_start_values[11]}']: ",
-        12: f"Enter Octonion start [default: '{default_start_values[12]}']: ",
-        13: f"Enter Sedenion start [default: '{default_start_values[13]}']: ",
-        14: f"Enter Clifford start [default: '{default_start_values[14]}']: ",
-        15: f"Enter Dual start [default: '{default_start_values[15]}']: ",
-        16: f"Enter Split-Complex start [default: '{default_start_values[16]}']: ",
-        17: f"Enter Pathion start [default: '{default_start_values[17]}']: ",
-        18: f"Enter Chingon start [default: '{default_start_values[18]}']: ",
-        19: f"Enter Routon start [default: '{default_start_values[19]}']: ",
-        20: f"Enter Voudon start [default: '{default_start_values[20]}']: ",
-        21: f"Enter Super Real start [default: '{default_start_values[21]}']: ",
-        22: f"Enter Ternary start [default: '{default_start_values[22]}']: ",
-    }
-    
-    # User prompts for the increment value with default
-    add_prompts = {
-        1: f"Enter Positive Real increment [default: '{default_add_values[1]}']: ",
-        2: f"Enter Negative Real increment [default: '{default_add_values[2]}']: ",
-        3: f"Enter Complex increment [default: '{default_add_values[3]}']: ",
-        4: f"Enter Float increment [default: '{default_add_values[4]}']: ",
-        5: f"Enter Rational increment [default: '{default_add_values[5]}']: ",
-        6: f"Enter Quaternion increment [default: '{default_add_values[6]}']: ",
-        7: f"Enter Neutrosophic increment [default: '{default_add_values[7]}']: ",
-        8: f"Enter Neutro-Complex increment [default: '{default_add_values[8]}']: ",
-        9: f"Enter Hyperreal increment [default: '{default_add_values[9]}']: ",
-        10: f"Enter Bicomplex increment [default: '{default_add_values[10]}']: ",
-        11: f"Enter Neutro-Bicomplex increment [default: '{default_add_values[11]}']: ",
-        12: f"Enter Octonion increment [default: '{default_add_values[12]}']: ",
-        13: f"Enter Sedenion increment [default: '{default_add_values[13]}']: ",
-        14: f"Enter Clifford increment [default: '{default_add_values[14]}']: ",
-        15: f"Enter Dual increment [default: '{default_add_values[15]}']: ",
-        16: f"Enter Split-Complex increment [default: '{default_add_values[16]}']: ",
-        17: f"Enter Pathion start [default: '{default_start_values[17]}']: ",
-        18: f"Enter Chingon start [default: '{default_start_values[18]}']: ",
-        19: f"Enter Routon start [default: '{default_start_values[19]}']: ",
-        20: f"Enter Voudon start [default: '{default_start_values[20]}']: ",
-        21: f"Enter Super Real start [default: '{default_start_values[21]}']: ",
-        22: f"Enter Ternary start [default: '{default_start_values[22]}']: ",
-    }
-    
-    # Get inputs from the user with defaults
-    start_input = input(start_prompts.get(type_choice, "Enter starting value: ")).strip()
-    start_input_val_raw = start_input if start_input else default_start_values[type_choice]
-    
-    add_input = input(add_prompts.get(type_choice, "Enter increment value: ")).strip()
-    add_input_val_raw = add_input if add_input else default_add_values[type_choice]
-    
-    # Steps with default
-    steps_input = input(f"Enter number of Keçeci steps [default: {DEFAULT_STEPS}]: ").strip()
-    if steps_input:
-        try:
-            num_kececi_steps = int(steps_input)
-            if num_kececi_steps <= 0:
-                print("Please enter a positive integer. Using default.")
-                num_kececi_steps = DEFAULT_STEPS
-        except ValueError:
-            print("Invalid input. Using default.")
+
+    # type selection
+    type_input_raw = _ask('type_choice', f"Select Keçeci Number Type (1-22) [default: {DEFAULT_TYPE}]: ", str(DEFAULT_TYPE))
+    try:
+        type_choice = int(type_input_raw)
+        if not (1 <= type_choice <= 22):
+            logger.warning("Invalid type_choice %r, using default %s", type_choice, DEFAULT_TYPE)
+            type_choice = DEFAULT_TYPE
+    except Exception:
+        logger.warning("Could not parse type_choice %r, using default %s", type_input_raw, DEFAULT_TYPE)
+        type_choice = DEFAULT_TYPE
+
+    # start / add / steps / show details prompts
+    start_prompt = _ask('start_val', f"Enter start value [default: {default_start_values[type_choice]}]: ", default_start_values[type_choice])
+    add_prompt = _ask('add_val', f"Enter increment value [default: {default_add_values[type_choice]}]: ", default_add_values[type_choice])
+    steps_raw = _ask('steps', f"Enter number of Keçeci steps [default: {DEFAULT_STEPS}]: ", str(DEFAULT_STEPS))
+    try:
+        num_kececi_steps = int(steps_raw)
+        if num_kececi_steps <= 0:
+            logger.warning("Non-positive steps %r, using default %d", num_kececi_steps, DEFAULT_STEPS)
             num_kececi_steps = DEFAULT_STEPS
-    else:
+    except Exception:
+        logger.warning("Could not parse steps %r, using default %d", steps_raw, DEFAULT_STEPS)
         num_kececi_steps = DEFAULT_STEPS
-    
-    # Show details with default
-    show_details_input = input(f"Do you want to include the intermediate calculation steps? (y/n) [default: {DEFAULT_SHOW_DETAILS}]: ").lower().strip()
-    if not show_details_input:
-        show_details = (DEFAULT_SHOW_DETAILS == 'y' or DEFAULT_SHOW_DETAILS == 'yes')
-    else:
-        show_details = (show_details_input == 'y' or show_details_input == 'yes')
-    
-    # Generate the sequence with the correct parameter names and values
+
+    show_detail_raw = _ask('show_details', f"Include intermediate steps? (y/n) [default: {DEFAULT_SHOW_DETAILS}]: ", DEFAULT_SHOW_DETAILS)
+    show_details = str(show_detail_raw).strip().lower() in ['y', 'yes']
+
+    # Generate
     sequence = get_with_params(
         kececi_type_choice=type_choice,
         iterations=num_kececi_steps,
-        start_value_raw=start_input_val_raw,
-        add_value_raw=add_input_val_raw,
+        start_value_raw=start_prompt,
+        add_value_raw=add_prompt,
         include_intermediate_steps=show_details
     )
-    
-    # Gather the parameters in a dictionary to return
+
     params = {
         "type_choice": type_choice,
-        "start_val": start_input_val_raw,
-        "add_val": add_input_val_raw,
+        "start_val": start_prompt,
+        "add_val": add_prompt,
         "steps": num_kececi_steps,
         "detailed_view": show_details
     }
-    
-    print(f"\nUsing parameters: Type={type_choice}, Start='{start_input_val_raw}', Add='{add_input_val_raw}', Steps={num_kececi_steps}, Details={show_details}")
-    
+    logger.info("Using parameters: Type=%s, Start=%r, Add=%r, Steps=%s, Details=%s", type_choice, start_prompt, add_prompt, num_kececi_steps, show_details)
     return sequence, params
 
 # ==============================================================================
