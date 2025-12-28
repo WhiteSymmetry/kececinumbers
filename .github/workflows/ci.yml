@@ -6,16 +6,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      - name: Install deps
+
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest flake8
-          if [ -f requirements.txt ]; then pip install -r requirements.txt || true; fi
+          # If you have a requirements-dev.txt, prefer that (recommended)
+          if [ -f requirements-dev.txt ]; then
+            pip install --no-cache-dir -r requirements-dev.txt
+          else
+            # Fallback minimal deps (at least numpy required for tests)
+            pip install --no-cache-dir numpy scipy matplotlib scikit-learn sympy pytest flake8
+          fi
+
       - name: Run tests
         run: pytest -q
+
       - name: Lint
         run: flake8 --max-line-length=120 || true
