@@ -3290,8 +3290,13 @@ def convert_to_float(value: Any) -> float:
 
     # Quaternion-like
     try:
-        if isinstance(value, quaternion):
-            return float(value.w)
+        #if isinstance(value, quaternion):
+        #    return float(value.w)
+        if quaternion is not None and isinstance(value, quaternion):
+            comps = [value.w, value.x, value.y, value.z]
+            if not all(is_near_integer(c) for c in comps):
+                return False
+            return sympy.isprime(int(round(float(comps[0]))))
     except Exception:
         pass
 
@@ -4377,10 +4382,13 @@ def _get_integer_representation(n_input: Any) -> Optional[int]:
         # numpy-quaternion or other quaternion types where 'w' is scalar part
         try:
             # `quaternion` type from numpy-quaternion has attribute 'w'
-            if isinstance(n_input, quaternion):
-                w = getattr(n_input, 'w', None)
-                if w is not None and is_near_integer(w):
-                    return abs(int(round(float(w))))
+            #if isinstance(n_input, quaternion):
+            #    w = getattr(n_input, 'w', None)
+            #    if w is not None and is_near_integer(w):
+            #        return abs(int(round(float(w)))
+            if quaternion is not None and isinstance(n_input, quaternion):
+                if is_near_integer(n_input.w):
+                    return abs(int(round(n_input.w)))
                 return None
         except Exception:
             # If quaternion type is not available or isinstance check fails, continue
@@ -4539,8 +4547,11 @@ def is_prime_like(value: Any, kececi_type: int) -> bool:
         # Handle quaternion specifically: require all components near-integer then test skalar
         if kececi_type == TYPE_QUATERNION:
             try:
-                if isinstance(value, quaternion):
+                #if isinstance(value, quaternion):
+                    #comps = [value.w, value.x, value.y, value.z]
+                if quaternion is not None and isinstance(value, quaternion):
                     comps = [value.w, value.x, value.y, value.z]
+                    return all(_float_mod_zero(c) for c in comps)
                 elif hasattr(value, 'w') and hasattr(value, 'x'):
                     comps = [getattr(value, a) for a in ('w','x','y','z')]
                 elif hasattr(value, 'coeffs'):
