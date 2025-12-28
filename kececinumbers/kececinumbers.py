@@ -19,11 +19,11 @@ Key Features:
 - Functions for interactive use or programmatic integration.
 ---
 
-Keçeci Conjecture: Keçeci Varsayımı, Keçeci-Vermutung, Conjecture de Keçeci, Гипотеза Кечеджи, 凯杰西猜想, ケジェジ予想, Keçeci Huds, Keçeci Hudsiye, Keçeci Hudsia, كَچَه جِي ,حدس کچه جی, کچہ جی حدسیہ
+Keçeci Conjecture: Keçeci Varsayımı, Keçeci-Vermutung, Conjecture de Keçeci, Гипотеза Кечеджи, 凯杰西猜想, ケジェジ予想, Keçeci Huds, Keçeci Hudsiye, Keçeci Hudsia, [...]
 
 Keçeci Varsayımı (Keçeci Conjecture) - Önerilen
 
-Her Keçeci Sayı türü için, `unified_generator` fonksiyonu tarafından oluşturulan dizilerin, sonlu adımdan sonra periyodik bir yapıya veya tekrar eden bir asal temsiline (Keçeci Asal Sayısı, KPN) yakınsadığı sanılmaktadır. Bu davranış, Collatz Varsayımı'nın çoklu cebirsel sistemlere genişletilmiş bir hali olarak değerlendirilebilir.
+Her Keçeci Sayı türü için, `unified_generator` fonksiyonu tarafından oluşturulan dizilerin, sonlu adımdan sonra periyodik bir yapıya veya tekrar eden bir asal temsiline (Keçeci Asal Sayısı[...]
 
 Henüz kanıtlanmamıştır ve bu modül bu varsayımı test etmek için bir çerçeve sunar.
 """
@@ -408,7 +408,17 @@ class BaseNumber(ABC):
     # ------------------------------------------------------------------ #
     def components(self):
         """Bileşen listesini (Python list) döndürür."""
-        return self.coeffs.tolist()
+        # Daha dayanıklı dönüş: coeffs bir numpy array veya python list olabilir.
+        if hasattr(self, 'coeffs'):
+            coeffs = getattr(self, 'coeffs')
+            if isinstance(coeffs, np.ndarray):
+                return coeffs.tolist()
+            try:
+                return list(coeffs)
+            except Exception:
+                return [coeffs]
+        # Fallback: tek değer
+        return [self._value]
 
     def magnitude(self) -> float:
         """
@@ -422,8 +432,29 @@ class BaseNumber(ABC):
         return hash(tuple(np.round(self.coeffs, decimals=10)))
 
     def phase(self):
-        # compute and return the phase value
-        return self._phase   # or whatever logic you need
+        """
+        Güvenli phase hesaplayıcı:
+        - Eğer value complex ise imag/real üzerinden phase hesaplanır.
+        - Eğer coeffs varsa, ilk bileşenin complex olması durumunda phase döner.
+        - Diğer durumlarda 0.0 döndürür (tanımsız phase için güvenli fallback).
+        """
+        try:
+            # If underlying value is complex
+            if isinstance(self._value, complex):
+                return math.atan2(self._value.imag, self._value.real)
+            # If there's coeffs, use the first coefficient
+            if hasattr(self, 'coeffs'):
+                coeffs = getattr(self, 'coeffs')
+                if isinstance(coeffs, (list, tuple, np.ndarray)) and len(coeffs) > 0:
+                    first = coeffs[0]
+                    if isinstance(first, complex):
+                        return math.atan2(first.imag, first.real)
+            # If value has real/imag attributes (like some custom complex types)
+            if hasattr(self._value, 'real') and hasattr(self._value, 'imag'):
+                return math.atan2(self._value.imag, self._value.real)
+        except Exception:
+            pass
+        return 0.0
 
 @dataclass
 class PathionNumber:
@@ -440,6 +471,1245 @@ class PathionNumber:
         
         self.coeffs = [float(c) for c in coeffs]
     
+    @property
+    def real(self) -> float:
+        """İlk bileşen – “gerçek” kısım."""
+        return float(self.coeffs[0])
+    #def real(self):
+    #    Gerçek kısım (ilk bileşen)
+    #    return self.coeffs[0]
+    
+    def __iter__(self):
+        return iter(self.coeffs)
+    
+    def __getitem__(self, index):
+        return self.coeffs[index]
+    
+    def __len__(self):
+        return len(self.coeffs)
+    
+    def __str__(self):
+        return f"PathionNumber({', '.join(map(str, self.coeffs))})"
+
+    def __repr__(self):
+        return f"PathionNumber({', '.join(map(str, self.coeffs))})"
+        #return f"PathionNumber({self.coeffs})"
+    
+    def __add__(self, other):
+        if isinstance(other, PathionNumber):
+            return PathionNumber([a + b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            # Skaler toplama
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] += float(other)
+            return PathionNumber(new_coeffs)
+    
+    def __sub__(self, other):
+        if isinstance(other, PathionNumber):
+            return PathionNumber([a - b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] -= float(other)
+            return PathionNumber(new_coeffs)
+    
+    def __mul__(self, other):
+        if isinstance(other, PathionNumber):
+            # Basitçe bileşen bazlı çarpma (gerçek Cayley-Dickson çarpımı yerine)
+            return PathionNumber([a * b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            # Skaler çarpma
+            return PathionNumber([c * float(other) for c in self.coeffs])
+    
+    def __mod__(self, divisor):
+        return PathionNumber([c % divisor for c in self.coeffs])
+    
+    def __eq__(self, other):
+        if not isinstance(other, PathionNumber):
+            return NotImplemented
+        return np.allclose(self.coeffs, other.coeffs, atol=1e-10)
+        #if isinstance(other, PathionNumber):
+        #    return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
+        #return False
+
+    def __truediv__(self, other):
+        """Bölme operatörü: / """
+        if isinstance(other, (int, float)):
+            # Skaler bölme
+            return PathionNumber([c / other for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: 'PathionNumber' and '{type(other).__name__}'")
+    
+    def __floordiv__(self, other):
+        """Tam sayı bölme operatörü: // """
+        if isinstance(other, (int, float)):
+            # Skaler tam sayı bölme
+            return PathionNumber([c // other for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for //: 'PathionNumber' and '{type(other).__name__}'")
+    
+    def __rtruediv__(self, other):
+        """Sağdan bölme: other / PathionNumber"""
+        if isinstance(other, (int, float)):
+            # Bu daha karmaşık olabilir, basitçe bileşen bazlı bölme
+            return PathionNumber([other / c if c != 0 else float('inf') for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'PathionNumber'")
+
+    # ------------------------------------------------------------------
+    # Yeni eklenen yardımcı metodlar
+    # ------------------------------------------------------------------
+    def components(self):
+        """Bileşen listesini (Python list) döndürür."""
+        return list(self.coeffs)
+
+    def magnitude(self) -> float:
+        """
+        Euclidean norm = √( Σ_i coeff_i² )
+        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
+        """
+        return float(np.linalg.norm(self.coeffs))
+
+    def __hash__(self):
+        # NaN ve -0.0 gibi durumları göz önünde bulundurun
+        return hash(tuple(np.round(self.coeffs, decimals=10)))
+
+    def phase(self):
+        # Güvenli phase: ilk bileşene bak, eğer complex ise angle döndür, değilse 0.0
+        try:
+            first = self.coeffs[0] if self.coeffs else 0.0
+            if isinstance(first, complex):
+                return math.atan2(first.imag, first.real)
+        except Exception:
+            pass
+        return 0.0
+
+@dataclass
+class ChingonNumber:
+    """64-bileşenli Chingon sayısı"""  # Açıklama düzeltildi
+    
+    def __init__(self, *coeffs):
+        if len(coeffs) == 1 and hasattr(coeffs[0], '__iter__') and not isinstance(coeffs[0], str):
+            coeffs = coeffs[0]
+        
+        if len(coeffs) != 64:
+            coeffs = list(coeffs) + [0.0] * (64 - len(coeffs))
+            if len(coeffs) > 64:
+                coeffs = coeffs[:64]
+        
+        self.coeffs = [float(c) for c in coeffs]
+    
+    @property
+    def real(self) -> float:
+        """İlk bileşen – “gerçek” kısım."""
+        return float(self.coeffs[0])
+    #def real(self):
+    #    Gerçek kısım (ilk bileşen)
+    #    return self.coeffs[0]
+    
+    def __iter__(self):
+        return iter(self.coeffs)
+    
+    def __getitem__(self, index):
+        return self.coeffs[index]
+    
+    def __len__(self):
+        return len(self.coeffs)
+    
+    def __str__(self):
+        return f"ChingonNumber({', '.join(map(str, self.coeffs))})"
+    
+    def __repr__(self):
+        return f"({', '.join(map(str, self.coeffs))})"
+        #return f"ChingonNumber({self.coeffs})"
+    
+    def __add__(self, other):
+        if isinstance(other, ChingonNumber):
+            return ChingonNumber([a + b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            # Skaler toplama
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] += float(other)
+            return ChingonNumber(new_coeffs)
+    
+    def __sub__(self, other):
+        if isinstance(other, ChingonNumber):
+            return ChingonNumber([a - b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] -= float(other)
+            return ChingonNumber(new_coeffs)
+    
+    def __mul__(self, other):
+        if isinstance(other, ChingonNumber):
+            # Basitçe bileşen bazlı çarpma
+            return ChingonNumber([a * b for a, b in zip(self.coeffs, other.coeffs)])  # ChingonNumber döndür
+        else:
+            # Skaler çarpma
+            return ChingonNumber([c * float(other) for c in self.coeffs])  # ChingonNumber döndür
+    
+    def __mod__(self, divisor):
+        return ChingonNumber([c % divisor for c in self.coeffs])  # ChingonNumber döndür
+    
+    def __eq__(self, other):
+        if not isinstance(other, ChingonNumber):
+            return NotImplemented
+        return np.allclose(self.coeffs, other.coeffs, atol=1e-10)
+        #if isinstance(other, ChingonNumber):  # ChingonNumber ile karşılaştır
+        #    return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
+        #return False
+
+    def __truediv__(self, other):
+        """Bölme operatörü: / """
+        if isinstance(other, (int, float)):
+            # Skaler bölme
+            return ChingonNumber([c / other for c in self.coeffs])  # ChingonNumber döndür
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: 'ChingonNumber' and '{type(other).__name__}'")  # ChingonNumber
+    
+    def __floordiv__(self, other):
+        """Tam sayı bölme operatörü: // """
+        if isinstance(other, (int, float)):
+            # Skaler tam sayı bölme
+            return ChingonNumber([c // other for c in self.coeffs])  # ChingonNumber döndür
+        else:
+            raise TypeError(f"Unsupported operand type(s) for //: 'ChingonNumber' and '{type(other).__name__}'")  # ChingonNumber
+    
+    def __rtruediv__(self, other):
+        """Sağdan bölme: other / ChingonNumber"""
+        if isinstance(other, (int, float)):
+            return ChingonNumber([other / c if c != 0 else float('inf') for c in self.coeffs])  # ChingonNumber döndür
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'ChingonNumber'")  # ChingonNumber
+
+    def components(self):
+        """Bileşen listesini (Python list) döndürür."""
+        return list(self.coeffs)
+
+    def magnitude(self) -> float:
+        """
+        Euclidean norm = √( Σ_i coeff_i² )
+        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
+        """
+        return float(np.linalg.norm(self.coeffs))
+
+    def __hash__(self):
+        # NaN ve -0.0 gibi durumları göz önünde bulundurun
+        return hash(tuple(np.round(self.coeffs, decimals=10)))
+
+    def phase(self):
+        # Güvenli phase: ilk bileşene bak, eğer complex ise angle döndür, değilse 0.0
+        try:
+            first = self.coeffs[0] if self.coeffs else 0.0
+            if isinstance(first, complex):
+                return math.atan2(first.imag, first.real)
+        except Exception:
+            pass
+        return 0.0
+
+@dataclass
+class RoutonNumber:
+    """128-bileşenli Pathion sayısı"""
+    
+    def __init__(self, *coeffs):
+        if len(coeffs) == 1 and hasattr(coeffs[0], '__iter__') and not isinstance(coeffs[0], str):
+            coeffs = coeffs[0]
+        
+        if len(coeffs) != 128:
+            coeffs = list(coeffs) + [0.0] * (128 - len(coeffs))
+            if len(coeffs) > 128:
+                coeffs = coeffs[:128]
+        
+        self.coeffs = [float(c) for c in coeffs]
+    
+    @property
+    def real(self) -> float:
+        """İlk bileşen – “gerçek” kısım."""
+        return float(self.coeffs[0])
+    #def real(self):
+    #    Gerçek kısım (ilk bileşen)
+    #    return self.coeffs[0]
+    
+    def __iter__(self):
+        return iter(self.coeffs)
+    
+    def __getitem__(self, index):
+        return self.coeffs[index]
+    
+    def __len__(self):
+        return len(self.coeffs)
+    
+    def __str__(self):
+        return f"RoutonNumber({', '.join(map(str, self.coeffs))})"
+    
+    def __repr__(self):
+        return f"({', '.join(map(str, self.coeffs))})"
+        #return f"RoutonNumber({self.coeffs})"
+    
+    def __add__(self, other):
+        if isinstance(other, RoutonNumber):
+            return RoutonNumber([a + b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            # Skaler toplama
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] += float(other)
+            return RoutonNumber(new_coeffs)
+    
+    def __sub__(self, other):
+        if isinstance(other, RoutonNumber):
+            return RoutonNumber([a - b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] -= float(other)
+            return RoutonNumber(new_coeffs)
+    
+    def __mul__(self, other):
+        if isinstance(other, RoutonNumber):
+            # Basitçe bileşen bazlı çarpma (gerçek Cayley-Dickson çarpımı yerine)
+            return RoutonNumber([a * b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            # Skaler çarpma
+            return RoutonNumber([c * float(other) for c in self.coeffs])
+    
+    def __mod__(self, divisor):
+        return RoutonNumber([c % divisor for c in self.coeffs])
+    
+    def __eq__(self, other):
+        if not isinstance(other, RoutonNumber):
+            return NotImplemented
+        return np.allclose(self.coeffs, other.coeffs, atol=1e-10)
+        #if isinstance(other, RoutonNumber):
+        #    return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
+        #return False
+
+    def __truediv__(self, other):
+        """Bölme operatörü: / """
+        if isinstance(other, (int, float)):
+            # Skaler bölme
+            return RoutonNumber([c / other for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: 'RoutonNumber' and '{type(other).__name__}'")
+    
+    def __floordiv__(self, other):
+        """Tam sayı bölme operatörü: // """
+        if isinstance(other, (int, float)):
+            # Skaler tam sayı bölme
+            return RoutonNumber([c // other for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for //: 'RoutonNumber' and '{type(other).__name__}'")
+    
+    def __rtruediv__(self, other):
+        """Sağdan bölme: other / RoutonNumber"""
+        if isinstance(other, (int, float)):
+            # Bu daha karmaşık olabilir, basitçe bileşen bazlı bölme
+            return RoutonNumber([other / c if c != 0 else float('inf') for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'RoutonNumber'")
+
+    def components(self):
+        """Bileşen listesini (Python list) döndürür."""
+        return list(self.coeffs)
+
+    def magnitude(self) -> float:
+        """
+        Euclidean norm = √( Σ_i coeff_i² )
+        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
+        """
+        return float(np.linalg.norm(self.coeffs))
+
+    def __hash__(self):
+        # NaN ve -0.0 gibi durumları göz önünde bulundurun
+        return hash(tuple(np.round(self.coeffs, decimals=10)))
+
+    def phase(self):
+        # Güvenli phase: ilk bileşene bak, eğer complex ise angle döndür, değilse 0.0
+        try:
+            first = self.coeffs[0] if self.coeffs else 0.0
+            if isinstance(first, complex):
+                return math.atan2(first.imag, first.real)
+        except Exception:
+            pass
+        return 0.0
+
+@dataclass
+class VoudonNumber:
+    """256-bileşenli Pathion sayısı"""
+    
+    def __init__(self, *coeffs):
+        if len(coeffs) == 1 and hasattr(coeffs[0], '__iter__') and not isinstance(coeffs[0], str):
+            coeffs = coeffs[0]
+        
+        if len(coeffs) != 256:
+            coeffs = list(coeffs) + [0.0] * (256 - len(coeffs))
+            if len(coeffs) > 256:
+                coeffs = coeffs[:256]
+        
+        self.coeffs = [float(c) for c in coeffs]
+    
+    @property
+    def real(self) -> float:
+        """İlk bileşen – “gerçek” kısım."""
+        return float(self.coeffs[0])
+    #def real(self):
+    #    Gerçek kısım (ilk bileşen)
+    #    return self.coeffs[0]
+    
+    def __iter__(self):
+        return iter(self.coeffs)
+    
+    def __getitem__(self, index):
+        return self.coeffs[index]
+    
+    def __len__(self):
+        return len(self.coeffs)
+    
+    def __str__(self):
+        return f"VoudonNumber({', '.join(map(str, self.coeffs))})"
+    
+    def __repr__(self):
+        return f"({', '.join(map(str, self.coeffs))})"
+        #return f"VoudonNumber({self.coeffs})"
+    
+    def __add__(self, other):
+        if isinstance(other, VoudonNumber):
+            return VoudonNumber([a + b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            # Skaler toplama
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] += float(other)
+            return VoudonNumber(new_coeffs)
+    
+    def __sub__(self, other):
+        if isinstance(other, VoudonNumber):
+            return VoudonNumber([a - b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] -= float(other)
+            return VoudonNumber(new_coeffs)
+    
+    def __mul__(self, other):
+        if isinstance(other, VoudonNumber):
+            # Basitçe bileşen bazlı çarpma (gerçek Cayley-Dickson çarpımı yerine)
+            return VoudonNumber([a * b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            # Skaler çarpma
+            return VoudonNumber([c * float(other) for c in self.coeffs])
+    
+    def __mod__(self, divisor):
+        return VoudonNumber([c % divisor for c in self.coeffs])
+    
+    def __eq__(self, other):
+        if not isinstance(other, VoudonNumber):
+            return NotImplemented
+        return np.allclose(self.coeffs, other.coeffs, atol=1e-10)
+        #if isinstance(other, VoudonNumber):
+        #    return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
+        #return False
+
+    def __truediv__(self, other):
+        """Bölme operatörü: / """
+        if isinstance(other, (int, float)):
+            # Skaler bölme
+            return VoudonNumber([c / other for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: 'VoudonNumber' and '{type(other).__name__}'")
+    
+    def __floordiv__(self, other):
+        """Tam sayı bölme operatörü: // """
+        if isinstance(other, (int, float)):
+            # Skaler tam sayı bölme
+            return VoudonNumber([c // other for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for //: 'VoudonNumber' and '{type(other).__name__}'")
+    
+    def __rtruediv__(self, other):
+        """Sağdan bölme: other / VoudonNumber"""
+        if isinstance(other, (int, float)):
+            # Bu daha karmaşık olabilir, basitçe bileşen bazlı bölme
+            return VoudonNumber([other / c if c != 0 else float('inf') for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'VoudonNumber'")
+
+    def components(self):
+        """Bileşen listesini (Python list) döndürür."""
+        return list(self.coeffs)
+
+    def magnitude(self) -> float:
+        """
+        Euclidean norm = √( Σ_i coeff_i² )
+        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
+        """
+        return float(np.linalg.norm(self.coeffs))
+
+    def __hash__(self):
+        # NaN ve -0.0 gibi durumları göz önünde bulundurun
+        return hash(tuple(np.round(self.coeffs, decimals=10)))
+
+    def phase(self):
+        # Güvenli phase: ilk bileşene bak, eğer complex ise angle döndür, değilse 0.0
+        try:
+            first = self.coeffs[0] if self.coeffs else 0.0
+            if isinstance(first, complex):
+                return math.atan2(first.imag, first.real)
+        except Exception:
+            pass
+        return 0.0
+
+@dataclass
+class OctonionNumber:
+    """
+    Represents an octonion number with 8 components.
+    Implements octonion multiplication rules.
+    """
+    def __init__(self, *args):
+        # Varsayılan
+        self.w = self.x = self.y = self.z = self.e = self.f = self.g = self.h = 0.0
+        
+        if len(args) == 8:
+            self.w, self.x, self.y, self.z, self.e, self.f, self.g, self.h = args
+        elif len(args) == 1:
+            if isinstance(args[0], (list, tuple)):
+                if len(args[0]) == 8:
+                    self.w, self.x, self.y, self.z, self.e, self.f, self.g, self.h = args[0]
+                else:
+                    components = list(args[0]) + [0.0] * (8 - len(args[0]))
+                    self.w, self.x, self.y, self.z, self.e, self.f, self.g, self.h = components
+            elif isinstance(args[0], (int, float)):
+                self.w = float(args[0])
+        elif len(args) == 0:
+            pass
+        else:
+            raise ValueError("Invalid arguments for OctonionNumber")
+
+    @property
+    def coeffs(self):
+        """Octonion bileşenlerini liste olarak döner."""
+        return [self.w, self.x, self.y, self.z, self.e, self.f, self.g, self.h]
+
+    def __add__(self, other):
+        if isinstance(other, OctonionNumber):
+            return OctonionNumber(
+                self.w + other.w, self.x + other.x, self.y + other.y, self.z + other.z,
+                self.e + other.e, self.f + other.f, self.g + other.g, self.h + other.h
+            )
+        return NotImplemented
+
+    def __sub__(self, other):
+        if isinstance(other, OctonionNumber):
+            return OctonionNumber(
+                self.w - other.w, self.x - other.x, self.y - other.y, self.z - other.z,
+                self.e - other.e, self.f - other.f, self.g - other.g, self.h - other.h
+            )
+        return NotImplemented
+
+    def __mul__(self, other):
+        if isinstance(other, OctonionNumber):
+            # Mevcut octonion çarpımı (7-boyutlu çapraz çarpım kuralları)
+            w = self.w * other.w - self.x * other.x - self.y * other.y - self.z * other.z \
+                - self.e * other.e - self.f * other.f - self.g * other.g - self.h * other.h
+            x = self.w * other.x + self.x * other.w + self.y * other.z - self.z * other.y \
+                + self.e * other.f - self.f * other.e + self.g * other.h - self.h * other.g
+            y = self.w * other.y - self.x * other.z + self.y * other.w + self.z * other.x \
+                + self.e * other.g - self.g * other.e - self.f * other.h + self.h * other.f
+            z = self.w * other.z + self.x * other.y - self.y * other.x + self.z * other.w \
+                + self.e * other.h - self.h * other.e + self.f * other.g - self.g * other.f
+            e = self.w * other.e - self.x * other.f - self.y * other.g - self.z * other.h \
+                + self.e * other.w + self.f * other.x + self.g * other.y + self.h * other.z
+            f = self.w * other.f + self.x * other.e - self.y * other.h + self.z * other.g \
+                - self.e * other.x + self.f * other.w - self.g * other.z + self.h * other.y
+            g = self.w * other.g + self.x * other.h + self.y * other.e - self.z * other.f \
+                - self.e * other.y + self.f * other.z + self.g * other.w - self.h * other.x
+            h = self.w * other.h - self.x * other.g + self.y * other.f + self.z * other.e \
+                - self.e * other.z - self.f * other.y + self.g * other.x + self.h * other.w
+
+            return OctonionNumber(w, x, y, z, e, f, g, h)
+
+        elif isinstance(other, (int, float)):
+            # Skaler çarpım: tüm bileşenler other ile çarpılır
+            return OctonionNumber(
+                self.w * other, self.x * other, self.y * other, self.z * other,
+                self.e * other, self.f * other, self.g * other, self.h * other
+            )
+
+        return NotImplemented
+
+    def __rmul__(self, other):
+        # Skaler çarpımda değişme özelliği vardır: other * self == self * other
+        if isinstance(other, (int, float)):
+            return self.__mul__(other)  # self * other
+        return NotImplemented
+
+
+    def __truediv__(self, scalar):
+        if isinstance(scalar, (int, float)):
+            if scalar == 0:
+                raise ZeroDivisionError("Cannot divide by zero.")
+            return OctonionNumber(
+                self.w / scalar, self.x / scalar, self.y / scalar, self.z / scalar,
+                self.e / scalar, self.f / scalar, self.g / scalar, self.h / scalar
+            )
+        return NotImplemented
+
+    def __eq__(self, other):
+        if not isinstance(other, OctonionNumber):
+            return False
+        tol = 1e-12
+        return all(abs(getattr(self, attr) - getattr(other, attr)) < tol 
+                   for attr in ['w', 'x', 'y', 'z', 'e', 'f', 'g', 'h'])
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __str__(self):
+        return f"Octonion({self.w:.3f}, {self.x:.3f}, {self.y:.3f}, {self.z:.3f}, {self.e:.3f}, {self.f:.3f}, {self.g:.3f}, {self.h:.3f})"
+
+    def __repr__(self):
+        return f"({', '.join(map(str, self.coeffs))})"
+        #return str(self)
+
+    def components(self):
+        """Bileşen listesini (Python list) döndürür."""
+        return list(self.coeffs)
+
+    def magnitude(self) -> float:
+        """
+        Euclidean norm = √( Σ_i coeff_i² )
+        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
+        """
+        return float(np.linalg.norm(self.coeffs))
+
+    def __hash__(self):
+        # NaN ve -0.0 gibi durumları göz önünde bulundurun
+        return hash(tuple(np.round(self.coeffs, decimals=10)))
+
+    @property
+    def real(self) -> float:
+        """İlk bileşen – “gerçek” kısım."""
+        return float(self.coeffs[0])
+    #def real(self):
+    #    Gerçek kısım (ilk bileşen)
+    #    return self.coeffs[0]
+
+    def phase(self):
+        # Güvenli phase: octonionlarda özel tanım yok — fallback 0.0
+        return 0.0
+
+
+class Constants:
+    """Oktonyon sabitleri."""
+    ZERO = OctonionNumber(0, 0, 0, 0, 0, 0, 0, 0)
+    ONE = OctonionNumber(1, 0, 0, 0, 0, 0, 0, 0)
+    I = OctonionNumber(0, 1, 0, 0, 0, 0, 0, 0)
+    J = OctonionNumber(0, 0, 1, 0, 0, 0, 0, 0)
+    K = OctonionNumber(0, 0, 0, 1, 0, 0, 0, 0)
+    E = OctonionNumber(0, 0, 0, 0, 1, 0, 0, 0)
+    F = OctonionNumber(0, 0, 0, 0, 0, 1, 0, 0)
+    G = OctonionNumber(0, 0, 0, 0, 0, 0, 1, 0)
+    H = OctonionNumber(0, 0, 0, 0, 0, 0, 0, 1)
+
+
+@dataclass
+class NeutrosophicNumber:
+    """Represents a neutrosophic number of the form t + iI + fF."""
+    t: float  # truth
+    i: float  # indeterminacy
+    f: float  # falsity
+
+    def __init__(self, t: float, i: float, f: float = 0.0):
+        self.t = t
+        self.i = i
+        self.f = f
+
+    def __add__(self, other: Any) -> "NeutrosophicNumber":
+        if isinstance(other, NeutrosophicNumber):
+            return NeutrosophicNumber(self.t + other.t, self.i + other.i, self.f + other.f)
+        if isinstance(other, (int, float)):
+            return NeutrosophicNumber(self.t + other, self.i, self.f)
+        return NotImplemented
+
+    def __sub__(self, other: Any) -> "NeutrosophicNumber":
+        if isinstance(other, NeutrosophicNumber):
+            return NeutrosophicNumber(self.t - other.t, self.i - other.i, self.f - other.f)
+        if isinstance(other, (int, float)):
+            return NeutrosophicNumber(self.t - other, self.i, self.f)
+        return NotImplemented
+
+    def __mul__(self, other: Any) -> "NeutrosophicNumber":
+        if isinstance(other, NeutrosophicNumber):
+            return NeutrosophicNumber(
+                self.t * other.t,
+                self.t * other.i + self.i * other.t + self.i * other.i,
+                self.t * other.f + self.f * other.t + self.f * other.f
+            )
+        if isinstance(other, (int, float)):
+            return NeutrosophicNumber(self.t * other, self.i * other, self.f * other)
+        return NotImplemented
+
+    def __truediv__(self, divisor: float) -> "NeutrosophicNumber":
+        if isinstance(divisor, (int, float)):
+            if divisor == 0:
+                raise ZeroDivisionError("Cannot divide by zero.")
+            return NeutrosophicNumber(self.t / divisor, self.i / divisor, self.f / divisor)
+        raise TypeError("Only scalar division is supported.")
+
+    def __str__(self) -> str:
+        parts = []
+        if self.t != 0:
+            parts.append(f"{self.t}")
+        if self.i != 0:
+            parts.append(f"{self.i}I")
+        if self.f != 0:
+            parts.append(f"{self.f}F")
+        return " + ".join(parts) if parts else "0"
+
+@dataclass
+class NeutrosophicComplexNumber:
+    """
+    Represents a number with a complex part and an indeterminacy level.
+    z = (a + bj) + cI, where I = indeterminacy.
+    """
+
+    def __init__(self, real: float = 0.0, imag: float = 0.0, indeterminacy: float = 0.0):
+        self.real = float(real)
+        self.imag = float(imag)
+        self.indeterminacy = float(indeterminacy)
+
+    def __repr__(self) -> str:
+        return f"NeutrosophicComplexNumber(real={self.real}, imag={self.imag}, indeterminacy={self.indeterminacy})"
+
+    def __str__(self) -> str:
+        return f"({self.real}{self.imag:+}j) + {self.indeterminacy}I"
+
+    def __add__(self, other: Any) -> "NeutrosophicComplexNumber":
+        if isinstance(other, NeutrosophicComplexNumber):
+            return NeutrosophicComplexNumber(
+                self.real + other.real,
+                self.imag + other.imag,
+                self.indeterminacy + other.indeterminacy
+            )
+        if isinstance(other, (int, float)):
+            return NeutrosophicComplexNumber(self.real + other, self.imag, self.indeterminacy)
+        if isinstance(other, complex):
+            return NeutrosophicComplexNumber(self.real + other.real, self.imag + other.imag, self.indeterminacy)
+        return NotImplemented
+
+    def __sub__(self, other: Any) -> "NeutrosophicComplexNumber":
+        if isinstance(other, NeutrosophicComplexNumber):
+            return NeutrosophicComplexNumber(
+                self.real - other.real,
+                self.imag - other.imag,
+                self.indeterminacy - other.indeterminacy
+            )
+        if isinstance(other, (int, float)):
+            return NeutrosophicComplexNumber(self.real - other, self.imag, self.indeterminacy)
+        if isinstance(other, complex):
+            return NeutrosophicComplexNumber(self.real - other.real, self.imag - other.imag, self.indeterminacy)
+        return NotImplemented
+
+    def __mul__(self, other: Any) -> "NeutrosophicComplexNumber":
+        if isinstance(other, NeutrosophicComplexNumber):
+            new_real = self.real * other.real - self.imag * other.imag
+            new_imag = self.real * other.imag + self.imag * other.real
+            # Indeterminacy: basitleştirilmiş model
+            new_indeterminacy = (self.indeterminacy + other.indeterminacy +
+                               self.magnitude_sq() * other.indeterminacy +
+                               other.magnitude_sq() * self.indeterminacy)
+            return NeutrosophicComplexNumber(new_real, new_imag, new_indeterminacy)
+        if isinstance(other, complex):
+            new_real = self.real * other.real - self.imag * other.imag
+            new_imag = self.real * other.imag + self.imag * other.real
+            return NeutrosophicComplexNumber(new_real, new_imag, self.indeterminacy)
+        if isinstance(other, (int, float)):
+            return NeutrosophicComplexNumber(
+                self.real * other,
+                self.imag * other,
+                self.indeterminacy * other
+            )
+        return NotImplemented
+
+    def __truediv__(self, divisor: Any) -> "NeutrosophicComplexNumber":
+        if isinstance(divisor, (int, float)):
+            if divisor == 0:
+                raise ZeroDivisionError("Cannot divide by zero.")
+            return NeutrosophicComplexNumber(
+                self.real / divisor,
+                self.imag / divisor,
+                self.indeterminacy / divisor
+            )
+        return NotImplemented  # complex / NeutrosophicComplex desteklenmiyor
+
+    def __radd__(self, other: Any) -> "NeutrosophicComplexNumber":
+        return self.__add__(other)
+
+    def __rsub__(self, other: Any) -> "NeutrosophicComplexNumber":
+        if isinstance(other, (int, float)):
+            return NeutrosophicComplexNumber(
+                other - self.real,
+                -self.imag,
+                -self.indeterminacy
+            )
+        return NotImplemented
+
+    def __rmul__(self, other: Any) -> "NeutrosophicComplexNumber":
+        return self.__mul__(other)
+
+    def magnitude_sq(self) -> float:
+        """Returns the squared magnitude of the complex part."""
+        return self.real**2 + self.imag**2
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, NeutrosophicComplexNumber):
+            return (abs(self.real - other.real) < 1e-12 and
+                    abs(self.imag - other.imag) < 1e-12 and
+                    abs(self.indeterminacy - other.indeterminacy) < 1e-12)
+        return False
+
+@dataclass
+class HyperrealNumber:
+    """Represents a hyperreal number as a sequence of real numbers."""
+    sequence: List[float]
+
+    def __init__(self, *args):
+        if len(args) == 1 and isinstance(args[0], list):
+            self.sequence = args[0]
+        else:
+            self.sequence = list(args)
+
+    def __add__(self, other: Any) -> "HyperrealNumber":
+        if isinstance(other, HyperrealNumber):
+            # Sequence'leri eşit uzunluğa getir
+            max_len = max(len(self.sequence), len(other.sequence))
+            seq1 = self.sequence + [0.0] * (max_len - len(self.sequence))
+            seq2 = other.sequence + [0.0] * (max_len - len(other.sequence))
+            return HyperrealNumber([a + b for a, b in zip(seq1, seq2)])
+        elif isinstance(other, (int, float)):
+            new_seq = self.sequence.copy()
+            new_seq[0] += other  # Sadece finite part'a ekle
+            return HyperrealNumber(new_seq)
+        return NotImplemented
+
+    def __sub__(self, other: Any) -> "HyperrealNumber":
+        if isinstance(other, HyperrealNumber):
+            max_len = max(len(self.sequence), len(other.sequence))
+            seq1 = self.sequence + [0.0] * (max_len - len(self.sequence))
+            seq2 = other.sequence + [0.0] * (max_len - len(other.sequence))
+            return HyperrealNumber([a - b for a, b in zip(seq1, seq2)])
+        elif isinstance(other, (int, float)):
+            new_seq = self.sequence.copy()
+            new_seq[0] -= other
+            return HyperrealNumber(new_seq)
+        return NotImplemented
+
+    def __mul__(self, scalar: float) -> "HyperrealNumber":
+        if isinstance(scalar, (int, float)):
+            return HyperrealNumber([x * scalar for x in self.sequence])
+        return NotImplemented
+
+    def __rmul__(self, scalar: float) -> "HyperrealNumber":
+        return self.__mul__(scalar)
+
+    def __truediv__(self, divisor: float) -> "HyperrealNumber":
+        if isinstance(divisor, (int, float)):
+            if divisor == 0:
+                raise ZeroDivisionError("Scalar division by zero.")
+            return HyperrealNumber([x / divisor for x in self.sequence])
+        raise TypeError("Only scalar division is supported.")
+
+    def __mod__(self, divisor: float) -> "HyperrealNumber":
+        if isinstance(divisor, (int, float)):
+            return HyperrealNumber([x % divisor for x in self.sequence])
+        raise TypeError("Modulo only supported with a scalar divisor.")
+
+    def __str__(self) -> str:
+        if len(self.sequence) <= 5:
+            return f"Hyperreal{self.sequence}"
+        return f"Hyperreal({self.sequence[:3]}...)" 
+
+    @property
+    def finite(self):
+        """Returns the finite part (first component)"""
+        return self.sequence[0] if self.sequence else 0.0
+
+    @property
+    def infinitesimal(self):
+        """Returns the first infinitesimal part (second component)"""
+        return self.sequence[1] if len(self.sequence) > 1 else 0.0
+
+@dataclass
+class BicomplexNumber:
+    """Represents a bicomplex number with two complex components."""
+    z1: complex  # First complex component
+    z2: complex  # Second complex component
+
+    def __add__(self, other: Any) -> "BicomplexNumber":
+        if isinstance(other, BicomplexNumber):
+            return BicomplexNumber(self.z1 + other.z1, self.z2 + other.z2)
+        elif isinstance(other, (int, float, complex)):
+            return BicomplexNumber(self.z1 + other, self.z2)
+        else:
+            raise TypeError(f"Unsupported operand type(s) for +: 'BicomplexNumber' and '{type(other).__name__}'")
+
+    def __sub__(self, other: Any) -> "BicomplexNumber":
+        if isinstance(other, BicomplexNumber):
+            return BicomplexNumber(self.z1 - other.z1, self.z2 - other.z2)
+        elif isinstance(other, (int, float, complex)):
+            return BicomplexNumber(self.z1 - other, self.z2)
+        else:
+            raise TypeError(f"Unsupported operand type(s) for -: 'BicomplexNumber' and '{type(other).__name__}'")
+
+    def __mul__(self, other: Any) -> "BicomplexNumber":
+        if isinstance(other, BicomplexNumber):
+            return BicomplexNumber(
+                self.z1 * other.z1 - self.z2 * other.z2,
+                self.z1 * other.z2 + self.z2 * other.z1
+            )
+        elif isinstance(other, (int, float, complex)):
+            return BicomplexNumber(self.z1 * other, self.z2 * other)
+        else:
+            raise TypeError(f"Unsupported operand type(s) for *: 'BicomplexNumber' and '{type(other).__name__}'")
+
+    def __truediv__(self, divisor: float) -> "BicomplexNumber":
+        if isinstance(divisor, (int, float)):
+            if divisor == 0:
+                raise ZeroDivisionError("Division by zero")
+            return BicomplexNumber(self.z1 / divisor, self.z2 / divisor)
+        else:
+            raise TypeError("Only scalar division is supported")
+
+    def __str__(self) -> str:
+        parts = []
+        if self.z1 != 0j:
+            parts.append(f"({self.z1.real}+{self.z1.imag}j)")
+        if self.z2 != 0j:
+            parts.append(f"({self.z2.real}+{self.z2.imag}j)e")
+        return " + ".join(parts) if parts else "0"
+
+def _parse_bicomplex(s: str) -> BicomplexNumber:
+    """
+    Kececi kütüphanesinin beklediği format: Tek parametre ile
+    Sadece bicomplex parsing yapar
+    """
+    s_clean = s.strip().replace(" ", "")
+    
+    try:
+        # Format 1: Comma-separated "z1_real,z1_imag,z2_real,z2_imag"
+        if ',' in s_clean:
+            parts = [float(p) for p in s_clean.split(',')]
+            if len(parts) == 4:
+                return BicomplexNumber(complex(parts[0], parts[1]), 
+                                      complex(parts[2], parts[3]))
+            elif len(parts) == 2:
+                return BicomplexNumber(complex(parts[0], parts[1]), 
+                                      complex(0, 0))
+            elif len(parts) == 1:
+                return BicomplexNumber(complex(parts[0], 0), 
+                                      complex(0, 0))
+        
+        # Format 2: Explicit "(a+bj)+(c+dj)e"
+        if 'e' in s_clean and '(' in s_clean:
+            pattern = r'\(([-\d.]+)\s*([+-]?)\s*([-\d.]*)j\)\s*\+\s*\(([-\d.]+)\s*([+-]?)\s*([-\d.]*)j\)e'
+            match = re.search(pattern, s_clean)
+            
+            if match:
+                z1_real = float(match.group(1))
+                z1_imag_sign = -1 if match.group(2) == '-' else 1
+                z1_imag_val = float(match.group(3) or '1')
+                z1_imag = z1_imag_sign * z1_imag_val
+                
+                z2_real = float(match.group(4))
+                z2_imag_sign = -1 if match.group(5) == '-' else 1
+                z2_imag_val = float(match.group(6) or '1')
+                z2_imag = z2_imag_sign * z2_imag_val
+                
+                return BicomplexNumber(complex(z1_real, z1_imag), 
+                                      complex(z2_real, z2_imag))
+        
+        # Format 3: Simple values
+        try:
+            if 'j' in s_clean:
+                # Complex number parsing
+                if 'j' not in s_clean:
+                    return BicomplexNumber(complex(float(s_clean), 0), complex(0, 0))
+                
+                pattern = r'^([+-]?\d*\.?\d*)([+-]?\d*\.?\d*)j$'
+                match = re.match(pattern, s_clean)
+                if match:
+                    real_part = match.group(1)
+                    imag_part = match.group(2)
+                    
+                    if real_part in ['', '+', '-']:
+                        real_part = real_part + '1' if real_part else '0'
+                    if imag_part in ['', '+', '-']:
+                        imag_part = imag_part + '1' if imag_part else '0'
+                    
+                    return BicomplexNumber(complex(float(real_part or 0), float(imag_part or 0)), 
+                                          complex(0, 0))
+            
+            # Real number
+            real_val = float(s_clean)
+            return BicomplexNumber(complex(real_val, 0), complex(0, 0))
+            
+        except:
+            pass
+            
+    except Exception as e:
+        print(f"Bicomplex parsing error for '{s}': {e}")
+    
+    # Default fallback
+    return BicomplexNumber(complex(0, 0), complex(0, 0))
+
+def _parse_universal(s: str, target_type: str) -> Any:
+    """
+    Universal parser - Sizin diğer yerlerde kullandığınız iki parametreli versiyon
+    """
+    if target_type == "real":
+        try:
+            return float(s.strip())
+        except ValueError:
+            return 0.0
+    
+    elif target_type == "complex":
+        try:
+            s_clean = s.strip().replace(" ", "")
+            if 'j' not in s_clean:
+                return complex(float(s_clean), 0.0)
+            
+            pattern = r'^([+-]?\d*\.?\d*)([+-]?\d*\.?\d*)j$'
+            match = re.match(pattern, s_clean)
+            if match:
+                real_part = match.group(1)
+                imag_part = match.group(2)
+                
+                if real_part in ['', '+', '-']:
+                    real_part = real_part + '1' if real_part else '0'
+                if imag_part in ['', '+', '-']:
+                    imag_part = imag_part + '1' if imag_part else '0'
+                
+                return complex(float(real_part or 0), float(imag_part or 0))
+            
+            return complex(s_clean)
+        except:
+            return complex(0, 0)
+    
+    elif target_type == "bicomplex":
+        # _parse_bicomplex'i çağır (tek parametreli)
+        return _parse_bicomplex(s)
+    
+    return None
+
+def kececi_bicomplex_algorithm(start: BicomplexNumber, add_val: BicomplexNumber, iterations: int, include_intermediate: bool = True) -> list:
+    """
+    Gerçek Keçeci algoritmasının bikompleks versiyonunu uygular
+    """
+    sequence = [start]
+    current = start
+    
+    for i in range(iterations):
+        # 1. Toplama işlemi
+        current = current + add_val
+        
+        # 2. Keçeci algoritmasının özelliği: Mod alma ve asal sayı kontrolü
+        # Gerçek algoritmada belirli bir modüle göre işlem yapılır
+        mod_value = 100  # Bu değer algoritmaya göre ayarlanabilir
+        
+        # z1 ve z2 için mod alma (gerçek ve sanal kısımlar ayrı ayrı)
+        current = BicomplexNumber(
+            complex(current.z1.real % mod_value, current.z1.imag % mod_value),
+            complex(current.z2.real % mod_value, current.z2.imag % mod_value)
+        )
+        
+        # 3. Ara adımları ekle (Keçeci algoritmasının karakteristik özelliği)
+        if include_intermediate:
+            # Ara değerler için özel işlemler (örneğin: çarpma, bölme, vs.)
+            intermediate = current * BicomplexNumber(complex(0.5, 0), complex(0, 0))
+            sequence.append(intermediate)
+        
+        sequence.append(current)
+        
+        # 4. Asal sayı kontrolü (Keçeci algoritmasının önemli bir parçası)
+        # Bu kısım algoritmanın detayına göre özelleştirilebilir
+        magnitude = abs(current.z1) + abs(current.z2)
+        if magnitude > 1 and all(magnitude % i != 0 for i in range(2, int(magnitude**0.5) + 1)):
+            print(f"Keçeci Prime found at step {i}: {magnitude:.2f}")
+        
+        # 5. Özel durum: Belirli değerlere ulaşıldığında resetleme
+        if abs(current.z1) < 1e-10 and abs(current.z2) < 1e-10:
+            current = start  # Başa dön
+    
+    return sequence
+
+# --- DAHA GERÇEKÇİ BİR VERSİYON ---
+def kececi_bicomplex_advanced(start: BicomplexNumber, add_val: BicomplexNumber, 
+                            iterations: int, include_intermediate: bool = True) -> list:
+    """
+    Gelişmiş Keçeci algoritması - daha karmaşık matematiksel işlemler içerir
+    """
+    sequence = [start]
+    current = start
+    
+    for i in range(iterations):
+        # 1. Temel toplama
+        current = current + add_val
+        
+        # 2. Doğrusal olmayan dönüşümler (Keçeci algoritmasının özelliği)
+        # Kök alma ve kuvvet alma işlemleri
+        current = BicomplexNumber(
+            complex(current.z1.real**0.5, current.z1.imag**0.5),
+            complex(current.z2.real**0.5, current.z2.imag**0.5)
+        )
+        
+        # 3. Modüler aritmetik
+        mod_real = 50
+        mod_imag = 50
+        current = BicomplexNumber(
+            complex(current.z1.real % mod_real, current.z1.imag % mod_imag),
+            complex(current.z2.real % mod_real, current.z2.imag % mod_imag)
+        )
+        
+        # 4. Ara adımlar
+        if include_intermediate:
+            # Çapraz çarpım ara değerleri
+            cross_product = BicomplexNumber(
+                complex(current.z1.real * current.z2.imag, 0),
+                complex(0, current.z1.imag * current.z2.real)
+            )
+            sequence.append(cross_product)
+        
+        sequence.append(current)
+        
+        # 5. Dinamik sistem davranışı için feedback
+        if i % 10 == 0 and i > 0:
+            # Her 10 adımda bir küçük bir perturbasyon ekle
+            perturbation = BicomplexNumber(
+                complex(0.1 * np.sin(i), 0.1 * np.cos(i)),
+                complex(0.05 * np.sin(i*0.5), 0.05 * np.cos(i*0.5))
+            )
+            current = current + perturbation
+    
+    return sequence
+
+def _has_bicomplex_format(s: str) -> bool:
+    """Checks if string has bicomplex format (comma-separated)."""
+    return ',' in s and s.count(',') in [1, 3]  # 2 or 4 components
+
+@dataclass
+class NeutrosophicBicomplexNumber:
+    def __init__(self, a, b, c, d, e, f, g, h):
+        self.a = float(a)
+        self.b = float(b)
+        self.c = float(c)
+        self.d = float(d)
+        self.e = float(e)
+        self.f = float(f)
+        self.g = float(g)
+        self.h = float(h)
+
+    def __repr__(self):
+        return f"NeutrosophicBicomplexNumber({self.a}, {self.b}, {self.c}, {self.d}, {self.e}, {self.f}, {self.g}, {self.h})"
+
+    def __str__(self):
+        return f"({self.a} + {self.b}i) + ({self.c} + {self.d}i)I + ({self.e} + {self.f}i)j + ({self.g} + {self.h}i)Ij"
+
+    def __add__(self, other):
+        if isinstance(other, NeutrosophicBicomplexNumber):
+            return NeutrosophicBicomplexNumber(
+                self.a + other.a, self.b + other.b, self.c + other.c, self.d + other.d,
+                self.e + other.e, self.f + other.f, self.g + other.g, self.h + other.h
+            )
+        return NotImplemented
+
+    def __mul__(self, other):
+        # Basitleştirilmiş çarpım (tam bicomplex kuralı karmaşık)
+        if isinstance(other, (int, float)):
+            return NeutrosophicBicomplexNumber(
+                *(other * x for x in [self.a, self.b, self.c, self.d, self.e, self.f, self.g, self.h])
+            )
+        return NotImplemented
+
+    def __truediv__(self, scalar):
+        if isinstance(scalar, (int, float)):
+            if scalar == 0:
+                raise ZeroDivisionError("Division by zero")
+            return NeutrosophicBicomplexNumber(
+                self.a / scalar, self.b / scalar, self.c / scalar, self.d / scalar,
+                self.e / scalar, self.f / scalar, self.g / scalar, self.h / scalar
+            )
+        return NotImplemented
+
+    def __eq__(self, other):
+        """Equality with tolerance for float comparison."""
+        if not isinstance(other, NeutrosophicBicomplexNumber):
+            return False
+        tol = 1e-12
+        return all(abs(getattr(self, attr) - getattr(other, attr)) < tol 
+                   for attr in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'])
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+@dataclass
+class SedenionNumber:
+    def __init__(self, coeffs):
+        if len(coeffs) != 16:
+            raise ValueError("Sedenion must have 16 components")
+        self.coeffs = list(map(float, coeffs))
+
+    def __add__(self, other):
+        if isinstance(other, SedenionNumber):
+            return SedenionNumber([s + o for s, o in zip(self.coeffs, other.coeffs)])
+        elif isinstance(other, (int, float)):
+            return SedenionNumber([self.coeffs[0] + other] + self.coeffs[1:])
+        return NotImplemented
+
+    def __sub__(self, other):
+        if isinstance(other, SedenionNumber):
+            return SedenionNumber([s - o for s, o in zip(self.coeffs, other.coeffs)])
+        elif isinstance(other, (int, float)):
+            return SedenionNumber([self.coeffs[0] - other] + self.coeffs[1:])
+        return NotImplemented
+
+    def __mul__(self, other):
+        # Sedenion çarpımı Cayley-Dickson yapısı ile tanımlanır ama oldukça karmaşıktır.
+        # Basitleştirme: skaler çarpım veya element-wise çarpım DEĞİL.
+        # Gerçek sedenion çarpımı 16x16 çarpım tablosu gerektirir.
+        # Bu örnekte, yalnızca skaler çarpım ve Sedenion-Sedenion için çarpım tablosuz basitleştirilmiş hâli (örnek amaçlı) verilir.
+        # Gerçek uygulama için sedenion multiplication table kullanılmalıdır.
+        if isinstance(other, (int, float)):
+            return SedenionNumber([c * other for c in self.coeffs])
+        elif isinstance(other, SedenionNumber):
+            # NOT: Gerçek sedenion çarpımı burada eksik (çok karmaşık). 
+            # Element-wise çarpım matematiksel olarak doğru değildir ama örnek olsun diye konuldu.
+            # Gerçek hâli için: https://en.wikipedia.org/wiki/Sedenion
+            return NotImplemented  # Gerçek sedenion çarpımı oldukça karmaşıktır
+        return NotImplemented
+
+    def __truediv__(self, other):
+        if isinstance(other, (int, float)):
+            if other == 0:
+                raise ZeroDivisionError("Division by zero")
+            return SedenionNumber([c / other for c in self.coeffs])
+        return NotImplemented
+
+    def __str__(self):
+        return "(" + ", ".join(f"{c:.2f}" for c in self.coeffs) + ")"
+
+    def __repr__(self):
+        return f"({', '.join(map(str, self.coeffs))})"
+
+    def components(self):
+        """Bileşen listesini (Python list) döndürür."""
+        return list(self.coeffs)
+
+    def magnitude(self) -> float:
+        """
+        Euclidean norm = √( Σ_i coeff_i² )
+        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
+        """
+        return float(np.linalg.norm(self.coeffs))
+
+    def __hash__(self):
+        # NaN ve -0.0 gibi durumları göz önünde bulundurun
+        return hash(tuple(np.round(self.coeffs, decimals=10)))
+
     @property
     def real(self) -> float:
         """İlk bileşen – “gerçek” kısım."""
