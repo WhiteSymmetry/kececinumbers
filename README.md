@@ -212,6 +212,8 @@ The following example generates and visualizes a Keçeci sequence with POSITIVE_
 import kececinumbers as kn
 import matplotlib.pyplot as plt
 from typing import Any, Dict, List, Tuple
+import logging
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 if __name__ == "__main__":
     # Call the interactive function from the Keçeci Numbers module
@@ -233,6 +235,8 @@ or
 ```python
 import matplotlib.pyplot as plt
 import kececinumbers as kn
+import logging
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 sequence = kn.get_with_params(
     kececi_type_choice=kn.TYPE_POSITIVE_REAL,
@@ -261,6 +265,8 @@ The following example generates and visualizes a Keçeci sequence with complex n
 ```python
 import matplotlib.pyplot as plt
 import kececinumbers as kn
+import logging
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 # Generate a Keçeci sequence with specific parameters
 # Type: Complex Number, Iterations: 60
@@ -334,6 +340,8 @@ https://zenodo.org/records/
 ```python
 import matplotlib.pyplot as plt
 import kececinumbers as kn
+import logging
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 print("--- Interactive Test ---")
 
@@ -373,6 +381,8 @@ else:
 ```python
 import matplotlib.pyplot as plt
 import kececinumbers as kn
+import logging
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 # Matplotlib grafiklerinin notebook içinde gösterilmesini sağla
 %matplotlib inline
@@ -480,6 +490,8 @@ Enter the number of iterations (positive integer: e.g., 30):  30
 ```python
 import matplotlib.pyplot as plt
 import kececinumbers as kn
+import logging
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 # ==============================================================================
 # --- Interactive Test ---
