@@ -51,6 +51,10 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 import sympy
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Sequence, Union
+import logging
+
+# Module logger — library code should not configure logging handlers.
+logger = logging.getLogger(__name__)
 
 
 # ==============================================================================
@@ -3173,26 +3177,19 @@ class SplitcomplexNumber:
 
 
 # Yardımcı fonksiyonlar
-def _extract_numeric_part(s: str) -> str:
-    """Bir string'den sadece sayısal kısmı ayıklar.
-    Bilimsel gösterimi ve karmaşık formatları destekler.
+def _extract_numeric_part(s: Any) -> str:
     """
+    Return the first numeric token found in s as string (supports scientific notation).
+    Robust for None and non-string inputs.
+    """
+    if s is None:
+        return "0"
+    if not isinstance(s, str):
+        s = str(s)
     s = s.strip()
-    
-    # Bilimsel gösterim için pattern
-    scientific_pattern = r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?"
-    match = re.match(scientific_pattern, s)
-    
-    if match:
-        return match.group(0)
-    
-    # Eğer bilimsel gösterim bulunamazsa, basit sayı ara
-    simple_match = re.search(r"[-+]?\d*\.?\d+", s)
-    if simple_match:
-        return simple_match.group(0)
-    
-    # Hiç sayı bulunamazsa orijinal string'i döndür
-    return s
+    # match optional sign, digits, optional decimal, optional exponent
+    m = re.search(r'[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?', s)
+    return m.group(0) if m else "0"
 
 def _parse_complex(s) -> complex:
     """Bir string'i veya sayıyı complex sayıya dönüştürür.
@@ -3492,11 +3489,38 @@ def _parse_quaternion_from_csv(s) -> quaternion:
     else:
         raise ValueError(f"Geçersiz quaternion formatı. 1 veya 4 bileşen bekleniyor: '{s}'")
 
-def _has_comma_format(s) -> bool:
-    """String'in virgül içerip içermediğini kontrol eder."""
+def _has_comma_format(s: Any) -> bool:
+    """
+    True if value is a string and contains a comma (CSV-like format).
+    Guard against non-strings.
+    """
+    if s is None:
+        return False
     if not isinstance(s, str):
         s = str(s)
-    return ',' in s
+    # Consider comma-format only when there's at least one digit and a comma
+    return ',' in s and bool(re.search(r'\d', s))
+
+def _is_complex_like(s: Any) -> bool:
+    """
+    Check if s looks like a complex literal (contains 'j'/'i' or +-/ with j).
+    Accepts non-strings by attempting to str() them.
+    """
+    if s is None:
+        return False
+    if not isinstance(s, str):
+        s = str(s)
+    s = s.lower()
+    # quick checks
+    if 'j' in s or 'i' in s:
+        return True
+    # pattern like "a+bi" or "a-bi"
+    if re.search(r'[+-]\d', s) and ('+' in s or '-' in s):
+        # avoid classifying comma-separated lists as complex
+        if ',' in s:
+            return False
+        return True
+    return False
 
 def _parse_neutrosophic_bicomplex(s) -> NeutrosophicBicomplexNumber:
     """
@@ -4726,24 +4750,6 @@ def analyze_all_types(iterations=120, additional_params=None):
 
     return sorted_by_zeta, sorted_by_gue
 
-
-def _extract_numeric_part(s: str) -> str:
-    """String'den sadece sayısal kısmı çıkarır"""
-    import re
-    # Sayısal kısmı bul (negatif işaretli olabilir)
-    match = re.search(r'[-+]?\d*\.?\d+', s)
-    if match:
-        return match.group()
-    return "0"  # Default
-
-def _has_comma_format(s: str) -> bool:
-    """String'in virgülle ayrılmış formatı olup olmadığını kontrol eder"""
-    return ',' in s and not any(c in s for c in ['+', '-', 'j', 'i', 'ε'])
-
-def _is_complex_like(s: str) -> bool:
-    """String'in complex sayı formatına benzer olup olmadığını kontrol eder"""
-    return any(c in s for c in ['j', 'i', '+', '-']) and ',' not in s
-
 def _load_zeta_zeros(filename="zeta.txt"):
     """
     Loads Riemann zeta zeros from a text file.
@@ -5061,20 +5067,49 @@ def analyze_pair_correlation(sequence, title="Pair Correlation of Keçeci Zeta Z
 # --- CORE GENERATOR ---
 # ==============================================================================
 def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str, iterations: int, include_intermediate_steps: bool = False) -> List[Any]:
-
+    """
+    Unified generator with input validation and robust division/ask handling.
+    """
     if not (TYPE_POSITIVE_REAL <= kececi_type <= TYPE_TERNARY):
         raise ValueError(f"Invalid Keçeci Number Type: {kececi_type}")
+
+    # Sanitize raw inputs
+    start_input_raw = "0" if start_input_raw is None or str(start_input_raw).strip() == "" else start_input_raw
+    add_input_raw = "1" if add_input_raw is None or str(add_input_raw).strip() == "" else add_input_raw
 
     use_integer_division = False
     current_value = None
     add_value_typed = None
     ask_unit = None
 
+    # Helper for safe division choosing appropriate operator
+    def _safe_divide(val, divisor, integer_mode):
+        try:
+            if integer_mode:
+                # prefer __floordiv__ if available, fallback to integer division of float
+                if hasattr(val, '__floordiv__'):
+                    return val // divisor
+                else:
+                    return type(val)(val / divisor) if not isinstance(val, (int, float)) else val // divisor
+            else:
+                if hasattr(val, '__truediv__'):
+                    return val / divisor
+                else:
+                    # fallback numeric
+                    return type(val)(float(val) / float(divisor))
+        except Exception as e:
+            logger.debug("Division failed for %r by %s: %s", val, divisor, e)
+            raise
+
+    # --- Type-specific parsing with defensive error reporting ---
     try:
-        # --- SAYI TİPİNE GÖRE PARSING ---
         if kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL]:
-            current_value = int(float(start_input_raw))
-            add_value_typed = int(float(add_input_raw))
+            try:
+                current_value = int(float(start_input_raw))
+                add_value_typed = int(float(add_input_raw))
+            except Exception as e:
+                logger.error("Failed to parse integer inputs: start=%r add=%r -> %s", start_input_raw, add_input_raw, e)
+                raise
             ask_unit = 1
             use_integer_division = True
 
@@ -5115,10 +5150,8 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
         elif kececi_type == TYPE_HYPERREAL:
             finite, infinitesimal = _parse_hyperreal(start_input_raw)
             current_value = HyperrealNumber([finite, infinitesimal])
-            
             finite_inc, infinitesimal_inc = _parse_hyperreal(add_input_raw)
             add_value_typed = HyperrealNumber([finite_inc, infinitesimal_inc])
-            
             ask_unit = HyperrealNumber([1.0, 1.0])
 
         elif kececi_type == TYPE_BICOMPLEX:
@@ -5134,7 +5167,7 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
         elif kececi_type == TYPE_OCTONION:
             current_value = _parse_octonion(start_input_raw)
             add_value_typed = _parse_octonion(add_input_raw)
-            ask_unit = OctonionNumber([1.0] + [0.0] * 7)
+            ask_unit = OctonionNumber(1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 
         elif kececi_type == TYPE_SEDENION:
             current_value = _parse_sedenion(start_input_raw)
@@ -5159,101 +5192,132 @@ def unified_generator(kececi_type: int, start_input_raw: str, add_input_raw: str
         elif kececi_type == TYPE_PATHION:
             current_value = _parse_pathion(start_input_raw)
             add_value_typed = _parse_pathion(add_input_raw)
-            ask_unit = PathionNumber([1.0] + [0.0] * 31)  # Sadece ilk bileşen 1.0
+            ask_unit = PathionNumber([1.0] + [0.0] * 31)
 
         elif kececi_type == TYPE_CHINGON:
             current_value = _parse_chingon(start_input_raw)
             add_value_typed = _parse_chingon(add_input_raw)
-            ask_unit = ChingonNumber([1.0] + [0.0] * 63)  # Sadece ilk bileşen 1.0
+            ask_unit = ChingonNumber([1.0] + [0.0] * 63)
 
         elif kececi_type == TYPE_ROUTON:
             current_value = _parse_routon(start_input_raw)
             add_value_typed = _parse_routon(add_input_raw)
-            ask_unit = RoutonNumber([1.0] + [0.0] * 127)  # Sadece ilk bileşen 1.0
+            ask_unit = RoutonNumber([1.0] + [0.0] * 127)
 
         elif kececi_type == TYPE_VOUDON:
             current_value = _parse_voudon(start_input_raw)
             add_value_typed = _parse_voudon(add_input_raw)
-            ask_unit = VoudonNumber([1.0] + [0.0] * 255)  # Sadece ilk bileşen 1.0
+            ask_unit = VoudonNumber([1.0] + [0.0] * 255)
 
         elif kececi_type == TYPE_SUPERREAL:
             current_value = _parse_superreal(start_input_raw)
             add_value_typed = _parse_superreal(add_input_raw)
-            ask_unit = SuperrealNumber(1.0, 0.0)  # real=1.0, split=0.0
+            ask_unit = SuperrealNumber(1.0, 0.0)
 
         elif kececi_type == TYPE_TERNARY:
             current_value = _parse_ternary(start_input_raw)
             add_value_typed = _parse_ternary(add_input_raw)
-            ask_unit = TernaryNumber([1])  # Sadece 1 rakamından oluşan üçlü sayı
+            ask_unit = TernaryNumber([1])
 
         else:
             raise ValueError(f"Unsupported Keçeci type: {kececi_type}")
 
-
     except (ValueError, TypeError) as e:
-        print(f"ERROR: Failed to initialize type {kececi_type} with start='{start_input_raw}' and increment='{add_input_raw}': {e}")
+        logger.exception("Failed to initialize type %s with start=%r add=%r: %s", kececi_type, start_input_raw, add_input_raw, e)
         return []
 
-    # Log ve temizleme listelerini başlatın
+    # Generation loop
     clean_trajectory = [current_value]
     full_log = [current_value]
     last_divisor_used = None
     ask_counter = 0  # 0: +ask_unit, 1: -ask_unit
 
     for step in range(iterations):
-        # 1. Topla
-        added_value = current_value + add_value_typed
+        # 1. Add
+        try:
+            added_value = current_value + add_value_typed
+        except Exception as e:
+            logger.exception("Addition failed at step %s: %s", step, e)
+            # cannot continue if addition is invalid for type
+            break
+
         next_q = added_value
         divided_successfully = False
         modified_value = None
 
-        # primary_divisor ve alternative_divisor hesaplama
+        # Choose which divisor to try first
         primary_divisor = 3 if last_divisor_used == 2 or last_divisor_used is None else 2
         alternative_divisor = 2 if primary_divisor == 3 else 3
 
-        # 2. Bölme dene
-        for divisor in [primary_divisor, alternative_divisor]:
-            if _is_divisible(added_value, divisor, kececi_type):
-                next_q = added_value // divisor if use_integer_division else added_value / divisor
-                last_divisor_used = divisor
-                divided_successfully = True
-                break
+        # 2. Try divisions defensively
+        for divisor in (primary_divisor, alternative_divisor):
+            try:
+                if _is_divisible(added_value, divisor, kececi_type):
+                    try:
+                        next_q = _safe_divide(added_value, divisor, use_integer_division)
+                        last_divisor_used = divisor
+                        divided_successfully = True
+                    except Exception:
+                        # if safe divide failed, try simple numeric fallback
+                        try:
+                            next_q = added_value / divisor
+                            last_divisor_used = divisor
+                            divided_successfully = True
+                        except Exception:
+                            logger.debug("Fallback division failed for %r by %s", added_value, divisor)
+                    break
+            except Exception as e:
+                logger.debug("Divisibility check failed for %r by %s: %s", added_value, divisor, e)
+                continue
 
-        # 3. Eğer bölünemediyse ve "asalsa", ask_unit ile değiştir
+        # 3. If division not successful and value looks prime-like, try ask_unit modification
         if not divided_successfully and is_prime_like(added_value, kececi_type):
             direction = 1 if ask_counter == 0 else -1
-            
             try:
                 modified_value = safe_add(added_value, ask_unit, direction)
-            except TypeError as e:
-                print(f"Error converting ask_unit: {e}")
-                continue  # veya uygun bir hata yönetimi yapabilirsiniz
+            except Exception as e:
+                logger.debug("safe_add failed for %r with ask_unit=%r direction=%s: %s", added_value, ask_unit, direction, e)
+                # try native operation if possible
+                try:
+                    modified_value = added_value + (ask_unit * direction)
+                except Exception as e2:
+                    logger.debug("native ask alteration also failed: %s", e2)
+                    modified_value = None
 
-            ask_counter = 1 - ask_counter
-            next_q = modified_value
+            # Toggle ask counter only if modification occurred
+            if modified_value is not None:
+                ask_counter = 1 - ask_counter
+                # try divisions again with modified value
+                for divisor in (primary_divisor, alternative_divisor):
+                    try:
+                        if _is_divisible(modified_value, divisor, kececi_type):
+                            try:
+                                next_q = _safe_divide(modified_value, divisor, use_integer_division)
+                                last_divisor_used = divisor
+                                divided_successfully = True
+                            except Exception:
+                                try:
+                                    next_q = modified_value / divisor
+                                    last_divisor_used = divisor
+                                    divided_successfully = True
+                                except Exception:
+                                    logger.debug("Division on modified_value failed for %r by %s", modified_value, divisor)
+                            break
+                    except Exception as e:
+                        logger.debug("Divisibility check on modified_value failed: %s", e)
+                        continue
 
-            # Bölme denemelerini burada yap
-            for divisor in [primary_divisor, alternative_divisor]:
-                if _is_divisible(modified_value, divisor, kececi_type):
-                    next_q = modified_value // divisor if use_integer_division else modified_value / divisor
-                    last_divisor_used = divisor
-                    break
-
-        # 4. Loglara ekle
+        # 4. Logging and book-keeping
         full_log.append(added_value)
         if modified_value is not None:
             full_log.append(modified_value)
-        if not full_log or next_q != full_log[-1]:  # next_q zaten full_log'a eklenmişse tekrar ekleme
+        if not full_log or next_q != full_log[-1]:
             full_log.append(next_q)
 
         clean_trajectory.append(next_q)
         current_value = next_q
 
-    # --- SONUÇ ---
-    #return full_log if include_intermediate_steps else clean_trajectory
-    # Format the result to avoid Fraction.__format__ errors
     formatted_sequence = [format_fraction(x) if isinstance(x, Fraction) else x for x in (full_log if include_intermediate_steps else clean_trajectory)]
-
     return formatted_sequence
 
 def get_with_params(
@@ -5264,16 +5328,19 @@ def get_with_params(
     include_intermediate_steps: bool = False
 ) -> List[Any]:
     """
-    Tüm 22 sayı sistemi için ortak arayüz.
-    Keçeci mantığı (ask, bölme, asallık) unified_generator ile uygulanır.
-    Sadece toplama değil, koşullu değişimler de yapılır.
+    Common entry point: validates inputs early, logs info instead of printing.
     """
-    print(f"\n--- Generating Keçeci Sequence: Type {kececi_type_choice}, Steps {iterations} ---")
-    print(f"Start: '{start_value_raw}', Addition: '{add_value_raw}'")
-    print(f"Include intermediate steps: {include_intermediate_steps}")
+    logger.info("Generating Keçeci Sequence: Type %s, Steps %s", kececi_type_choice, iterations)
+    logger.debug("Start: %r, Addition: %r, Include intermediate: %s", start_value_raw, add_value_raw, include_intermediate_steps)
+
+    # Basic input sanitation
+    if start_value_raw is None:
+        start_value_raw = "0"
+    if add_value_raw is None:
+        # choose a conservative default for increment
+        add_value_raw = "1"
 
     try:
-        # unified_generator'ı doğru şekilde çağır
         generated_sequence = unified_generator(
             kececi_type=kececi_type_choice,
             start_input_raw=start_value_raw,
@@ -5283,71 +5350,30 @@ def get_with_params(
         )
 
         if not generated_sequence:
-            print("Sequence generation failed or returned empty.")
+            logger.warning("Sequence generation failed or returned empty for type %s with start=%r add=%r", kececi_type_choice, start_value_raw, add_value_raw)
             return []
 
-        print(f"Successfully generated {len(generated_sequence)} numbers.")
-        
-        # Önizleme için ilk 5 ve son 5 elemanı göster
+        logger.info("Generated %d numbers for type %s", len(generated_sequence), kececi_type_choice)
+        # preview
         preview_start = [str(x) for x in generated_sequence[:5]]
         preview_end = [str(x) for x in generated_sequence[-5:]] if len(generated_sequence) > 5 else []
-        
-        print(f"First 5: {preview_start}")
+
+        logger.debug("First 5: %s", preview_start)
         if preview_end:
-            print(f"Last 5: {preview_end}")
-        
-        # Keçeci Prime Number kontrolü - ÇOK DAHA GÜVENLİ VERSİYON
+            logger.debug("Last 5: %s", preview_end)
+
+        # Keçeci Prime Number check
         kpn = find_kececi_prime_number(generated_sequence)
         if kpn is not None:
-            # Önce kpn'nin doğru tip ve değerde olduğundan emin ol
-            try:
-                # String karşılaştırması yap - daha güvenli
-                kpn_str = str(kpn)
-                found_index = None
-                
-                for i, item in enumerate(generated_sequence):
-                    if str(item) == kpn_str:
-                        found_index = i
-                        break
-                
-                if found_index is not None:
-                    print(f"Keçeci Prime Number found at step {found_index}: {kpn}")
-                else:
-                    print(f"Keçeci Prime Number found: {kpn} (but not in the main sequence)")
-                    
-            except Exception as inner_e:
-                print(f"Keçeci Prime Number found: {kpn} (error locating index: {inner_e})")
+            logger.info("Keçeci Prime Number (KPN) found: %s", kpn)
         else:
-            print("No Keçeci Prime Number found in the sequence.")
-        
-        # İstatistikler (opsiyonel)
-        if len(generated_sequence) > 0:
-            try:
-                # Sayısal değerler için basit istatistik
-                first_elem = generated_sequence[0]
-                if hasattr(first_elem, 'real'):
-                    real_parts = [x.real for x in generated_sequence if hasattr(x, 'real')]
-                    if real_parts:
-                        print(f"Real parts range: {min(real_parts):.3f} to {max(real_parts):.3f}")
-                
-                # Quaternion özel istatistikler
-                if hasattr(first_elem, 'w') and hasattr(first_elem, 'x'):
-                    norms = [np.sqrt(x.w**2 + x.x**2 + x.y**2 + x.z**2) for x in generated_sequence 
-                           if hasattr(x, 'w') and hasattr(x, 'x')]
-                    if norms:
-                        print(f"Quaternion norms range: {min(norms):.3f} to {max(norms):.3f}")
-                        
-            except Exception as stats_e:
-                print(f"Statistics calculation skipped: {stats_e}")
+            logger.info("No Keçeci Prime Number found in the sequence.")
 
         return generated_sequence
 
     except Exception as e:
-        print(f"ERROR during sequence generation: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.exception("ERROR during sequence generation: %s", e)
         return []
-
 
 def get_interactive() -> Tuple[List[Any], Dict[str, Any]]:
     """
