@@ -34,10 +34,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-quaternion-conda = ["quaternion"]
+#quaternion-conda = ["quaternion"]
 test = ["pytest", "pytest-cov", "pytest-mock", "ruff", "numpy", "matplotlib", "scipy", "scikit-learn", "sympy",]
 
-all = ["quaternion"]  # Varsayılan conda bağımlılığı
+#all = ["quaternion"]  # Varsayılan conda bağımlılığı
 
 [tool.setuptools.packages.find]
 where = ["."]
