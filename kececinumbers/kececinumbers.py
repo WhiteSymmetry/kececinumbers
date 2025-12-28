@@ -3986,11 +3986,11 @@ def get_random_type(num_iterations: int, fixed_start_raw: str = "0", fixed_add_b
     random_type_choice = random.randint(1, 22)
     type_names_list = [
         "Positive Real", "Negative Real", "Complex", "Float", "Rational", 
-        "Quaternion", "Neutrosophic", "Neutro-Complex", "Hyperreal", 
-        "Bicomplex", "Neutro-Bicomplex", "Octonion", "Sedenion", "Clifford", "Dual", "Split-Complex",
+        "Quaternion", "Neutrosophic", "Neutrosophic Complex", "Hyperreal", 
+        "Bicomplex", "Neutrosophic Bicomplex", "Octonion", "Sedenion", "Clifford", "Dual", "Split-Complex",
         "Pathion", "Chingon", "Routon", "Voudon", "Super Real", "Ternary",
     ]
-    print(f"\nRandomly selected Keçeci Number Type: {random_type_choice} ({type_names_list[random_type_choice-1]})")
+    logger.info("Randomly selected Keçeci Number Type: %d (%s)", random_type_choice, type_names_list[random_type_choice-1])
     
     return get_with_params(
         kececi_type_choice=random_type_choice, 
@@ -4020,52 +4020,49 @@ def find_kececi_prime_number(kececi_numbers_list: List[Any]) -> Optional[int]:
     _, best_prime = max(repeating_primes)
     return best_prime
 
-def print_detailed_report(sequence: List[Any], params: Dict[str, Any]):
-    """Generates and prints a detailed report of the sequence results."""
+def print_detailed_report(sequence: List[Any], params: Dict[str, Any], show_all: bool = False) -> None:
+    """Generates and logs a detailed report of the sequence results.
+
+    Args:
+        sequence: generated sequence (list)
+        params: dict of parameters used to generate the sequence
+        show_all: if True, include full sequence in the log; otherwise only preview
+    """
     if not sequence:
-        print("\n--- REPORT ---\nSequence could not be generated.")
+        logger.info("--- REPORT ---\nSequence could not be generated.")
         return
 
-    print("\n\n" + "="*50)
-    print("--- DETAILED SEQUENCE REPORT ---")
-    print("="*50)
+    logger.info("\n" + "="*50)
+    logger.info("--- DETAILED SEQUENCE REPORT ---")
+    logger.info("="*50)
 
-    print("\n[Parameters Used]")
-    print(f"  - Keçeci Type:   {params.get('type_name', 'N/A')} ({params['type_choice']})")
-    print(f"  - Start Value:   '{params['start_val']}'")
-    print(f"  - Increment:     {params['add_val']}")
-    print(f"  - Keçeci Steps:  {params['steps']}")
+    logger.info("[Parameters Used]")
+    logger.info("  - Keçeci Type:   %s (%s)", params.get('type_name', 'N/A'), params.get('type_choice'))
+    logger.info("  - Start Value:   %r", params.get('start_val'))
+    logger.info("  - Increment:     %r", params.get('add_val'))
+    logger.info("  - Keçeci Steps:  %s", params.get('steps'))
 
-    print("\n[Sequence Summary]")
-    print(f"  - Total Numbers Generated: {len(sequence)}")
-    
+    logger.info("[Sequence Summary]")
+    logger.info("  - Total Numbers Generated: %d", len(sequence))
+
     kpn = find_kececi_prime_number(sequence)
-    print(f"  - Keçeci Prime Number (KPN): {kpn if kpn is not None else 'Not found'}")
+    logger.info("  - Keçeci Prime Number (KPN): %s", kpn if kpn is not None else "Not found")
 
-    print("\n[Sequence Preview]")
     preview_count = min(len(sequence), 40)
-    print(f"  --- First {preview_count} Numbers ---")
+    logger.info("  --- First %d Numbers ---", preview_count)
     for i in range(preview_count):
-        print(f"    {i}: {sequence[i]}")
+        logger.info("    %d: %s", i, sequence[i])
 
     if len(sequence) > preview_count:
-        print(f"\n  --- Last {preview_count} Numbers ---")
+        logger.info("  --- Last %d Numbers ---", preview_count)
         for i in range(len(sequence) - preview_count, len(sequence)):
-            print(f"    {i}: {sequence[i]}")
-            
-    print("\n" + "="*50)
+            logger.info("    %d: %s", i, sequence[i])
 
-    while True:
-        show_all = input("Do you want to print the full sequence? (y/n): ").lower().strip()
-        if show_all in ['y', 'n']:
-            break
-    
-    if show_all == 'y':
-        print("\n--- FULL SEQUENCE ---")
+    if show_all:
+        logger.info("--- FULL SEQUENCE ---")
         for i, num in enumerate(sequence):
-            print(f"{i}: {num}")
-        print("="*50)
-
+            logger.info("%d: %s", i, num)
+        logger.info("="*50)
 
 def _is_divisible(value: Any, divisor: int, kececi_type: int) -> bool:
     """
@@ -4755,8 +4752,7 @@ def _load_zeta_zeros(filename="zeta.txt"):
     Loads Riemann zeta zeros from a text file.
     Each line should contain one floating-point number representing the imaginary part of a zeta zero.
     Lines that are empty or start with '#' are ignored.
-    Returns:
-        numpy.ndarray: Array of zeta zeros, or empty array if file not found.
+    Returns: numpy.ndarray of zeros, or empty array if file not found / invalid.
     """
     try:
         with open(filename, 'r', encoding='utf-8') as file:
@@ -4769,11 +4765,14 @@ def _load_zeta_zeros(filename="zeta.txt"):
             try:
                 zeta_zeros.append(float(line))
             except ValueError:
-                print(f"Invalid line skipped: {line}")
-        print(f"{len(zeta_zeros)} zeta zeros loaded.")
+                logger.warning("Invalid line skipped in %s: %r", filename, line)
+        logger.info("%d zeta zeros loaded from %s.", len(zeta_zeros), filename)
         return np.array(zeta_zeros)
     except FileNotFoundError:
-        print(f"'{filename}' not found.")
+        logger.warning("Zeta zeros file '%s' not found.", filename)
+        return np.array([])
+    except Exception as e:
+        logger.exception("Error while loading zeta zeros from %s: %s", filename, e)
         return np.array([])
 
 
@@ -6699,21 +6698,12 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 # --- MAIN EXECUTION BLOCK ---
 # ==============================================================================
 if __name__ == "__main__":
-    print("="*60)
-    print("  Keçeci Numbers Module - Demonstration")
-    print("="*60)
-    print("This script demonstrates the generation of various Keçeci Number types.")
-    
-    # --- Example 1: Interactive Mode ---
-    # Uncomment the following lines to run in interactive mode:
-    # seq, params = get_interactive()
-    # if seq:
-    #     plot_numbers(seq, title=f"Keçeci Type {params['type_choice']} Sequence")
-    #     plt.show()
+    # If user runs module directly, configure basic logging to console for demonstration.
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-    # --- Example 2: Programmatic Generation and Plotting ---
-    print("\nRunning programmatic tests for all 22 number types...")
-    
+    logger.info("Keçeci Numbers Module - Demonstration")
+    logger.info("This script demonstrates the generation of various Keçeci Number types.")
+
     STEPS = 40
     START_VAL = "2.5"
     ADD_VAL = 3.0
@@ -6730,18 +6720,14 @@ if __name__ == "__main__":
         "Super Real": TYPE_SUPERREAL, "Ternary": TYPE_TERNARY,
     }
 
-    types_to_plot = [
-        "Complex", "Quaternion", "Bicomplex", "Neutrosophic Complex", "Hyperreal", "Octonion", "Sedenion", "Clifford", "Dual", "Splitcompllex", 
-        "Pathion", "Chingon", "Routon", "Voudon", "Super Real", "Ternary",
-    ]
-    
     for name, type_id in all_types.items():
         start = "-5" if type_id == TYPE_NEGATIVE_REAL else "2+3j" if type_id in [TYPE_COMPLEX, TYPE_BICOMPLEX] else START_VAL
-        
-        seq = get_with_params(type_id, STEPS, start, ADD_VAL)
-        
-        if name in types_to_plot and seq:
-            plot_numbers(seq, title=f"Demonstration: {name} Keçeci Numbers")
+        try:
+            seq = get_with_params(type_id, STEPS, start, ADD_VAL)
+            if seq:
+                logger.info("Generated sequence for %s (len=%d).", name, len(seq))
+                # Optional: plot for a few selected types to avoid overloading user's environment
+        except Exception as e:
+            logger.exception("Demo generation failed for type %s: %s", name, e)
 
-    print("\n\nDemonstration finished. Plots for selected types are shown.")
-    plt.show()
+    logger.info("Demonstration finished.")
