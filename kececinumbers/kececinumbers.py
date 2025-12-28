@@ -1395,79 +1395,102 @@ class BicomplexNumber:
             parts.append(f"({self.z2.real}+{self.z2.imag}j)e")
         return " + ".join(parts) if parts else "0"
 
-def _parse_bicomplex(s: str) -> BicomplexNumber:
+def _parse_bicomplex(s: Any) -> BicomplexNumber:
     """
-    Kececi kütüphanesinin beklediği format: Tek parametre ile
-    Sadece bicomplex parsing yapar
+    Parses input into a BicomplexNumber.
+    Accepts:
+      - BicomplexNumber (returned as-is)
+      - complex (used as z1, z2 = 0)
+      - numeric (int/float) -> z1 = complex(num,0), z2 = 0
+      - comma-separated 'a+bj,c+dj' or 'a,b,c,d' formats
+      - explicit '(a+bj)+(c+dj)e' format
+      - other strings like '1+2j'
+    Returns fallback BicomplexNumber(0,0) on parse failures.
     """
-    s_clean = s.strip().replace(" ", "")
-    
     try:
-        # Format 1: Comma-separated "z1_real,z1_imag,z2_real,z2_imag"
-        if ',' in s_clean:
-            parts = [float(p) for p in s_clean.split(',')]
+        # If already correct type, return directly
+        if isinstance(s, BicomplexNumber):
+            return s
+
+        # If numeric scalar (int/float), treat as real part of z1
+        if isinstance(s, (int, float, np.floating, np.integer)):
+            return BicomplexNumber(complex(float(s), 0.0), complex(0.0, 0.0))
+
+        # If already a complex, use as z1
+        if isinstance(s, complex):
+            return BicomplexNumber(s, complex(0.0, 0.0))
+
+        # If iterable (list/tuple) of numbers, try to map to components
+        if hasattr(s, '__iter__') and not isinstance(s, str):
+            parts = list(s)
+            # If 4 numbers -> (r1,i1,r2,i2)
             if len(parts) == 4:
-                return BicomplexNumber(complex(parts[0], parts[1]), 
-                                      complex(parts[2], parts[3]))
-            elif len(parts) == 2:
-                return BicomplexNumber(complex(parts[0], parts[1]), 
-                                      complex(0, 0))
-            elif len(parts) == 1:
-                return BicomplexNumber(complex(parts[0], 0), 
-                                      complex(0, 0))
-        
-        # Format 2: Explicit "(a+bj)+(c+dj)e"
+                return BicomplexNumber(complex(float(parts[0]), float(parts[1])),
+                                       complex(float(parts[2]), float(parts[3])))
+            # If 2 numbers -> (r1,i1)
+            if len(parts) == 2:
+                return BicomplexNumber(complex(float(parts[0]), float(parts[1])), complex(0.0, 0.0))
+            # If 1 number -> scalar
+            if len(parts) == 1:
+                return BicomplexNumber(complex(float(parts[0]), 0.0), complex(0.0, 0.0))
+
+        # Otherwise coerce to string and parse
+        if not isinstance(s, str):
+            s = str(s)
+
+        s_clean = s.strip().replace(" ", "")
+
+        # 1) Comma-separated numeric list: "a,b,c,d" or "a,b"
+        if ',' in s_clean:
+            parts = [p for p in s_clean.split(',') if p != '']
+            try:
+                nums = [float(p) for p in parts]
+                if len(nums) == 4:
+                    return BicomplexNumber(complex(nums[0], nums[1]), complex(nums[2], nums[3]))
+                elif len(nums) == 2:
+                    return BicomplexNumber(complex(nums[0], nums[1]), complex(0.0, 0.0))
+                elif len(nums) == 1:
+                    return BicomplexNumber(complex(nums[0], 0.0), complex(0.0, 0.0))
+            except ValueError:
+                # not purely numeric comma format; fall through to other parsing
+                pass
+
+        # 2) Explicit "(a+bj)+(c+dj)e" form
         if 'e' in s_clean and '(' in s_clean:
-            pattern = r'\(([-\d.]+)\s*([+-]?)\s*([-\d.]*)j\)\s*\+\s*\(([-\d.]+)\s*([+-]?)\s*([-\d.]*)j\)e'
+            pattern = r'\(\s*([+-]?\d*\.?\d+)\s*([+-])\s*([\d\.]*)j\s*\)\s*(?:\+)\s*\(\s*([+-]?\d*\.?\d+)\s*([+-])\s*([\d\.]*)j\s*\)e'
             match = re.search(pattern, s_clean)
-            
             if match:
-                z1_real = float(match.group(1))
-                z1_imag_sign = -1 if match.group(2) == '-' else 1
-                z1_imag_val = float(match.group(3) or '1')
-                z1_imag = z1_imag_sign * z1_imag_val
-                
-                z2_real = float(match.group(4))
-                z2_imag_sign = -1 if match.group(5) == '-' else 1
-                z2_imag_val = float(match.group(6) or '1')
-                z2_imag = z2_imag_sign * z2_imag_val
-                
-                return BicomplexNumber(complex(z1_real, z1_imag), 
-                                      complex(z2_real, z2_imag))
-        
-        # Format 3: Simple values
+                try:
+                    z1_real = float(match.group(1))
+                    z1_imag_sign = -1.0 if match.group(2) == '-' else 1.0
+                    z1_imag_val = float(match.group(3)) if match.group(3) not in ['', None] else 1.0
+                    z1_imag = z1_imag_sign * z1_imag_val
+
+                    z2_real = float(match.group(4))
+                    z2_imag_sign = -1.0 if match.group(5) == '-' else 1.0
+                    z2_imag_val = float(match.group(6)) if match.group(6) not in ['', None] else 1.0
+                    z2_imag = z2_imag_sign * z2_imag_val
+
+                    return BicomplexNumber(complex(z1_real, z1_imag), complex(z2_real, z2_imag))
+                except Exception:
+                    pass
+
+        # 3) Fallback: try Python complex() parsing for single complex string "a+bj"
         try:
-            if 'j' in s_clean:
-                # Complex number parsing
-                if 'j' not in s_clean:
-                    return BicomplexNumber(complex(float(s_clean), 0), complex(0, 0))
-                
-                pattern = r'^([+-]?\d*\.?\d*)([+-]?\d*\.?\d*)j$'
-                match = re.match(pattern, s_clean)
-                if match:
-                    real_part = match.group(1)
-                    imag_part = match.group(2)
-                    
-                    if real_part in ['', '+', '-']:
-                        real_part = real_part + '1' if real_part else '0'
-                    if imag_part in ['', '+', '-']:
-                        imag_part = imag_part + '1' if imag_part else '0'
-                    
-                    return BicomplexNumber(complex(float(real_part or 0), float(imag_part or 0)), 
-                                          complex(0, 0))
-            
-            # Real number
-            real_val = float(s_clean)
-            return BicomplexNumber(complex(real_val, 0), complex(0, 0))
-            
-        except:
-            pass
-            
+            c = complex(s_clean)
+            return BicomplexNumber(c, complex(0.0, 0.0))
+        except Exception:
+            # 4) As a last resort, try extracting first numeric token and use as real
+            try:
+                num_token = _extract_numeric_part(s_clean)
+                return BicomplexNumber(complex(float(num_token), 0.0), complex(0.0, 0.0))
+            except Exception:
+                logger.warning("Bicomplex parsing failed for %r — returning zero bicomplex", s)
+                return BicomplexNumber(complex(0.0, 0.0), complex(0.0, 0.0))
+
     except Exception as e:
-        print(f"Bicomplex parsing error for '{s}': {e}")
-    
-    # Default fallback
-    return BicomplexNumber(complex(0, 0), complex(0, 0))
+        logger.exception("Unexpected error in _parse_bicomplex(%r): %s", s, e)
+        return BicomplexNumber(complex(0.0, 0.0), complex(0.0, 0.0))
 
 def _parse_universal(s: str, target_type: str) -> Any:
     """
@@ -5398,10 +5421,11 @@ def get_interactive(auto_values: Optional[Dict[str, str]] = None) -> Tuple[List[
     """
     Interactively (or programmatically via auto_values) gets parameters to generate a Keçeci sequence.
 
-    - If auto_values is provided, keys can include:
-        'type_choice' (int or str), 'start_val' (str), 'add_val' (str), 'steps' (int or str), 'show_details' ('y'/'n')
-    - If a key is missing, the function falls back to prompting the user via input().
-    - This makes the function Jupyter-friendly (pass auto_values in notebooks) while preserving CLI interactivity.
+    If auto_values is provided, keys can include:
+        'type_choice' (int or str), 'start_val' (str), 'add_val' (str),
+        'steps' (int or str), 'show_details' ('y'/'n').
+
+    If auto_values is None, function behaves interactively and prints a type menu.
     """
     # Local prompt function: use auto_values if present otherwise input()
     def _ask(key: str, prompt: str, default: str) -> str:
@@ -5414,7 +5438,25 @@ def get_interactive(auto_values: Optional[Dict[str, str]] = None) -> Tuple[List[
             logger.debug("input() failed for prompt %r — using default %r", prompt, default)
             return default
 
-    logger.info("Keçeci Numbers Interactive Generator (interactive=%s)", bool(auto_values is None))
+    interactive_mode = (auto_values is None)
+    logger.info("Keçeci Numbers Interactive Generator (interactive=%s)", interactive_mode)
+
+    # If interactive, present the full menu of type options so users see 1-22 choices
+    if interactive_mode:
+        menu_lines = [
+            "  1: Positive Real    2: Negative Real      3: Complex",
+            "  4: Float            5: Rational           6: Quaternion",
+            "  7: Neutrosophic     8: Neutro-Complex     9: Hyperreal",
+            " 10: Bicomplex       11: Neutro-Bicomplex  12: Octonion",
+            " 13: Sedenion        14: Clifford          15: Dual",
+            " 16: Split-Complex   17: Pathion           18: Chingon",
+            " 19: Routon          20: Voudon            21: SuperReal",
+            " 22: Ternary"
+        ]
+        logger.info("Available Keçeci Number Types:")
+        for line in menu_lines:
+            logger.info(line)
+
     # Defaults
     DEFAULT_TYPE = 3
     DEFAULT_STEPS = 40
@@ -5440,7 +5482,7 @@ def get_interactive(auto_values: Optional[Dict[str, str]] = None) -> Tuple[List[
         20: "1.0" + ",0.0"*255, 21: "1.5,2.7", 22: "1",
     }
 
-    # type selection
+    # Ask for inputs (uses _ask which respects auto_values when provided)
     type_input_raw = _ask('type_choice', f"Select Keçeci Number Type (1-22) [default: {DEFAULT_TYPE}]: ", str(DEFAULT_TYPE))
     try:
         type_choice = int(type_input_raw)
@@ -5451,7 +5493,6 @@ def get_interactive(auto_values: Optional[Dict[str, str]] = None) -> Tuple[List[
         logger.warning("Could not parse type_choice %r, using default %s", type_input_raw, DEFAULT_TYPE)
         type_choice = DEFAULT_TYPE
 
-    # start / add / steps / show details prompts
     start_prompt = _ask('start_val', f"Enter start value [default: {default_start_values[type_choice]}]: ", default_start_values[type_choice])
     add_prompt = _ask('add_val', f"Enter increment value [default: {default_add_values[type_choice]}]: ", default_add_values[type_choice])
     steps_raw = _ask('steps', f"Enter number of Keçeci steps [default: {DEFAULT_STEPS}]: ", str(DEFAULT_STEPS))
@@ -5467,7 +5508,6 @@ def get_interactive(auto_values: Optional[Dict[str, str]] = None) -> Tuple[List[
     show_detail_raw = _ask('show_details', f"Include intermediate steps? (y/n) [default: {DEFAULT_SHOW_DETAILS}]: ", DEFAULT_SHOW_DETAILS)
     show_details = str(show_detail_raw).strip().lower() in ['y', 'yes']
 
-    # Generate
     sequence = get_with_params(
         kececi_type_choice=type_choice,
         iterations=num_kececi_steps,
@@ -5548,6 +5588,22 @@ def is_neutrosophic_like(obj):
            (hasattr(obj, 'a') and hasattr(obj, 'b')) or \
            (hasattr(obj, 'value') and hasattr(obj, 'indeterminacy')) or \
            (hasattr(obj, 'determinate') and hasattr(obj, 'indeterminate'))
+
+def _pca_var_sum(pca) -> float:
+    """
+    Safely return sum of PCA explained variance ratio.
+    Returns 0.0 if pca has no explained_variance_ratio_ or values are NaN/invalid.
+    """
+    try:
+        arr = getattr(pca, "explained_variance_ratio_", None)
+        if arr is None:
+            return 0.0
+        s = float(np.nansum(arr))
+        if not np.isfinite(s):
+            return 0.0
+        return s
+    except Exception:
+        return 0.0
 
 # Yardımcı fonksiyon: Bileşen dağılımı grafiği
 def _plot_component_distribution(ax, elem, all_keys, seq_length=1):
@@ -5987,7 +6043,8 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
                     proj = pca.fit_transform(coeffs)
                     ax4 = fig.add_subplot(gs[1, 1])
                     sc = ax4.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
-                    ax4.set_title(f"PCA Projection (Var: {sum(pca.explained_variance_ratio_):.3f})")
+                    var_sum = _pca_var_sum(pca)
+                    ax4.set_title(f"PCA Projection (Var: {var_sum:.3f})")
                     plt.colorbar(sc, ax=ax4, label="Iteration")
             except Exception as e:
                 ax4 = fig.add_subplot(gs[1, 1])
@@ -6368,7 +6425,8 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
                     proj = pca.fit_transform(coeffs)
                     ax4 = fig.add_subplot(gs[1, 1])
                     sc = ax4.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
-                    ax4.set_title(f"PCA Projection (Var: {sum(pca.explained_variance_ratio_):.3f})")
+                    var_sum = _pca_var_sum(pca)
+                    ax4.set_title(f"PCA Projection (Var: {var_sum:.3f})")
                     plt.colorbar(sc, ax=ax4, label="Iteration")
             except Exception as e:
                 ax4 = fig.add_subplot(gs[1, 1])
@@ -6406,7 +6464,8 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
                     proj = pca.fit_transform(coeffs)
                     ax4 = fig.add_subplot(gs[1, 1])
                     sc = ax4.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
-                    ax4.set_title(f"PCA Projection (Var: {sum(pca.explained_variance_ratio_):.3f})")
+                    var_sum = _pca_var_sum(pca)
+                    ax4.set_title(f"PCA Projection (Var: {var_sum:.3f})")
                     plt.colorbar(sc, ax=ax4, label="Iteration")
             except Exception as e:
                 ax4 = fig.add_subplot(gs[1, 1])
@@ -6445,7 +6504,8 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
                     proj = pca.fit_transform(coeffs)
                     ax4 = fig.add_subplot(gs[1, 1])
                     sc = ax4.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
-                    ax4.set_title(f"PCA Projection (Var: {sum(pca.explained_variance_ratio_):.3f})")
+                    var_sum = _pca_var_sum(pca)
+                    ax4.set_title(f"PCA Projection (Var: {var_sum:.3f})")
                     plt.colorbar(sc, ax=ax4, label="Iteration")
             except Exception as e:
                 ax4 = fig.add_subplot(gs[1, 1])
@@ -6483,7 +6543,8 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
                     proj = pca.fit_transform(coeffs)
                     ax4 = fig.add_subplot(gs[1, 1])
                     sc = ax4.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
-                    ax4.set_title(f"PCA Projection (Var: {sum(pca.explained_variance_ratio_):.3f})")
+                    var_sum = _pca_var_sum(pca)
+                    ax4.set_title(f"PCA Projection (Var: {var_sum:.3f})")
                     plt.colorbar(sc, ax=ax4, label="Iteration")
             except Exception as e:
                 ax4 = fig.add_subplot(gs[1, 1])
@@ -6518,14 +6579,45 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
             try:
                 # PCA için veriyi hazırla
                 data = np.column_stack((reals, splits))
-                pca = PCA(n_components=2)
-                proj = pca.fit_transform(data)
+                # Minimum gereksinimler: en az 3 örnek ve en az 2 değişken (burada 2 var)
+                if data.shape[0] >= 3:
+                    # finite ve non-NaN satırları seç
+                    mask = np.all(np.isfinite(data), axis=1)
+                    data_clean = data[mask]
+                    if data_clean.shape[0] >= 3:
+                        try:
+                            pca = PCA(n_components=2)
+                            proj = pca.fit_transform(data_clean)
 
-                # PCA projeksiyonunu çizdir
-                ax3 = fig.add_subplot(gs[:, 1], projection='3d')  # Eğer 3D çizim yapmak isterseniz
-                sc = ax3.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
-                ax3.set_title(f"PCA Projection (Var: {sum(pca.explained_variance_ratio_):.3f})")
-                plt.colorbar(sc, ax=ax3, label="Iteration")
+                            # Güvenli varyans toplamı helper'ı kullanın
+                            var_sum = _pca_var_sum(pca)
+
+                            # 2D çizim (projisyon iki bileşenli olduğu için daha uygun)
+                            ax3 = fig.add_subplot(gs[:, 1])
+                            sc = ax3.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
+                            ax3.set_title(f"PCA Projection (Var: {var_sum:.3f})")
+                            ax3.set_xlabel("PC1")
+                            ax3.set_ylabel("PC2")
+                            plt.colorbar(sc, ax=ax3, label="Iteration")
+
+                            # Eğer 3D görmek isterseniz, alternatif:
+                            # ax3 = fig.add_subplot(gs[:, 1], projection='3d')
+                            # ax3.scatter(proj[:,0], proj[:,1], np.zeros_like(proj[:,0]), c=range(len(proj)), cmap='viridis', s=25)
+                            # ax3.set_title(f"PCA Projection (Var: {var_sum:.3f})")
+
+                        except Exception as e:
+                            logger.exception("PCA failed for Superreal data: %s", e)
+                            ax3 = fig.add_subplot(gs[:, 1])
+                            ax3.text(0.5, 0.5, f"PCA Error: {str(e)[:80]}", ha='center', va='center', fontsize=10)
+                            ax3.set_title("PCA Projection (Error)")
+                    else:
+                        ax3 = fig.add_subplot(gs[:, 1])
+                        ax3.text(0.5, 0.5, "Insufficient finite data for PCA", ha='center', va='center')
+                        ax3.set_title("PCA Projection (Insufficient data)")
+                else:
+                    ax3 = fig.add_subplot(gs[:, 1])
+                    ax3.text(0.5, 0.5, "Need ≥3 samples for PCA", ha='center', va='center')
+                    ax3.set_title("PCA Projection (Not enough samples)")
             except Exception as e:
                 ax3 = fig.add_subplot(gs[:, 1])
                 ax3.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=10)
