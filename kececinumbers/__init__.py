@@ -43,6 +43,7 @@ __all__ = [
     'BaseNumber',
     'TernaryNumber',
     'SuperrealNumber',
+    'quaternion',
 
     # --- High-Level Functions ---
     'get_with_params',
@@ -176,6 +177,7 @@ try:
         CliffordNumber,
         DualNumber,
         SplitcomplexNumber,
+        quaternion,
     
         # Core generator / API
         unified_generator,
