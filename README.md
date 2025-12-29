@@ -24,6 +24,7 @@
 [![PyPI version](https://badge.fury.io/py/kececinumbers.svg)](https://badge.fury.io/py/kececinumbers)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 [![Linted with Ruff](https://img.shields.io/badge/Linted%20with-Ruff-green?logo=python&logoColor=white)](https://github.com/astral-sh/ruff)
+[![Lang:Python](https://img.shields.io/badge/Lang-Python-blue?style=flat-square&logo=go)](https://python.org/)
 
 [![PyPI Downloads](https://static.pepy.tech/badge/kececinumbers)](https://pepy.tech/projects/kececinumbers)
 ![PyPI Downloads](https://img.shields.io/pypi/dm/kececinumbers?logo=pypi&label=PyPi%20downloads)
