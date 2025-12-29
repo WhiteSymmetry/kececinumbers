@@ -4,7 +4,7 @@ import nox
 import os
 
 # Test edilecek Python versiyonlarını listele
-PYTHON_VERSIONS = ["3.10", "3.11", "3.12", "3.13"]
+PYTHON_VERSIONS = ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
 # Varsayılan olarak çalıştırılacak oturumları belirle
 # (Terminalde sadece 'nox' yazıldığında bu oturumlar çalışır)
