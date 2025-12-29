@@ -276,7 +276,7 @@ def eski_fonksiyon():
     warnings.warn(
         "eski_fonksiyon() artık kullanılmamaktadır ve gelecekte kaldırılacaktır. "
         "Lütfen yeni alternatif fonksiyonları kullanın. "
-        "Keçeci numbers; Python 3.10-3.13 sürümlerinde sorunsuz çalışmalıdır.",
+        "Keçeci numbers; Python 3.10-3.14 sürümlerinde sorunsuz çalışmalıdır.",
         category=DeprecationWarning,
         stacklevel=2
     )
