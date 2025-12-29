@@ -29,29 +29,6 @@ def get_install_requires():
         "sympy",
     ]
 
-    """
-    # Quaternion bağımlılığını akıllıca ekle
-    # Önce mevcut ortamı kontrol et, hangi quaternion paketinin kurulu olduğuna bak
-    try:
-        import quaternion
-        # quaternion paketi zaten kurulu, ekstra bağımlılık ekleme
-        return base_requires
-    except ImportError:
-        try:
-            import numpy_quaternion
-            # numpy-quaternion kurulu, ekstra bağımlılık ekleme
-            return base_requires
-        except ImportError:
-            # Hiçbiri kurulu değil, pip için numpy-quaternion öner
-            # Burada platforma göre akıllı seçim yapabiliriz
-            if 'conda' in sys.version.lower() or 'conda' in sys.executable:
-                # Conda ortamı - quaternion paketini kullan
-                return base_requires + ["quaternion"]
-            else:
-                # Pip ortamı - numpy-quaternion kullan
-                return base_requires + ["numpy-quaternion"]
-    """
-
 setup(
     name="kececinumbers",
     version=get_version(),
@@ -69,9 +46,6 @@ setup(
     },
     install_requires=get_install_requires(),
     extras_require={
-        #'quaternion-pip': ["numpy-quaternion"],  # Pip için explicit
-        #'quaternion-conda': ["quaternion"],      # Conda için explicit
-        'all': ["numpy-quaternion"],             # Varsayılan pip
         'test': [
             "pytest",
             "pytest-cov",
