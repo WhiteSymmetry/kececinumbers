@@ -38,8 +38,8 @@ Ready to contribute? Here's how to set up Solar Data Tools for local development
 Python virtual environments. We recommend using `conda`.
 2. Create your own fork of the Solar Data Tools [repository](https://github.com/WhiteSymmetry/kececinumbers).
 3. Clone your repository, for example by typing in your terminal:
-`git clone https://github.com/<your_username>/kececifractals.git`.
-4. Install `solardatatools` as editable in your new environment:
+`git clone https://github.com/<your_username>/kececinumbers.git`.
+4. Install `kececinumbers` as editable in your new environment:
 
     ```console
     $ pip install -e .
