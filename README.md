@@ -632,6 +632,23 @@ Keçeci, Mehmet. "Keçeci Numbers and the Keçeci Prime Number". Authorea. June 
 
 Keçeci, Mehmet. Keçeci numbers and the Keçeci prime number: A potential number theoretic exploratory tool. Open Science Articles (OSAs), Zenodo. 2025. https://doi.org/10.5281/zenodo.15381697
 ```
+🔑🧭🔢🌊🌀🧪🔐🔭✨
+
+Analogy: Keçeci Numbers and the Keçeci Prime Number: A Potential Number Theoretic Exploratory Tool. Mehmet Keçeci
+
+Keçeci Numbers are like a vast network of branching rivers fed by an intricate series of locks and dams, each regulating flow based on specific conditions. Imagine a system where each tributary flow, representing an arithmetic operation, interacts with others through locks that apply rules of divisibility, much like water gates allowing passage only when certain levels are met. Where these flows converge, prime numbers act as navigators, steering the course by determining which gates and tributaries are favorable, akin to how primality and divisibility dictate the sequence's developmental path. This results in a complex and dynamic waterway, comparable to the diverse number systems (integers, rationals, quaternions, etc.) through which Keçeci Numbers navigate, revealing unique patterns along their course. Just as these waterways have characteristic currents and eddies, the "Keçeci Prime Number" serves as a condensation point, indicating the most frequently visited flow path, crucial for understanding the system's dynamics. This analogy provides a framework for predicting how number sequences might evolve under different conditions, illustrating the potential of Keçeci Numbers to inspire novel insights in number theory and their applications in fields like cryptography (KHA-256 etc.) and dynamical systems modeling.
+
+![Keçeci Numbers Cartoon](https://github.com/WhiteSymmetry/kececinumbers/blob/main/examples/kn-en.jpg?raw=true)
+
+---
+
+🔑🧭🔢🌊🌀🧪🔐🔭✨
+🇹🇷
+Analoji (Benzetme): Keçeci Sayıları ve Keçeci Asal Sayısı: Potansiyel Bir Sayı Teorik Keşif Aracı. Mehmet Keçeci
+
+Keçeci Sayıları, belirli koşullara göre akışı düzenleyen karmaşık bir seri kilit ve baraj sistemiyle beslenen dallanan nehirlerden oluşan geniş bir ağ gibidir. Her bir kol akışının, aritmetik bir işlemi temsil ettiği ve bölünebilirlik kurallarını uygulayan kilitle diğerleriyle etkileştiği bir sistem düşünün; bu, belirli seviyeler karşılandığında geçişe izin veren su kapılarına benzer. Bu akışların birleştiği noktalarda, asal sayılar rotayı belirleyerek hangi kapıların ve kolların uygun olduğunu saptayarak rehberlik eder; bu da, asallık ve bölünebilirliğin dizinin gelişim yolunu nasıl belirlediğine benzer. Bu durum, Keçeci Sayılarının gezdiği çeşitli sayı sistemlerine (tam sayılar, rasyoneller, kuaternionlar vb.) benzeyen, karmaşık ve dinamik bir sulak alan ortaya çıkarır ve bu yolda eşsiz desenler ortaya çıkar. Bu sulak alanların karakteristik akıntıları ve döngüleri gibi, "Keçeci Asal Sayısı", sistemin dinamiğini anlamak için kritik olan en sık ziyâret edilen akış yolunu gösteren bir yoğuşma noktası görevi görür. Bu benzetme, farklı koşullar altında sayı dizilerinin nasıl gelişebileceğini tahmin etmek için bir çerçeve sunar ve Keçeci Sayılarının sayı teorisinde yeni içgörüler üretme potansiyelini ve kriptografi (KHA-256 gibi) ile dinamik sistem modelleme gibi alanlarda uygulamalarını gösterir.
+
+![Keçeci Sayıları Karikatürü](https://github.com/WhiteSymmetry/kececinumbers/blob/main/examples/kn-en.jpg?raw=true)
 
 ---
 
