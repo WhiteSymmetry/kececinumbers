@@ -28,6 +28,7 @@
 
 [![PyPI Downloads](https://static.pepy.tech/badge/kececinumbers)](https://pepy.tech/projects/kececinumbers)
 ![PyPI Downloads](https://img.shields.io/pypi/dm/kececinumbers?logo=pypi&label=PyPi%20downloads)
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/kececinumbers?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/kececinumbers)
 
 ---
 
