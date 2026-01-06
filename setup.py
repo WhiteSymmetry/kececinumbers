@@ -64,7 +64,7 @@ setup(
         "Intended Audience :: Science/Research",
         "Topic :: Scientific/Engineering :: Mathematics"
     ],
-    python_requires='>=3.10',
+    python_requires='>=3.11',
     license="MIT",
     keywords="mathematics numbers quaternion hypercomplex kececi",
     project_urls={
