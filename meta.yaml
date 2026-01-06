@@ -1,4 +1,4 @@
-{% set version = "0.8.4" %}
+{% set version = "0.8.5" %}
 
 package:
   name: kececinumbers
@@ -27,7 +27,7 @@ requirements:
     - setuptools
     # Other build tools
   run:
-    - python >=3.10
+    - python >=3.11
     - numpy
     - matplotlib
     - scipy
@@ -35,7 +35,7 @@ requirements:
     - sympy
     # Other runtime dependencies
   build:
-    - python >=3.10
+    - python >=3.11
     - pip
     - setuptools
     - numpy
