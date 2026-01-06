@@ -15,7 +15,7 @@ try:
 except (ImportError, AttributeError) as e:
     print(f"Warning: Could not import __version__ from kececinumbers: {e}")
     # Varsayılan değerler korunur
-#version = '0.4.1'  # Replace with your actual version number
+#version = '0.8.5'  # Replace with your actual version number
 #release = version
 
 # General Configuration
