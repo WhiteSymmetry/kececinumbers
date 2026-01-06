@@ -1,7 +1,7 @@
 # Project Information
 project = 'kececinumbers'
 author = 'Mehmet Keçeci'
-copyright = '2025, Mehmet Keçeci'
+copyright = '2026, Mehmet Keçeci'
 
 # Version Management
 # from setuptools_scm import get_version
