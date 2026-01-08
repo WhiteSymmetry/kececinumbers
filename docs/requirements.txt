@@ -1,5 +1,6 @@
 sphinx
-urllib3>=2.6.3
 sphinx_rtd_theme
+urllib3>=2.6.3
 sphinx_copybutton
 sphinx-autobuild
+myst_parser
