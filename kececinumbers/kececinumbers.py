@@ -3254,10 +3254,6 @@ def kececi_bicomplex_advanced(start: BicomplexNumber, add_val: BicomplexNumber,
     
     return sequence
 
-def _has_bicomplex_format(s: str) -> bool:
-    """Checks if string has bicomplex format (comma-separated)."""
-    return ',' in s and s.count(',') in [1, 3]  # 2 or 4 components
-
 @dataclass
 class NeutrosophicBicomplexNumber:
     def __init__(self, a, b, c, d, e, f, g, h):
