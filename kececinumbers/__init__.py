@@ -13,13 +13,7 @@ Alt modülleri yükler, sürüm bilgileri tanımlar ve geriye dönük uyumluluk 
 """
 
 from __future__ import annotations
-import inspect
-import importlib
-import os
 import warnings
-
-# if os.getenv("DEVELOPMENT") == "true":
-    # importlib.reload(kececinumbers) # F821 undefined name 'kececinumbers'
 
 # Paket sürüm numarası
 __version__ = "0.8.6"
@@ -83,23 +77,17 @@ __all__ = [
     'coeffs',
     'convert_to_float',
     'safe_add',
-    'ZERO',
-    'ONE',
-    'I',
-    'J',
-    'K',
-    'E',
-    'F',
-    'G',
-    'H',
     '_extract_numeric_part',
     '_has_comma_format',
     '_is_complex_like',
+    '_is_divisible',
+    '_pair_correlation',
     '_plot_component_distribution',
     '_parse_pathion',
     '_parse_chingon',
     '_parse_routon',
     '_parse_voudon',
+    '_pca_var_sum',
     'format_fraction',
     'test_kececi_conjecture',
     'generate_interactive_plot',
@@ -108,11 +96,8 @@ __all__ = [
     'plot_octonion_3d',
     '_parse_ternary',
     '_parse_superreal',
-    '_pca_var_sum',
-    '_float_mod_zero',
     'logger',
     
-
     # --- Core Generation and Analysis ---
     'unified_generator',
     'is_prime',
@@ -149,13 +134,7 @@ __all__ = [
     'TYPE_TERNARY',
 ]
 
-# Göreli modül içe aktarmaları
-# F401 hatasını önlemek için sadece kullanacağınız şeyleri dışa aktarın
-# Aksi halde linter'lar "imported but unused" uyarısı verir
-from .kececinumbers import *
 try:
-    #from .kececinumbers import *  # gerekirse burada belirli fonksiyonları seçmeli yapmak daha güvenlidir
-    #from . import kececinumbers  # Modülün kendisine doğrudan erişim isteniyorsa
     # Import the public API into the package's namespace.
     from .kececinumbers import (
         # Classes / Number types
@@ -167,6 +146,7 @@ try:
         RoutonNumber,
         VoudonNumber,
         OctonionNumber,
+        generate_octonion,
         Constants,
         NeutrosophicNumber,
         NeutrosophicComplexNumber,
@@ -178,6 +158,8 @@ try:
         DualNumber,
         SplitcomplexNumber,
         quaternion,
+        coeffs,
+        find_period,
     
         # Core generator / API
         unified_generator,
@@ -185,6 +167,8 @@ try:
         get_interactive,
         get_random_type,
         generate_kececi_vectorial,
+        kececi_bicomplex_algorithm,
+        kececi_bicomplex_advanced,
     
         # Analysis / utilities
         find_kececi_prime_number,
@@ -193,6 +177,8 @@ try:
         is_prime,
         is_prime_like,
         is_near_integer,
+        is_neutrosophic_like,
+        is_quaternion_like,
         test_kececi_conjecture,
         analyze_kececi_sequence,
         analyze_all_types,
@@ -200,13 +186,16 @@ try:
         _compute_gue_similarity,
         _find_kececi_zeta_zeros,
         _load_zeta_zeros,
+        _pair_correlation,
     
         # Plotting / visualization
         plot_numbers,
         plot_octonion_3d,
+        print_detailed_report,
         generate_interactive_plot,
         apply_pca_clustering,
         _plot_comparison,
+        _plot_component_distribution,
     
         # Parsers (if you want them public)
         _parse_complex,
@@ -228,22 +217,18 @@ try:
         _parse_neutrosophic_bicomplex,
         _parse_quaternion,
         _parse_quaternion_from_csv,
+        _pca_var_sum,
     
         # Helpers / small utilities recently added
         convert_to_float,
         safe_add,
         format_fraction,
-        _extract_numeric_part,
         _has_bicomplex_format,
+        _extract_numeric_part,
         _has_comma_format,
-        _is_complex_like,
-        _float_mod_zero,
         _gue_pair_correlation,
-        _pca_var_sum,
+        _is_complex_like,
         logger,
-    
-        # Quaternion/Octonion constants
-        ZERO, ONE, I, J, K, E, F, G, H,
     
         # TYPE constants
         TYPE_POSITIVE_REAL,
@@ -269,6 +254,16 @@ try:
         TYPE_SUPERREAL,
         TYPE_TERNARY,
     )
+
+    # _gue_pair_correlation özel olarak kontrol edelim
+    try:
+        from .kececinumbers import _gue_pair_correlation
+    except ImportError:
+        # Fonksiyon yoksa, yerine geçici bir fonksiyon tanımla
+        def _gue_pair_correlation(*args, **kwargs):
+            warnings.warn("_gue_pair_correlation not implemented yet", RuntimeWarning)
+            return None
+        
 except ImportError as e:
     warnings.warn(f"Gerekli modül yüklenemedi: {e}", ImportWarning)
 
