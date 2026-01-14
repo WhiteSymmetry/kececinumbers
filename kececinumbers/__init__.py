@@ -234,6 +234,7 @@ try:
         safe_add,
         format_fraction,
         _extract_numeric_part,
+        _has_bicomplex_format,
         _has_comma_format,
         _is_complex_like,
         _float_mod_zero,
