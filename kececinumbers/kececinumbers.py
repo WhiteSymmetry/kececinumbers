@@ -1837,100 +1837,192 @@ class BicomplexNumber:
 
 def _parse_bicomplex(s: Any) -> BicomplexNumber:
     """
-    Parses input into a BicomplexNumber.
-    Accepts:
-      - BicomplexNumber (returned as-is)
-      - complex (used as z1, z2 = 0)
-      - numeric (int/float) -> z1 = complex(num,0), z2 = 0
-      - comma-separated 'a+bj,c+dj' or 'a,b,c,d' formats
-      - explicit '(a+bj)+(c+dj)e' format
-      - other strings like '1+2j'
-    Returns fallback BicomplexNumber(0,0) on parse failures.
+    Universally parse input into a BicomplexNumber.
+    
+    Features from both versions combined:
+    1. Type checking and direct returns for BicomplexNumber
+    2. Handles numeric types (int, float, numpy) -> z1 = num, z2 = 0
+    3. Handles complex numbers -> z1 = complex, z2 = 0
+    4. Handles iterables (list, tuple) of 1, 2, or 4 numbers
+    5. String parsing with multiple formats:
+       - Comma-separated "a,b,c,d" or "a,b" or "a"
+       - Explicit "(a+bj)+(c+dj)e" format
+       - Complex strings like "1+2j", "3j", "4"
+       - Fallback to complex() parsing
+    6. Robust error handling with logging
+    7. Final fallback to zero bicomplex
+    
+    Args:
+        s: Input to parse (any type)
+    
+    Returns:
+        Parsed BicomplexNumber or BicomplexNumber(0,0) on failure
     """
     try:
-        # If already correct type, return directly
+        # Feature 1: Direct return if already BicomplexNumber
         if isinstance(s, BicomplexNumber):
             return s
 
-        # If numeric scalar (int/float), treat as real part of z1
+        # Feature 2: Handle numeric scalars
         if isinstance(s, (int, float, np.floating, np.integer)):
             return BicomplexNumber(complex(float(s), 0.0), complex(0.0, 0.0))
 
-        # If already a complex, use as z1
+        # Feature 3: Handle complex numbers
         if isinstance(s, complex):
             return BicomplexNumber(s, complex(0.0, 0.0))
 
-        # If iterable (list/tuple) of numbers, try to map to components
+        # Feature 4: Handle iterables (non-string)
         if hasattr(s, '__iter__') and not isinstance(s, str):
             parts = list(s)
-            # If 4 numbers -> (r1,i1,r2,i2)
             if len(parts) == 4:
-                return BicomplexNumber(complex(float(parts[0]), float(parts[1])),
-                                       complex(float(parts[2]), float(parts[3])))
-            # If 2 numbers -> (r1,i1)
-            if len(parts) == 2:
-                return BicomplexNumber(complex(float(parts[0]), float(parts[1])), complex(0.0, 0.0))
-            # If 1 number -> scalar
-            if len(parts) == 1:
-                return BicomplexNumber(complex(float(parts[0]), 0.0), complex(0.0, 0.0))
+                # Four numbers: (z1_real, z1_imag, z2_real, z2_imag)
+                return BicomplexNumber(
+                    complex(float(parts[0]), float(parts[1])),
+                    complex(float(parts[2]), float(parts[3]))
+                )
+            elif len(parts) == 2:
+                # Two numbers: (real, imag) for z1
+                return BicomplexNumber(
+                    complex(float(parts[0]), float(parts[1])),
+                    complex(0.0, 0.0)
+                )
+            elif len(parts) == 1:
+                # Single number: real part of z1
+                return BicomplexNumber(
+                    complex(float(parts[0]), 0.0),
+                    complex(0.0, 0.0)
+                )
 
-        # Otherwise coerce to string and parse
+        # Convert to string for further parsing
         if not isinstance(s, str):
             s = str(s)
 
         s_clean = s.strip().replace(" ", "")
 
-        # 1) Comma-separated numeric list: "a,b,c,d" or "a,b"
+        # Feature 5.1: Comma-separated numeric list
         if ',' in s_clean:
             parts = [p for p in s_clean.split(',') if p != '']
             try:
                 nums = [float(p) for p in parts]
                 if len(nums) == 4:
-                    return BicomplexNumber(complex(nums[0], nums[1]), complex(nums[2], nums[3]))
+                    return BicomplexNumber(
+                        complex(nums[0], nums[1]),
+                        complex(nums[2], nums[3])
+                    )
                 elif len(nums) == 2:
-                    return BicomplexNumber(complex(nums[0], nums[1]), complex(0.0, 0.0))
+                    return BicomplexNumber(
+                        complex(nums[0], nums[1]),
+                        complex(0.0, 0.0)
+                    )
                 elif len(nums) == 1:
-                    return BicomplexNumber(complex(nums[0], 0.0), complex(0.0, 0.0))
+                    return BicomplexNumber(
+                        complex(nums[0], 0.0),
+                        complex(0.0, 0.0)
+                    )
             except ValueError:
-                # not purely numeric comma format; fall through to other parsing
+                # Not purely numeric, continue to other formats
                 pass
 
-        # 2) Explicit "(a+bj)+(c+dj)e" form
+        # Feature 5.2: Explicit "(a+bj)+(c+dj)e" format
         if 'e' in s_clean and '(' in s_clean:
-            pattern = r'\(\s*([+-]?\d*\.?\d+)\s*([+-])\s*([\d\.]*)j\s*\)\s*(?:\+)\s*\(\s*([+-]?\d*\.?\d+)\s*([+-])\s*([\d\.]*)j\s*\)e'
-            match = re.search(pattern, s_clean)
-            if match:
-                try:
-                    z1_real = float(match.group(1))
-                    z1_imag_sign = -1.0 if match.group(2) == '-' else 1.0
-                    z1_imag_val = float(match.group(3)) if match.group(3) not in ['', None] else 1.0
-                    z1_imag = z1_imag_sign * z1_imag_val
+            # Try both patterns from both versions
+            patterns = [
+                # From first version
+                r'\(\s*([+-]?\d*\.?\d+)\s*([+-])\s*([\d\.]*)j\s*\)\s*(?:\+)\s*\(\s*([+-]?\d*\.?\d+)\s*([+-])\s*([\d\.]*)j\s*\)e',
+                # From second version
+                r'\(([-\d.]+)\s*([+-]?)\s*([-\d.]*)j\)\s*\+\s*\(([-\d.]+)\s*([+-]?)\s*([-\d.]*)j\)e'
+            ]
+            
+            for pattern in patterns:
+                match = re.search(pattern, s_clean)
+                if match:
+                    try:
+                        # Parse groups (adapt based on pattern)
+                        groups = match.groups()
+                        if len(groups) == 6:
+                            if pattern == patterns[0]:
+                                # First version pattern
+                                z1_real = float(groups[0])
+                                z1_imag_sign = -1.0 if groups[1] == '-' else 1.0
+                                z1_imag_val = float(groups[2]) if groups[2] not in ['', None] else 1.0
+                                z1_imag = z1_imag_sign * z1_imag_val
+                                
+                                z2_real = float(groups[3])
+                                z2_imag_sign = -1.0 if groups[4] == '-' else 1.0
+                                z2_imag_val = float(groups[5]) if groups[5] not in ['', None] else 1.0
+                                z2_imag = z2_imag_sign * z2_imag_val
+                            else:
+                                # Second version pattern
+                                z1_real = float(groups[0])
+                                z1_imag_sign = -1 if groups[1] == '-' else 1
+                                z1_imag_val = float(groups[2] or '1')
+                                z1_imag = z1_imag_sign * z1_imag_val
+                                
+                                z2_real = float(groups[3])
+                                z2_imag_sign = -1 if groups[4] == '-' else 1
+                                z2_imag_val = float(groups[5] or '1')
+                                z2_imag = z2_imag_sign * z2_imag_val
+                            
+                            return BicomplexNumber(
+                                complex(z1_real, z1_imag),
+                                complex(z2_real, z2_imag)
+                            )
+                    except Exception:
+                        continue
 
-                    z2_real = float(match.group(4))
-                    z2_imag_sign = -1.0 if match.group(5) == '-' else 1.0
-                    z2_imag_val = float(match.group(6)) if match.group(6) not in ['', None] else 1.0
-                    z2_imag = z2_imag_sign * z2_imag_val
-
-                    return BicomplexNumber(complex(z1_real, z1_imag), complex(z2_real, z2_imag))
-                except Exception:
-                    pass
-
-        # 3) Fallback: try Python complex() parsing for single complex string "a+bj"
-        try:
-            c = complex(s_clean)
-            return BicomplexNumber(c, complex(0.0, 0.0))
-        except Exception:
-            # 4) As a last resort, try extracting first numeric token and use as real
+        # Feature 5.3: Complex number parsing (common patterns)
+        if 'j' in s_clean:
+            # If string contains 'j', try to parse as complex
             try:
-                num_token = _extract_numeric_part(s_clean)
-                return BicomplexNumber(complex(float(num_token), 0.0), complex(0.0, 0.0))
-            except Exception:
-                logger.warning("Bicomplex parsing failed for %r — returning zero bicomplex", s)
-                return BicomplexNumber(complex(0.0, 0.0), complex(0.0, 0.0))
+                # Try direct complex() parsing first
+                c = complex(s_clean)
+                return BicomplexNumber(c, complex(0.0, 0.0))
+            except ValueError:
+                # Try regex-based parsing for malformed complex numbers
+                pattern = r'^([+-]?\d*\.?\d*)([+-]?\d*\.?\d*)j$'
+                match = re.match(pattern, s_clean)
+                if match:
+                    real_part = match.group(1)
+                    imag_part = match.group(2)
+                    
+                    # Handle edge cases
+                    if real_part in ['', '+', '-']:
+                        real_part = real_part + '1' if real_part else '0'
+                    if imag_part in ['', '+', '-']:
+                        imag_part = imag_part + '1' if imag_part else '0'
+                    
+                    return BicomplexNumber(
+                        complex(float(real_part or 0), float(imag_part or 0)),
+                        complex(0.0, 0.0)
+                    )
+        
+        # Feature 5.4: Simple real number
+        try:
+            real_val = float(s_clean)
+            return BicomplexNumber(complex(real_val, 0.0), complex(0.0, 0.0))
+        except ValueError:
+            pass
+        
+        # Feature 6: Fallback - try to extract any numeric part
+        try:
+            num_token = _extract_numeric_part(s_clean)
+            if num_token:
+                return BicomplexNumber(
+                    complex(float(num_token), 0.0),
+                    complex(0.0, 0.0)
+                )
+        except Exception:
+            pass
 
     except Exception as e:
-        logger.exception("Unexpected error in _parse_bicomplex(%r): %s", s, e)
-        return BicomplexNumber(complex(0.0, 0.0), complex(0.0, 0.0))
+        # Feature 7: Logging on error
+        if 'logger' in globals():
+            logger.warning(f"Bicomplex parsing failed for {repr(s)}: {e}")
+        else:
+            print(f"Bicomplex parsing error for '{s}': {e}")
+    
+    # Final fallback: return zero bicomplex
+    return BicomplexNumber(complex(0.0, 0.0), complex(0.0, 0.0))
 
 def _parse_universal(s: str, target_type: str) -> Any:
     """
@@ -3088,80 +3180,6 @@ class BicomplexNumber:
         if self.z2 != 0j:
             parts.append(f"({self.z2.real}+{self.z2.imag}j)e")
         return " + ".join(parts) if parts else "0"
-
-def _parse_bicomplex(s: str) -> BicomplexNumber:
-    """
-    Kececi kütüphanesinin beklediği format: Tek parametre ile
-    Sadece bicomplex parsing yapar
-    """
-    s_clean = s.strip().replace(" ", "")
-    
-    try:
-        # Format 1: Comma-separated "z1_real,z1_imag,z2_real,z2_imag"
-        if ',' in s_clean:
-            parts = [float(p) for p in s_clean.split(',')]
-            if len(parts) == 4:
-                return BicomplexNumber(complex(parts[0], parts[1]), 
-                                      complex(parts[2], parts[3]))
-            elif len(parts) == 2:
-                return BicomplexNumber(complex(parts[0], parts[1]), 
-                                      complex(0, 0))
-            elif len(parts) == 1:
-                return BicomplexNumber(complex(parts[0], 0), 
-                                      complex(0, 0))
-        
-        # Format 2: Explicit "(a+bj)+(c+dj)e"
-        if 'e' in s_clean and '(' in s_clean:
-            pattern = r'\(([-\d.]+)\s*([+-]?)\s*([-\d.]*)j\)\s*\+\s*\(([-\d.]+)\s*([+-]?)\s*([-\d.]*)j\)e'
-            match = re.search(pattern, s_clean)
-            
-            if match:
-                z1_real = float(match.group(1))
-                z1_imag_sign = -1 if match.group(2) == '-' else 1
-                z1_imag_val = float(match.group(3) or '1')
-                z1_imag = z1_imag_sign * z1_imag_val
-                
-                z2_real = float(match.group(4))
-                z2_imag_sign = -1 if match.group(5) == '-' else 1
-                z2_imag_val = float(match.group(6) or '1')
-                z2_imag = z2_imag_sign * z2_imag_val
-                
-                return BicomplexNumber(complex(z1_real, z1_imag), 
-                                      complex(z2_real, z2_imag))
-        
-        # Format 3: Simple values
-        try:
-            if 'j' in s_clean:
-                # Complex number parsing
-                if 'j' not in s_clean:
-                    return BicomplexNumber(complex(float(s_clean), 0), complex(0, 0))
-                
-                pattern = r'^([+-]?\d*\.?\d*)([+-]?\d*\.?\d*)j$'
-                match = re.match(pattern, s_clean)
-                if match:
-                    real_part = match.group(1)
-                    imag_part = match.group(2)
-                    
-                    if real_part in ['', '+', '-']:
-                        real_part = real_part + '1' if real_part else '0'
-                    if imag_part in ['', '+', '-']:
-                        imag_part = imag_part + '1' if imag_part else '0'
-                    
-                    return BicomplexNumber(complex(float(real_part or 0), float(imag_part or 0)), 
-                                          complex(0, 0))
-            
-            # Real number
-            real_val = float(s_clean)
-            return BicomplexNumber(complex(real_val, 0), complex(0, 0))
-            
-        except:
-            pass
-            
-    except Exception as e:
-        print(f"Bicomplex parsing error for '{s}': {e}")
-    
-    # Default fallback
-    return BicomplexNumber(complex(0, 0), complex(0, 0))
 
 def kececi_bicomplex_algorithm(start: BicomplexNumber, add_val: BicomplexNumber, iterations: int, include_intermediate: bool = True) -> list:
     """
