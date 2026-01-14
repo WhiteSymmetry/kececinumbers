@@ -2075,9 +2075,43 @@ def _parse_universal(s: str, target_type: str) -> Any:
     
     return None
 
-def kececi_bicomplex_algorithm(start: BicomplexNumber, add_val: BicomplexNumber, iterations: int, include_intermediate: bool = True) -> list:
+def kececi_bicomplex_algorithm(
+    start: BicomplexNumber, 
+    add_val: BicomplexNumber, 
+    iterations: int, 
+    include_intermediate: bool = True,
+    mod_value: float = 100.0
+) -> list:
     """
-    Gerçek Keçeci algoritmasının bikompleks versiyonunu uygular
+    Gerçek Keçeci algoritmasının bikompleks versiyonunu uygular.
+    
+    Bu algoritma orijinal Keçeci sayı üretecini bikompleks sayılara genişletir.
+    
+    Parametreler:
+    ------------
+    start : BicomplexNumber
+        Algoritmanın başlangıç değeri
+    add_val : BicomplexNumber
+        Her iterasyonda eklenen değer
+    iterations : int
+        İterasyon sayısı
+    include_intermediate : bool, varsayılan=True
+        Ara adımları dizie ekleme
+    mod_value : float, varsayılan=100.0
+        Mod işlemi için kullanılacak değer
+    
+    Döndürür:
+    --------
+    list[BicomplexNumber]
+        Üretilen Keçeci bikompleks dizisi
+    
+    Özellikler:
+    ----------
+    1. Toplama işlemi
+    2. Mod alma işlemi (Keçeci algoritmasının karakteristik özelliği)
+    3. Ara adımların eklenmesi (isteğe bağlı)
+    4. Asal sayı kontrolü
+    5. Sıfır değerinde resetleme
     """
     sequence = [start]
     current = start
@@ -2086,10 +2120,7 @@ def kececi_bicomplex_algorithm(start: BicomplexNumber, add_val: BicomplexNumber,
         # 1. Toplama işlemi
         current = current + add_val
         
-        # 2. Keçeci algoritmasının özelliği: Mod alma ve asal sayı kontrolü
-        # Gerçek algoritmada belirli bir modüle göre işlem yapılır
-        mod_value = 100  # Bu değer algoritmaya göre ayarlanabilir
-        
+        # 2. Keçeci algoritmasının özelliği: Mod alma
         # z1 ve z2 için mod alma (gerçek ve sanal kısımlar ayrı ayrı)
         current = BicomplexNumber(
             complex(current.z1.real % mod_value, current.z1.imag % mod_value),
@@ -2098,7 +2129,7 @@ def kececi_bicomplex_algorithm(start: BicomplexNumber, add_val: BicomplexNumber,
         
         # 3. Ara adımları ekle (Keçeci algoritmasının karakteristik özelliği)
         if include_intermediate:
-            # Ara değerler için özel işlemler (örneğin: çarpma, bölme, vs.)
+            # Ara değerler için özel işlemler
             intermediate = current * BicomplexNumber(complex(0.5, 0), complex(0, 0))
             sequence.append(intermediate)
         
@@ -2107,8 +2138,17 @@ def kececi_bicomplex_algorithm(start: BicomplexNumber, add_val: BicomplexNumber,
         # 4. Asal sayı kontrolü (Keçeci algoritmasının önemli bir parçası)
         # Bu kısım algoritmanın detayına göre özelleştirilebilir
         magnitude = abs(current.z1) + abs(current.z2)
-        if magnitude > 1 and all(magnitude % i != 0 for i in range(2, int(magnitude**0.5) + 1)):
-            print(f"Keçeci Prime found at step {i}: {magnitude:.2f}")
+        if magnitude > 1:
+            # Basit asallık testi (büyük sayılar için verimsiz)
+            is_prime = True
+            sqrt_mag = int(magnitude**0.5) + 1
+            for j in range(2, sqrt_mag):
+                if magnitude % j == 0:
+                    is_prime = False
+                    break
+            
+            if is_prime:
+                print(f"Keçeci Prime bulundu - adım {i}: büyüklük = {magnitude:.2f}")
         
         # 5. Özel durum: Belirli değerlere ulaşıldığında resetleme
         if abs(current.z1) < 1e-10 and abs(current.z2) < 1e-10:
@@ -3180,47 +3220,6 @@ class BicomplexNumber:
         if self.z2 != 0j:
             parts.append(f"({self.z2.real}+{self.z2.imag}j)e")
         return " + ".join(parts) if parts else "0"
-
-def kececi_bicomplex_algorithm(start: BicomplexNumber, add_val: BicomplexNumber, iterations: int, include_intermediate: bool = True) -> list:
-    """
-    Gerçek Keçeci algoritmasının bikompleks versiyonunu uygular
-    """
-    sequence = [start]
-    current = start
-    
-    for i in range(iterations):
-        # 1. Toplama işlemi
-        current = current + add_val
-        
-        # 2. Keçeci algoritmasının özelliği: Mod alma ve asal sayı kontrolü
-        # Gerçek algoritmada belirli bir modüle göre işlem yapılır
-        mod_value = 100  # Bu değer algoritmaya göre ayarlanabilir
-        
-        # z1 ve z2 için mod alma (gerçek ve sanal kısımlar ayrı ayrı)
-        current = BicomplexNumber(
-            complex(current.z1.real % mod_value, current.z1.imag % mod_value),
-            complex(current.z2.real % mod_value, current.z2.imag % mod_value)
-        )
-        
-        # 3. Ara adımları ekle (Keçeci algoritmasının karakteristik özelliği)
-        if include_intermediate:
-            # Ara değerler için özel işlemler (örneğin: çarpma, bölme, vs.)
-            intermediate = current * BicomplexNumber(complex(0.5, 0), complex(0, 0))
-            sequence.append(intermediate)
-        
-        sequence.append(current)
-        
-        # 4. Asal sayı kontrolü (Keçeci algoritmasının önemli bir parçası)
-        # Bu kısım algoritmanın detayına göre özelleştirilebilir
-        magnitude = abs(current.z1) + abs(current.z2)
-        if magnitude > 1 and all(magnitude % i != 0 for i in range(2, int(magnitude**0.5) + 1)):
-            print(f"Keçeci Prime found at step {i}: {magnitude:.2f}")
-        
-        # 5. Özel durum: Belirli değerlere ulaşıldığında resetleme
-        if abs(current.z1) < 1e-10 and abs(current.z2) < 1e-10:
-            current = start  # Başa dön
-    
-    return sequence
 
 # --- DAHA GERÇEKÇİ BİR VERSİYON ---
 def kececi_bicomplex_advanced(start: BicomplexNumber, add_val: BicomplexNumber, 
