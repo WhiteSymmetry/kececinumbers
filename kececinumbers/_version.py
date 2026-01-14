@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # _version.py
 
-__version__ = "0.8.5"
-__license__ = "MIT"
+__version__ = "0.8.6"
+__license__ = "AGPL-3.0"
 __description__ = "Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets."
 __author__ = "Mehmet Keçeci"
 __url__ = "https://github.com/WhiteSymmetry/kececinumbers"
