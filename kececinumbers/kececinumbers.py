@@ -2512,173 +2512,259 @@ class NeutrosophicBicomplexNumber:
 
 @dataclass
 class SedenionNumber:
-    def __init__(self, coeffs):
-        if len(coeffs) != 16:
-            raise ValueError("Sedenion must have 16 components")
-        self.coeffs = list(map(float, coeffs))
-
-    def __add__(self, other):
-        if isinstance(other, SedenionNumber):
-            return SedenionNumber([s + o for s, o in zip(self.coeffs, other.coeffs)])
-        elif isinstance(other, (int, float)):
-            return SedenionNumber([self.coeffs[0] + other] + self.coeffs[1:])
-        return NotImplemented
-
-    def __sub__(self, other):
-        if isinstance(other, SedenionNumber):
-            return SedenionNumber([s - o for s, o in zip(self.coeffs, other.coeffs)])
-        elif isinstance(other, (int, float)):
-            return SedenionNumber([self.coeffs[0] - other] + self.coeffs[1:])
-        return NotImplemented
-
-    def __mul__(self, other):
-        # Sedenion çarpımı Cayley-Dickson yapısı ile tanımlanır ama oldukça karmaşıktır.
-        # Basitleştirme: skaler çarpım veya element-wise çarpım DEĞİL.
-        # Gerçek sedenion çarpımı 16x16 çarpım tablosu gerektirir.
-        # Bu örnekte, yalnızca skaler çarpım ve Sedenion-Sedenion için çarpım tablosuz basitleştirilmiş hâli (örnek amaçlı) verilir.
-        # Gerçek uygulama için sedenion multiplication table kullanılmalıdır.
-        if isinstance(other, (int, float)):
-            return SedenionNumber([c * other for c in self.coeffs])
-        elif isinstance(other, SedenionNumber):
-            # NOT: Gerçek sedenion çarpımı burada eksik (çok karmaşık). 
-            # Element-wise çarpım matematiksel olarak doğru değildir ama örnek olsun diye konuldu.
-            # Gerçek hâli için: https://en.wikipedia.org/wiki/Sedenion
-            return NotImplemented  # Gerçek sedenion çarpımı oldukça karmaşıktır
-        return NotImplemented
-
-    def __truediv__(self, other):
-        if isinstance(other, (int, float)):
-            if other == 0:
-                raise ZeroDivisionError("Division by zero")
-            return SedenionNumber([c / other for c in self.coeffs])
-        return NotImplemented
-
-    def __str__(self):
-        return "(" + ", ".join(f"{c:.2f}" for c in self.coeffs) + ")"
-
-    def __repr__(self):
-        return f"({', '.join(map(str, self.coeffs))})"
-
-    def components(self):
-        """Bileşen listesini (Python list) döndürür."""
-        return list(self.coeffs)
-
-    def magnitude(self) -> float:
-        """
-        Euclidean norm = √( Σ_i coeff_i² )
-        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
-        """
-        return float(np.linalg.norm(self.coeffs))
-
-    def __hash__(self):
-        # NaN ve -0.0 gibi durumları göz önünde bulundurun
-        return hash(tuple(np.round(self.coeffs, decimals=10)))
-
+    """
+    Sedenion (16-dimensional hypercomplex number) implementation.
+    
+    Sedenions are 16-dimensional numbers that extend octonions via the 
+    Cayley-Dickson construction. They are non-commutative, non-associative,
+    and not even alternative.
+    
+    Components: e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15
+    where e0 is the real part.
+    """
+    coeffs: List[float] = field(default_factory=lambda: [0.0] * 16)
+    
+    def __post_init__(self):
+        """Validate and ensure coefficients are correct length."""
+        if len(self.coeffs) != 16:
+            raise ValueError(f"Sedenion must have exactly 16 components, got {len(self.coeffs)}")
+        # Ensure all are floats
+        self.coeffs = [float(c) for c in self.coeffs]
+    
+    @classmethod
+    def from_scalar(cls, value: float) -> 'SedenionNumber':
+        """Create a sedenion from a scalar (real number)."""
+        coeffs = [0.0] * 16
+        coeffs[0] = float(value)
+        return cls(coeffs)
+    
+    @classmethod
+    def from_list(cls, values: List[float]) -> 'SedenionNumber':
+        """Create a sedenion from a list of up to 16 values."""
+        if len(values) > 16:
+            raise ValueError(f"List too long ({len(values)}), maximum 16 elements")
+        coeffs = list(values) + [0.0] * (16 - len(values))
+        return cls(coeffs)
+    
+    @classmethod
+    def basis_element(cls, index: int) -> 'SedenionNumber':
+        """Create a basis sedenion (1 at position index, 0 elsewhere)."""
+        if not 0 <= index < 16:
+            raise ValueError(f"Index must be between 0 and 15, got {index}")
+        coeffs = [0.0] * 16
+        coeffs[index] = 1.0
+        return cls(coeffs)
+    
     @property
     def real(self) -> float:
-        """İlk bileşen – “gerçek” kısım."""
-        return float(self.coeffs[0])
-    #def real(self):
-    #    Gerçek kısım (ilk bileşen)
-    #    return self.coeffs[0]
+        """Get the real part (first component)."""
+        return self.coeffs[0]
     
-    def __iter__(self):
-        return iter(self.coeffs)
+    @real.setter
+    def real(self, value: float):
+        """Set the real part."""
+        self.coeffs[0] = float(value)
     
-    def __getitem__(self, index):
+    @property
+    def imag(self) -> List[float]:
+        """Get the imaginary parts (all except real)."""
+        return self.coeffs[1:]
+    
+    def __getitem__(self, index: int) -> float:
+        """Get component by index."""
+        if not 0 <= index < 16:
+            raise IndexError(f"Index {index} out of range for sedenion")
         return self.coeffs[index]
     
-    def __len__(self):
-        return len(self.coeffs)
+    def __setitem__(self, index: int, value: float):
+        """Set component by index."""
+        if not 0 <= index < 16:
+            raise IndexError(f"Index {index} out of range for sedenion")
+        self.coeffs[index] = float(value)
     
-    def __str__(self):
-        return f"PathionNumber({', '.join(map(str, self.coeffs))})"
-
-    def __repr__(self):
-        return f"PathionNumber({', '.join(map(str, self.coeffs))})"
-        #return f"PathionNumber({self.coeffs})"
+    def __len__(self) -> int:
+        """Return number of components (always 16)."""
+        return 16
     
-    def __add__(self, other):
-        if isinstance(other, PathionNumber):
-            return PathionNumber([a + b for a, b in zip(self.coeffs, other.coeffs)])
-        else:
-            # Skaler toplama
+    def __iter__(self):
+        """Iterate over components."""
+        return iter(self.coeffs)
+    
+    def __add__(self, other: Union['SedenionNumber', float, int]) -> 'SedenionNumber':
+        """Add two sedenions or sedenion and scalar."""
+        if isinstance(other, SedenionNumber):
+            new_coeffs = [a + b for a, b in zip(self.coeffs, other.coeffs)]
+            return SedenionNumber(new_coeffs)
+        elif isinstance(other, (int, float)):
             new_coeffs = self.coeffs.copy()
             new_coeffs[0] += float(other)
-            return PathionNumber(new_coeffs)
+            return SedenionNumber(new_coeffs)
+        return NotImplemented
     
-    def __sub__(self, other):
-        if isinstance(other, PathionNumber):
-            return PathionNumber([a - b for a, b in zip(self.coeffs, other.coeffs)])
-        else:
+    def __radd__(self, other: Union[float, int]) -> 'SedenionNumber':
+        """Right addition: scalar + sedenion."""
+        return self.__add__(other)
+    
+    def __sub__(self, other: Union['SedenionNumber', float, int]) -> 'SedenionNumber':
+        """Subtract two sedenions or sedenion and scalar."""
+        if isinstance(other, SedenionNumber):
+            new_coeffs = [a - b for a, b in zip(self.coeffs, other.coeffs)]
+            return SedenionNumber(new_coeffs)
+        elif isinstance(other, (int, float)):
             new_coeffs = self.coeffs.copy()
             new_coeffs[0] -= float(other)
-            return PathionNumber(new_coeffs)
+            return SedenionNumber(new_coeffs)
+        return NotImplemented
     
-    def __mul__(self, other):
-        if isinstance(other, PathionNumber):
-            # Basitçe bileşen bazlı çarpma (gerçek Cayley-Dickson çarpımı yerine)
-            return PathionNumber([a * b for a, b in zip(self.coeffs, other.coeffs)])
-        else:
-            # Skaler çarpma
-            return PathionNumber([c * float(other) for c in self.coeffs])
-    
-    def __mod__(self, divisor):
-        return PathionNumber([c % divisor for c in self.coeffs])
-    
-    def __eq__(self, other):
-        if not isinstance(other, PathionNumber):
-            return NotImplemented
-        return np.allclose(self.coeffs, other.coeffs, atol=1e-10)
-        #if isinstance(other, PathionNumber):
-        #    return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
-        #return False
-
-    def __truediv__(self, other):
-        """Bölme operatörü: / """
+    def __rsub__(self, other: Union[float, int]) -> 'SedenionNumber':
+        """Right subtraction: scalar - sedenion."""
         if isinstance(other, (int, float)):
-            # Skaler bölme
-            return PathionNumber([c / other for c in self.coeffs])
-        else:
-            raise TypeError(f"Unsupported operand type(s) for /: 'PathionNumber' and '{type(other).__name__}'")
+            new_coeffs = [-c for c in self.coeffs]
+            new_coeffs[0] += float(other)
+            return SedenionNumber(new_coeffs)
+        return NotImplemented
     
-    def __floordiv__(self, other):
-        """Tam sayı bölme operatörü: // """
+    def __mul__(self, other: Union['SedenionNumber', float, int]) -> 'SedenionNumber':
+        """Multiply sedenion by scalar or another sedenion (simplified)."""
         if isinstance(other, (int, float)):
-            # Skaler tam sayı bölme
-            return PathionNumber([c // other for c in self.coeffs])
-        else:
-            raise TypeError(f"Unsupported operand type(s) for //: 'PathionNumber' and '{type(other).__name__}'")
+            # Scalar multiplication
+            new_coeffs = [c * float(other) for c in self.coeffs]
+            return SedenionNumber(new_coeffs)
+        elif isinstance(other, SedenionNumber):
+            # NOTE: This is NOT the true sedenion multiplication!
+            # True sedenion multiplication requires a 16x16 multiplication table.
+            # This is a simplified element-wise multiplication for demonstration.
+            # For real applications, implement proper sedenion multiplication.
+            new_coeffs = [a * b for a, b in zip(self.coeffs, other.coeffs)]
+            return SedenionNumber(new_coeffs)
+        return NotImplemented
     
-    def __rtruediv__(self, other):
-        """Sağdan bölme: other / PathionNumber"""
-        if isinstance(other, (int, float)):
-            # Bu daha karmaşık olabilir, basitçe bileşen bazlı bölme
-            return PathionNumber([other / c if c != 0 else float('inf') for c in self.coeffs])
-        else:
-            raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'PathionNumber'")
-
-    # ------------------------------------------------------------------
-    # Yeni eklenen yardımcı metodlar
-    # ------------------------------------------------------------------
-    def components(self):
-        """Bileşen listesini (Python list) döndürür."""
-        return self.coeffs.tolist()
-
+    def __rmul__(self, other: Union[float, int]) -> 'SedenionNumber':
+        """Right multiplication: scalar * sedenion."""
+        return self.__mul__(other)
+    
+    def __truediv__(self, scalar: Union[float, int]) -> 'SedenionNumber':
+        """Divide sedenion by scalar."""
+        if isinstance(scalar, (int, float)):
+            if scalar == 0:
+                raise ZeroDivisionError("Cannot divide sedenion by zero")
+            new_coeffs = [c / float(scalar) for c in self.coeffs]
+            return SedenionNumber(new_coeffs)
+        return NotImplemented
+    
+    def __floordiv__(self, scalar: Union[float, int]) -> 'SedenionNumber':
+        """Floor divide sedenion by scalar."""
+        if isinstance(scalar, (int, float)):
+            if scalar == 0:
+                raise ZeroDivisionError("Cannot divide sedenion by zero")
+            new_coeffs = [c // float(scalar) for c in self.coeffs]
+            return SedenionNumber(new_coeffs)
+        return NotImplemented
+    
+    def __mod__(self, divisor: Union[float, int]) -> 'SedenionNumber':
+        """Modulo operation on sedenion components."""
+        if isinstance(divisor, (int, float)):
+            if divisor == 0:
+                raise ZeroDivisionError("Cannot take modulo by zero")
+            new_coeffs = [c % float(divisor) for c in self.coeffs]
+            return SedenionNumber(new_coeffs)
+        return NotImplemented
+    
+    def __neg__(self) -> 'SedenionNumber':
+        """Negate the sedenion."""
+        return SedenionNumber([-c for c in self.coeffs])
+    
+    def __pos__(self) -> 'SedenionNumber':
+        """Unary plus."""
+        return self
+    
+    def __abs__(self) -> float:
+        """Absolute value (magnitude)."""
+        return self.magnitude()
+    
+    def __eq__(self, other: object) -> bool:
+        """Check equality with another sedenion."""
+        if not isinstance(other, SedenionNumber):
+            return False
+        return all(math.isclose(a, b, abs_tol=1e-12) for a, b in zip(self.coeffs, other.coeffs))
+    
+    def __ne__(self, other: object) -> bool:
+        """Check inequality."""
+        return not self.__eq__(other)
+    
+    def __hash__(self) -> int:
+        """Hash based on rounded components to avoid floating-point issues."""
+        return hash(tuple(round(c, 10) for c in self.coeffs))
+    
     def magnitude(self) -> float:
         """
-        Euclidean norm = √( Σ_i coeff_i² )
-        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
+        Calculate Euclidean norm (magnitude) of the sedenion.
+        
+        Returns:
+            float: sqrt(Σ_i coeff_i²)
         """
         return float(np.linalg.norm(self.coeffs))
-
-    def __hash__(self):
-        # NaN ve -0.0 gibi durumları göz önünde bulundurun
-        return hash(tuple(np.round(self.coeffs, decimals=10)))
-
-    def phase(self):
-        # compute and return the phase value
-        return self._phase   # or whatever logic you need
+    
+    def norm(self) -> float:
+        """Alias for magnitude."""
+        return self.magnitude()
+    
+    def conjugate(self) -> 'SedenionNumber':
+        """Return the conjugate (negate all imaginary parts)."""
+        new_coeffs = self.coeffs.copy()
+        for i in range(1, 16):
+            new_coeffs[i] = -new_coeffs[i]
+        return SedenionNumber(new_coeffs)
+    
+    def dot(self, other: 'SedenionNumber') -> float:
+        """Dot product with another sedenion."""
+        if not isinstance(other, SedenionNumber):
+            raise TypeError("Dot product requires another SedenionNumber")
+        return sum(a * b for a, b in zip(self.coeffs, other.coeffs))
+    
+    def normalize(self) -> 'SedenionNumber':
+        """Return a normalized (unit) version."""
+        mag = self.magnitude()
+        if mag == 0:
+            raise ZeroDivisionError("Cannot normalize zero sedenion")
+        return SedenionNumber([c / mag for c in self.coeffs])
+    
+    def to_list(self) -> List[float]:
+        """Convert to Python list."""
+        return self.coeffs.copy()
+    
+    def to_tuple(self) -> Tuple[float, ...]:
+        """Convert to tuple."""
+        return tuple(self.coeffs)
+    
+    def to_numpy(self) -> np.ndarray:
+        """Convert to numpy array."""
+        return np.array(self.coeffs, dtype=np.float64)
+    
+    def copy(self) -> 'SedenionNumber':
+        """Create a copy."""
+        return SedenionNumber(self.coeffs.copy())
+    
+    def __str__(self) -> str:
+        """Human-readable string representation."""
+        # Show only non-zero components for clarity
+        non_zero = [(i, c) for i, c in enumerate(self.coeffs) if abs(c) > 1e-10]
+        if not non_zero:
+            return "Sedenion(0)"
+        
+        parts = []
+        for i, c in non_zero:
+            if i == 0:
+                parts.append(f"{c:.6f}")
+            else:
+                sign = "+" if c >= 0 else "-"
+                parts.append(f"{sign} {abs(c):.6f}e{i}")
+        
+        return f"Sedenion({' '.join(parts)})"
+    
+    def __repr__(self) -> str:
+        """Detailed representation."""
+        return f"SedenionNumber({self.coeffs})"
 
 @dataclass
 class ChingonNumber:
@@ -3368,78 +3454,6 @@ class NeutrosophicBicomplexNumber:
 
     def __ne__(self, other):
         return not self.__eq__(other)
-
-@dataclass
-class SedenionNumber:
-    def __init__(self, coeffs):
-        if len(coeffs) != 16:
-            raise ValueError("Sedenion must have 16 components")
-        self.coeffs = list(map(float, coeffs))
-
-    def __add__(self, other):
-        if isinstance(other, SedenionNumber):
-            return SedenionNumber([s + o for s, o in zip(self.coeffs, other.coeffs)])
-        elif isinstance(other, (int, float)):
-            return SedenionNumber([self.coeffs[0] + other] + self.coeffs[1:])
-        return NotImplemented
-
-    def __sub__(self, other):
-        if isinstance(other, SedenionNumber):
-            return SedenionNumber([s - o for s, o in zip(self.coeffs, other.coeffs)])
-        elif isinstance(other, (int, float)):
-            return SedenionNumber([self.coeffs[0] - other] + self.coeffs[1:])
-        return NotImplemented
-
-    def __mul__(self, other):
-        # Sedenion çarpımı Cayley-Dickson yapısı ile tanımlanır ama oldukça karmaşıktır.
-        # Basitleştirme: skaler çarpım veya element-wise çarpım DEĞİL.
-        # Gerçek sedenion çarpımı 16x16 çarpım tablosu gerektirir.
-        # Bu örnekte, yalnızca skaler çarpım ve Sedenion-Sedenion için çarpım tablosuz basitleştirilmiş hâli (örnek amaçlı) verilir.
-        # Gerçek uygulama için sedenion multiplication table kullanılmalıdır.
-        if isinstance(other, (int, float)):
-            return SedenionNumber([c * other for c in self.coeffs])
-        elif isinstance(other, SedenionNumber):
-            # NOT: Gerçek sedenion çarpımı burada eksik (çok karmaşık). 
-            # Element-wise çarpım matematiksel olarak doğru değildir ama örnek olsun diye konuldu.
-            # Gerçek hâli için: https://en.wikipedia.org/wiki/Sedenion
-            return NotImplemented  # Gerçek sedenion çarpımı oldukça karmaşıktır
-        return NotImplemented
-
-    def __truediv__(self, other):
-        if isinstance(other, (int, float)):
-            if other == 0:
-                raise ZeroDivisionError("Division by zero")
-            return SedenionNumber([c / other for c in self.coeffs])
-        return NotImplemented
-
-    def __str__(self):
-        return "(" + ", ".join(f"{c:.2f}" for c in self.coeffs) + ")"
-
-    def __repr__(self):
-        return f"({', '.join(map(str, self.coeffs))})"
-
-    def components(self):
-        """Bileşen listesini (Python list) döndürür."""
-        return self.coeffs.tolist()
-
-    def magnitude(self) -> float:
-        """
-        Euclidean norm = √( Σ_i coeff_i² )
-        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
-        """
-        return float(np.linalg.norm(self.coeffs))
-
-    def __hash__(self):
-        # NaN ve -0.0 gibi durumları göz önünde bulundurun
-        return hash(tuple(np.round(self.coeffs, decimals=10)))
-
-    @property
-    def real(self) -> float:
-        """İlk bileşen – “gerçek” kısım."""
-        return float(self.coeffs[0])
-    #def real(self):
-    #    Gerçek kısım (ilk bileşen)
-    #    return self.coeffs[0]
 
 @dataclass
 class CliffordNumber:
