@@ -32,7 +32,7 @@ Henüz kanıtlanmamıştır ve bu modül bu varsayımı test etmek için bir çe
 from __future__ import annotations
 from abc import ABC, abstractmethod
 import collections
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from fractions import Fraction
 import math
 from matplotlib.gridspec import GridSpec
@@ -1410,52 +1410,243 @@ class VoudonNumber:
 class OctonionNumber:
     """
     Represents an octonion number with 8 components.
-    Implements octonion multiplication rules.
+    Implements octonion multiplication rules (non-commutative, non-associative).
+    
+    Octonions are 8-dimensional hypercomplex numbers that extend quaternions.
+    They have applications in string theory, quantum mechanics, and geometry.
+    
+    Attributes:
+    ----------
+    w, x, y, z, e, f, g, h : float
+        The 8 components of the octonion
     """
-    def __init__(self, *args):
-        # Varsayılan
-        self.w = self.x = self.y = self.z = self.e = self.f = self.g = self.h = 0.0
+    w: float = 0.0
+    x: float = 0.0
+    y: float = 0.0
+    z: float = 0.0
+    e: float = 0.0
+    f: float = 0.0
+    g: float = 0.0
+    h: float = 0.0
+    
+    # Private field for phase computation
+    _phase: float = field(init=False, default=0.0)
+    
+    def __post_init__(self):
+        """Initialize phase after the object is created."""
+        self._compute_phase()
+    
+    @classmethod
+    def from_list(cls, components: List[float]) -> 'OctonionNumber':
+        """
+        Create OctonionNumber from a list of components.
         
-        if len(args) == 8:
-            self.w, self.x, self.y, self.z, self.e, self.f, self.g, self.h = args
-        elif len(args) == 1:
-            if isinstance(args[0], (list, tuple)):
-                if len(args[0]) == 8:
-                    self.w, self.x, self.y, self.z, self.e, self.f, self.g, self.h = args[0]
-                else:
-                    components = list(args[0]) + [0.0] * (8 - len(args[0]))
-                    self.w, self.x, self.y, self.z, self.e, self.f, self.g, self.h = components
-            elif isinstance(args[0], (int, float)):
-                self.w = float(args[0])
-        elif len(args) == 0:
-            pass
+        Args:
+            components: List of 1-8 float values
+        
+        Returns:
+            OctonionNumber instance
+        """
+        if len(components) == 8:
+            return cls(*components)
+        elif len(components) < 8:
+            # Pad with zeros if less than 8 components
+            padded = list(components) + [0.0] * (8 - len(components))
+            return cls(*padded)
         else:
-            raise ValueError("Invalid arguments for OctonionNumber")
-
+            # Truncate if more than 8 components
+            return cls(*components[:8])
+    
+    @classmethod
+    def from_scalar(cls, scalar: float) -> 'OctonionNumber':
+        """
+        Create OctonionNumber from a scalar (real number).
+        
+        Args:
+            scalar: Real number to convert to octonion
+        
+        Returns:
+            OctonionNumber with scalar as real part, others zero
+        """
+        return cls(w=float(scalar))
+    
+    @classmethod
+    def from_complex(cls, z: complex) -> 'OctonionNumber':
+        """
+        Create OctonionNumber from a complex number.
+        
+        Args:
+            z: Complex number to convert to octonion
+        
+        Returns:
+            OctonionNumber with complex as first two components
+        """
+        return cls(w=z.real, x=z.imag)
+    
     @property
-    def coeffs(self):
-        """Octonion bileşenlerini liste olarak döner."""
+    def coeffs(self) -> List[float]:
+        """Get all components as a list."""
         return [self.w, self.x, self.y, self.z, self.e, self.f, self.g, self.h]
-
-    def __add__(self, other):
+    
+    @property
+    def real(self) -> float:
+        """Get the real part (first component)."""
+        return self.w
+    
+    @real.setter
+    def real(self, value: float):
+        """Set the real part."""
+        self.w = float(value)
+        self._compute_phase()
+    
+    @property
+    def imag(self) -> List[float]:
+        """Get the imaginary parts (all except real)."""
+        return [self.x, self.y, self.z, self.e, self.f, self.g, self.h]
+    
+    def _compute_phase(self) -> None:
+        """Compute and store the phase (angle) of the octonion."""
+        magnitude = self.magnitude()
+        if magnitude == 0:
+            self._phase = 0.0
+        else:
+            # For octonions, phase is not uniquely defined.
+            # We use the angle of the projection onto the real-imaginary plane
+            imag_magnitude = np.sqrt(sum(i**2 for i in self.imag))
+            if imag_magnitude == 0:
+                self._phase = 0.0
+            else:
+                # Angle between real part and imaginary vector
+                self._phase = np.arctan2(imag_magnitude, self.real)
+    
+    def components(self) -> List[float]:
+        """Get components as list (alias for coeffs)."""
+        return self.coeffs
+    
+    def magnitude(self) -> float:
+        """
+        Calculate the Euclidean norm (magnitude) of the octonion.
+        
+        Returns:
+            float: sqrt(w² + x² + y² + z² + e² + f² + g² + h²)
+        """
+        return float(np.linalg.norm(self.coeffs))
+    
+    def norm(self) -> float:
+        """Alias for magnitude."""
+        return self.magnitude()
+    
+    def conjugate(self) -> 'OctonionNumber':
+        """
+        Return the conjugate of the octonion.
+        
+        Returns:
+            OctonionNumber with signs of imaginary parts flipped
+        """
+        return OctonionNumber(
+            self.w, -self.x, -self.y, -self.z,
+            -self.e, -self.f, -self.g, -self.h
+        )
+    
+    def inverse(self) -> 'OctonionNumber':
+        """
+        Return the multiplicative inverse.
+        
+        Returns:
+            OctonionNumber: o⁻¹ such that o * o⁻¹ = o⁻¹ * o = 1
+        
+        Raises:
+            ZeroDivisionError: If magnitude is zero
+        """
+        mag_sq = self.magnitude() ** 2
+        if mag_sq == 0:
+            raise ZeroDivisionError("Cannot invert zero octonion")
+        conj = self.conjugate()
+        return OctonionNumber(
+            conj.w / mag_sq, conj.x / mag_sq, conj.y / mag_sq, conj.z / mag_sq,
+            conj.e / mag_sq, conj.f / mag_sq, conj.g / mag_sq, conj.h / mag_sq
+        )
+    
+    def dot(self, other: 'OctonionNumber') -> float:
+        """
+        Compute the dot product with another octonion.
+        
+        Args:
+            other: Another OctonionNumber
+        
+        Returns:
+            float: Dot product (sum of component-wise products)
+        """
+        if not isinstance(other, OctonionNumber):
+            raise TypeError("Dot product requires another OctonionNumber")
+        
+        return sum(a * b for a, b in zip(self.coeffs, other.coeffs))
+    
+    def normalize(self) -> 'OctonionNumber':
+        """
+        Return a normalized (unit) version of this octonion.
+        
+        Returns:
+            OctonionNumber with magnitude 1
+        
+        Raises:
+            ZeroDivisionError: If magnitude is zero
+        """
+        mag = self.magnitude()
+        if mag == 0:
+            raise ZeroDivisionError("Cannot normalize zero octonion")
+        
+        return OctonionNumber(
+            self.w / mag, self.x / mag, self.y / mag, self.z / mag,
+            self.e / mag, self.f / mag, self.g / mag, self.h / mag
+        )
+    
+    def phase(self) -> float:
+        """
+        Get the phase (angle) of the octonion.
+        
+        Returns:
+            float: Phase angle in radians
+        """
+        return self._phase
+    
+    # Operator overloads
+    def __add__(self, other: Union['OctonionNumber', float, int]) -> 'OctonionNumber':
         if isinstance(other, OctonionNumber):
             return OctonionNumber(
                 self.w + other.w, self.x + other.x, self.y + other.y, self.z + other.z,
                 self.e + other.e, self.f + other.f, self.g + other.g, self.h + other.h
             )
+        elif isinstance(other, (int, float)):
+            return OctonionNumber(self.w + other, self.x, self.y, self.z,
+                                 self.e, self.f, self.g, self.h)
         return NotImplemented
-
-    def __sub__(self, other):
+    
+    def __radd__(self, other: Union[float, int]) -> 'OctonionNumber':
+        return self.__add__(other)
+    
+    def __sub__(self, other: Union['OctonionNumber', float, int]) -> 'OctonionNumber':
         if isinstance(other, OctonionNumber):
             return OctonionNumber(
                 self.w - other.w, self.x - other.x, self.y - other.y, self.z - other.z,
                 self.e - other.e, self.f - other.f, self.g - other.g, self.h - other.h
             )
+        elif isinstance(other, (int, float)):
+            return OctonionNumber(self.w - other, self.x, self.y, self.z,
+                                 self.e, self.f, self.g, self.h)
         return NotImplemented
-
-    def __mul__(self, other):
+    
+    def __rsub__(self, other: Union[float, int]) -> 'OctonionNumber':
+        if isinstance(other, (int, float)):
+            return OctonionNumber(
+                other - self.w, -self.x, -self.y, -self.z,
+                -self.e, -self.f, -self.g, -self.h
+            )
+        return NotImplemented
+    
+    def __mul__(self, other: Union['OctonionNumber', float, int]) -> 'OctonionNumber':
         if isinstance(other, OctonionNumber):
-            # Mevcut octonion çarpımı (7-boyutlu çapraz çarpım kuralları)
+            # Octonion multiplication (non-commutative, non-associative)
             w = self.w * other.w - self.x * other.x - self.y * other.y - self.z * other.z \
                 - self.e * other.e - self.f * other.f - self.g * other.g - self.h * other.h
             x = self.w * other.x + self.x * other.w + self.y * other.z - self.z * other.y \
@@ -1472,92 +1663,93 @@ class OctonionNumber:
                 - self.e * other.y + self.f * other.z + self.g * other.w - self.h * other.x
             h = self.w * other.h - self.x * other.g + self.y * other.f + self.z * other.e \
                 - self.e * other.z - self.f * other.y + self.g * other.x + self.h * other.w
-
+            
             return OctonionNumber(w, x, y, z, e, f, g, h)
-
+        
         elif isinstance(other, (int, float)):
-            # Skaler çarpım: tüm bileşenler other ile çarpılır
+            # Scalar multiplication
             return OctonionNumber(
                 self.w * other, self.x * other, self.y * other, self.z * other,
                 self.e * other, self.f * other, self.g * other, self.h * other
             )
-
+        
         return NotImplemented
-
-    def __rmul__(self, other):
-        # Skaler çarpımda değişme özelliği vardır: other * self == self * other
-        if isinstance(other, (int, float)):
-            return self.__mul__(other)  # self * other
-        return NotImplemented
-
-
-    def __truediv__(self, scalar):
+    
+    def __rmul__(self, other: Union[float, int]) -> 'OctonionNumber':
+        return self.__mul__(other)
+    
+    def __truediv__(self, scalar: Union[float, int]) -> 'OctonionNumber':
         if isinstance(scalar, (int, float)):
             if scalar == 0:
-                raise ZeroDivisionError("Cannot divide by zero.")
+                raise ZeroDivisionError("Cannot divide octonion by zero")
             return OctonionNumber(
                 self.w / scalar, self.x / scalar, self.y / scalar, self.z / scalar,
                 self.e / scalar, self.f / scalar, self.g / scalar, self.h / scalar
             )
         return NotImplemented
-
-    def __eq__(self, other):
+    
+    def __neg__(self) -> 'OctonionNumber':
+        return OctonionNumber(
+            -self.w, -self.x, -self.y, -self.z,
+            -self.e, -self.f, -self.g, -self.h
+        )
+    
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, OctonionNumber):
             return False
+        
         tol = 1e-12
-        return all(abs(getattr(self, attr) - getattr(other, attr)) < tol 
-                   for attr in ['w', 'x', 'y', 'z', 'e', 'f', 'g', 'h'])
-
-    def __ne__(self, other):
+        return all(abs(a - b) < tol for a, b in zip(self.coeffs, other.coeffs))
+    
+    def __ne__(self, other: object) -> bool:
         return not self.__eq__(other)
+    
+    def __hash__(self) -> int:
+        # Round to avoid floating-point precision issues
+        return hash(tuple(round(c, 10) for c in self.coeffs))
+    
+    def __str__(self) -> str:
+        return f"Octonion({self.w:.6f}, {self.x:.6f}, {self.y:.6f}, {self.z:.6f}, " \
+               f"{self.e:.6f}, {self.f:.6f}, {self.g:.6f}, {self.h:.6f})"
+    
+    def __repr__(self) -> str:
+        return f"OctonionNumber({self.w}, {self.x}, {self.y}, {self.z}, " \
+               f"{self.e}, {self.f}, {self.g}, {self.h})"
+    
+    def to_tuple(self) -> Tuple[float, ...]:
+        """Convert to tuple."""
+        return tuple(self.coeffs)
+    
+    def to_numpy(self) -> np.ndarray:
+        """Convert to numpy array."""
+        return np.array(self.coeffs, dtype=np.float64)
+    
+    def copy(self) -> 'OctonionNumber':
+        """Create a copy of this octonion."""
+        return OctonionNumber(*self.coeffs)
 
-    def __str__(self):
-        return f"Octonion({self.w:.3f}, {self.x:.3f}, {self.y:.3f}, {self.z:.3f}, {self.e:.3f}, {self.f:.3f}, {self.g:.3f}, {self.h:.3f})"
-
-    def __repr__(self):
-        return f"({', '.join(map(str, self.coeffs))})"
-        #return str(self)
-
-    def components(self):
-        """Bileşen listesini (Python list) döndürür."""
-        return list(self.coeffs)
-
-    def magnitude(self) -> float:
-        """
-        Euclidean norm = √( Σ_i coeff_i² )
-        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
-        """
-        return float(np.linalg.norm(self.coeffs))
-
-    def __hash__(self):
-        # NaN ve -0.0 gibi durumları göz önünde bulundurun
-        return hash(tuple(np.round(self.coeffs, decimals=10)))
-
-    @property
-    def real(self) -> float:
-        """İlk bileşen – “gerçek” kısım."""
-        return float(self.coeffs[0])
-    #def real(self):
-    #    Gerçek kısım (ilk bileşen)
-    #    return self.coeffs[0]
-
-    def phase(self):
-        # Güvenli phase: octonionlarda özel tanım yok — fallback 0.0
-        return 0.0
-
+# Bazı önemli oktonyon sabitleri
+ZERO = OctonionNumber(0, 0, 0, 0, 0, 0, 0, 0)
+ONE = OctonionNumber(1, 0, 0, 0, 0, 0, 0, 0)
+I = OctonionNumber(0, 1, 0, 0, 0, 0, 0, 0)
+J = OctonionNumber(0, 0, 1, 0, 0, 0, 0, 0)
+K = OctonionNumber(0, 0, 0, 1, 0, 0, 0, 0)
+E = OctonionNumber(0, 0, 0, 0, 1, 0, 0, 0)
+F = OctonionNumber(0, 0, 0, 0, 0, 1, 0, 0)
+G = OctonionNumber(0, 0, 0, 0, 0, 0, 1, 0)
+H = OctonionNumber(0, 0, 0, 0, 0, 0, 0, 1)
 
 class Constants:
-    """Oktonyon sabitleri."""
-    ZERO = OctonionNumber(0, 0, 0, 0, 0, 0, 0, 0)
-    ONE = OctonionNumber(1, 0, 0, 0, 0, 0, 0, 0)
-    I = OctonionNumber(0, 1, 0, 0, 0, 0, 0, 0)
-    J = OctonionNumber(0, 0, 1, 0, 0, 0, 0, 0)
-    K = OctonionNumber(0, 0, 0, 1, 0, 0, 0, 0)
-    E = OctonionNumber(0, 0, 0, 0, 1, 0, 0, 0)
-    F = OctonionNumber(0, 0, 0, 0, 0, 1, 0, 0)
-    G = OctonionNumber(0, 0, 0, 0, 0, 0, 1, 0)
-    H = OctonionNumber(0, 0, 0, 0, 0, 0, 0, 1)
-
+    """Oktonyon sabitleri (alias'lar)."""
+    ZERO = ZERO
+    ONE = ONE
+    I = I
+    J = J
+    K = K
+    E = E
+    F = F
+    G = G
+    H = H
 
 @dataclass
 class NeutrosophicNumber:
@@ -2841,162 +3033,9 @@ class VoudonNumber:
         # compute and return the phase value
         return self._phase   # or whatever logic you need
 
-@dataclass
-class OctonionNumber:
-    """
-    Represents an octonion number with 8 components.
-    Implements octonion multiplication rules.
-    """
-    def __init__(self, *args):
-        # Varsayılan
-        self.w = self.x = self.y = self.z = self.e = self.f = self.g = self.h = 0.0
-        
-        if len(args) == 8:
-            self.w, self.x, self.y, self.z, self.e, self.f, self.g, self.h = args
-        elif len(args) == 1:
-            if isinstance(args[0], (list, tuple)):
-                if len(args[0]) == 8:
-                    self.w, self.x, self.y, self.z, self.e, self.f, self.g, self.h = args[0]
-                else:
-                    components = list(args[0]) + [0.0] * (8 - len(args[0]))
-                    self.w, self.x, self.y, self.z, self.e, self.f, self.g, self.h = components
-            elif isinstance(args[0], (int, float)):
-                self.w = float(args[0])
-        elif len(args) == 0:
-            pass
-        else:
-            raise ValueError("Invalid arguments for OctonionNumber")
-
-    @property
-    def coeffs(self):
-        """Octonion bileşenlerini liste olarak döner."""
-        return [self.w, self.x, self.y, self.z, self.e, self.f, self.g, self.h]
-
-    def __add__(self, other):
-        if isinstance(other, OctonionNumber):
-            return OctonionNumber(
-                self.w + other.w, self.x + other.x, self.y + other.y, self.z + other.z,
-                self.e + other.e, self.f + other.f, self.g + other.g, self.h + other.h
-            )
-        return NotImplemented
-
-    def __sub__(self, other):
-        if isinstance(other, OctonionNumber):
-            return OctonionNumber(
-                self.w - other.w, self.x - other.x, self.y - other.y, self.z - other.z,
-                self.e - other.e, self.f - other.f, self.g - other.g, self.h - other.h
-            )
-        return NotImplemented
-
-    def __mul__(self, other):
-        if isinstance(other, OctonionNumber):
-            # Mevcut octonion çarpımı (7-boyutlu çapraz çarpım kuralları)
-            w = self.w * other.w - self.x * other.x - self.y * other.y - self.z * other.z \
-                - self.e * other.e - self.f * other.f - self.g * other.g - self.h * other.h
-            x = self.w * other.x + self.x * other.w + self.y * other.z - self.z * other.y \
-                + self.e * other.f - self.f * other.e + self.g * other.h - self.h * other.g
-            y = self.w * other.y - self.x * other.z + self.y * other.w + self.z * other.x \
-                + self.e * other.g - self.g * other.e - self.f * other.h + self.h * other.f
-            z = self.w * other.z + self.x * other.y - self.y * other.x + self.z * other.w \
-                + self.e * other.h - self.h * other.e + self.f * other.g - self.g * other.f
-            e = self.w * other.e - self.x * other.f - self.y * other.g - self.z * other.h \
-                + self.e * other.w + self.f * other.x + self.g * other.y + self.h * other.z
-            f = self.w * other.f + self.x * other.e - self.y * other.h + self.z * other.g \
-                - self.e * other.x + self.f * other.w - self.g * other.z + self.h * other.y
-            g = self.w * other.g + self.x * other.h + self.y * other.e - self.z * other.f \
-                - self.e * other.y + self.f * other.z + self.g * other.w - self.h * other.x
-            h = self.w * other.h - self.x * other.g + self.y * other.f + self.z * other.e \
-                - self.e * other.z - self.f * other.y + self.g * other.x + self.h * other.w
-
-            return OctonionNumber(w, x, y, z, e, f, g, h)
-
-        elif isinstance(other, (int, float)):
-            # Skaler çarpım: tüm bileşenler other ile çarpılır
-            return OctonionNumber(
-                self.w * other, self.x * other, self.y * other, self.z * other,
-                self.e * other, self.f * other, self.g * other, self.h * other
-            )
-
-        return NotImplemented
-
-    def __rmul__(self, other):
-        # Skaler çarpımda değişme özelliği vardır: other * self == self * other
-        if isinstance(other, (int, float)):
-            return self.__mul__(other)  # self * other
-        return NotImplemented
-
-
-    def __truediv__(self, scalar):
-        if isinstance(scalar, (int, float)):
-            if scalar == 0:
-                raise ZeroDivisionError("Cannot divide by zero.")
-            return OctonionNumber(
-                self.w / scalar, self.x / scalar, self.y / scalar, self.z / scalar,
-                self.e / scalar, self.f / scalar, self.g / scalar, self.h / scalar
-            )
-        return NotImplemented
-
-    def __eq__(self, other):
-        if not isinstance(other, OctonionNumber):
-            return False
-        tol = 1e-12
-        return all(abs(getattr(self, attr) - getattr(other, attr)) < tol 
-                   for attr in ['w', 'x', 'y', 'z', 'e', 'f', 'g', 'h'])
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __str__(self):
-        return f"Octonion({self.w:.3f}, {self.x:.3f}, {self.y:.3f}, {self.z:.3f}, {self.e:.3f}, {self.f:.3f}, {self.g:.3f}, {self.h:.3f})"
-
-    def __repr__(self):
-        return f"({', '.join(map(str, self.coeffs))})"
-        #return str(self)
-
-    def components(self):
-        """Bileşen listesini (Python list) döndürür."""
-        return self.coeffs.tolist()
-
-    def magnitude(self) -> float:
-        """
-        Euclidean norm = √( Σ_i coeff_i² )
-        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
-        """
-        return float(np.linalg.norm(self.coeffs))
-
-    def __hash__(self):
-        # NaN ve -0.0 gibi durumları göz önünde bulundurun
-        return hash(tuple(np.round(self.coeffs, decimals=10)))
-
-    @property
-    def real(self) -> float:
-        """İlk bileşen – “gerçek” kısım."""
-        return float(self.coeffs[0])
-    #def real(self):
-    #    Gerçek kısım (ilk bileşen)
-    #    return self.coeffs[0]
-
-    def phase(self):
-        # compute and return the phase value
-        return self._phase   # or whatever logic you need
-
-
 @property
 def coeffs(self):
     return [self.w, self.x, self.y, self.z, self.e, self.f, self.g, self.h]
-
-class Constants:
-    """Oktonyon sabitleri."""
-    ZERO = OctonionNumber(0, 0, 0, 0, 0, 0, 0, 0)
-    ONE = OctonionNumber(1, 0, 0, 0, 0, 0, 0, 0)
-    I = OctonionNumber(0, 1, 0, 0, 0, 0, 0, 0)
-    J = OctonionNumber(0, 0, 1, 0, 0, 0, 0, 0)
-    K = OctonionNumber(0, 0, 0, 1, 0, 0, 0, 0)
-    E = OctonionNumber(0, 0, 0, 0, 1, 0, 0, 0)
-    F = OctonionNumber(0, 0, 0, 0, 0, 1, 0, 0)
-    G = OctonionNumber(0, 0, 0, 0, 0, 0, 1, 0)
-    H = OctonionNumber(0, 0, 0, 0, 0, 0, 0, 1)
-
 
 @dataclass
 class NeutrosophicNumber:
@@ -4378,17 +4417,6 @@ def _parse_splitcomplex(s) -> SplitcomplexNumber:
 def generate_octonion(w, x, y, z, e, f, g, h):
     """8 bileşenden bir oktonyon oluşturur."""
     return OctonionNumber(w, x, y, z, e, f, g, h)
-
-# Bazı önemli oktonyon sabitleri
-ZERO = OctonionNumber(0, 0, 0, 0, 0, 0, 0, 0)
-ONE = OctonionNumber(1, 0, 0, 0, 0, 0, 0, 0)
-I = OctonionNumber(0, 1, 0, 0, 0, 0, 0, 0)
-J = OctonionNumber(0, 0, 1, 0, 0, 0, 0, 0)
-K = OctonionNumber(0, 0, 0, 1, 0, 0, 0, 0)
-E = OctonionNumber(0, 0, 0, 0, 1, 0, 0, 0)
-F = OctonionNumber(0, 0, 0, 0, 0, 1, 0, 0)
-G = OctonionNumber(0, 0, 0, 0, 0, 0, 1, 0)
-H = OctonionNumber(0, 0, 0, 0, 0, 0, 0, 1)
 
 
 def _parse_quaternion(s: str) -> quaternion:
