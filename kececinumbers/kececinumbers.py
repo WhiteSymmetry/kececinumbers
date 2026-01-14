@@ -1282,129 +1282,328 @@ class RoutonNumber:
             pass
         return 0.0
 
+import numpy as np
+import math
+from dataclasses import dataclass, field
+from typing import List, Union, Tuple, Any, Optional
+
 @dataclass
 class VoudonNumber:
-    """256-bileşenli Pathion sayısı"""
+    """
+    256-dimensional hypercomplex number (Voudon).
     
-    def __init__(self, *coeffs):
-        if len(coeffs) == 1 and hasattr(coeffs[0], '__iter__') and not isinstance(coeffs[0], str):
-            coeffs = coeffs[0]
+    Voudon numbers extend the Cayley-Dickson construction beyond sedenions.
+    They have 256 components and are extremely high-dimensional algebraic structures.
+    
+    Note: True Voudon multiplication is extremely complex (256x256 multiplication table).
+    This implementation uses simplified operations for practical use.
+    """
+    
+    coeffs: List[float] = field(default_factory=lambda: [0.0] * 256)
+    
+    def __post_init__(self):
+        """Validate and normalize coefficients after initialization."""
+        if len(self.coeffs) != 256:
+            # Pad or truncate to exactly 256 components
+            if len(self.coeffs) < 256:
+                self.coeffs = list(self.coeffs) + [0.0] * (256 - len(self.coeffs))
+            else:
+                self.coeffs = self.coeffs[:256]
         
-        if len(coeffs) != 256:
-            coeffs = list(coeffs) + [0.0] * (256 - len(coeffs))
-            if len(coeffs) > 256:
-                coeffs = coeffs[:256]
-        
-        self.coeffs = [float(c) for c in coeffs]
+        # Ensure all are floats
+        self.coeffs = [float(c) for c in self.coeffs]
+    
+    @classmethod
+    def from_scalar(cls, value: float) -> 'VoudonNumber':
+        """Create a Voudon number from a scalar (real number)."""
+        coeffs = [0.0] * 256
+        coeffs[0] = float(value)
+        return cls(coeffs)
+    
+    @classmethod
+    def from_list(cls, values: List[float]) -> 'VoudonNumber':
+        """Create from a list of up to 256 values."""
+        if len(values) > 256:
+            raise ValueError(f"List too long ({len(values)}), maximum 256 elements")
+        coeffs = list(values) + [0.0] * (256 - len(values))
+        return cls(coeffs)
+    
+    @classmethod
+    def from_iterable(cls, values: Any) -> 'VoudonNumber':
+        """Create from any iterable."""
+        return cls.from_list(list(values))
+    
+    @classmethod
+    def basis_element(cls, index: int) -> 'VoudonNumber':
+        """Create a basis Voudon (1 at position index, 0 elsewhere)."""
+        if not 0 <= index < 256:
+            raise ValueError(f"Index must be between 0 and 255, got {index}")
+        coeffs = [0.0] * 256
+        coeffs[index] = 1.0
+        return cls(coeffs)
     
     @property
     def real(self) -> float:
-        """İlk bileşen – “gerçek” kısım."""
-        return float(self.coeffs[0])
-    #def real(self):
-    #    Gerçek kısım (ilk bileşen)
-    #    return self.coeffs[0]
+        """Get the real part (first component)."""
+        return self.coeffs[0]
     
-    def __iter__(self):
-        return iter(self.coeffs)
+    @real.setter
+    def real(self, value: float):
+        """Set the real part."""
+        self.coeffs[0] = float(value)
     
-    def __getitem__(self, index):
+    @property
+    def imag(self) -> List[float]:
+        """Get the imaginary parts (all except real)."""
+        return self.coeffs[1:]
+    
+    def __getitem__(self, index: int) -> float:
+        """Get component by index."""
+        if not 0 <= index < 256:
+            raise IndexError(f"Index {index} out of range for Voudon")
         return self.coeffs[index]
     
-    def __len__(self):
-        return len(self.coeffs)
+    def __setitem__(self, index: int, value: float):
+        """Set component by index."""
+        if not 0 <= index < 256:
+            raise IndexError(f"Index {index} out of range for Voudon")
+        self.coeffs[index] = float(value)
     
-    def __str__(self):
-        return f"VoudonNumber({', '.join(map(str, self.coeffs))})"
+    def __len__(self) -> int:
+        """Return number of components (always 256)."""
+        return 256
     
-    def __repr__(self):
-        return f"({', '.join(map(str, self.coeffs))})"
-        #return f"VoudonNumber({self.coeffs})"
+    def __iter__(self):
+        """Iterate over components."""
+        return iter(self.coeffs)
     
-    def __add__(self, other):
+    def __add__(self, other: Union['VoudonNumber', float, int]) -> 'VoudonNumber':
+        """Add two Voudon numbers or Voudon and scalar."""
         if isinstance(other, VoudonNumber):
-            return VoudonNumber([a + b for a, b in zip(self.coeffs, other.coeffs)])
-        else:
-            # Skaler toplama
+            new_coeffs = [a + b for a, b in zip(self.coeffs, other.coeffs)]
+            return VoudonNumber(new_coeffs)
+        elif isinstance(other, (int, float)):
             new_coeffs = self.coeffs.copy()
             new_coeffs[0] += float(other)
             return VoudonNumber(new_coeffs)
+        return NotImplemented
     
-    def __sub__(self, other):
+    def __radd__(self, other: Union[float, int]) -> 'VoudonNumber':
+        """Right addition: scalar + Voudon."""
+        return self.__add__(other)
+    
+    def __sub__(self, other: Union['VoudonNumber', float, int]) -> 'VoudonNumber':
+        """Subtract two Voudon numbers or Voudon and scalar."""
         if isinstance(other, VoudonNumber):
-            return VoudonNumber([a - b for a, b in zip(self.coeffs, other.coeffs)])
-        else:
+            new_coeffs = [a - b for a, b in zip(self.coeffs, other.coeffs)]
+            return VoudonNumber(new_coeffs)
+        elif isinstance(other, (int, float)):
             new_coeffs = self.coeffs.copy()
             new_coeffs[0] -= float(other)
             return VoudonNumber(new_coeffs)
+        return NotImplemented
     
-    def __mul__(self, other):
-        if isinstance(other, VoudonNumber):
-            # Basitçe bileşen bazlı çarpma (gerçek Cayley-Dickson çarpımı yerine)
-            return VoudonNumber([a * b for a, b in zip(self.coeffs, other.coeffs)])
-        else:
-            # Skaler çarpma
-            return VoudonNumber([c * float(other) for c in self.coeffs])
+    def __rsub__(self, other: Union[float, int]) -> 'VoudonNumber':
+        """Right subtraction: scalar - Voudon."""
+        if isinstance(other, (int, float)):
+            new_coeffs = [-c for c in self.coeffs]
+            new_coeffs[0] += float(other)
+            return VoudonNumber(new_coeffs)
+        return NotImplemented
     
-    def __mod__(self, divisor):
-        return VoudonNumber([c % divisor for c in self.coeffs])
+    def __mul__(self, other: Union['VoudonNumber', float, int]) -> 'VoudonNumber':
+        """
+        Multiply Voudon by scalar or another Voudon (simplified).
+        
+        Note: True Voudon multiplication would require a 256x256 multiplication table.
+        This implementation uses element-wise multiplication for Voudon x Voudon,
+        which is mathematically incorrect but practical for many applications.
+        """
+        if isinstance(other, (int, float)):
+            # Scalar multiplication
+            new_coeffs = [c * float(other) for c in self.coeffs]
+            return VoudonNumber(new_coeffs)
+        elif isinstance(other, VoudonNumber):
+            # Simplified element-wise multiplication
+            # WARNING: This is NOT true Voudon multiplication!
+            new_coeffs = [a * b for a, b in zip(self.coeffs, other.coeffs)]
+            return VoudonNumber(new_coeffs)
+        return NotImplemented
     
-    def __eq__(self, other):
+    def __rmul__(self, other: Union[float, int]) -> 'VoudonNumber':
+        """Right multiplication: scalar * Voudon."""
+        return self.__mul__(other)
+    
+    def __truediv__(self, scalar: Union[float, int]) -> 'VoudonNumber':
+        """Divide Voudon by scalar."""
+        if isinstance(scalar, (int, float)):
+            if scalar == 0:
+                raise ZeroDivisionError("Cannot divide Voudon by zero")
+            new_coeffs = [c / float(scalar) for c in self.coeffs]
+            return VoudonNumber(new_coeffs)
+        return NotImplemented
+    
+    def __floordiv__(self, scalar: Union[float, int]) -> 'VoudonNumber':
+        """Floor divide Voudon by scalar."""
+        if isinstance(scalar, (int, float)):
+            if scalar == 0:
+                raise ZeroDivisionError("Cannot divide Voudon by zero")
+            new_coeffs = [c // float(scalar) for c in self.coeffs]
+            return VoudonNumber(new_coeffs)
+        return NotImplemented
+    
+    def __mod__(self, divisor: Union[float, int]) -> 'VoudonNumber':
+        """Modulo operation on Voudon components."""
+        if isinstance(divisor, (int, float)):
+            if divisor == 0:
+                raise ZeroDivisionError("Cannot take modulo by zero")
+            new_coeffs = [c % float(divisor) for c in self.coeffs]
+            return VoudonNumber(new_coeffs)
+        return NotImplemented
+    
+    def __neg__(self) -> 'VoudonNumber':
+        """Negate the Voudon number."""
+        return VoudonNumber([-c for c in self.coeffs])
+    
+    def __pos__(self) -> 'VoudonNumber':
+        """Unary plus."""
+        return self
+    
+    def __abs__(self) -> float:
+        """Absolute value (magnitude)."""
+        return self.magnitude()
+    
+    def __eq__(self, other: object) -> bool:
+        """Check equality with another Voudon."""
         if not isinstance(other, VoudonNumber):
-            return NotImplemented
-        return np.allclose(self.coeffs, other.coeffs, atol=1e-10)
-        #if isinstance(other, VoudonNumber):
-        #    return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
-        #return False
-
-    def __truediv__(self, other):
-        """Bölme operatörü: / """
-        if isinstance(other, (int, float)):
-            # Skaler bölme
-            return VoudonNumber([c / other for c in self.coeffs])
-        else:
-            raise TypeError(f"Unsupported operand type(s) for /: 'VoudonNumber' and '{type(other).__name__}'")
+            return False
+        return all(math.isclose(a, b, abs_tol=1e-12) for a, b in zip(self.coeffs, other.coeffs))
     
-    def __floordiv__(self, other):
-        """Tam sayı bölme operatörü: // """
-        if isinstance(other, (int, float)):
-            # Skaler tam sayı bölme
-            return VoudonNumber([c // other for c in self.coeffs])
-        else:
-            raise TypeError(f"Unsupported operand type(s) for //: 'VoudonNumber' and '{type(other).__name__}'")
+    def __ne__(self, other: object) -> bool:
+        """Check inequality."""
+        return not self.__eq__(other)
     
-    def __rtruediv__(self, other):
-        """Sağdan bölme: other / VoudonNumber"""
-        if isinstance(other, (int, float)):
-            # Bu daha karmaşık olabilir, basitçe bileşen bazlı bölme
-            return VoudonNumber([other / c if c != 0 else float('inf') for c in self.coeffs])
-        else:
-            raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'VoudonNumber'")
-
-    def components(self):
-        """Bileşen listesini (Python list) döndürür."""
-        return list(self.coeffs)
-
+    def __hash__(self) -> int:
+        """Hash based on rounded components to avoid floating-point issues."""
+        return hash(tuple(round(c, 12) for c in self.coeffs))
+    
     def magnitude(self) -> float:
         """
-        Euclidean norm = √( Σ_i coeff_i² )
-        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
+        Calculate Euclidean norm (magnitude) of the Voudon.
+        
+        Returns:
+            float: sqrt(Σ_i coeff_i²)
         """
         return float(np.linalg.norm(self.coeffs))
-
-    def __hash__(self):
-        # NaN ve -0.0 gibi durumları göz önünde bulundurun
-        return hash(tuple(np.round(self.coeffs, decimals=10)))
-
-    def phase(self):
-        # Güvenli phase: ilk bileşene bak, eğer complex ise angle döndür, değilse 0.0
-        try:
-            first = self.coeffs[0] if self.coeffs else 0.0
-            if isinstance(first, complex):
-                return math.atan2(first.imag, first.real)
-        except Exception:
-            pass
-        return 0.0
+    
+    def norm(self) -> float:
+        """Alias for magnitude."""
+        return self.magnitude()
+    
+    def conjugate(self) -> 'VoudonNumber':
+        """Return the conjugate (negate all imaginary parts)."""
+        new_coeffs = self.coeffs.copy()
+        for i in range(1, 256):
+            new_coeffs[i] = -new_coeffs[i]
+        return VoudonNumber(new_coeffs)
+    
+    def dot(self, other: 'VoudonNumber') -> float:
+        """Dot product with another Voudon."""
+        if not isinstance(other, VoudonNumber):
+            raise TypeError("Dot product requires another VoudonNumber")
+        return sum(a * b for a, b in zip(self.coeffs, other.coeffs))
+    
+    def normalize(self) -> 'VoudonNumber':
+        """Return a normalized (unit) version."""
+        mag = self.magnitude()
+        if mag == 0:
+            raise ZeroDivisionError("Cannot normalize zero Voudon")
+        return VoudonNumber([c / mag for c in self.coeffs])
+    
+    def to_list(self) -> List[float]:
+        """Convert to Python list."""
+        return self.coeffs.copy()
+    
+    def to_tuple(self) -> Tuple[float, ...]:
+        """Convert to tuple."""
+        return tuple(self.coeffs)
+    
+    def to_numpy(self) -> np.ndarray:
+        """Convert to numpy array."""
+        return np.array(self.coeffs, dtype=np.float64)
+    
+    def copy(self) -> 'VoudonNumber':
+        """Create a copy."""
+        return VoudonNumber(self.coeffs.copy())
+    
+    def components(self) -> List[float]:
+        """Get components as list (alias for to_list)."""
+        return self.to_list()
+    
+    def phase(self) -> float:
+        """
+        Compute phase (angle) of the Voudon number.
+        
+        For high-dimensional numbers, phase is not uniquely defined.
+        This implementation returns the angle of the projection onto
+        the real-imaginary plane.
+        """
+        if self.magnitude() == 0:
+            return 0.0
+        
+        # Compute magnitude of imaginary parts
+        imag_magnitude = math.sqrt(sum(i**2 for i in self.imag))
+        if imag_magnitude == 0:
+            return 0.0
+        
+        # Angle between real part and imaginary vector
+        return math.atan2(imag_magnitude, self.real)
+    
+    def __str__(self) -> str:
+        """Human-readable string representation."""
+        # For 256 dimensions, show a summary
+        non_zero = [(i, c) for i, c in enumerate(self.coeffs) if abs(c) > 1e-10]
+        
+        if not non_zero:
+            return "Voudon(0)"
+        
+        if len(non_zero) <= 5:
+            # Show all non-zero components
+            parts = []
+            for i, c in non_zero:
+                if i == 0:
+                    parts.append(f"{c:.6f}")
+                else:
+                    sign = "+" if c >= 0 else "-"
+                    parts.append(f"{sign} {abs(c):.6f}e{i}")
+            return f"Voudon({' '.join(parts)})"
+        else:
+            # Show summary
+            return f"Voudon[{len(non_zero)} non-zero components, real={self.real:.6f}, mag={self.magnitude():.6f}]"
+    
+    def __repr__(self) -> str:
+        """Detailed representation showing first few components."""
+        if len(self.coeffs) <= 8:
+            return f"VoudonNumber({self.coeffs})"
+        else:
+            first_five = self.coeffs[:5]
+            last_five = self.coeffs[-5:]
+            return f"VoudonNumber({first_five} ... {last_five})"
+    
+    def summary(self) -> str:
+        """Return a summary of the Voudon number."""
+        non_zero = sum(1 for c in self.coeffs if abs(c) > 1e-10)
+        max_coeff = max(abs(c) for c in self.coeffs)
+        min_coeff = min(abs(c) for c in self.coeffs if abs(c) > 0)
+        
+        return (f"VoudonNumber Summary:\n"
+                f"  Dimensions: 256\n"
+                f"  Non-zero components: {non_zero}\n"
+                f"  Real part: {self.real:.6f}\n"
+                f"  Magnitude: {self.magnitude():.6f}\n"
+                f"  Phase: {self.phase():.6f} rad\n"
+                f"  Max component: {max_coeff:.6f}\n"
+                f"  Min non-zero: {min_coeff:.6f if non_zero > 0 else 0}")
 
 @dataclass
 class OctonionNumber:
@@ -3001,124 +3200,6 @@ class RoutonNumber:
         # compute and return the phase value
         return self._phase   # or whatever logic you need
 
-@dataclass
-class VoudonNumber:
-    """256-bileşenli Pathion sayısı"""
-    
-    def __init__(self, *coeffs):
-        if len(coeffs) == 1 and hasattr(coeffs[0], '__iter__') and not isinstance(coeffs[0], str):
-            coeffs = coeffs[0]
-        
-        if len(coeffs) != 256:
-            coeffs = list(coeffs) + [0.0] * (256 - len(coeffs))
-            if len(coeffs) > 256:
-                coeffs = coeffs[:256]
-        
-        self.coeffs = [float(c) for c in coeffs]
-    
-    @property
-    def real(self) -> float:
-        """İlk bileşen – “gerçek” kısım."""
-        return float(self.coeffs[0])
-    #def real(self):
-    #    Gerçek kısım (ilk bileşen)
-    #    return self.coeffs[0]
-    
-    def __iter__(self):
-        return iter(self.coeffs)
-    
-    def __getitem__(self, index):
-        return self.coeffs[index]
-    
-    def __len__(self):
-        return len(self.coeffs)
-    
-    def __str__(self):
-        return f"VoudonNumber({', '.join(map(str, self.coeffs))})"
-    
-    def __repr__(self):
-        return f"({', '.join(map(str, self.coeffs))})"
-        #return f"VoudonNumber({self.coeffs})"
-    
-    def __add__(self, other):
-        if isinstance(other, VoudonNumber):
-            return VoudonNumber([a + b for a, b in zip(self.coeffs, other.coeffs)])
-        else:
-            # Skaler toplama
-            new_coeffs = self.coeffs.copy()
-            new_coeffs[0] += float(other)
-            return VoudonNumber(new_coeffs)
-    
-    def __sub__(self, other):
-        if isinstance(other, VoudonNumber):
-            return VoudonNumber([a - b for a, b in zip(self.coeffs, other.coeffs)])
-        else:
-            new_coeffs = self.coeffs.copy()
-            new_coeffs[0] -= float(other)
-            return VoudonNumber(new_coeffs)
-    
-    def __mul__(self, other):
-        if isinstance(other, VoudonNumber):
-            # Basitçe bileşen bazlı çarpma (gerçek Cayley-Dickson çarpımı yerine)
-            return VoudonNumber([a * b for a, b in zip(self.coeffs, other.coeffs)])
-        else:
-            # Skaler çarpma
-            return VoudonNumber([c * float(other) for c in self.coeffs])
-    
-    def __mod__(self, divisor):
-        return VoudonNumber([c % divisor for c in self.coeffs])
-    
-    def __eq__(self, other):
-        if not isinstance(other, VoudonNumber):
-            return NotImplemented
-        return np.allclose(self.coeffs, other.coeffs, atol=1e-10)
-        #if isinstance(other, VoudonNumber):
-        #    return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
-        #return False
-
-    def __truediv__(self, other):
-        """Bölme operatörü: / """
-        if isinstance(other, (int, float)):
-            # Skaler bölme
-            return VoudonNumber([c / other for c in self.coeffs])
-        else:
-            raise TypeError(f"Unsupported operand type(s) for /: 'VoudonNumber' and '{type(other).__name__}'")
-    
-    def __floordiv__(self, other):
-        """Tam sayı bölme operatörü: // """
-        if isinstance(other, (int, float)):
-            # Skaler tam sayı bölme
-            return VoudonNumber([c // other for c in self.coeffs])
-        else:
-            raise TypeError(f"Unsupported operand type(s) for //: 'VoudonNumber' and '{type(other).__name__}'")
-    
-    def __rtruediv__(self, other):
-        """Sağdan bölme: other / VoudonNumber"""
-        if isinstance(other, (int, float)):
-            # Bu daha karmaşık olabilir, basitçe bileşen bazlı bölme
-            return VoudonNumber([other / c if c != 0 else float('inf') for c in self.coeffs])
-        else:
-            raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'VoudonNumber'")
-
-    def components(self):
-        """Bileşen listesini (Python list) döndürür."""
-        return self.coeffs.tolist()
-
-    def magnitude(self) -> float:
-        """
-        Euclidean norm = √( Σ_i coeff_i² )
-        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
-        """
-        return float(np.linalg.norm(self.coeffs))
-
-    def __hash__(self):
-        # NaN ve -0.0 gibi durumları göz önünde bulundurun
-        return hash(tuple(np.round(self.coeffs, decimals=10)))
-
-    def phase(self):
-        # compute and return the phase value
-        return self._phase   # or whatever logic you need
-
 @property
 def coeffs(self):
     return [self.w, self.x, self.y, self.z, self.e, self.f, self.g, self.h]
@@ -4285,39 +4366,131 @@ def _parse_routon(s) -> RoutonNumber:
 
     raise ValueError(f"Routon için 64 bileşen veya tek skaler bileşen gerekir. Verilen: '{s}' ({len(parts)} bileşen)")
 
-def _parse_voudon(s) -> VoudonNumber:
-    """String'i veya sayıyı VoudonNumber'a dönüştürür."""
-    if isinstance(s, VoudonNumber):
-        return s
+def _parse_voudon(s: Any) -> VoudonNumber:
+    """
+    Parse input into a VoudonNumber (256-dimensional hypercomplex number).
     
-    if isinstance(s, (float, int, complex)):
-        return VoudonNumber(float(s), *[0.0] * 255)
+    Supports:
+      - VoudonNumber instance (returned as-is)
+      - Numeric scalars (int, float) -> real part, others zero
+      - Complex numbers -> real and imag in first two components
+      - Lists/tuples of numbers (up to 256)
+      - Strings: comma-separated list or single number
     
-    if hasattr(s, '__iter__') and not isinstance(s, str):
-        return VoudonNumber(s)
+    Args:
+        s: Input to parse
     
-    # String işlemleri için önce string'e dönüştür
-    if not isinstance(s, str):
-        s = str(s)
+    Returns:
+        VoudonNumber instance
     
-    s = s.strip()
-    # Köşeli parantezleri kaldır (eğer varsa)
-    s = s.strip('[]')
-    parts = [p.strip() for p in s.split(',')]
-
-    if len(parts) == 256:  # Pathion 32 bileşenli olmalı
+    Raises:
+        ValueError: If parsing fails
+    """
+    try:
+        # If already VoudonNumber, return as-is
+        if isinstance(s, VoudonNumber):
+            return s
+        
+        # Handle numeric types
+        if isinstance(s, (int, float)):
+            return VoudonNumber.from_scalar(float(s))
+        
+        # Handle complex numbers
+        if isinstance(s, complex):
+            coeffs = [0.0] * 256
+            coeffs[0] = s.real
+            coeffs[1] = s.imag
+            return VoudonNumber(coeffs)
+        
+        # Handle iterables (non-string)
+        if hasattr(s, '__iter__') and not isinstance(s, str):
+            return VoudonNumber.from_iterable(s)
+        
+        # Convert to string for parsing
+        if not isinstance(s, str):
+            s = str(s)
+        
+        s = s.strip()
+        
+        # Remove brackets if present
+        s = s.strip('[]{}()')
+        
+        # Check if empty
+        if not s:
+            return VoudonNumber.from_scalar(0.0)
+        
+        # Try to parse as comma-separated list
+        if ',' in s:
+            parts = [p.strip() for p in s.split(',')]
+            
+            # Filter out empty parts
+            parts = [p for p in parts if p]
+            
+            if not parts:
+                return VoudonNumber.from_scalar(0.0)
+            
+            try:
+                # Parse all parts as floats
+                float_parts = [float(p) for p in parts]
+                
+                # If we have exactly 256 components
+                if len(float_parts) == 256:
+                    return VoudonNumber(float_parts)
+                
+                # If we have fewer than 256, pad with zeros
+                elif len(float_parts) < 256:
+                    padded = float_parts + [0.0] * (256 - len(float_parts))
+                    return VoudonNumber(padded)
+                
+                # If we have more than 256, truncate
+                else:
+                    warnings.warn(f"Voudon input has {len(float_parts)} components, "
+                                f"truncating to first 256", RuntimeWarning)
+                    return VoudonNumber(float_parts[:256])
+            
+            except ValueError as e:
+                raise ValueError(f"Invalid numeric value in Voudon string: '{s}' -> {e}")
+        
+        # Try to parse as single number
         try:
-            return VoudonNumber(*map(float, parts))  # 64 parametre
-        except ValueError as e:
-            raise ValueError(f"Geçersiz voudon bileşen değeri: '{s}' -> {e}") from e
-    elif len(parts) == 1:  # Sadece skaler değer girildiğinde
+            scalar_val = float(s)
+            return VoudonNumber.from_scalar(scalar_val)
+        except ValueError:
+            pass
+        
+        # Try to parse as complex number string
         try:
-            scalar_val = float(parts[0])
-            return VoudonNumber(scalar_val, *[0.0] * 255)  # 256 parametre
-        except ValueError as e:
-            raise ValueError(f"Geçersiz skaler voudon değeri: '{s}' -> {e}") from e
-
-    raise ValueError(f"Voudon için 64 bileşen veya tek skaler bileşen gerekir. Verilen: '{s}' ({len(parts)} bileşen)")
+            c = complex(s)
+            coeffs = [0.0] * 256
+            coeffs[0] = c.real
+            coeffs[1] = c.imag
+            return VoudonNumber(coeffs)
+        except ValueError:
+            pass
+        
+        # Try to extract any numeric content
+        try:
+            # Use regex to find first number
+            import re
+            match = re.search(r'[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?', s)
+            if match:
+                scalar_val = float(match.group())
+                return VoudonNumber.from_scalar(scalar_val)
+        except Exception:
+            pass
+        
+        # If all else fails
+        raise ValueError(f"Cannot parse Voudon from input: {repr(s)}")
+    
+    except Exception as e:
+        # Log the error if logger is available
+        if 'logger' in globals():
+            logger.warning(f"Voudon parsing failed for {repr(s)}: {e}")
+        else:
+            warnings.warn(f"Voudon parsing failed for {repr(s)}: {e}", RuntimeWarning)
+        
+        # Return zero Voudon as fallback
+        return VoudonNumber.from_scalar(0.0)
 
 
 def _parse_clifford(s) -> CliffordNumber:
