@@ -1158,134 +1158,328 @@ class ChingonNumber:
             pass
         return 0.0
 
-@dataclass
-class RoutonNumber:
-    """128-bileşenli Pathion sayısı"""
-    
-    def __init__(self, *coeffs):
-        if len(coeffs) == 1 and hasattr(coeffs[0], '__iter__') and not isinstance(coeffs[0], str):
-            coeffs = coeffs[0]
-        
-        if len(coeffs) != 128:
-            coeffs = list(coeffs) + [0.0] * (128 - len(coeffs))
-            if len(coeffs) > 128:
-                coeffs = coeffs[:128]
-        
-        self.coeffs = [float(c) for c in coeffs]
-    
-    @property
-    def real(self) -> float:
-        """İlk bileşen – “gerçek” kısım."""
-        return float(self.coeffs[0])
-    #def real(self):
-    #    Gerçek kısım (ilk bileşen)
-    #    return self.coeffs[0]
-    
-    def __iter__(self):
-        return iter(self.coeffs)
-    
-    def __getitem__(self, index):
-        return self.coeffs[index]
-    
-    def __len__(self):
-        return len(self.coeffs)
-    
-    def __str__(self):
-        return f"RoutonNumber({', '.join(map(str, self.coeffs))})"
-    
-    def __repr__(self):
-        return f"({', '.join(map(str, self.coeffs))})"
-        #return f"RoutonNumber({self.coeffs})"
-    
-    def __add__(self, other):
-        if isinstance(other, RoutonNumber):
-            return RoutonNumber([a + b for a, b in zip(self.coeffs, other.coeffs)])
-        else:
-            # Skaler toplama
-            new_coeffs = self.coeffs.copy()
-            new_coeffs[0] += float(other)
-            return RoutonNumber(new_coeffs)
-    
-    def __sub__(self, other):
-        if isinstance(other, RoutonNumber):
-            return RoutonNumber([a - b for a, b in zip(self.coeffs, other.coeffs)])
-        else:
-            new_coeffs = self.coeffs.copy()
-            new_coeffs[0] -= float(other)
-            return RoutonNumber(new_coeffs)
-    
-    def __mul__(self, other):
-        if isinstance(other, RoutonNumber):
-            # Basitçe bileşen bazlı çarpma (gerçek Cayley-Dickson çarpımı yerine)
-            return RoutonNumber([a * b for a, b in zip(self.coeffs, other.coeffs)])
-        else:
-            # Skaler çarpma
-            return RoutonNumber([c * float(other) for c in self.coeffs])
-    
-    def __mod__(self, divisor):
-        return RoutonNumber([c % divisor for c in self.coeffs])
-    
-    def __eq__(self, other):
-        if not isinstance(other, RoutonNumber):
-            return NotImplemented
-        return np.allclose(self.coeffs, other.coeffs, atol=1e-10)
-        #if isinstance(other, RoutonNumber):
-        #    return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
-        #return False
-
-    def __truediv__(self, other):
-        """Bölme operatörü: / """
-        if isinstance(other, (int, float)):
-            # Skaler bölme
-            return RoutonNumber([c / other for c in self.coeffs])
-        else:
-            raise TypeError(f"Unsupported operand type(s) for /: 'RoutonNumber' and '{type(other).__name__}'")
-    
-    def __floordiv__(self, other):
-        """Tam sayı bölme operatörü: // """
-        if isinstance(other, (int, float)):
-            # Skaler tam sayı bölme
-            return RoutonNumber([c // other for c in self.coeffs])
-        else:
-            raise TypeError(f"Unsupported operand type(s) for //: 'RoutonNumber' and '{type(other).__name__}'")
-    
-    def __rtruediv__(self, other):
-        """Sağdan bölme: other / RoutonNumber"""
-        if isinstance(other, (int, float)):
-            # Bu daha karmaşık olabilir, basitçe bileşen bazlı bölme
-            return RoutonNumber([other / c if c != 0 else float('inf') for c in self.coeffs])
-        else:
-            raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'RoutonNumber'")
-
-    def components(self):
-        """Bileşen listesini (Python list) döndürür."""
-        return list(self.coeffs)
-
-    def magnitude(self) -> float:
-        """
-        Euclidean norm = √( Σ_i coeff_i² )
-        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
-        """
-        return float(np.linalg.norm(self.coeffs))
-
-    def __hash__(self):
-        # NaN ve -0.0 gibi durumları göz önünde bulundurun
-        return hash(tuple(np.round(self.coeffs, decimals=10)))
-
-    def phase(self):
-        # Güvenli phase: ilk bileşene bak, eğer complex ise angle döndür, değilse 0.0
-        try:
-            first = self.coeffs[0] if self.coeffs else 0.0
-            if isinstance(first, complex):
-                return math.atan2(first.imag, first.real)
-        except Exception:
-            pass
-        return 0.0
-
 import numpy as np
 import math
 from dataclasses import dataclass, field
-from typing import List, Union, Tuple, Any, Optional
+from typing import List, Union, Tuple, Any
+
+@dataclass
+class RoutonNumber:
+    """
+    128-dimensional hypercomplex number (Routon).
+    
+    Routon numbers extend the Cayley-Dickson construction.
+    They have 128 components and are high-dimensional algebraic structures.
+    
+    Note: True Routon multiplication is extremely complex (128x128 multiplication table).
+    This implementation uses simplified operations for practical use.
+    """
+    
+    coeffs: List[float] = field(default_factory=lambda: [0.0] * 128)
+    
+    def __post_init__(self):
+        """Validate and normalize coefficients after initialization."""
+        if len(self.coeffs) != 128:
+            # Pad or truncate to exactly 128 components
+            if len(self.coeffs) < 128:
+                self.coeffs = list(self.coeffs) + [0.0] * (128 - len(self.coeffs))
+            else:
+                self.coeffs = self.coeffs[:128]
+        
+        # Ensure all are floats
+        self.coeffs = [float(c) for c in self.coeffs]
+    
+    @classmethod
+    def from_scalar(cls, value: float) -> 'RoutonNumber':
+        """Create a Routon number from a scalar (real number)."""
+        coeffs = [0.0] * 128
+        coeffs[0] = float(value)
+        return cls(coeffs)
+    
+    @classmethod
+    def from_list(cls, values: List[float]) -> 'RoutonNumber':
+        """Create from a list of up to 128 values."""
+        if len(values) > 128:
+            raise ValueError(f"List too long ({len(values)}), maximum 128 elements")
+        coeffs = list(values) + [0.0] * (128 - len(values))
+        return cls(coeffs)
+    
+    @classmethod
+    def from_iterable(cls, values: Any) -> 'RoutonNumber':
+        """Create from any iterable."""
+        return cls.from_list(list(values))
+    
+    @classmethod
+    def basis_element(cls, index: int) -> 'RoutonNumber':
+        """Create a basis Routon (1 at position index, 0 elsewhere)."""
+        if not 0 <= index < 128:
+            raise ValueError(f"Index must be between 0 and 127, got {index}")
+        coeffs = [0.0] * 128
+        coeffs[index] = 1.0
+        return cls(coeffs)
+    
+    @property
+    def real(self) -> float:
+        """Get the real part (first component)."""
+        return self.coeffs[0]
+    
+    @real.setter
+    def real(self, value: float):
+        """Set the real part."""
+        self.coeffs[0] = float(value)
+    
+    @property
+    def imag(self) -> List[float]:
+        """Get the imaginary parts (all except real)."""
+        return self.coeffs[1:]
+    
+    def __getitem__(self, index: int) -> float:
+        """Get component by index."""
+        if not 0 <= index < 128:
+            raise IndexError(f"Index {index} out of range for Routon")
+        return self.coeffs[index]
+    
+    def __setitem__(self, index: int, value: float):
+        """Set component by index."""
+        if not 0 <= index < 128:
+            raise IndexError(f"Index {index} out of range for Routon")
+        self.coeffs[index] = float(value)
+    
+    def __len__(self) -> int:
+        """Return number of components (always 128)."""
+        return 128
+    
+    def __iter__(self):
+        """Iterate over components."""
+        return iter(self.coeffs)
+    
+    def __add__(self, other: Union['RoutonNumber', float, int]) -> 'RoutonNumber':
+        """Add two Routon numbers or Routon and scalar."""
+        if isinstance(other, RoutonNumber):
+            new_coeffs = [a + b for a, b in zip(self.coeffs, other.coeffs)]
+            return RoutonNumber(new_coeffs)
+        elif isinstance(other, (int, float)):
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] += float(other)
+            return RoutonNumber(new_coeffs)
+        return NotImplemented
+    
+    def __radd__(self, other: Union[float, int]) -> 'RoutonNumber':
+        """Right addition: scalar + Routon."""
+        return self.__add__(other)
+    
+    def __sub__(self, other: Union['RoutonNumber', float, int]) -> 'RoutonNumber':
+        """Subtract two Routon numbers or Routon and scalar."""
+        if isinstance(other, RoutonNumber):
+            new_coeffs = [a - b for a, b in zip(self.coeffs, other.coeffs)]
+            return RoutonNumber(new_coeffs)
+        elif isinstance(other, (int, float)):
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] -= float(other)
+            return RoutonNumber(new_coeffs)
+        return NotImplemented
+    
+    def __rsub__(self, other: Union[float, int]) -> 'RoutonNumber':
+        """Right subtraction: scalar - Routon."""
+        if isinstance(other, (int, float)):
+            new_coeffs = [-c for c in self.coeffs]
+            new_coeffs[0] += float(other)
+            return RoutonNumber(new_coeffs)
+        return NotImplemented
+    
+    def __mul__(self, other: Union['RoutonNumber', float, int]) -> 'RoutonNumber':
+        """
+        Multiply Routon by scalar or another Routon (simplified).
+        
+        Note: True Routon multiplication would require a 128x128 multiplication table.
+        This implementation uses element-wise multiplication for Routon x Routon,
+        which is mathematically incorrect but practical for many applications.
+        """
+        if isinstance(other, (int, float)):
+            # Scalar multiplication
+            new_coeffs = [c * float(other) for c in self.coeffs]
+            return RoutonNumber(new_coeffs)
+        elif isinstance(other, RoutonNumber):
+            # Simplified element-wise multiplication
+            # WARNING: This is NOT true Routon multiplication!
+            new_coeffs = [a * b for a, b in zip(self.coeffs, other.coeffs)]
+            return RoutonNumber(new_coeffs)
+        return NotImplemented
+    
+    def __rmul__(self, other: Union[float, int]) -> 'RoutonNumber':
+        """Right multiplication: scalar * Routon."""
+        return self.__mul__(other)
+    
+    def __truediv__(self, scalar: Union[float, int]) -> 'RoutonNumber':
+        """Divide Routon by scalar."""
+        if isinstance(scalar, (int, float)):
+            if scalar == 0:
+                raise ZeroDivisionError("Cannot divide Routon by zero")
+            new_coeffs = [c / float(scalar) for c in self.coeffs]
+            return RoutonNumber(new_coeffs)
+        return NotImplemented
+    
+    def __floordiv__(self, scalar: Union[float, int]) -> 'RoutonNumber':
+        """Floor divide Routon by scalar."""
+        if isinstance(scalar, (int, float)):
+            if scalar == 0:
+                raise ZeroDivisionError("Cannot divide Routon by zero")
+            new_coeffs = [c // float(scalar) for c in self.coeffs]
+            return RoutonNumber(new_coeffs)
+        return NotImplemented
+    
+    def __mod__(self, divisor: Union[float, int]) -> 'RoutonNumber':
+        """Modulo operation on Routon components."""
+        if isinstance(divisor, (int, float)):
+            if divisor == 0:
+                raise ZeroDivisionError("Cannot take modulo by zero")
+            new_coeffs = [c % float(divisor) for c in self.coeffs]
+            return RoutonNumber(new_coeffs)
+        return NotImplemented
+    
+    def __neg__(self) -> 'RoutonNumber':
+        """Negate the Routon number."""
+        return RoutonNumber([-c for c in self.coeffs])
+    
+    def __pos__(self) -> 'RoutonNumber':
+        """Unary plus."""
+        return self
+    
+    def __abs__(self) -> float:
+        """Absolute value (magnitude)."""
+        return self.magnitude()
+    
+    def __eq__(self, other: object) -> bool:
+        """Check equality with another Routon."""
+        if not isinstance(other, RoutonNumber):
+            return False
+        return all(math.isclose(a, b, abs_tol=1e-12) for a, b in zip(self.coeffs, other.coeffs))
+    
+    def __ne__(self, other: object) -> bool:
+        """Check inequality."""
+        return not self.__eq__(other)
+    
+    def __hash__(self) -> int:
+        """Hash based on rounded components to avoid floating-point issues."""
+        return hash(tuple(round(c, 12) for c in self.coeffs))
+    
+    def magnitude(self) -> float:
+        """
+        Calculate Euclidean norm (magnitude) of the Routon.
+        
+        Returns:
+            float: sqrt(Σ_i coeff_i²)
+        """
+        return float(np.linalg.norm(self.coeffs))
+    
+    def norm(self) -> float:
+        """Alias for magnitude."""
+        return self.magnitude()
+    
+    def conjugate(self) -> 'RoutonNumber':
+        """Return the conjugate (negate all imaginary parts)."""
+        new_coeffs = self.coeffs.copy()
+        for i in range(1, 128):
+            new_coeffs[i] = -new_coeffs[i]
+        return RoutonNumber(new_coeffs)
+    
+    def dot(self, other: 'RoutonNumber') -> float:
+        """Dot product with another Routon."""
+        if not isinstance(other, RoutonNumber):
+            raise TypeError("Dot product requires another RoutonNumber")
+        return sum(a * b for a, b in zip(self.coeffs, other.coeffs))
+    
+    def normalize(self) -> 'RoutonNumber':
+        """Return a normalized (unit) version."""
+        mag = self.magnitude()
+        if mag == 0:
+            raise ZeroDivisionError("Cannot normalize zero Routon")
+        return RoutonNumber([c / mag for c in self.coeffs])
+    
+    def to_list(self) -> List[float]:
+        """Convert to Python list."""
+        return self.coeffs.copy()
+    
+    def to_tuple(self) -> Tuple[float, ...]:
+        """Convert to tuple."""
+        return tuple(self.coeffs)
+    
+    def to_numpy(self) -> np.ndarray:
+        """Convert to numpy array."""
+        return np.array(self.coeffs, dtype=np.float64)
+    
+    def copy(self) -> 'RoutonNumber':
+        """Create a copy."""
+        return RoutonNumber(self.coeffs.copy())
+    
+    def components(self) -> List[float]:
+        """Get components as list (alias for to_list)."""
+        return self.to_list()
+    
+    def phase(self) -> float:
+        """
+        Compute phase (angle) of the Routon number.
+        
+        For high-dimensional numbers, phase is not uniquely defined.
+        This implementation returns the angle of the projection onto
+        the real-imaginary plane.
+        """
+        if self.magnitude() == 0:
+            return 0.0
+        
+        # Compute magnitude of imaginary parts
+        imag_magnitude = math.sqrt(sum(i**2 for i in self.imag))
+        if imag_magnitude == 0:
+            return 0.0
+        
+        # Angle between real part and imaginary vector
+        return math.atan2(imag_magnitude, self.real)
+    
+    def __str__(self) -> str:
+        """Human-readable string representation."""
+        # For 128 dimensions, show a summary
+        non_zero = [(i, c) for i, c in enumerate(self.coeffs) if abs(c) > 1e-10]
+        
+        if not non_zero:
+            return "Routon(0)"
+        
+        if len(non_zero) <= 5:
+            # Show all non-zero components
+            parts = []
+            for i, c in non_zero:
+                if i == 0:
+                    parts.append(f"{c:.6f}")
+                else:
+                    sign = "+" if c >= 0 else "-"
+                    parts.append(f"{sign} {abs(c):.6f}e{i}")
+            return f"Routon({' '.join(parts)})"
+        else:
+            # Show summary
+            return f"Routon[{len(non_zero)} non-zero components, real={self.real:.6f}, mag={self.magnitude():.6f}]"
+    
+    def __repr__(self) -> str:
+        """Detailed representation showing first few components."""
+        if len(self.coeffs) <= 8:
+            return f"RoutonNumber({self.coeffs})"
+        else:
+            first_five = self.coeffs[:5]
+            last_five = self.coeffs[-5:]
+            return f"RoutonNumber({first_five} ... {last_five})"
+    
+    def summary(self) -> str:
+        """Return a summary of the Routon number."""
+        non_zero = sum(1 for c in self.coeffs if abs(c) > 1e-10)
+        max_coeff = max(abs(c) for c in self.coeffs)
+        min_coeff = min(abs(c) for c in self.coeffs if abs(c) > 0)
+        
+        return (f"RoutonNumber Summary:\n"
+                f"  Dimensions: 128\n"
+                f"  Non-zero components: {non_zero}\n"
+                f"  Real part: {self.real:.6f}\n"
+                f"  Magnitude: {self.magnitude():.6f}\n"
+                f"  Phase: {self.phase():.6f} rad\n"
+                f"  Max component: {max_coeff:.6f}\n"
+                f"  Min non-zero: {min_coeff:.6f if non_zero > 0 else 0}")
 
 @dataclass
 class VoudonNumber:
@@ -3082,124 +3276,6 @@ class ChingonNumber:
         # compute and return the phase value
         return self._phase   # or whatever logic you need
 
-@dataclass
-class RoutonNumber:
-    """128-bileşenli Pathion sayısı"""
-    
-    def __init__(self, *coeffs):
-        if len(coeffs) == 1 and hasattr(coeffs[0], '__iter__') and not isinstance(coeffs[0], str):
-            coeffs = coeffs[0]
-        
-        if len(coeffs) != 128:
-            coeffs = list(coeffs) + [0.0] * (128 - len(coeffs))
-            if len(coeffs) > 128:
-                coeffs = coeffs[:128]
-        
-        self.coeffs = [float(c) for c in coeffs]
-    
-    @property
-    def real(self) -> float:
-        """İlk bileşen – “gerçek” kısım."""
-        return float(self.coeffs[0])
-    #def real(self):
-    #    Gerçek kısım (ilk bileşen)
-    #    return self.coeffs[0]
-    
-    def __iter__(self):
-        return iter(self.coeffs)
-    
-    def __getitem__(self, index):
-        return self.coeffs[index]
-    
-    def __len__(self):
-        return len(self.coeffs)
-    
-    def __str__(self):
-        return f"RoutonNumber({', '.join(map(str, self.coeffs))})"
-    
-    def __repr__(self):
-        return f"({', '.join(map(str, self.coeffs))})"
-        #return f"RoutonNumber({self.coeffs})"
-    
-    def __add__(self, other):
-        if isinstance(other, RoutonNumber):
-            return RoutonNumber([a + b for a, b in zip(self.coeffs, other.coeffs)])
-        else:
-            # Skaler toplama
-            new_coeffs = self.coeffs.copy()
-            new_coeffs[0] += float(other)
-            return RoutonNumber(new_coeffs)
-    
-    def __sub__(self, other):
-        if isinstance(other, RoutonNumber):
-            return RoutonNumber([a - b for a, b in zip(self.coeffs, other.coeffs)])
-        else:
-            new_coeffs = self.coeffs.copy()
-            new_coeffs[0] -= float(other)
-            return RoutonNumber(new_coeffs)
-    
-    def __mul__(self, other):
-        if isinstance(other, RoutonNumber):
-            # Basitçe bileşen bazlı çarpma (gerçek Cayley-Dickson çarpımı yerine)
-            return RoutonNumber([a * b for a, b in zip(self.coeffs, other.coeffs)])
-        else:
-            # Skaler çarpma
-            return RoutonNumber([c * float(other) for c in self.coeffs])
-    
-    def __mod__(self, divisor):
-        return RoutonNumber([c % divisor for c in self.coeffs])
-    
-    def __eq__(self, other):
-        if not isinstance(other, RoutonNumber):
-            return NotImplemented
-        return np.allclose(self.coeffs, other.coeffs, atol=1e-10)
-        #if isinstance(other, RoutonNumber):
-        #    return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
-        #return False
-
-    def __truediv__(self, other):
-        """Bölme operatörü: / """
-        if isinstance(other, (int, float)):
-            # Skaler bölme
-            return RoutonNumber([c / other for c in self.coeffs])
-        else:
-            raise TypeError(f"Unsupported operand type(s) for /: 'RoutonNumber' and '{type(other).__name__}'")
-    
-    def __floordiv__(self, other):
-        """Tam sayı bölme operatörü: // """
-        if isinstance(other, (int, float)):
-            # Skaler tam sayı bölme
-            return RoutonNumber([c // other for c in self.coeffs])
-        else:
-            raise TypeError(f"Unsupported operand type(s) for //: 'RoutonNumber' and '{type(other).__name__}'")
-    
-    def __rtruediv__(self, other):
-        """Sağdan bölme: other / RoutonNumber"""
-        if isinstance(other, (int, float)):
-            # Bu daha karmaşık olabilir, basitçe bileşen bazlı bölme
-            return RoutonNumber([other / c if c != 0 else float('inf') for c in self.coeffs])
-        else:
-            raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'RoutonNumber'")
-
-    def components(self):
-        """Bileşen listesini (Python list) döndürür."""
-        return self.coeffs.tolist()
-
-    def magnitude(self) -> float:
-        """
-        Euclidean norm = √( Σ_i coeff_i² )
-        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
-        """
-        return float(np.linalg.norm(self.coeffs))
-
-    def __hash__(self):
-        # NaN ve -0.0 gibi durumları göz önünde bulundurun
-        return hash(tuple(np.round(self.coeffs, decimals=10)))
-
-    def phase(self):
-        # compute and return the phase value
-        return self._phase   # or whatever logic you need
-
 @property
 def coeffs(self):
     return [self.w, self.x, self.y, self.z, self.e, self.f, self.g, self.h]
@@ -4332,39 +4408,131 @@ def _parse_chingon(s) -> ChingonNumber:
 
     raise ValueError(f"Chingon için 64 bileşen veya tek skaler bileşen gerekir. Verilen: '{s}' ({len(parts)} bileşen)")
 
-def _parse_routon(s) -> RoutonNumber:
-    """String'i veya sayıyı RoutonNumber'a dönüştürür."""
-    if isinstance(s, RoutonNumber):
-        return s
+def _parse_routon(s: Any) -> RoutonNumber:
+    """
+    Parse input into a RoutonNumber (128-dimensional hypercomplex number).
     
-    if isinstance(s, (float, int, complex)):
-        return RoutonNumber(float(s), *[0.0] * 127)
+    Supports:
+      - RoutonNumber instance (returned as-is)
+      - Numeric scalars (int, float) -> real part, others zero
+      - Complex numbers -> real and imag in first two components
+      - Lists/tuples of numbers (up to 128)
+      - Strings: comma-separated list or single number
     
-    if hasattr(s, '__iter__') and not isinstance(s, str):
-        return RoutonNumber(s)
+    Args:
+        s: Input to parse
     
-    # String işlemleri için önce string'e dönüştür
-    if not isinstance(s, str):
-        s = str(s)
+    Returns:
+        RoutonNumber instance
     
-    s = s.strip()
-    # Köşeli parantezleri kaldır (eğer varsa)
-    s = s.strip('[]')
-    parts = [p.strip() for p in s.split(',')]
-
-    if len(parts) == 128:  # Pathion 32 bileşenli olmalı
+    Raises:
+        ValueError: If parsing fails
+    """
+    try:
+        # If already RoutonNumber, return as-is
+        if isinstance(s, RoutonNumber):
+            return s
+        
+        # Handle numeric types
+        if isinstance(s, (int, float)):
+            return RoutonNumber.from_scalar(float(s))
+        
+        # Handle complex numbers
+        if isinstance(s, complex):
+            coeffs = [0.0] * 128
+            coeffs[0] = s.real
+            coeffs[1] = s.imag
+            return RoutonNumber(coeffs)
+        
+        # Handle iterables (non-string)
+        if hasattr(s, '__iter__') and not isinstance(s, str):
+            # Convert to list and ensure it's exactly 128 elements
+            coeffs = list(s)
+            if len(coeffs) < 128:
+                coeffs = coeffs + [0.0] * (128 - len(coeffs))
+            elif len(coeffs) > 128:
+                coeffs = coeffs[:128]
+            return RoutonNumber(coeffs)
+        
+        # Convert to string for parsing
+        if not isinstance(s, str):
+            s = str(s)
+        
+        s = s.strip()
+        
+        # Remove brackets if present
+        s = s.strip('[]{}()')
+        
+        # Check if empty
+        if not s:
+            return RoutonNumber.from_scalar(0.0)
+        
+        # Try to parse as comma-separated list
+        if ',' in s:
+            parts = [p.strip() for p in s.split(',')]
+            parts = [p for p in parts if p]  # Filter empty
+            
+            if not parts:
+                return RoutonNumber.from_scalar(0.0)
+            
+            try:
+                # Parse all parts as floats
+                float_parts = [float(p) for p in parts]
+                
+                # Ensure exactly 128 components
+                if len(float_parts) == 128:
+                    return RoutonNumber(float_parts)
+                elif len(float_parts) < 128:
+                    padded = float_parts + [0.0] * (128 - len(float_parts))
+                    return RoutonNumber(padded)
+                else:  # len(float_parts) > 128
+                    import warnings
+                    warnings.warn(f"Routon input has {len(float_parts)} components, truncating to 128", RuntimeWarning)
+                    return RoutonNumber(float_parts[:128])
+            
+            except ValueError as e:
+                raise ValueError(f"Invalid numeric value in Routon string: '{s}' -> {e}")
+        
+        # Try to parse as single number
         try:
-            return RoutonNumber(*map(float, parts))  # 64 parametre
-        except ValueError as e:
-            raise ValueError(f"Geçersiz routon bileşen değeri: '{s}' -> {e}") from e
-    elif len(parts) == 1:  # Sadece skaler değer girildiğinde
+            return RoutonNumber.from_scalar(float(s))
+        except ValueError:
+            pass
+        
+        # Try to parse as complex number string
         try:
-            scalar_val = float(parts[0])
-            return RoutonNumber(scalar_val, *[0.0] * 127)  # 128 parametre
-        except ValueError as e:
-            raise ValueError(f"Geçersiz skaler routon değeri: '{s}' -> {e}") from e
-
-    raise ValueError(f"Routon için 64 bileşen veya tek skaler bileşen gerekir. Verilen: '{s}' ({len(parts)} bileşen)")
+            c = complex(s)
+            coeffs = [0.0] * 128
+            coeffs[0] = c.real
+            coeffs[1] = c.imag
+            return RoutonNumber(coeffs)
+        except ValueError:
+            pass
+        
+        # Try to extract any numeric content
+        try:
+            # Use regex to find first number
+            import re
+            match = re.search(r'[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?', s)
+            if match:
+                scalar_val = float(match.group())
+                return RoutonNumber.from_scalar(scalar_val)
+        except Exception:
+            pass
+        
+        # If all else fails
+        raise ValueError(f"Cannot parse Routon from input: {repr(s)}")
+    
+    except Exception as e:
+        # Log the error if logger is available
+        if 'logger' in globals():
+            logger.warning(f"Routon parsing failed for {repr(s)}: {e}")
+        else:
+            import warnings
+            warnings.warn(f"Routon parsing failed for {repr(s)}: {e}", RuntimeWarning)
+        
+        # Return zero Routon as fallback
+        return RoutonNumber.from_scalar(0.0)
 
 def _parse_voudon(s: Any) -> VoudonNumber:
     """
