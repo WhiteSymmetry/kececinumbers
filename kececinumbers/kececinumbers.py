@@ -2156,11 +2156,52 @@ def kececi_bicomplex_algorithm(
     
     return sequence
 
-# --- DAHA GERÇEKÇİ BİR VERSİYON ---
-def kececi_bicomplex_advanced(start: BicomplexNumber, add_val: BicomplexNumber, 
-                            iterations: int, include_intermediate: bool = True) -> list:
+
+def kececi_bicomplex_advanced(
+    start: BicomplexNumber, 
+    add_val: BicomplexNumber, 
+    iterations: int, 
+    include_intermediate: bool = True,
+    mod_real: float = 50.0,
+    mod_imag: float = 50.0,
+    feedback_interval: int = 10
+) -> list:
     """
-    Gelişmiş Keçeci algoritması - daha karmaşık matematiksel işlemler içerir
+    Gelişmiş Keçeci algoritması - daha karmaşık matematiksel işlemler içerir.
+    
+    Bu algoritma standart Keçeci algoritmasını daha gelişmiş matematiksel
+    işlemlerle genişletir: doğrusal olmayan dönüşümler, modüler aritmetik,
+    çapraz çarpımlar ve dinamik feedback mekanizmaları.
+    
+    Parametreler:
+    ------------
+    start : BicomplexNumber
+        Algoritmanın başlangıç değeri
+    add_val : BicomplexNumber
+        Her iterasyonda eklenen değer
+    iterations : int
+        İterasyon sayısı
+    include_intermediate : bool, varsayılan=True
+        Ara adımları (çapraz çarpımları) dizie ekleme
+    mod_real : float, varsayılan=50.0
+        Gerçel kısımlar için mod değeri
+    mod_imag : float, varsayılan=50.0
+        Sanal kısımlar için mod değeri
+    feedback_interval : int, varsayılan=10
+        Feedback perturbasyonlarının uygulanma aralığı
+    
+    Döndürür:
+    --------
+    list[BicomplexNumber]
+        Üretilen gelişmiş Keçeci bikompleks dizisi
+    
+    Özellikler:
+    ----------
+    1. Temel toplama işlemi
+    2. Doğrusal olmayan dönüşümler (karekök)
+    3. Modüler aritmetik
+    4. Çapraz çarpım ara değerleri
+    5. Dinamik feedback perturbasyonları
     """
     sequence = [start]
     current = start
@@ -2170,21 +2211,33 @@ def kececi_bicomplex_advanced(start: BicomplexNumber, add_val: BicomplexNumber,
         current = current + add_val
         
         # 2. Doğrusal olmayan dönüşümler (Keçeci algoritmasının özelliği)
-        # Kök alma ve kuvvet alma işlemleri
-        current = BicomplexNumber(
-            complex(current.z1.real**0.5, current.z1.imag**0.5),
-            complex(current.z2.real**0.5, current.z2.imag**0.5)
-        )
+        # Karekök alma işlemleri - negatif değerler için güvenli hale getirildi
+        try:
+            z1_real_sqrt = math.sqrt(abs(current.z1.real)) * (1 if current.z1.real >= 0 else 1j)
+            z1_imag_sqrt = math.sqrt(abs(current.z1.imag)) * (1 if current.z1.imag >= 0 else 1j)
+            z2_real_sqrt = math.sqrt(abs(current.z2.real)) * (1 if current.z2.real >= 0 else 1j)
+            z2_imag_sqrt = math.sqrt(abs(current.z2.imag)) * (1 if current.z2.imag >= 0 else 1j)
+            
+            current = BicomplexNumber(
+                complex(z1_real_sqrt.real if isinstance(z1_real_sqrt, complex) else z1_real_sqrt,
+                       z1_imag_sqrt.real if isinstance(z1_imag_sqrt, complex) else z1_imag_sqrt),
+                complex(z2_real_sqrt.real if isinstance(z2_real_sqrt, complex) else z2_real_sqrt,
+                       z2_imag_sqrt.real if isinstance(z2_imag_sqrt, complex) else z2_imag_sqrt)
+            )
+        except (ValueError, TypeError):
+            # Karekök hatası durumunda alternatif yaklaşım
+            current = BicomplexNumber(
+                complex(np.sqrt(abs(current.z1.real)), np.sqrt(abs(current.z1.imag))),
+                complex(np.sqrt(abs(current.z2.real)), np.sqrt(abs(current.z2.imag)))
+            )
         
         # 3. Modüler aritmetik
-        mod_real = 50
-        mod_imag = 50
         current = BicomplexNumber(
             complex(current.z1.real % mod_real, current.z1.imag % mod_imag),
             complex(current.z2.real % mod_real, current.z2.imag % mod_imag)
         )
         
-        # 4. Ara adımlar
+        # 4. Ara adımlar (çapraz çarpımlar)
         if include_intermediate:
             # Çapraz çarpım ara değerleri
             cross_product = BicomplexNumber(
@@ -2196,11 +2249,11 @@ def kececi_bicomplex_advanced(start: BicomplexNumber, add_val: BicomplexNumber,
         sequence.append(current)
         
         # 5. Dinamik sistem davranışı için feedback
-        if i % 10 == 0 and i > 0:
-            # Her 10 adımda bir küçük bir perturbasyon ekle
+        if feedback_interval > 0 and i % feedback_interval == 0 and i > 0:
+            # Periyodik perturbasyon ekle (kaotik davranışı artırmak için)
             perturbation = BicomplexNumber(
-                complex(0.1 * np.sin(i), 0.1 * np.cos(i)),
-                complex(0.05 * np.sin(i*0.5), 0.05 * np.cos(i*0.5))
+                complex(0.1 * math.sin(i), 0.1 * math.cos(i)),
+                complex(0.05 * math.sin(i*0.5), 0.05 * math.cos(i*0.5))
             )
             current = current + perturbation
     
@@ -3221,55 +3274,6 @@ class BicomplexNumber:
             parts.append(f"({self.z2.real}+{self.z2.imag}j)e")
         return " + ".join(parts) if parts else "0"
 
-# --- DAHA GERÇEKÇİ BİR VERSİYON ---
-def kececi_bicomplex_advanced(start: BicomplexNumber, add_val: BicomplexNumber, 
-                            iterations: int, include_intermediate: bool = True) -> list:
-    """
-    Gelişmiş Keçeci algoritması - daha karmaşık matematiksel işlemler içerir
-    """
-    sequence = [start]
-    current = start
-    
-    for i in range(iterations):
-        # 1. Temel toplama
-        current = current + add_val
-        
-        # 2. Doğrusal olmayan dönüşümler (Keçeci algoritmasının özelliği)
-        # Kök alma ve kuvvet alma işlemleri
-        current = BicomplexNumber(
-            complex(current.z1.real**0.5, current.z1.imag**0.5),
-            complex(current.z2.real**0.5, current.z2.imag**0.5)
-        )
-        
-        # 3. Modüler aritmetik
-        mod_real = 50
-        mod_imag = 50
-        current = BicomplexNumber(
-            complex(current.z1.real % mod_real, current.z1.imag % mod_imag),
-            complex(current.z2.real % mod_real, current.z2.imag % mod_imag)
-        )
-        
-        # 4. Ara adımlar
-        if include_intermediate:
-            # Çapraz çarpım ara değerleri
-            cross_product = BicomplexNumber(
-                complex(current.z1.real * current.z2.imag, 0),
-                complex(0, current.z1.imag * current.z2.real)
-            )
-            sequence.append(cross_product)
-        
-        sequence.append(current)
-        
-        # 5. Dinamik sistem davranışı için feedback
-        if i % 10 == 0 and i > 0:
-            # Her 10 adımda bir küçük bir perturbasyon ekle
-            perturbation = BicomplexNumber(
-                complex(0.1 * np.sin(i), 0.1 * np.cos(i)),
-                complex(0.05 * np.sin(i*0.5), 0.05 * np.cos(i*0.5))
-            )
-            current = current + perturbation
-    
-    return sequence
 
 @dataclass
 class NeutrosophicBicomplexNumber:
