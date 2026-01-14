@@ -238,6 +238,7 @@ try:
         _has_comma_format,
         _is_complex_like,
         _float_mod_zero,
+        _gue_pair_correlation,
         _pca_var_sum,
         logger,
     
