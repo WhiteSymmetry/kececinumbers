@@ -215,6 +215,7 @@ try:
         _parse_pathion,
         _parse_chingon,
         _parse_routon,
+        _parse_universal,
         _parse_voudon,
         _parse_clifford,
         _parse_dual,
