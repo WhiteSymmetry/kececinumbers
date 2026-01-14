@@ -1934,7 +1934,19 @@ def _parse_bicomplex(s: Any) -> BicomplexNumber:
 
 def _parse_universal(s: str, target_type: str) -> Any:
     """
-    Universal parser - Sizin diğer yerlerde kullandığınız iki parametreli versiyon
+    Universal parser - Çeşitli sayı türlerini string'den parse eder
+    
+    Args:
+        s: Parse edilecek string
+        target_type: Hedef tür ("real", "complex", "bicomplex")
+    
+    Returns:
+        Parse edilmiş değer veya hata durumunda varsayılan değer
+        
+    Özellikler:
+        - "real": Float'a çevirir, hata durumunda 0.0 döner
+        - "complex": Karmaşık sayı formatlarını işler (1+2j, 3j, 4, vb.)
+        - "bicomplex": _parse_bicomplex fonksiyonunu çağırır
     """
     if target_type == "real":
         try:
@@ -3150,45 +3162,6 @@ def _parse_bicomplex(s: str) -> BicomplexNumber:
     
     # Default fallback
     return BicomplexNumber(complex(0, 0), complex(0, 0))
-
-def _parse_universal(s: str, target_type: str) -> Any:
-    """
-    Universal parser - Sizin diğer yerlerde kullandığınız iki parametreli versiyon
-    """
-    if target_type == "real":
-        try:
-            return float(s.strip())
-        except ValueError:
-            return 0.0
-    
-    elif target_type == "complex":
-        try:
-            s_clean = s.strip().replace(" ", "")
-            if 'j' not in s_clean:
-                return complex(float(s_clean), 0.0)
-            
-            pattern = r'^([+-]?\d*\.?\d*)([+-]?\d*\.?\d*)j$'
-            match = re.match(pattern, s_clean)
-            if match:
-                real_part = match.group(1)
-                imag_part = match.group(2)
-                
-                if real_part in ['', '+', '-']:
-                    real_part = real_part + '1' if real_part else '0'
-                if imag_part in ['', '+', '-']:
-                    imag_part = imag_part + '1' if imag_part else '0'
-                
-                return complex(float(real_part or 0), float(imag_part or 0))
-            
-            return complex(s_clean)
-        except:
-            return complex(0, 0)
-    
-    elif target_type == "bicomplex":
-        # _parse_bicomplex'i çağır (tek parametreli)
-        return _parse_bicomplex(s)
-    
-    return None
 
 def kececi_bicomplex_algorithm(start: BicomplexNumber, add_val: BicomplexNumber, iterations: int, include_intermediate: bool = True) -> list:
     """
