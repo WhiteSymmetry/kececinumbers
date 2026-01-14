@@ -22,7 +22,7 @@ import warnings
     # importlib.reload(kececinumbers) # F821 undefined name 'kececinumbers'
 
 # Paket sürüm numarası
-__version__ = "0.8.5"
+__version__ = "0.8.6"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 
@@ -224,6 +224,7 @@ try:
         _parse_hyperreal,
         _parse_neutrosophic,
         _parse_neutrosophic_bicomplex,
+        _parse_quaternion,
         _parse_quaternion_from_csv,
     
         # Helpers / small utilities recently added
@@ -276,7 +277,7 @@ def eski_fonksiyon():
     warnings.warn(
         "eski_fonksiyon() artık kullanılmamaktadır ve gelecekte kaldırılacaktır. "
         "Lütfen yeni alternatif fonksiyonları kullanın. "
-        "Keçeci numbers; Python 3.10-3.14 sürümlerinde sorunsuz çalışmalıdır.",
+        "Keçeci numbers; Python 3.11-3.14 sürümlerinde sorunsuz çalışmalıdır.",
         category=DeprecationWarning,
         stacklevel=2
     )
