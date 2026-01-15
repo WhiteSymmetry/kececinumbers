@@ -25,7 +25,7 @@ def get_install_requires():
         "numpy",
         "matplotlib",
         "scipy",
-        "scikit-learn",
+        "sklearn",
         "sympy",
     ]
 
