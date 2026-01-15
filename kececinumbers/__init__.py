@@ -38,6 +38,20 @@ __all__ = [
     'TernaryNumber',
     'SuperrealNumber',
     'quaternion',
+    'HypercomplexNumber',
+    'Real',
+    'Complex',
+    'Quaternion',
+    'Octonion',
+    'Sedenion',
+    'Pathion',
+    'Chingon',
+    'Routon',
+    'Voudon',
+    '_parse_real',
+    '_get_default_hypercomplex',
+    '_get_default_value',
+    '_parse_to_hypercomplex',
 
     # --- High-Level Functions ---
     'get_with_params',
@@ -132,6 +146,7 @@ __all__ = [
     'TYPE_VOUDON',
     'TYPE_SUPERREAL',
     'TYPE_TERNARY',
+    'TYPE_HYPERCOMPLEX',
 ]
 
 try:
@@ -160,6 +175,20 @@ try:
         quaternion,
         coeffs,
         find_period,
+        HypercomplexNumber,
+        Real,
+        Complex,
+        Quaternion,
+        Octonion,
+        Sedenion,
+        Pathion,
+        Chingon,
+        Routon,
+        Voudon,
+        _parse_real,
+        _get_default_hypercomplex,
+        _get_default_value,
+        _parse_to_hypercomplex,
     
         # Core generator / API
         unified_generator,
@@ -253,6 +282,7 @@ try:
         TYPE_VOUDON,
         TYPE_SUPERREAL,
         TYPE_TERNARY,
+        TYPE_HYPERCOMPLEX,
     )
 
     # _gue_pair_correlation özel olarak kontrol edelim
