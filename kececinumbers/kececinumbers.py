@@ -89,6 +89,7 @@ TYPE_ROUTON = 19
 TYPE_VOUDON = 20
 TYPE_SUPERREAL = 21
 TYPE_TERNARY = 22
+TYPE_HYPERCOMPLEX = 23
 
 Number = Union[int, float, complex]
 
@@ -96,6 +97,435 @@ Number = Union[int, float, complex]
 # ==============================================================================
 # --- CUSTOM NUMBER CLASS DEFINITIONS ---
 # ==============================================================================
+class HypercomplexNumber:
+    """
+    Unified wrapper for Cayley-Dickson hypercomplex numbers.
+    Uses the cayley_dickson_algebra function for mathematically correct operations.
+    
+    Supports dimensions: 1, 2, 4, 8, 16, 32, 64, 128, 256 (powers of 2)
+    """
+    
+    # Dimension to class name mapping
+    DIMENSION_NAMES = {
+        1: "Real",
+        2: "Complex", 
+        4: "Quaternion",
+        8: "Octonion",
+        16: "Sedenion",
+        32: "Pathion",
+        64: "Chingon",
+        128: "Routon",
+        256: "Voudon"
+    }
+    
+    # Cache for CD algebra classes
+    _cd_classes = {}
+    
+    def __init__(self, *components: float, dimension: Optional[int] = None):
+        """
+        Initialize a hypercomplex number.
+        
+        Args:
+            *components: The components of the number
+            dimension: The dimension (must be power of 2). If None, inferred from components.
+        
+        Raises:
+            ValueError: If dimension is not a power of 2 or doesn't match components
+        """
+        # Determine dimension
+        if dimension is None:
+            # Find next power of 2 >= len(components)
+            n = len(components)
+            if n == 0:
+                dimension = 1
+            else:
+                # Find smallest power of 2 >= n
+                dimension = 1
+                while dimension < n:
+                    dimension <<= 1
+        else:
+            # Validate dimension
+            if dimension not in self.DIMENSION_NAMES:
+                raise ValueError(f"Dimension must be a power of 2 up to 256, got {dimension}")
+        
+        self.dimension = dimension
+        self._cd_class = self._get_cd_class(dimension)
+        
+        # Pad components with zeros if necessary
+        if len(components) < dimension:
+            components = list(components) + [0.0] * (dimension - len(components))
+        elif len(components) > dimension:
+            components = components[:dimension]
+        
+        # Create the CD number
+        self._cd_number = self._cd_class(*components)
+    
+    @classmethod
+    def _get_cd_class(cls, dimension: int):
+        """Get or create the Cayley-Dickson class for the given dimension."""
+        if dimension not in cls._cd_classes:
+            # Calculate level: dimension = 2^level
+            level = 0
+            temp = dimension
+            while temp > 1:
+                temp >>= 1
+                level += 1
+            
+            # Create the CD algebra
+            cls._cd_classes[dimension] = cayley_dickson_algebra(level, float)
+        
+        return cls._cd_classes[dimension]
+    
+    @classmethod
+    def from_cd_number(cls, cd_number) -> 'HypercomplexNumber':
+        """Create from an existing CD number."""
+        dimension = cd_number.dimensions
+        components = cd_number.coefficients()
+        return cls(*components, dimension=dimension)
+    
+    @property
+    def coeffs(self) -> List[float]:
+        """Get all coefficients as a list."""
+        return list(self._cd_number.coefficients())
+    
+    @property
+    def real(self) -> float:
+        """Get the real part."""
+        return self._cd_number.real_coefficient()
+    
+    @real.setter
+    def real(self, value: float):
+        """Set the real part by creating a new number."""
+        coeffs = self.coeffs
+        coeffs[0] = float(value)
+        self._cd_number = self._cd_class(*coeffs)
+    
+    @property
+    def imag(self) -> List[float]:
+        """Get imaginary parts (all except real)."""
+        return self.coeffs[1:]
+    
+    def __len__(self) -> int:
+        """Return dimension."""
+        return self.dimension
+    
+    def __getitem__(self, index: int) -> float:
+        """Get component by index."""
+        return self.coeffs[index]
+    
+    def __iter__(self):
+        """Iterate over components."""
+        return iter(self.coeffs)
+    
+    # Arithmetic operations
+    def __add__(self, other: Union['HypercomplexNumber', float, int]) -> 'HypercomplexNumber':
+        """Addition."""
+        if isinstance(other, (int, float)):
+            # Convert scalar to same dimension
+            other_coeffs = [float(other)] + [0.0] * (self.dimension - 1)
+            other_cd = self._cd_class(*other_coeffs)
+            result = self._cd_number + other_cd
+        elif isinstance(other, HypercomplexNumber):
+            # Check if dimensions match
+            if self.dimension != other.dimension:
+                # Find common dimension (max of the two)
+                common_dim = max(self.dimension, other.dimension)
+                self_padded = self.pad_to_dimension(common_dim)
+                other_padded = other.pad_to_dimension(common_dim)
+                return self_padded + other_padded
+            
+            result = self._cd_number + other._cd_number
+        else:
+            return NotImplemented
+        
+        return HypercomplexNumber.from_cd_number(result)
+    
+    def __radd__(self, other: Union[float, int]) -> 'HypercomplexNumber':
+        """Right addition."""
+        return self.__add__(other)
+    
+    def __sub__(self, other: Union['HypercomplexNumber', float, int]) -> 'HypercomplexNumber':
+        """Subtraction."""
+        if isinstance(other, (int, float)):
+            other_coeffs = [float(other)] + [0.0] * (self.dimension - 1)
+            other_cd = self._cd_class(*other_coeffs)
+            result = self._cd_number - other_cd
+        elif isinstance(other, HypercomplexNumber):
+            if self.dimension != other.dimension:
+                common_dim = max(self.dimension, other.dimension)
+                self_padded = self.pad_to_dimension(common_dim)
+                other_padded = other.pad_to_dimension(common_dim)
+                return self_padded - other_padded
+            
+            result = self._cd_number - other._cd_number
+        else:
+            return NotImplemented
+        
+        return HypercomplexNumber.from_cd_number(result)
+    
+    def __rsub__(self, other: Union[float, int]) -> 'HypercomplexNumber':
+        """Right subtraction."""
+        if isinstance(other, (int, float)):
+            other_coeffs = [float(other)] + [0.0] * (self.dimension - 1)
+            other_cd = self._cd_class(*other_coeffs)
+            result = other_cd - self._cd_number
+            return HypercomplexNumber.from_cd_number(result)
+        return NotImplemented
+    
+    def __mul__(self, other: Union['HypercomplexNumber', float, int]) -> 'HypercomplexNumber':
+        """Multiplication using Cayley-Dickson construction."""
+        if isinstance(other, (int, float)):
+            # Scalar multiplication
+            result = self._cd_number * float(other)
+        elif isinstance(other, HypercomplexNumber):
+            if self.dimension != other.dimension:
+                common_dim = max(self.dimension, other.dimension)
+                self_padded = self.pad_to_dimension(common_dim)
+                other_padded = other.pad_to_dimension(common_dim)
+                return self_padded * other_padded
+            
+            # Use Cayley-Dickson multiplication
+            result = self._cd_number * other._cd_number
+        else:
+            return NotImplemented
+        
+        return HypercomplexNumber.from_cd_number(result)
+    
+    def __rmul__(self, other: Union[float, int]) -> 'HypercomplexNumber':
+        """Right multiplication."""
+        return self.__mul__(other)
+    
+    def __truediv__(self, other: Union['HypercomplexNumber', float, int]) -> 'HypercomplexNumber':
+        """Division."""
+        if isinstance(other, (int, float)):
+            if other == 0:
+                raise ZeroDivisionError("Cannot divide by zero")
+            result = self._cd_number / float(other)
+        elif isinstance(other, HypercomplexNumber):
+            if self.dimension != other.dimension:
+                common_dim = max(self.dimension, other.dimension)
+                self_padded = self.pad_to_dimension(common_dim)
+                other_padded = other.pad_to_dimension(common_dim)
+                return self_padded / other_padded
+            
+            result = self._cd_number / other._cd_number
+        else:
+            return NotImplemented
+        
+        return HypercomplexNumber.from_cd_number(result)
+    
+    def __rtruediv__(self, other: Union[float, int]) -> 'HypercomplexNumber':
+        """Right division."""
+        if isinstance(other, (int, float)):
+            other_coeffs = [float(other)] + [0.0] * (self.dimension - 1)
+            other_cd = self._cd_class(*other_coeffs)
+            result = other_cd / self._cd_number
+            return HypercomplexNumber.from_cd_number(result)
+        return NotImplemented
+    
+    def __neg__(self) -> 'HypercomplexNumber':
+        """Negation."""
+        result = -self._cd_number
+        return HypercomplexNumber.from_cd_number(result)
+    
+    def __pos__(self) -> 'HypercomplexNumber':
+        """Unary plus."""
+        return self
+    
+    def __abs__(self) -> float:
+        """Magnitude."""
+        return float(self._cd_number.norm())
+    
+    def __eq__(self, other: object) -> bool:
+        """Equality."""
+        if isinstance(other, HypercomplexNumber):
+            if self.dimension != other.dimension:
+                return False
+            return self._cd_number == other._cd_number
+        elif isinstance(other, (int, float)):
+            # Compare with scalar
+            if self.dimension == 1:
+                return self.real == float(other)
+            # For higher dimensions, check if only real part matches
+            return self.real == float(other) and all(abs(c) < 1e-12 for c in self.imag)
+        return False
+    
+    def __ne__(self, other: object) -> bool:
+        """Inequality."""
+        return not self.__eq__(other)
+    
+    def conjugate(self) -> 'HypercomplexNumber':
+        """Return the conjugate."""
+        result = self._cd_number.conjugate()
+        return HypercomplexNumber.from_cd_number(result)
+    
+    def norm(self) -> float:
+        """Return the norm (magnitude)."""
+        return float(self._cd_number.norm())
+    
+    def magnitude(self) -> float:
+        """Alias for norm."""
+        return self.norm()
+    
+    def norm_squared(self) -> float:
+        """Return the squared norm."""
+        return float(self._cd_number.norm_squared())
+    
+    def inverse(self) -> 'HypercomplexNumber':
+        """Return the multiplicative inverse."""
+        result = self._cd_number.inverse()
+        return HypercomplexNumber.from_cd_number(result)
+    
+    def normalize(self) -> 'HypercomplexNumber':
+        """Return a normalized version."""
+        norm = self.norm()
+        if norm == 0:
+            raise ZeroDivisionError("Cannot normalize zero hypercomplex number")
+        return HypercomplexNumber(*(c / norm for c in self.coeffs), dimension=self.dimension)
+    
+    def dot(self, other: 'HypercomplexNumber') -> float:
+        """Dot product."""
+        if not isinstance(other, HypercomplexNumber):
+            raise TypeError("Dot product requires another HypercomplexNumber")
+        
+        if self.dimension != other.dimension:
+            common_dim = max(self.dimension, other.dimension)
+            self_padded = self.pad_to_dimension(common_dim)
+            other_padded = other.pad_to_dimension(common_dim)
+            return self_padded.dot(other_padded)
+        
+        return sum(a * b for a, b in zip(self.coeffs, other.coeffs))
+    
+    def pad_to_dimension(self, new_dimension: int) -> 'HypercomplexNumber':
+        """Pad to a higher dimension with zeros."""
+        if new_dimension < self.dimension:
+            raise ValueError(f"Cannot pad to smaller dimension: {new_dimension} < {self.dimension}")
+        
+        if new_dimension == self.dimension:
+            return self
+        
+        coeffs = self.coeffs + [0.0] * (new_dimension - self.dimension)
+        return HypercomplexNumber(*coeffs, dimension=new_dimension)
+    
+    def truncate_to_dimension(self, new_dimension: int) -> 'HypercomplexNumber':
+        """Truncate to a smaller dimension."""
+        if new_dimension > self.dimension:
+            raise ValueError(f"Cannot truncate to larger dimension: {new_dimension} > {self.dimension}")
+        
+        if new_dimension == self.dimension:
+            return self
+        
+        coeffs = self.coeffs[:new_dimension]
+        return HypercomplexNumber(*coeffs, dimension=new_dimension)
+    
+    def to_list(self) -> List[float]:
+        """Convert to Python list."""
+        return self.coeffs.copy()
+    
+    def to_tuple(self) -> Tuple[float, ...]:
+        """Convert to tuple."""
+        return tuple(self.coeffs)
+    
+    def to_numpy(self) -> np.ndarray:
+        """Convert to numpy array."""
+        return np.array(self.coeffs, dtype=np.float64)
+    
+    def copy(self) -> 'HypercomplexNumber':
+        """Create a copy."""
+        return HypercomplexNumber(*self.coeffs, dimension=self.dimension)
+    
+    @property
+    def type_name(self) -> str:
+        """Get the type name (Real, Complex, Quaternion, etc.)."""
+        return self.DIMENSION_NAMES.get(self.dimension, f"CD{self.dimension}")
+    
+    def __str__(self) -> str:
+        """String representation."""
+        non_zero = [(i, c) for i, c in enumerate(self.coeffs) if abs(c) > 1e-10]
+        
+        if not non_zero:
+            return f"{self.type_name}(0)"
+        
+        if len(non_zero) <= 4:
+            parts = []
+            for i, c in non_zero:
+                if i == 0:
+                    parts.append(f"{c:.6f}")
+                else:
+                    sign = "+" if c >= 0 else "-"
+                    parts.append(f"{sign} {abs(c):.6f}e{i}")
+            return f"{self.type_name}({' '.join(parts)})"
+        else:
+            return f"{self.type_name}[{len(non_zero)} non-zero, real={self.real:.6f}, norm={self.norm():.6f}]"
+    
+    def __repr__(self) -> str:
+        """Detailed representation."""
+        return f"HypercomplexNumber({', '.join(map(str, self.coeffs))}, dimension={self.dimension})"
+    
+    def summary(self) -> str:
+        """Return a summary."""
+        non_zero = sum(1 for c in self.coeffs if abs(c) > 1e-10)
+        max_coeff = max(abs(c) for c in self.coeffs)
+        min_non_zero = min(abs(c) for c in self.coeffs if abs(c) > 0)
+        
+        return (f"{self.type_name} Summary:\n"
+                f"  Dimension: {self.dimension}\n"
+                f"  Non-zero components: {non_zero}\n"
+                f"  Real part: {self.real:.6f}\n"
+                f"  Norm: {self.norm():.6f}\n"
+                f"  Max component: {max_coeff:.6f}\n"
+                f"  Min non-zero: {min_non_zero:.6f if non_zero > 0 else 0}")
+
+# Yardımcı Fonksiyonlar:
+# Factory functions for specific hypercomplex types
+def Real(x: float) -> HypercomplexNumber:
+    """Create a real number (dimension 1)."""
+    return HypercomplexNumber(x, dimension=1)
+
+def Complex(real: float, imag: float) -> HypercomplexNumber:
+    """Create a complex number (dimension 2)."""
+    return HypercomplexNumber(real, imag, dimension=2)
+
+def Quaternion(w: float, x: float, y: float, z: float) -> HypercomplexNumber:
+    """Create a quaternion (dimension 4)."""
+    return HypercomplexNumber(w, x, y, z, dimension=4)
+
+def Octonion(*components) -> HypercomplexNumber:
+    """Create an octonion (dimension 8)."""
+    if len(components) != 8:
+        components = list(components) + [0.0] * (8 - len(components))
+    return HypercomplexNumber(*components, dimension=8)
+
+def Sedenion(*components) -> HypercomplexNumber:
+    """Create a sedenion (dimension 16)."""
+    if len(components) != 16:
+        components = list(components) + [0.0] * (16 - len(components))
+    return HypercomplexNumber(*components, dimension=16)
+
+def Pathion(*components) -> HypercomplexNumber:
+    """Create a pathion (dimension 32)."""
+    if len(components) != 32:
+        components = list(components) + [0.0] * (32 - len(components))
+    return HypercomplexNumber(*components, dimension=32)
+
+def Chingon(*components) -> HypercomplexNumber:
+    """Create a chingon (dimension 64)."""
+    if len(components) != 64:
+        components = list(components) + [0.0] * (64 - len(components))
+    return HypercomplexNumber(*components, dimension=64)
+
+def Routon(*components) -> HypercomplexNumber:
+    """Create a routon (dimension 128)."""
+    if len(components) != 128:
+        components = list(components) + [0.0] * (128 - len(components))
+    return HypercomplexNumber(*components, dimension=128)
+
+def Voudon(*components) -> HypercomplexNumber:
+    """Create a voudon (dimension 256)."""
+    if len(components) != 256:
+        components = list(components) + [0.0] * (256 - len(components))
+    return HypercomplexNumber(*components, dimension=256)
+
 class quaternion:
     """
     Kuaterniyon sınıfı: w + xi + yj + zk formatında
@@ -2609,56 +3039,269 @@ def _parse_bicomplex(s: Any) -> BicomplexNumber:
     # Final fallback: return zero bicomplex
     return BicomplexNumber(complex(0.0, 0.0), complex(0.0, 0.0))
 
-def _parse_universal(s: str, target_type: str) -> Any:
+def _parse_universal(s: Union[str, Any], target_type: str) -> Any:
     """
-    Universal parser - Çeşitli sayı türlerini string'den parse eder
+    Universal parser - Çeşitli sayı türlerini string'den veya diğer tiplerden parse eder
     
     Args:
-        s: Parse edilecek string
-        target_type: Hedef tür ("real", "complex", "bicomplex")
+        s: Parse edilecek input (string, sayı, liste, vs.)
+        target_type: Hedef tür ("real", "complex", "quaternion", "octonion", 
+                   "sedenion", "pathion", "chingon", "routon", "voudon", "bicomplex")
     
     Returns:
         Parse edilmiş değer veya hata durumunda varsayılan değer
         
     Özellikler:
         - "real": Float'a çevirir, hata durumunda 0.0 döner
-        - "complex": Karmaşık sayı formatlarını işler (1+2j, 3j, 4, vb.)
-        - "bicomplex": _parse_bicomplex fonksiyonunu çağırır
+        - "complex": _parse_complex fonksiyonunu çağırır (mevcut mantık korunur)
+        - "quaternion": 4 bileşenli hiperkompleks sayı
+        - "octonion": 8 bileşenli hiperkompleks sayı
+        - "sedenion": 16 bileşenli hiperkompleks sayı
+        - "pathion": 32 bileşenli hiperkompleks sayı
+        - "chingon": 64 bileşenli hiperkompleks sayı
+        - "routon": 128 bileşenli hiperkompleks sayı
+        - "voudon": 256 bileşenli hiperkompleks sayı
+        - "bicomplex": _parse_bicomplex fonksiyonunu çağırır (özel durum)
     """
-    if target_type == "real":
+    try:
+        # Bicomplex özel durumu (mevcut implementasyonu koru)
+        if target_type == "bicomplex":
+            return _parse_bicomplex(s)
+        
+        # Complex özel durumu (mevcut implementasyonu koru)
+        if target_type == "complex":
+            return _parse_complex(s)
+        
+        # Real özel durumu
+        if target_type == "real":
+            try:
+                if isinstance(s, (int, float)):
+                    return float(s)
+                
+                if isinstance(s, complex):
+                    return float(s.real)
+                
+                if isinstance(s, HypercomplexNumber):
+                    return float(s.real)
+                
+                # Mevcut complex parser'ı kullan, sonra real kısmını al
+                c = _parse_complex(s)
+                return float(c.real)
+            except Exception as e:
+                warnings.warn(f"Real parse error: {e}", RuntimeWarning)
+                return 0.0
+        
+        # HypercomplexNumber kullanacak tipler için mapping
+        hypercomplex_map = {
+            "quaternion": 4,
+            "octonion": 8,
+            "sedenion": 16,
+            "pathion": 32,
+            "chingon": 64,
+            "routon": 128,
+            "voudon": 256
+        }
+        
+        if target_type in hypercomplex_map:
+            dimension = hypercomplex_map[target_type]
+            return _parse_to_hypercomplex(s, dimension)
+        
+        # Eğer target_type tanınmıyorsa None döndür
+        warnings.warn(f"Unknown target_type: {target_type}", RuntimeWarning)
+        return None
+    
+    except Exception as e:
+        warnings.warn(f"Universal parser error for {target_type}: {e}", RuntimeWarning)
+        # Hata durumunda varsayılan değer döndür
+        return _get_default_value(target_type)
+
+
+# Mevcut _parse_complex fonksiyonunuzu aynen koruyoruz
+def _parse_complex(s) -> complex:
+    """Bir string'i veya sayıyı complex sayıya dönüştürür.
+    "real,imag", "real+imag(i/j)", "real", "imag(i/j)" formatlarını destekler.
+    Float ve int tiplerini de doğrudan kabul eder.
+    """
+    # Eğer zaten complex sayıysa doğrudan döndür
+    if isinstance(s, complex):
+        return s
+    
+    # Eğer HypercomplexNumber ise, ilk iki bileşeni kullan
+    if isinstance(s, HypercomplexNumber):
+        if s.dimension >= 2:
+            return complex(s[0], s[1])
+        else:
+            return complex(s.real, 0.0)
+    
+    # Eğer float veya int ise doğrudan complex'e dönüştür
+    if isinstance(s, (float, int)):
+        return complex(s)
+    
+    # String işlemleri için önce string'e dönüştür
+    if isinstance(s, str):
+        s = s.strip().replace('J', 'j').replace('i', 'j') # Hem J hem i yerine j kullan
+    else:
+        s = str(s).strip().replace('J', 'j').replace('i', 'j')
+    
+    # 1. Eğer "real,imag" formatındaysa
+    if ',' in s:
+        parts = s.split(',')
+        if len(parts) == 2:
+            try:
+                return complex(float(parts[0]), float(parts[1]))
+            except ValueError:
+                pass # Devam et
+
+    # 2. Python'ın kendi complex() dönüştürücüsünü kullanmayı dene (örn: "1+2j", "3j", "-5")
+    try:
+        return complex(s)
+    except ValueError:
+        # 3. Sadece real kısmı varsa (örn: "5")
         try:
-            return float(s.strip())
+            return complex(float(s), 0)
         except ValueError:
-            return 0.0
-    
-    elif target_type == "complex":
-        try:
-            s_clean = s.strip().replace(" ", "")
-            if 'j' not in s_clean:
-                return complex(float(s_clean), 0.0)
+            # 4. Sadece sanal kısmı varsa (örn: "2j", "j")
+            if s.endswith('j'):
+                try:
+                    imag_val = float(s[:-1]) if s[:-1] else 1.0 # "j" -> 1.0j
+                    return complex(0, imag_val)
+                except ValueError:
+                    pass
             
-            pattern = r'^([+-]?\d*\.?\d*)([+-]?\d*\.?\d*)j$'
-            match = re.match(pattern, s_clean)
-            if match:
-                real_part = match.group(1)
-                imag_part = match.group(2)
-                
-                if real_part in ['', '+', '-']:
-                    real_part = real_part + '1' if real_part else '0'
-                if imag_part in ['', '+', '-']:
-                    imag_part = imag_part + '1' if imag_part else '0'
-                
-                return complex(float(real_part or 0), float(imag_part or 0))
-            
-            return complex(s_clean)
-        except:
+            # 5. Fallback: varsayılan kompleks sayı
+            warnings.warn(f"Geçersiz kompleks sayı formatı: '{s}', 0+0j döndürülüyor", RuntimeWarning)
             return complex(0, 0)
+
+def _parse_to_hypercomplex(s: Any, dimension: int) -> HypercomplexNumber:
+    """Parse input to HypercomplexNumber with specific dimension."""
+    try:
+        # Eğer zaten HypercomplexNumber ise
+        if isinstance(s, HypercomplexNumber):
+            if s.dimension == dimension:
+                return s
+            elif s.dimension < dimension:
+                return s.pad_to_dimension(dimension)
+            else:
+                return s.truncate_to_dimension(dimension)
+        
+        # Sayısal tipler
+        if isinstance(s, (int, float)):
+            coeffs = [float(s)] + [0.0] * (dimension - 1)
+            return HypercomplexNumber(*coeffs, dimension=dimension)
+        
+        if isinstance(s, complex):
+            coeffs = [s.real, s.imag] + [0.0] * (dimension - 2)
+            return HypercomplexNumber(*coeffs, dimension=dimension)
+        
+        # İterable tipler (list, tuple, numpy array, vs.)
+        if hasattr(s, '__iter__') and not isinstance(s, str):
+            coeffs = list(s)
+            if len(coeffs) < dimension:
+                coeffs = coeffs + [0.0] * (dimension - len(coeffs))
+            elif len(coeffs) > dimension:
+                coeffs = coeffs[:dimension]
+            return HypercomplexNumber(*coeffs, dimension=dimension)
+        
+        # String parsing
+        if not isinstance(s, str):
+            s = str(s)
+        
+        s = s.strip()
+        
+        # Parantezleri kaldır
+        s = s.strip('[]{}()')
+        
+        # Boş string kontrolü
+        if not s:
+            coeffs = [0.0] * dimension
+            return HypercomplexNumber(*coeffs, dimension=dimension)
+        
+        # Virgülle ayrılmış liste
+        if ',' in s:
+            parts = [p.strip() for p in s.split(',') if p.strip()]
+            
+            if not parts:
+                coeffs = [0.0] * dimension
+                return HypercomplexNumber(*coeffs, dimension=dimension)
+            
+            try:
+                coeffs = [float(p) for p in parts]
+                if len(coeffs) < dimension:
+                    coeffs = coeffs + [0.0] * (dimension - len(coeffs))
+                elif len(coeffs) > dimension:
+                    coeffs = coeffs[:dimension]
+                return HypercomplexNumber(*coeffs, dimension=dimension)
+            except ValueError as e:
+                raise ValueError(f"Invalid numeric value in string: '{s}' -> {e}")
+        
+        # Tek sayı olarak dene
+        try:
+            coeffs = [float(s)] + [0.0] * (dimension - 1)
+            return HypercomplexNumber(*coeffs, dimension=dimension)
+        except ValueError:
+            pass
+        
+        # Kompleks string olarak dene
+        try:
+            c = complex(s)
+            coeffs = [c.real, c.imag] + [0.0] * (dimension - 2)
+            return HypercomplexNumber(*coeffs, dimension=dimension)
+        except ValueError:
+            pass
+        
+        # Fallback: sıfır
+        coeffs = [0.0] * dimension
+        return HypercomplexNumber(*coeffs, dimension=dimension)
     
-    elif target_type == "bicomplex":
-        # _parse_bicomplex'i çağır (tek parametreli)
-        return _parse_bicomplex(s)
+    except Exception as e:
+        warnings.warn(f"Hypercomplex parse error (dim={dimension}) for input {repr(s)}: {e}", RuntimeWarning)
+        return _get_default_hypercomplex(dimension)
+
+
+def _get_default_value(target_type: str) -> Any:
+    """Get default value for target type."""
+    defaults = {
+        "real": 0.0,
+        "complex": complex(0, 0),
+        "quaternion": HypercomplexNumber(0, 0, 0, 0, dimension=4),
+        "octonion": HypercomplexNumber(*([0.0] * 8), dimension=8),
+        "sedenion": HypercomplexNumber(*([0.0] * 16), dimension=16),
+        "pathion": HypercomplexNumber(*([0.0] * 32), dimension=32),
+        "chingon": HypercomplexNumber(*([0.0] * 64), dimension=64),
+        "routon": HypercomplexNumber(*([0.0] * 128), dimension=128),
+        "voudon": HypercomplexNumber(*([0.0] * 256), dimension=256),
+        "bicomplex": _parse_bicomplex("0") if '_parse_bicomplex' in globals() else None
+    }
     
-    return None
+    return defaults.get(target_type, None)
+
+
+def _get_default_hypercomplex(dimension: int) -> HypercomplexNumber:
+    """Get default HypercomplexNumber for dimension."""
+    coeffs = [0.0] * dimension
+    return HypercomplexNumber(*coeffs, dimension=dimension)
+
+def _parse_real(s: Any) -> float:
+    """Parse input as real number (float)."""
+    try:
+        if isinstance(s, (int, float)):
+            return float(s)
+        
+        if isinstance(s, complex):
+            return float(s.real)
+        
+        if isinstance(s, HypercomplexNumber):
+            return float(s.real)
+        
+        if not isinstance(s, str):
+            s = str(s)
+        
+        s = s.strip()
+        return float(s)
+    
+    except Exception as e:
+        warnings.warn(f"Real parse error: {e}", RuntimeWarning)
+        return 0.0
 
 def kececi_bicomplex_algorithm(
     start: BicomplexNumber, 
@@ -3861,53 +4504,6 @@ def _extract_numeric_part(s: Any) -> str:
     # match optional sign, digits, optional decimal, optional exponent
     m = re.search(r'[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?', s)
     return m.group(0) if m else "0"
-
-def _parse_complex(s) -> complex:
-    """Bir string'i veya sayıyı complex sayıya dönüştürür.
-    "real,imag", "real+imag(i/j)", "real", "imag(i/j)" formatlarını destekler.
-    Float ve int tiplerini de doğrudan kabul eder.
-    """
-    # Eğer zaten complex sayıysa doğrudan döndür
-    if isinstance(s, complex):
-        return s
-    
-    # Eğer float veya int ise doğrudan complex'e dönüştür
-    if isinstance(s, (float, int)):
-        return complex(s)
-    
-    # String işlemleri için önce string'e dönüştür
-    if isinstance(s, str):
-        s = s.strip().replace('J', 'j').replace('i', 'j') # Hem J hem i yerine j kullan
-    else:
-        s = str(s).strip().replace('J', 'j').replace('i', 'j')
-    
-    # 1. Eğer "real,imag" formatındaysa
-    if ',' in s:
-        parts = s.split(',')
-        if len(parts) == 2:
-            try:
-                return complex(float(parts[0]), float(parts[1]))
-            except ValueError:
-                pass # Devam et
-
-    # 2. Python'ın kendi complex() dönüştürücüsünü kullanmayı dene (örn: "1+2j", "3j", "-5")
-    try:
-        return complex(s)
-    except ValueError:
-        # 3. Sadece real kısmı varsa (örn: "5")
-        try:
-            return complex(float(s), 0)
-        except ValueError:
-            # 4. Sadece sanal kısmı varsa (örn: "2j", "j")
-            if s.endswith('j'):
-                try:
-                    imag_val = float(s[:-1]) if s[:-1] else 1.0 # "j" -> 1.0j
-                    return complex(0, imag_val)
-                except ValueError:
-                    pass
-            
-            raise ValueError(f"Geçersiz kompleks sayı formatı: '{s}'")
-
 
 def convert_to_float(value: Any) -> float:
     """
