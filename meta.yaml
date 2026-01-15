@@ -31,7 +31,7 @@ requirements:
     - numpy
     - matplotlib
     - scipy
-    - scikit-learn
+    - sklearn
     - sympy
     # Other runtime dependencies
   build:
