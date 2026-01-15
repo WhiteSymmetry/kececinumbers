@@ -28,7 +28,7 @@ dependencies = [
     "numpy",
     "matplotlib",
     "scipy",
-    "scikit-learn",
+    "sklearn",
     "sympy",
 ]
 
