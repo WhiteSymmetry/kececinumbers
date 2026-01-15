@@ -65,7 +65,7 @@ setup(
         "Topic :: Scientific/Engineering :: Mathematics"
     ],
     python_requires='>=3.11',
-    license="MIT",
+    license="AGPL-3.0-or-later",
     keywords="mathematics numbers quaternion hypercomplex kececi",
     project_urls={
         "Documentation": "https://github.com/WhiteSymmetry/kececinumbers",
