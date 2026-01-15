@@ -63,7 +63,7 @@ test:
 
 about:
   home: https://github.com/WhiteSymmetry/kececinumbers
-  license: AGPL
+  license: AGPL-3.0
   summary: 'Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets.'
   description: |
     Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets.
