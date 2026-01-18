@@ -28,12 +28,12 @@ dependencies = [
     "numpy",
     "matplotlib",
     "scipy",
-    "sklearn",
+    "scikit-learn",
     "sympy",
 ]
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov", "pytest-mock", "ruff", "numpy", "matplotlib", "scipy", "sklearn", "sympy",]
+test = ["pytest", "pytest-cov", "pytest-mock", "ruff", "numpy", "matplotlib", "scipy", "scikit-learn", "sympy",]
 
 [tool.setuptools.packages.find]
 where = ["."]
