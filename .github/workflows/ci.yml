@@ -20,7 +20,7 @@ jobs:
             pip install --no-cache-dir -r requirements-dev.txt
           else
             # Fallback minimal deps (at least numpy required for tests)
-            pip install --no-cache-dir numpy scipy matplotlib sklearn sympy pytest flake8
+            pip install --no-cache-dir numpy scipy matplotlib scikit-learn sympy pytest flake8
           fi
 
       - name: Run tests
