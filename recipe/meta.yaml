@@ -31,7 +31,7 @@ requirements:
     - numpy
     - matplotlib
     - scipy
-    - sklearn
+    - scikit-learn
     - sympy
     # Other runtime dependencies
   build:
@@ -41,7 +41,7 @@ requirements:
     - numpy
     - matplotlib
     - scipy
-    - sklearn
+    - scikit-learn
     - sympy
 
 test:
