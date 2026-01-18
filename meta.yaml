@@ -1,4 +1,4 @@
-{% set version = "0.8.7" %}
+{% set version = "0.8.8" %}
 
 package:
   name: kececinumbers
@@ -31,7 +31,7 @@ requirements:
     - numpy
     - matplotlib
     - scipy
-    - sklearn
+    - scikit-learn
     - sympy
     # Other runtime dependencies
   build:
@@ -41,7 +41,7 @@ requirements:
     - numpy
     - matplotlib
     - scipy
-    - sklearn
+    - scikit-learn
     - sympy
 
 test:
