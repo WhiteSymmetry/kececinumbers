@@ -2,7 +2,7 @@
 numpy
 scipy
 matplotlib
-sklearn
+scikit-learn
 sympy
 pytest
 flake8
