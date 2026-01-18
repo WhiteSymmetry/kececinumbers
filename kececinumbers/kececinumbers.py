@@ -8521,6 +8521,62 @@ def get_random_type(
         add_value_raw=add_value_str
     )
 
+def _parse_fraction(s: Union[str, float, int]) -> float:
+    """
+    Parse fraction strings like '1353/2791' or mixed numbers like '1 1/2'
+    """
+    if isinstance(s, (int, float)):
+        return float(s)
+    
+    s_str = str(s).strip()
+    
+    # Empty string
+    if not s_str:
+        return 0.0
+    
+    # Already a float string
+    try:
+        return float(s_str)
+    except ValueError:
+        pass
+    
+    # Check for mixed numbers like "1 1/2"
+    if ' ' in s_str and '/' in s_str:
+        try:
+            whole_part, frac_part = s_str.split(' ', 1)
+            whole = float(whole_part) if whole_part else 0.0
+            num, den = frac_part.split('/')
+            fraction = float(num) / float(den) if float(den) != 0 else 0.0
+            return whole + fraction
+        except (ValueError, ZeroDivisionError):
+            pass
+    
+    # Check for simple fractions like "1353/2791"
+    if '/' in s_str:
+        try:
+            num, den = s_str.split('/')
+            # Handle both integer and float numerator/denominator
+            numerator = float(num) if '.' in num else int(num)
+            denominator = float(den) if '.' in den else int(den)
+            if denominator == 0:
+                logger.warning(f"Division by zero in fraction: {s_str}")
+                return float('inf') if numerator >= 0 else float('-inf')
+            return numerator / denominator
+        except (ValueError, ZeroDivisionError):
+            pass
+    
+    # Try using Fraction class for more robust parsing
+    try:
+        return float(Fraction(s_str))
+    except (ValueError, ZeroDivisionError):
+        logger.warning(f"Could not parse as fraction: {s_str}")
+    
+    # Last resort
+    try:
+        return float(s_str)
+    except ValueError:
+        logger.error(f"Failed to parse numeric value: {s_str}")
+        raise ValueError(f"Invalid numeric format: {s_str}")
 
 def get_with_params(
     kececi_type_choice: int,
@@ -8559,13 +8615,16 @@ def get_with_params(
     if start_value_raw is None:
         start_value_raw = "0"
     if add_value_raw is None:
-        add_value_raw = "1" if operation == "add" else "2" if operation == "multiply" else "1"
+        if operation == "add":
+            add_value_raw = "1"
+        elif operation == "multiply":
+            add_value_raw = "2"
+        else:
+            add_value_raw = "1"
     
-    # Convert to strings if they're not already
-    if not isinstance(start_value_raw, str):
-        start_value_raw = str(start_value_raw)
-    if not isinstance(add_value_raw, str):
-        add_value_raw = str(add_value_raw)
+    # Convert to strings if they're not already (but keep as is for parser)
+    start_value_str = str(start_value_raw) if not isinstance(start_value_raw, str) else start_value_raw
+    add_value_str = str(add_value_raw) if not isinstance(add_value_raw, str) else add_value_raw
     
     # Validate operation
     valid_operations = ['add', 'multiply', 'subtract', 'divide', 'mod', 'power']
@@ -8579,22 +8638,47 @@ def get_with_params(
     
     try:
         # Import parsers (lazy import to avoid circular imports)
-        from .kececinumbers import (
-            _parse_complex, _parse_neutrosophic, _parse_hyperreal,
-            _parse_quaternion, _parse_octonion, _parse_sedenion,
-            _parse_clifford, _parse_dual, _parse_splitcomplex,
-            _parse_pathion, _parse_chingon, _parse_bicomplex,
-            _parse_neutrosophic_complex, _parse_neutrosophic_bicomplex,
-            _parse_routon, _parse_voudon, _parse_super_real, _parse_ternary
-        )
+        # Note: Use try-except for optional imports
+        try:
+            from .kececinumbers import (
+                _parse_complex, _parse_neutrosophic, _parse_hyperreal,
+                _parse_quaternion, _parse_octonion, _parse_sedenion,
+                _parse_clifford, _parse_dual, _parse_splitcomplex,
+                _parse_pathion, _parse_chingon, _parse_bicomplex,
+                _parse_neutrosophic_complex, _parse_neutrosophic_bicomplex,
+                _parse_routon, _parse_voudon, _parse_super_real, _parse_ternary
+            )
+            parsers_available = True
+        except ImportError:
+            logger.warning("Some parsers not available, using fallback parsers")
+            parsers_available = False
+            # Define fallback parsers
+            _parse_complex = lambda s: complex(_parse_fraction(s), 0)
+            _parse_neutrosophic = lambda s: _parse_fraction(s)
+            _parse_hyperreal = lambda s: _parse_fraction(s)
+            _parse_quaternion = lambda s: _parse_fraction(s)
+            _parse_octonion = lambda s: _parse_fraction(s)
+            _parse_sedenion = lambda s: _parse_fraction(s)
+            _parse_clifford = lambda s: _parse_fraction(s)
+            _parse_dual = lambda s: _parse_fraction(s)
+            _parse_splitcomplex = lambda s: _parse_fraction(s)
+            _parse_pathion = lambda s: _parse_fraction(s)
+            _parse_chingon = lambda s: _parse_fraction(s)
+            _parse_bicomplex = lambda s: complex(_parse_fraction(s), 0)
+            _parse_neutrosophic_complex = lambda s: complex(_parse_fraction(s), 0)
+            _parse_neutrosophic_bicomplex = lambda s: complex(_parse_fraction(s), 0)
+            _parse_routon = lambda s: _parse_fraction(s)
+            _parse_voudon = lambda s: _parse_fraction(s)
+            _parse_super_real = lambda s: _parse_fraction(s)
+            _parse_ternary = lambda s: _parse_fraction(s)
         
         # Map type choices to parsers and their operations
         type_to_parser = {
-            1: {'parser': lambda s: float(s), 'name': 'Positive Real'},
-            2: {'parser': lambda s: -float(s), 'name': 'Negative Real'},
+            1: {'parser': _parse_fraction, 'name': 'Positive Real'},
+            2: {'parser': lambda s: -_parse_fraction(s), 'name': 'Negative Real'},
             3: {'parser': _parse_complex, 'name': 'Complex'},
-            4: {'parser': lambda s: float(s), 'name': 'Float'},
-            5: {'parser': lambda s: float(s), 'name': 'Rational'},
+            4: {'parser': _parse_fraction, 'name': 'Float'},
+            5: {'parser': _parse_fraction, 'name': 'Rational'},  # Fixed: use _parse_fraction for fractions
             6: {'parser': _parse_quaternion, 'name': 'Quaternion'},
             7: {'parser': _parse_neutrosophic, 'name': 'Neutrosophic'},
             8: {'parser': _parse_neutrosophic_complex, 'name': 'Neutrosophic Complex'},
@@ -8631,17 +8715,22 @@ def get_with_params(
         
         # Parse start and add values
         try:
+            # Use the original values (not converted strings) for parsing
             start_value = parser_func(start_value_raw)
             add_value = parser_func(add_value_raw)
             
             # Log parsed values
-            logger.debug(f"Parsed start value: {repr(start_value)}")
-            logger.debug(f"Parsed operation value: {repr(add_value)}")
+            logger.debug(f"Parsed start value: {repr(start_value)} (type: {type(start_value)})")
+            logger.debug(f"Parsed operation value: {repr(add_value)} (type: {type(add_value)})")
             
         except Exception as e:
-            raise ValueError(f"Failed to parse values. Start: '{start_value_raw}', Add: '{add_value_raw}'. Error: {e}")
+            # More detailed error information
+            logger.error(f"Parsing failed. Start type: {type(start_value_raw)}, Start value: {repr(start_value_raw)}")
+            logger.error(f"Parsing failed. Add type: {type(add_value_raw)}, Add value: {repr(add_value_raw)}")
+            raise ValueError(f"Failed to parse values. Start: '{start_value_raw}', Add: '{add_value_raw}'. Error: {str(e)}")
         
         # Generate the sequence based on operation
+        # You need to implement _generate_sequence function
         result = _generate_sequence(
             start_value=start_value,
             add_value=add_value,
@@ -8682,7 +8771,6 @@ def get_with_params(
     except Exception as e:
         logger.exception(f"ERROR during sequence generation: {e}")
         raise  # Re-raise the exception for caller handling
-
 
 def _generate_sequence(
     start_value: Any,
