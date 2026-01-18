@@ -11016,8 +11016,12 @@ def unified_generator(
         return []
     
     from .kececinumbers import (
-        _parse_neutrosophic, _parse_real, _parse_super_real, _parse_hyperreal,
-        _parse_chingon, _is_divisible, is_prime_like
+        _parse_complex, _parse_neutrosophic, _parse_hyperreal,
+        _parse_quaternion, _parse_octonion, _parse_sedenion,
+        _parse_clifford, _parse_dual, _parse_splitcomplex,
+        _parse_pathion, _parse_chingon, _parse_bicomplex,
+        _parse_neutrosophic_complex, _parse_neutrosophic_bicomplex,
+        _parse_routon, _parse_voudon, _parse_super_real, _parse_ternary
     )
     
     # Helper function for fraction formatting
