@@ -23,6 +23,8 @@ __email__ = "mkececi@yaani.com"
 # Public API exposed to users of the 'kececinumbers' package.
 __all__ = [
     # --- Custom Number Classes ---
+    '_parse_engineering_notation,'
+    'get_interactive',
     'NeutrosophicNumber',
     'NeutrosophicComplexNumber',
     'HyperrealNumber',
@@ -38,6 +40,7 @@ __all__ = [
     'TernaryNumber',
     'SuperrealNumber',
     'quaternion',
+    'ComplexNumber',
     'HypercomplexNumber',
     'Real',
     'Complex',
@@ -49,13 +52,21 @@ __all__ = [
     'Routon',
     'Voudon',
     '_parse_real',
+    '_parse_super_real',
+    'is_super_real_expression',
+    'normalize_super_real',
     '_get_default_hypercomplex',
     '_get_default_value',
     '_parse_to_hypercomplex',
+    'ValueProcessor',
+    '_generate_sequence',
+    'extract_values_for_plotting',
+    '_generate_simple_sequence',
+    '_generate_detailed_sequence',
+    '_generate_default_value',
 
     # --- High-Level Functions ---
     'get_with_params',
-    'get_interactive',
     'get_random_type',
     '_get_integer_representation',
     '_parse_quaternion',
@@ -66,6 +77,7 @@ __all__ = [
     '_parse_octonion',
     '_parse_sedenion',
     '_parse_neutrosophic',
+    '_parse_neutrosophic_complex',
     '_parse_neutrosophic_bicomplex',
     '_parse_hyperreal',
     '_parse_clifford',
@@ -88,7 +100,7 @@ __all__ = [
     'OctonionNumber',
     'is_quaternion_like',
     'is_neutrosophic_like',
-    'coeffs',
+    #'coeffs',
     'convert_to_float',
     'safe_add',
     '_extract_numeric_part',
@@ -111,6 +123,38 @@ __all__ = [
     '_parse_ternary',
     '_parse_superreal',
     'logger',
+    'chingon_zeros',
+    'chingon_ones',
+    'chingon_unit_vector',
+    'chingon_eye',
+    'chingon_random',
+    'chingon_linspace',
+    'chingon_dot',
+    'chingon_cross',
+    'chingon_norm',
+    'chingon_normalize',
+    'neutrosophic_zero',
+    'neutrosophic_one',
+    'neutrosophic_i',
+    'neutrosophic_f',
+    'parse_to_neutrosophic',
+    'parse_to_hyperreal',
+    '_safe_float_convert',
+    '_parse_complex_like_string',
+    '_safe_float',
+    'get_random_types_batch',
+    '_find_kececi_prime_number',
+    '_safe_power',
+    '_safe_mod',
+    '_safe_divide',
+    '_float_mod_zero',
+    'clean_sequence_for_plotting',
+    'extract_numeric_value',
+    'extract_numeric_values',
+    'extract_complex_values',
+    'extract_fraction_values',
+    'find_first_numeric',
+    'extract_clean_numbers',
     
     # --- Core Generation and Analysis ---
     'unified_generator',
@@ -153,6 +197,8 @@ try:
     # Import the public API into the package's namespace.
     from .kececinumbers import (
         # Classes / Number types
+        _parse_engineering_notation,
+        get_interactive,
         TernaryNumber,
         SuperrealNumber,
         BaseNumber,
@@ -173,8 +219,9 @@ try:
         DualNumber,
         SplitcomplexNumber,
         quaternion,
-        coeffs,
+        #coeffs,
         find_period,
+        ComplexNumber,
         HypercomplexNumber,
         Real,
         Complex,
@@ -186,14 +233,54 @@ try:
         Routon,
         Voudon,
         _parse_real,
+        _parse_super_real,
+        is_super_real_expression,
+        normalize_super_real,
         _get_default_hypercomplex,
         _get_default_value,
         _parse_to_hypercomplex,
-    
+        chingon_zeros,
+        chingon_ones,
+        chingon_unit_vector,
+        chingon_eye,
+        chingon_random,
+        chingon_linspace,
+        chingon_dot,
+        chingon_cross,
+        chingon_norm,
+        chingon_normalize,
+        neutrosophic_zero,
+        neutrosophic_one,
+        neutrosophic_i,
+        neutrosophic_f,
+        parse_to_neutrosophic,
+        parse_to_hyperreal,
+        _safe_float_convert,
+        _parse_complex_like_string,
+        _safe_float,
+        get_random_types_batch,
+        _find_kececi_prime_number,
+        _safe_power,
+        _safe_mod,
+        _safe_divide,
+        _float_mod_zero,
+        ValueProcessor,
+        _generate_sequence,
+        extract_values_for_plotting,
+        _generate_simple_sequence,
+        _generate_detailed_sequence,
+        _generate_default_value,
+        clean_sequence_for_plotting,
+        extract_numeric_value,
+        extract_numeric_values,
+        extract_complex_values,
+        extract_fraction_values,
+        find_first_numeric,
+        extract_clean_numbers,
+
         # Core generator / API
         unified_generator,
         get_with_params,
-        get_interactive,
         get_random_type,
         generate_kececi_vectorial,
         kececi_bicomplex_algorithm,
@@ -218,9 +305,9 @@ try:
         _pair_correlation,
     
         # Plotting / visualization
+        print_detailed_report,
         plot_numbers,
         plot_octonion_3d,
-        print_detailed_report,
         generate_interactive_plot,
         apply_pca_clustering,
         _plot_comparison,
@@ -243,6 +330,7 @@ try:
         _parse_superreal,
         _parse_hyperreal,
         _parse_neutrosophic,
+        _parse_neutrosophic_complex,
         _parse_neutrosophic_bicomplex,
         _parse_quaternion,
         _parse_quaternion_from_csv,
@@ -284,15 +372,17 @@ try:
         TYPE_TERNARY,
         TYPE_HYPERCOMPLEX,
     )
-
+    """
     # _gue_pair_correlation özel olarak kontrol edelim
     try:
+        from .kececinumbers import get_interactive
         from .kececinumbers import _gue_pair_correlation
     except ImportError:
         # Fonksiyon yoksa, yerine geçici bir fonksiyon tanımla
         def _gue_pair_correlation(*args, **kwargs):
             warnings.warn("_gue_pair_correlation not implemented yet", RuntimeWarning)
             return None
+    """
         
 except ImportError as e:
     warnings.warn(f"Gerekli modül yüklenemedi: {e}", ImportWarning)
