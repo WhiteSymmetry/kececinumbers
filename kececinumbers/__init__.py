@@ -16,7 +16,7 @@ from __future__ import annotations
 import warnings
 
 # Paket sürüm numarası
-__version__ = "0.8.6"
+__version__ = "0.8.7"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 
