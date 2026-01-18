@@ -1,4 +1,4 @@
-{% set version = "0.8.6" %}
+{% set version = "0.8.7" %}
 
 package:
   name: kececinumbers
@@ -6,8 +6,8 @@ package:
 
 source:
   path: .  # Derlemeyi bu meta.yaml dosyasının bulunduğu dizinden yap
-  url: https://files.pythonhosted.org/packages/76/06/4726a4e338a4fef6a5f0f7bcafd5872e0e5f284f781801fd79dd06f38314/kececinumbers-0.8.6.tar.gz
-  blake2b-256: 76064726a4e338a4fef6a5f0f7bcafd5872e0e5f284f781801fd79dd06f38314
+  url: 
+  blake2b-256: 
 
 channels:
   - conda-forge
