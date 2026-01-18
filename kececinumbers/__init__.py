@@ -14,9 +14,10 @@ Alt modülleri yükler, sürüm bilgileri tanımlar ve geriye dönük uyumluluk 
 
 from __future__ import annotations
 import warnings
+from .kececinumbers import _parse_engineering_notation
 
 # Paket sürüm numarası
-__version__ = "0.8.8"
+__version__ = "0.8.9"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 
@@ -155,6 +156,7 @@ __all__ = [
     'extract_fraction_values',
     'find_first_numeric',
     'extract_clean_numbers',
+    '_parse_fraction',
     
     # --- Core Generation and Analysis ---
     'unified_generator',
@@ -277,6 +279,7 @@ try:
         extract_fraction_values,
         find_first_numeric,
         extract_clean_numbers,
+        _parse_fraction,
 
         # Core generator / API
         unified_generator,
