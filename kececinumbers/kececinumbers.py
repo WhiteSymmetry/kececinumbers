@@ -60,7 +60,8 @@ logger = logging.getLogger(__name__)
 try:
     # numpy-quaternion kütüphanesinin sınıfını yüklemeye çalış. Artık bu modüle ihtiyaç kalmadı
     # conda install -c conda-forge quaternion # pip install numpy-quaternion
-    from quaternion import quaternion as quaternion  # type: ignore
+    # from quaternion import quaternion as quaternion  # type: ignore
+    from .kececinumbers import quaternion
 except Exception:
     # Eğer yoksa `quaternion` isimli sembolü None yap, kodun diğer yerleri bunu kontrol edebilir
     quaternion = None
@@ -1995,7 +1996,7 @@ class ChingonNumber:
             return ChingonNumber(new_coeffs)
         return NotImplemented
     
-    @overload
+    @overload # Single overload definition, multiple required  [misc]
     def __radd__(self, other: Union[int, float]) -> 'ChingonNumber': ...
     
     def __radd__(self, other: Any) -> Any:
@@ -4582,9 +4583,6 @@ def _parse_super_real(s: Any) -> float:
     Returns:
         float: Parsed real number (always float, never int)
     """
-    import re
-    import math
-    import warnings
     
     try:
         # 1. Direkt sayısal tipler
@@ -4699,6 +4697,7 @@ def _parse_super_real(s: Any) -> float:
             try:
                 parts = s.split('/')
                 if len(parts) == 2:
+                    # Incompatible types in assignment (expression has type "float", variable has type "int")  [assignment]
                     num = float(parts[0])
                     den = float(parts[1])
                     if den != 0:
@@ -8654,7 +8653,10 @@ def get_with_params(
             parsers_available = False
             # Define fallback parsers
             _parse_complex = lambda s: complex(_parse_fraction(s), 0)
-            _parse_neutrosophic = lambda s: _parse_fraction(s)
+            #_parse_neutrosophic = lambda s: _parse_fraction(s) # Incompatible return value type (got "float", expected "tuple[float, float, float]")  [return-value]
+            # Neutrosophic tuple
+            _parse_neutrosophic = lambda s: (_parse_fraction(s), 0.0, 0.0)            
+            """
             _parse_hyperreal = lambda s: _parse_fraction(s)
             _parse_quaternion = lambda s: _parse_fraction(s)
             _parse_octonion = lambda s: _parse_fraction(s)
@@ -8671,7 +8673,36 @@ def get_with_params(
             _parse_voudon = lambda s: _parse_fraction(s)
             _parse_super_real = lambda s: _parse_fraction(s)
             _parse_ternary = lambda s: _parse_fraction(s)
-        
+            """
+            # Complex döndürenler
+            _parse_bicomplex = lambda s: BicomplexNumber(_parse_fraction(s), 0.0)
+            _parse_neutrosophic_bicomplex = lambda s: NeutrosophicBicomplexNumber(
+                _parse_fraction(s), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+            # Float döndürenler (ChingonNumber, hyperreal vb.)
+            _parse_quaternion = lambda s: quaternion(_parse_fraction(s))
+            _parse_octonion = lambda s: OctonionNumber(_parse_fraction(s))
+            _parse_pathion = lambda s: PathionNumber(_parse_fraction(s))
+            # List[float] bekleyenler → [float] olarak sar
+            _parse_sedenion = lambda s: SedenionNumber([_parse_fraction(s)])
+            _parse_chingon = lambda s: ChingonNumber([_parse_fraction(s)])
+            _parse_routon = lambda s: RoutonNumber([_parse_fraction(s)])
+            _parse_voudon = lambda s: VoudonNumber([_parse_fraction(s)])
+            _parse_ternary = lambda s: TernaryNumber([_parse_fraction(s)])
+            # Dict bekleyen
+            _parse_clifford = lambda s: CliffordNumber({"e0": _parse_fraction(s)})
+            # Dual/Splitcomplex → varsayılan argümanlar ekle
+            _parse_dual = lambda s: DualNumber(_parse_fraction(s), 0.0)
+            _parse_splitcomplex = lambda s: SplitcomplexNumber(_parse_fraction(s), 0.0)
+            # List[float] bekleyenler → [float] olarak sar            
+            _parse_hyperreal = lambda s: HyperrealNumber([_parse_fraction(s)])  # type: ignore[no-redef, assignment, return-value]
+            # Superreal → doğru tip
+            _parse_super_real = lambda s: SuperrealNumber(_parse_fraction(s))  # type: ignore[no-redef, assignment, return-value] 
+            # Complex'ler → tam argümanlar
+            _parse_neutrosophic_complex = lambda s: NeutrosophicComplexNumber(_parse_fraction(s))  # type: ignore[no-redef, assignment, return-value]
+            #_parse_hyperreal: Callable[[Any], HyperrealNumber]
+            #_parse_super_real: Callable[[Any], SuperrealNumber] 
+            #_parse_neutrosophic_complex: Callable[[Any], NeutrosophicComplexNumber]   
+
         # Map type choices to parsers and their operations
         type_to_parser = {
             1: {'parser': _parse_fraction, 'name': 'Positive Real'},
@@ -9643,7 +9674,7 @@ def _is_divisible(value: Any, divisor: int, kececi_type: int) -> bool:
                 # Try numpy quaternion
                 try:
                     from .kececinumbers import quaternion
-                    if isinstance(value, quaternion.quaternion):
+                    if isinstance(value, quaternion):
                         comps = [value.w, value.x, value.y, value.z]
                         return all(_float_mod_zero(c, divisor) for c in comps)
                 except ImportError:
@@ -9948,7 +9979,7 @@ def is_prime_like(value: Any, kececi_type: int) -> bool:
                 # Try numpy quaternion
                 try:
                     from .kececinumbers import quaternion
-                    if isinstance(value, quaternion.quaternion):
+                    if isinstance(value, quaternion):
                         comps = [value.w, value.x, value.y, value.z]
                 except ImportError:
                     pass
@@ -10940,10 +10971,10 @@ def unified_generator(
             from .kececinumbers import _parse_quaternion
             current_value = _parse_quaternion(start_input_raw)
             add_value_typed = _parse_quaternion(add_input_raw)
-            # Import quaternion class if needed
+            # from .kececinumbers import quaternion class if needed
             try:
-                import quaternion
-                ask_unit = quaternion.quaternion(1, 1, 1, 1)
+                from .kececinumbers import quaternion
+                ask_unit = quaternion(1, 1, 1, 1)
             except ImportError:
                 # Use a mock quaternion if not available
                 ask_unit = current_value.__class__(1, 1, 1, 1) if hasattr(current_value, '__class__') else None
@@ -11153,6 +11184,7 @@ def unified_generator(
     
     # Parse input values
     try:
+        # error: "dict[str, object]" not callable  [operator]
         start_value = parser_func(start_input_raw)
         add_value = parser_func(add_input_raw)
     except Exception as e:
