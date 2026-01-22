@@ -1,0 +1,153 @@
+[tox]
+requires = ["tox>=4.34", "tox-uv>=1"]
+env_list = ["lint", "type", "fix", "3.15", "3.14t", "3.14", "3.13", "3.12", "3.11", "cov", "type", "docs", "pkg_meta"]
+skip_missing_interpreters = true
+
+[env_run_base]
+description = "run the tests with pytest under {env_name}"
+package = "wheel"
+wheel_build_env = ".pkg"
+dependency_groups = [ "test" ]
+pass_env = [ "PYTEST_*", "SSL_CERT_FILE" ]
+set_env.COVERAGE_FILE = { replace = "env", name = "COVERAGE_FILE", default = "{work_dir}{/}.coverage.{env_name}" }
+set_env.COVERAGE_FILECOVERAGE_PROCESS_START = "{tox_root}{/}pyproject.toml"
+deps = [
+    "pytest>=8",
+    "pytest-sugar",
+    "mock",
+    "pytest-xdist",
+]
+commands = [
+  [
+    "pytest",
+    { replace = "posargs", extend = true, default = [
+      "--durations",
+      "15",
+      "-n",
+      { replace = "env", name = "PYTEST_XDIST_AUTO_NUM_WORKERS", default = "auto" },
+      "--junitxml",
+      "{work_dir}{/}junit.{env_name}.xml",
+      "--no-cov-on-fail",
+      "--cov",
+      "{env_site_packages_dir}{/}tox",
+      "--cov",
+      "{tox_root}{/}tests",
+      "--cov-config",
+      "{tox_root}{/}pyproject.toml",
+      "--cov-context",
+      "test",
+      "--cov-report",
+      "term-missing:skip-covered",
+      "--cov-report",
+      "html:{env_tmp_dir}{/}htmlcov",
+      "--cov-report",
+      "xml:{work_dir}{/}coverage.{env_name}.xml",
+      "tests",
+      "--run-integration",
+    ] },
+  ],
+  [
+    "diff-cover",
+    "--compare-branch",
+    { replace = "env", name = "DIFF_AGAINST", default = "origin/main" },
+    "{work_dir}{/}coverage.{env_name}.xml",
+  ],
+]
+
+[env.lint]
+description = "run linters"
+skip_install = true
+deps = ["black"]
+commands = [["black", { replace = "posargs", default = ["."], extend = true} ]]
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling>=0.22", "hatch-vcs>=0.2"]
+
+[env.fix]
+description = "format the code base to adhere to our styles, and complain about what we cannot do automatically"
+skip_install = true
+dependency_groups = [ "fix" ]
+pass_env = [
+  { replace = "ref", of = [
+    "env_run_base",
+    "pass_env",
+  ], extend = true },
+  "PROGRAMDATA",
+  "DISABLE_PRE_COMMIT_UV_PATCH",
+]
+commands = [ [ "pre-commit", "run", "--all-files", "--show-diff-on-failure", { replace = "posargs", extend = true } ] ]
+
+[env.type]
+base_python = ["3.14"]
+description = "run type check on code base"
+dependency_groups = [ "type" ]
+deps = ["mypy"]
+commands = [["mypy", { replace = "posargs", default = ["src", "tests"], extend = true} ], [ "mypy", "tests" ]]
+
+[env.type-3.11]
+base_python = ["3.11"]
+base = ["env", "type"]
+
+[env.docs]
+description = "build documentation"
+dependency_groups = [ "docs" ]
+base_python = ["3.14"]
+commands = [
+  [
+    "sphinx-build",
+    "-d",
+    "{env_tmp_dir}{/}docs_tree",
+    "docs",
+    "{env:READTHEDOCS_OUTPUT:{work_dir}{/}docs_out}/html",
+    "--color",
+    "-b",
+    "html",
+    { replace = "posargs", default = [  ], extend = true },
+    "-W",
+  ],
+  [
+    "python",
+    "-c",
+    'print(r"documentation available under file://{work_dir}{/}docs_out{/}html{/}index.html")',
+  ],
+]
+
+[env.pkg_meta]
+description = "check that the long description is valid"
+skip_install = true
+dependency_groups = [ "pkg_meta" ]
+commands = [
+  [
+    "uv",
+    "build",
+    "--sdist",
+    "--wheel",
+    "--out-dir",
+    "{env_tmp_dir}",
+    ".",
+  ],
+  [
+    "twine",
+    "check",
+    "{env_tmp_dir}{/}*",
+  ],
+  [
+    "check-wheel-contents",
+    "--no-config",
+    "{env_tmp_dir}",
+  ],
+]
+
+[env.release]
+description = "do a release, required posargs of the version number"
+skip_install = true
+dependency_groups = [ "release" ]
+commands = [ [ "python", "{tox_root}/tasks/release.py", "--version", "{posargs}" ] ]
+
+[env.dev]
+description = "dev environment with all deps at {envdir}"
+package = "editable"
+dependency_groups = [ "dev" ]
+commands = [ [ "python", "-m", "pip", "list", "--format=columns" ], [ "python", "-c", 'print(r"{env_python}")' ] ]
+uv_seed = true
