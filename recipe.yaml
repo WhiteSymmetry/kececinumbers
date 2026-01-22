@@ -4,13 +4,13 @@ schema_version: 1
 # this sets up "context variables" (in this case name and version) that
 # can later be used in Jinja expressions
 context:
-  version: 0.9.0
+  version: 0.9.1
   name: kececinumbers
 
 # top level package information (name and version)
 package:
   name: kececinumbers
-  version: 0.9.0
+  version: 0.9.1
 
 # location to get the source from
 #`source` are `url`, `sha256`, `md5`, `patches`, `file_name` and `target_directory`
