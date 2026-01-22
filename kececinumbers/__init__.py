@@ -14,17 +14,16 @@ Alt modülleri yükler, sürüm bilgileri tanımlar ve geriye dönük uyumluluk 
 
 from __future__ import annotations
 import warnings
-from .kececinumbers import _parse_engineering_notation
 
 # Paket sürüm numarası
-__version__ = "0.9.0"
+__version__ = "0.9.1"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 
 # Public API exposed to users of the 'kececinumbers' package.
 __all__ = [
     # --- Custom Number Classes ---
-    '_parse_engineering_notation,'
+    '_parse_engineering_notation',
     'get_interactive',
     'NeutrosophicNumber',
     'NeutrosophicComplexNumber',
