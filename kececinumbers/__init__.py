@@ -17,7 +17,7 @@ import warnings
 from .kececinumbers import _parse_engineering_notation
 
 # Paket sürüm numarası
-__version__ = "0.8.9"
+__version__ = "0.9.0"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 
