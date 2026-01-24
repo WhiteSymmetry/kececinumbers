@@ -633,6 +633,65 @@ Keçeci, Mehmet. "Keçeci Numbers and the Keçeci Prime Number". Authorea. June 
 
 Keçeci, Mehmet. Keçeci numbers and the Keçeci prime number: A potential number theoretic exploratory tool. Open Science Articles (OSAs), Zenodo. 2025. https://doi.org/10.5281/zenodo.15381697
 ```
+
+---
+
+# Pixi:
+
+[![Pixi](https://img.shields.io/badge/Pixi-Pixi-brightgreen.svg)](https://prefix.dev/channels/bilgi)
+
+pixi init kececinumbers
+
+cd kececinumbers
+
+pixi workspace channel add https://repo.prefix.dev/bilgi --prepend
+
+✔ Added https://repo.prefix.dev/bilgi
+
+pixi add kececinumbers
+
+✔ Added kececinumbers >=0.9.1,<2
+
+pixi install
+
+pixi shell
+
+pixi run python -c "import kececinumbers; print(kececinumbers.__version__)"
+
+### Çıktı: 0.9.1
+
+pixi remove kececinumbers
+
+conda install -c https://prefix.dev/bilgi kececinumbers
+
+pixi run python -c "import kececinumbers; print(kececinumbers.__version__)"
+
+### Çıktı: 0.9.1
+
+pixi run pip list | grep kececinumbers
+
+### kececinumbers  0.9.1
+
+pixi run pip show kececinumbers
+
+Name: kececinumbers
+
+Version: 0.9.1
+
+Summary: Keçeci Numbers: Keçeci Sayıları (Keçeci Conjecture)
+
+Home-page: https://github.com/WhiteSymmetry/kececinumbers
+
+Author: Mehmet Keçeci
+
+Author-email: Mehmet Keçeci <...>
+
+License: GNU AFFERO GENERAL PUBLIC LICENSE
+
+Copyright (c) 2025-2026 Mehmet Keçeci
+
+---
+
 🔑🧭🔢🌊🌀🧪🔐🔭✨
 
 Analogy: Keçeci Numbers and the Keçeci Prime Number: A Potential Number Theoretic Exploratory Tool. Mehmet Keçeci
