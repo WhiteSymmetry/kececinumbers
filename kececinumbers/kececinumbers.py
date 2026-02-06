@@ -3777,7 +3777,7 @@ from typing import Union, List, Any, Tuple, Optional
 import math
 
 
-# Ana nötrözofik sayı sınıfı
+# Ana Nötrosofik sayı sınıfı
 @dataclass
 class NeutrosophicNumber:
     """
@@ -3833,7 +3833,7 @@ class NeutrosophicNumber:
 
     def __mul__(self, other: Any) -> "NeutrosophicNumber":
         if isinstance(other, NeutrosophicNumber):
-            # Nötrözofik çarpma: (t1 + i1I + f1F) * (t2 + i2I + f2F)
+            # Nötrosofik çarpma: (t1 + i1I + f1F) * (t2 + i2I + f2F)
             return NeutrosophicNumber(
                 t=self.t * other.t,
                 i=self.t * other.i + self.i * other.t + self.i * other.i,
@@ -3907,7 +3907,7 @@ class NeutrosophicNumber:
 
     def __lt__(self, other: Any) -> bool:
         if isinstance(other, NeutrosophicNumber):
-            # Nötrözofik sıralama (gerçek kısım üzerinden)
+            # Nötrosofik sıralama (gerçek kısım üzerinden)
             return self.t < other.t
         return NotImplemented
 
@@ -3942,7 +3942,7 @@ class NeutrosophicNumber:
 
     # Yardımcı metodlar
     def conjugate(self) -> "NeutrosophicNumber":
-        """Nötrözofik eşlenik (işaret değişimi)"""
+        """Nötrosofik eşlenik (işaret değişimi)"""
         return NeutrosophicNumber(self.t, -self.i, -self.f)
 
     def magnitude(self) -> float:
@@ -3950,7 +3950,7 @@ class NeutrosophicNumber:
         return math.sqrt(self.t**2 + self.i**2 + self.f**2)
 
     def normalized(self) -> "NeutrosophicNumber":
-        """Birim büyüklüğe normalize edilmiş nötrözofik sayı"""
+        """Birim büyüklüğe normalize edilmiş Nötrosofik sayı"""
         mag = self.magnitude()
         if mag == 0:
             return NeutrosophicNumber(0, 0, 0)
@@ -3975,21 +3975,21 @@ class NeutrosophicNumber:
 
     @classmethod
     def truth(cls, value: float) -> "NeutrosophicNumber":
-        """Sadece gerçek değer içeren nötrözofik sayı"""
+        """Sadece gerçek değer içeren Nötrosofik sayı"""
         return cls(t=value, i=0.0, f=0.0)
 
     @classmethod
     def indeterminacy(cls, value: float) -> "NeutrosophicNumber":
-        """Sadece belirsizlik içeren nötrözofik sayı"""
+        """Sadece belirsizlik içeren Nötrosofik sayı"""
         return cls(t=0.0, i=value, f=0.0)
 
     @classmethod
     def falsity(cls, value: float) -> "NeutrosophicNumber":
-        """Sadece yanlışlık içeren nötrözofik sayı"""
+        """Sadece yanlışlık içeren Nötrosofik sayı"""
         return cls(t=0.0, i=0.0, f=value)
 
 
-# Nötrözofik Karmaşık Sayı Sınıfı
+# Nötrosofik Karmaşık Sayı Sınıfı
 @dataclass
 class NeutrosophicComplexNumber:
     """
@@ -4412,12 +4412,12 @@ class BicomplexNumber:
 
 # Fabrika fonksiyonları
 def neutrosophic_zero() -> NeutrosophicNumber:
-    """Sıfır nötrözofik sayı"""
+    """Sıfır Nötrosofik sayı"""
     return NeutrosophicNumber(0, 0, 0)
 
 
 def neutrosophic_one() -> NeutrosophicNumber:
-    """Bir nötrözofik sayı"""
+    """Bir Nötrosofik sayı"""
     return NeutrosophicNumber(1, 0, 0)
 
 
