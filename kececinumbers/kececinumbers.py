@@ -12358,7 +12358,7 @@ def get_interactive(
     # Defaults
     DEFAULT_TYPE = 3
     DEFAULT_STEPS = 40
-    DEFAULT_SHOW_DETAILS = "no"
+    DEFAULT_SHOW_DETAILS = "yes"
 
     default_start_values = {
         1: "2.5",
