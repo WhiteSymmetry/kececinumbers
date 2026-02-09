@@ -19,6 +19,7 @@ import warnings
 __version__ = "0.9.2"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
+__description__ = "Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets."
 
 # Ana Analiz Fonksiyonları
 from .kececinumbers import (
