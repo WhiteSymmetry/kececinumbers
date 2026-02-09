@@ -1,6 +1,6 @@
 {
   "name": "kececinumbers",
-  "version": "0.8.5",
+  "version": "0.9.3",
   "description": "Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets.",
   "main": "index.js",
   "scripts": {
