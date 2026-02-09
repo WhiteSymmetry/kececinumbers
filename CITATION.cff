@@ -23,9 +23,9 @@ identifiers:
     value: 10.5281/zenodo.15481711
   - type: doi
     value: 10.22541/au.174890181.14730464/v1
- - type: doi
+  - type: doi
     value: 10.48546/workflowhub.datafile.14.2
- - type: doi
+  - type: doi
     value: 10.6084/m9.figshare.29816414
 repository-code: 'https://github.com/WhiteSymmetry/kececinumbers'
 url: 'https://github.com/WhiteSymmetry/kececinumbers'
@@ -39,5 +39,5 @@ keywords:
   - numbers
 license: AGPL-3.0-or-later
 commit: 'Revision: 2'
-version: 0.9.1
+version: 0.9.2
 date-released: '2025-05-10'
