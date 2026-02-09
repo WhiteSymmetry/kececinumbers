@@ -8307,6 +8307,144 @@ def _parse_dual(s) -> DualNumber:
         s = str(s)
     
     s = s.strip()
+    
+    # 1) Virgülle ayrılmış format: "real, dual"
+    if ',' in s:
+        parts = [p.strip() for p in s.split(',')]
+        if len(parts) >= 2:
+            try:
+                return DualNumber(float(parts[0]), float(parts[1]))
+            except ValueError:
+                pass
+        elif len(parts) == 1: # Sadece real kısım verilmiş
+            try:
+                return DualNumber(float(parts[0]), 0.0)
+            except ValueError:
+                pass
+    
+    # 2) Matematiksel ifade formatı: "a+bε" veya "a-bε"
+    s_lower = s.lower()
+    ε_pos = s_lower.find('ε')
+    
+    if ε_pos != -1:
+        # ε sembolünden önceki kısmı al
+        expr = s[:ε_pos].strip()
+        
+        # + veya - işaretlerini bul
+        if '+' in expr:
+            parts = expr.split('+')
+            if len(parts) == 2:
+                try:
+                    real = float(parts[0].strip())
+                    dual = float(parts[1].strip())
+                    return DualNumber(real, dual)
+                except ValueError:
+                    pass
+        elif '-' in expr[1:]:  # İlk karakterden sonraki - işareti
+            # İlk - işaretini bul (ilk karakter hariç)
+            minus_pos = expr.find('-', 1)
+            if minus_pos != -1:
+                real_part = expr[:minus_pos].strip()
+                dual_part = expr[minus_pos:].strip()  # - işaretiyle birlikte
+                try:
+                    real = float(real_part)
+                    dual = float(dual_part)
+                    return DualNumber(real, dual)
+                except ValueError:
+                    pass
+    
+    # 3) Sadece real sayı
+    try:
+        return DualNumber(float(s), 0.0)
+    except ValueError:
+        pass
+    
+    raise ValueError(f"Geçersiz Dual sayı formatı: '{s}' (Real, Dual veya sadece Real bekleniyor)")
+
+def _parse_splitcomplex(s) -> SplitcomplexNumber:
+    """String'i veya sayıyı SplitcomplexNumber'a dönüştürür."""
+    # Eğer zaten SplitcomplexNumber ise doğrudan döndür
+    if isinstance(s, SplitcomplexNumber):
+        return s
+    
+    # Eğer sayısal tipse (float, int, complex) real kısım olarak işle
+    if isinstance(s, (float, int, complex)):
+        return SplitcomplexNumber(float(s), 0.0)
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
+    s = s.strip()
+    
+    # 1) Virgülle ayrılmış format: "real, split"
+    if ',' in s:
+        parts = [p.strip() for p in s.split(',')]
+        if len(parts) >= 2:
+            try:
+                return SplitcomplexNumber(float(parts[0]), float(parts[1]))
+            except ValueError:
+                pass
+        elif len(parts) == 1: # Sadece real kısım verilmiş
+            try:
+                return SplitcomplexNumber(float(parts[0]), 0.0)
+            except ValueError:
+                pass
+    
+    # 2) Matematiksel ifade formatı: "a+bj" veya "a-bj"
+    s_lower = s.lower()
+    
+    # 'j' ile bitiyor mu kontrol et
+    if s_lower.endswith('j'):
+        # 'j' den önceki kısmı al
+        expr = s[:-1].strip()
+        
+        # + veya - işaretlerini bul
+        if '+' in expr:
+            parts = expr.split('+')
+            if len(parts) == 2:
+                try:
+                    real = float(parts[0].strip())
+                    split = float(parts[1].strip())
+                    return SplitcomplexNumber(real, split)
+                except ValueError:
+                    pass
+        elif '-' in expr[1:]:  # İlk karakterden sonraki - işareti
+            minus_pos = expr.find('-', 1)
+            if minus_pos != -1:
+                real_part = expr[:minus_pos].strip()
+                split_part = expr[minus_pos:].strip()  # - işaretiyle birlikte
+                try:
+                    real = float(real_part)
+                    split = float(split_part)
+                    return SplitcomplexNumber(real, split)
+                except ValueError:
+                    pass
+    
+    # 3) Sadece real sayı
+    try:
+        return SplitcomplexNumber(float(s), 0.0)
+    except ValueError:
+        pass
+    
+    raise ValueError(f"Geçersiz Split-Complex sayı formatı: '{s}' (Real, Split veya sadece Real bekleniyor)")
+
+"""
+def _parse_dual(s) -> DualNumber:
+    #String'i veya sayıyı DualNumber'a dönüştürür.
+    # Eğer zaten DualNumber ise doğrudan döndür
+    if isinstance(s, DualNumber):
+        return s
+    
+    # Eğer sayısal tipse (float, int, complex) real kısım olarak işle
+    if isinstance(s, (float, int, complex)):
+        return DualNumber(float(s), 0.0)
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
+    s = s.strip()
     parts = [p.strip() for p in s.split(',')]
     
     # Sadece ilk iki bileşeni al
@@ -8325,7 +8463,7 @@ def _parse_dual(s) -> DualNumber:
 
 
 def _parse_splitcomplex(s) -> SplitcomplexNumber:
-    """String'i veya sayıyı SplitcomplexNumber'a dönüştürür."""
+    #String'i veya sayıyı SplitcomplexNumber'a dönüştürür.
     # Eğer zaten SplitcomplexNumber ise doğrudan döndür
     if isinstance(s, SplitcomplexNumber):
         return s
@@ -8353,7 +8491,7 @@ def _parse_splitcomplex(s) -> SplitcomplexNumber:
             pass
 
     raise ValueError(f"Geçersiz Split-Complex sayı formatı: '{s}' (Real, Split veya sadece Real bekleniyor)")
-
+"""
 
 def generate_octonion(w, x, y, z, e, f, g, h):
     """8 bileşenden bir oktonyon oluşturur."""
