@@ -8308,6 +8308,499 @@ def _parse_dual(s) -> DualNumber:
     
     s = s.strip()
     
+    # DEBUG için
+    # print(f"DEBUG _parse_dual: parsing '{s}'")
+    
+    # 1) Sadece ε sembolünü içeriyor mu kontrol et
+    if 'ε' in s or 'ε' in s.lower():
+        # Regex pattern: (real kısım)? (+/-) (dual kısım) ε
+        # Örnekler: "1.2e-07ε", "3.14+1.2e-07ε", "3.14-1.2e-07ε", "+1.2e-07ε", "-1.2e-07ε"
+        
+        # ε sembolünü bul
+        ε_pos = s.lower().find('ε')
+        if ε_pos == -1:
+            ε_pos = s.find('ε')
+        
+        before_ε = s[:ε_pos]
+        after_ε = s[ε_pos+1:]
+        
+        # ε'dan sonra başka karakter varsa hata
+        if after_ε.strip():
+            raise ValueError(f"Geçersiz Dual sayı formatı: '{s}' (ε'dan sonra karakter var)")
+        
+        # before_ε'i analiz et
+        expr = before_ε.strip()
+        
+        # Eğer expr boşsa, hem real hem dual 0
+        if not expr:
+            return DualNumber(0.0, 0.0)
+        
+        # Regex ile ayrıştır
+        # Pattern: (sayı)? ([+-] sayı)?
+        # Grup 1: real kısım (opsiyonel)
+        # Grup 2: işaret + sayı (opsiyonel)
+        
+        # Basit regex pattern
+        pattern = r'^([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)([+-]\d*\.?\d+(?:[eE][+-]?\d+)?)?$'
+        
+        match = re.match(pattern, expr)
+        if match:
+            real_part = match.group(1)
+            dual_part_with_sign = match.group(2)
+            
+            try:
+                if dual_part_with_sign:
+                    # Hem real hem dual var
+                    real = float(real_part) if real_part else 0.0
+                    dual = float(dual_part_with_sign)
+                    return DualNumber(real, dual)
+                else:
+                    # Sadece bir sayı var - bu real mi dual mi?
+                    # Eğer expr + veya - ile başlıyorsa, bu dual kısım
+                    if expr.startswith('+') or expr.startswith('-'):
+                        dual = float(expr)
+                        return DualNumber(0.0, dual)
+                    else:
+                        # Sadece sayı - bu real
+                        real = float(expr)
+                        return DualNumber(real, 0.0)
+            except ValueError:
+                pass
+        
+        # Regex başarısız oldu, manuel parsing dene
+        # "+" işaretiyle ayrılmış mı?
+        if '+' in expr:
+            parts = expr.split('+')
+            if len(parts) == 2:
+                try:
+                    real = float(parts[0].strip()) if parts[0].strip() else 0.0
+                    dual = float(parts[1].strip()) if parts[1].strip() else 0.0
+                    return DualNumber(real, dual)
+                except ValueError:
+                    pass
+            elif len(parts) == 1:
+                # Sadece dual kısım
+                try:
+                    dual = float(parts[0].strip()) if parts[0].strip() else 0.0
+                    return DualNumber(0.0, dual)
+                except ValueError:
+                    pass
+        
+        # "-" işaretiyle ayrılmış mı? (ilk karakter hariç)
+        minus_count = expr.count('-')
+        if minus_count > 1 or (minus_count == 1 and expr[0] != '-'):
+            # "real-dual" formatı
+            if expr[0] == '-':
+                # "-real-dual" veya "-dual" formatı
+                # İkinci - işaretini bul
+                second_minus = expr.find('-', 1)
+                if second_minus != -1:
+                    real_part = expr[:second_minus].strip()
+                    dual_part = expr[second_minus:].strip()
+                    try:
+                        real = float(real_part) if real_part else 0.0
+                        dual = float(dual_part)
+                        return DualNumber(real, dual)
+                    except ValueError:
+                        pass
+            else:
+                # "real-dual" formatı
+                minus_pos = expr.find('-')
+                if minus_pos != -1:
+                    real_part = expr[:minus_pos].strip()
+                    dual_part = expr[minus_pos:].strip()
+                    try:
+                        real = float(real_part) if real_part else 0.0
+                        dual = float(dual_part)
+                        return DualNumber(real, dual)
+                    except ValueError:
+                        pass
+        
+        # Sadece bir sayı olabilir
+        try:
+            val = float(expr)
+            # + veya - ile başlıyorsa dual, değilse real
+            if expr.startswith('+') or expr.startswith('-'):
+                return DualNumber(0.0, val)
+            else:
+                return DualNumber(val, 0.0)
+        except ValueError:
+            pass
+    
+    # 2) Virgülle ayrılmış format: "real, dual"
+    if ',' in s:
+        parts = [p.strip() for p in s.split(',')]
+        try:
+            if len(parts) == 2:
+                real = float(parts[0]) if parts[0] else 0.0
+                dual = float(parts[1]) if parts[1] else 0.0
+                return DualNumber(real, dual)
+            elif len(parts) == 1:
+                real = float(parts[0]) if parts[0] else 0.0
+                return DualNumber(real, 0.0)
+        except ValueError:
+            pass
+    
+    # 3) Sadece sayı
+    try:
+        return DualNumber(float(s), 0.0)
+    except ValueError:
+        pass
+    
+    # DEBUG
+    # print(f"DEBUG _parse_dual: failed to parse '{s}'")
+    
+    raise ValueError(f"Geçersiz Dual sayı formatı: '{s}' (Real, Dual veya sadece Real bekleniyor)")
+
+def _parse_splitcomplex(s) -> SplitcomplexNumber:
+    """String'i veya sayıyı SplitcomplexNumber'a dönüştürür."""
+    # Eğer zaten SplitcomplexNumber ise doğrudan döndür
+    if isinstance(s, SplitcomplexNumber):
+        return s
+    
+    # Eğer sayısal tipse (float, int, complex) real kısım olarak işle
+    if isinstance(s, (float, int, complex)):
+        return SplitcomplexNumber(float(s), 0.0)
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
+    s = s.strip()
+    
+    # DEBUG için
+    # print(f"DEBUG _parse_splitcomplex: parsing '{s}'")
+    
+    # 1) 'j' ile bitiyor mu kontrol et
+    if s.endswith('j') or s.endswith('J'):
+        # 'j' den önceki kısmı al
+        before_j = s[:-1].strip()
+        
+        # Eğer before_j boşsa, hem real hem split 0
+        if not before_j:
+            return SplitcomplexNumber(0.0, 0.0)
+        
+        # Regex pattern aynı
+        pattern = r'^([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)([+-]\d*\.?\d+(?:[eE][+-]?\d+)?)?$'
+        
+        match = re.match(pattern, before_j)
+        if match:
+            real_part = match.group(1)
+            split_part_with_sign = match.group(2)
+            
+            try:
+                if split_part_with_sign:
+                    # Hem real hem split var
+                    real = float(real_part) if real_part else 0.0
+                    split = float(split_part_with_sign)
+                    return SplitcomplexNumber(real, split)
+                else:
+                    # Sadece bir sayı var
+                    if before_j.startswith('+') or before_j.startswith('-'):
+                        split = float(before_j)
+                        return SplitcomplexNumber(0.0, split)
+                    else:
+                        real = float(before_j)
+                        return SplitcomplexNumber(real, 0.0)
+            except ValueError:
+                pass
+        
+        # Regex başarısız oldu, manuel parsing
+        if '+' in before_j:
+            parts = before_j.split('+')
+            if len(parts) == 2:
+                try:
+                    real = float(parts[0].strip()) if parts[0].strip() else 0.0
+                    split = float(parts[1].strip()) if parts[1].strip() else 0.0
+                    return SplitcomplexNumber(real, split)
+                except ValueError:
+                    pass
+            elif len(parts) == 1:
+                try:
+                    split = float(parts[0].strip()) if parts[0].strip() else 0.0
+                    return SplitcomplexNumber(0.0, split)
+                except ValueError:
+                    pass
+        
+        # "-" işareti kontrolü
+        minus_count = before_j.count('-')
+        if minus_count > 1 or (minus_count == 1 and before_j[0] != '-'):
+            if before_j[0] == '-':
+                second_minus = before_j.find('-', 1)
+                if second_minus != -1:
+                    real_part = before_j[:second_minus].strip()
+                    split_part = before_j[second_minus:].strip()
+                    try:
+                        real = float(real_part) if real_part else 0.0
+                        split = float(split_part)
+                        return SplitcomplexNumber(real, split)
+                    except ValueError:
+                        pass
+            else:
+                minus_pos = before_j.find('-')
+                if minus_pos != -1:
+                    real_part = before_j[:minus_pos].strip()
+                    split_part = before_j[minus_pos:].strip()
+                    try:
+                        real = float(real_part) if real_part else 0.0
+                        split = float(split_part)
+                        return SplitcomplexNumber(real, split)
+                    except ValueError:
+                        pass
+        
+        # Sadece bir sayı
+        try:
+            val = float(before_j)
+            if before_j.startswith('+') or before_j.startswith('-'):
+                return SplitcomplexNumber(0.0, val)
+            else:
+                return SplitcomplexNumber(val, 0.0)
+        except ValueError:
+            pass
+    
+    # 2) Virgülle ayrılmış format: "real, split"
+    if ',' in s:
+        parts = [p.strip() for p in s.split(',')]
+        try:
+            if len(parts) == 2:
+                real = float(parts[0]) if parts[0] else 0.0
+                split = float(parts[1]) if parts[1] else 0.0
+                return SplitcomplexNumber(real, split)
+            elif len(parts) == 1:
+                real = float(parts[0]) if parts[0] else 0.0
+                return SplitcomplexNumber(real, 0.0)
+        except ValueError:
+            pass
+    
+    # 3) Sadece sayı
+    try:
+        return SplitcomplexNumber(float(s), 0.0)
+    except ValueError:
+        pass
+    
+    # DEBUG
+    # print(f"DEBUG _parse_splitcomplex: failed to parse '{s}'")
+    
+    raise ValueError(f"Geçersiz Split-Complex sayı formatı: '{s}' (Real, Split veya sadece Real bekleniyor)")
+
+
+"""
+def _parse_dual(s) -> DualNumber:
+    #String'i veya sayıyı DualNumber'a dönüştürür.
+    # Eğer zaten DualNumber ise doğrudan döndür
+    if isinstance(s, DualNumber):
+        return s
+    
+    # Eğer sayısal tipse (float, int, complex) real kısım olarak işle
+    if isinstance(s, (float, int, complex)):
+        return DualNumber(float(s), 0.0)
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
+    s = s.strip()
+    
+    # 1) Sadece ε içeren format: "1.2e-07ε" veya "-1.2e-07ε"
+    s_lower = s.lower()
+    
+    # ε sembolünü kontrol et
+    if 'ε' in s_lower:
+        # ε sembolünün pozisyonunu bul
+        ε_pos = s_lower.find('ε')
+        
+        # ε'dan önceki kısmı al
+        before_ε = s[:ε_pos].strip()
+        after_ε = s[ε_pos+1:].strip()  # ε'dan sonraki kısım (boş olmalı)
+        
+        # Eğer ε'dan sonra bir şey varsa geçersiz
+        if after_ε:
+            raise ValueError(f"Geçersiz Dual sayı formatı: '{s}'")
+        
+        # ε'dan önceki kısmı analiz et
+        if before_ε:
+            # + veya - işaretleriyle ayrılmış mı kontrol et
+            if '+' in before_ε:
+                parts = before_ε.split('+')
+                if len(parts) == 2:
+                    try:
+                        real = float(parts[0].strip()) if parts[0].strip() else 0.0
+                        dual = float(parts[1].strip()) if parts[1].strip() else 0.0
+                        return DualNumber(real, dual)
+                    except ValueError:
+                        pass
+                elif len(parts) == 1:
+                    # Sadece dual kısım: "+1.2e-07" gibi
+                    try:
+                        dual = float(parts[0].strip()) if parts[0].strip() else 0.0
+                        return DualNumber(0.0, dual)
+                    except ValueError:
+                        pass
+            elif '-' in before_ε[1:]:  # İlk karakter hariç - işareti
+                # İlk karakteri kontrol et
+                if before_ε[0] == '-':
+                    # "-1.2e-07" formatı - sadece dual kısım negatif
+                    try:
+                        dual = float(before_ε.strip())
+                        return DualNumber(0.0, dual)
+                    except ValueError:
+                        pass
+                else:
+                    # "real-dual" formatı
+                    minus_pos = before_ε.find('-', 1)
+                    if minus_pos != -1:
+                        real_part = before_ε[:minus_pos].strip()
+                        dual_part = before_ε[minus_pos:].strip()  # - işaretiyle birlikte
+                        try:
+                            real = float(real_part) if real_part else 0.0
+                            dual = float(dual_part)
+                            return DualNumber(real, dual)
+                        except ValueError:
+                            pass
+            else:
+                # Sadece dual kısım: "1.2e-07" gibi
+                try:
+                    dual = float(before_ε.strip())
+                    return DualNumber(0.0, dual)
+                except ValueError:
+                    pass
+    
+    # 2) Virgülle ayrılmış format: "real, dual"
+    if ',' in s:
+        parts = [p.strip() for p in s.split(',')]
+        if len(parts) >= 2:
+            try:
+                real = float(parts[0]) if parts[0] else 0.0
+                dual = float(parts[1]) if parts[1] else 0.0
+                return DualNumber(real, dual)
+            except ValueError:
+                pass
+        elif len(parts) == 1: # Sadece real kısım verilmiş
+            try:
+                real = float(parts[0]) if parts[0] else 0.0
+                return DualNumber(real, 0.0)
+            except ValueError:
+                pass
+    
+    # 3) Sadece sayı
+    try:
+        return DualNumber(float(s), 0.0)
+    except ValueError:
+        pass
+    
+    raise ValueError(f"Geçersiz Dual sayı formatı: '{s}' (Real, Dual veya sadece Real bekleniyor)")
+
+def _parse_splitcomplex(s) -> SplitcomplexNumber:
+    #String'i veya sayıyı SplitcomplexNumber'a dönüştürür.
+    # Eğer zaten SplitcomplexNumber ise doğrudan döndür
+    if isinstance(s, SplitcomplexNumber):
+        return s
+    
+    # Eğer sayısal tipse (float, int, complex) real kısım olarak işle
+    if isinstance(s, (float, int, complex)):
+        return SplitcomplexNumber(float(s), 0.0)
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
+    s = s.strip()
+    
+    # 1) j ile biten format: "0.00027182818284590454j" veya "a+bj"
+    s_lower = s.lower()
+    
+    if s_lower.endswith('j'):
+        # 'j' den önceki kısmı al
+        before_j = s[:-1].strip()
+        
+        if before_j:
+            # + veya - işaretleriyle ayrılmış mı kontrol et
+            if '+' in before_j:
+                parts = before_j.split('+')
+                if len(parts) == 2:
+                    try:
+                        real = float(parts[0].strip()) if parts[0].strip() else 0.0
+                        split = float(parts[1].strip()) if parts[1].strip() else 0.0
+                        return SplitcomplexNumber(real, split)
+                    except ValueError:
+                        pass
+                elif len(parts) == 1:
+                    # Sadece split kısım: "+0.00027182818284590454" gibi
+                    try:
+                        split = float(parts[0].strip()) if parts[0].strip() else 0.0
+                        return SplitcomplexNumber(0.0, split)
+                    except ValueError:
+                        pass
+            elif '-' in before_j[1:]:  # İlk karakter hariç - işareti
+                if before_j[0] == '-':
+                    # Sadece split kısım negatif: "-0.00027182818284590454"
+                    try:
+                        split = float(before_j.strip())
+                        return SplitcomplexNumber(0.0, split)
+                    except ValueError:
+                        pass
+                else:
+                    # "real-split" formatı
+                    minus_pos = before_j.find('-', 1)
+                    if minus_pos != -1:
+                        real_part = before_j[:minus_pos].strip()
+                        split_part = before_j[minus_pos:].strip()  # - işaretiyle birlikte
+                        try:
+                            real = float(real_part) if real_part else 0.0
+                            split = float(split_part)
+                            return SplitcomplexNumber(real, split)
+                        except ValueError:
+                            pass
+            else:
+                # Sadece split kısım: "0.00027182818284590454"
+                try:
+                    split = float(before_j.strip())
+                    return SplitcomplexNumber(0.0, split)
+                except ValueError:
+                    pass
+    
+    # 2) Virgülle ayrılmış format: "real, split"
+    if ',' in s:
+        parts = [p.strip() for p in s.split(',')]
+        if len(parts) >= 2:
+            try:
+                real = float(parts[0]) if parts[0] else 0.0
+                split = float(parts[1]) if parts[1] else 0.0
+                return SplitcomplexNumber(real, split)
+            except ValueError:
+                pass
+        elif len(parts) == 1: # Sadece real kısım verilmiş
+            try:
+                real = float(parts[0]) if parts[0] else 0.0
+                return SplitcomplexNumber(real, 0.0)
+            except ValueError:
+                pass
+    
+    # 3) Sadece sayı
+    try:
+        return SplitcomplexNumber(float(s), 0.0)
+    except ValueError:
+        pass
+    
+    raise ValueError(f"Geçersiz Split-Complex sayı formatı: '{s}' (Real, Split veya sadece Real bekleniyor)")
+"""
+"""
+def _parse_dual(s) -> DualNumber:
+    #String'i veya sayıyı DualNumber'a dönüştürür.
+    # Eğer zaten DualNumber ise doğrudan döndür
+    if isinstance(s, DualNumber):
+        return s
+    
+    # Eğer sayısal tipse (float, int, complex) real kısım olarak işle
+    if isinstance(s, (float, int, complex)):
+        return DualNumber(float(s), 0.0)
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
+    s = s.strip()
+    
     # 1) Virgülle ayrılmış format: "real, dual"
     if ',' in s:
         parts = [p.strip() for p in s.split(',')]
@@ -8362,7 +8855,7 @@ def _parse_dual(s) -> DualNumber:
     raise ValueError(f"Geçersiz Dual sayı formatı: '{s}' (Real, Dual veya sadece Real bekleniyor)")
 
 def _parse_splitcomplex(s) -> SplitcomplexNumber:
-    """String'i veya sayıyı SplitcomplexNumber'a dönüştürür."""
+    #String'i veya sayıyı SplitcomplexNumber'a dönüştürür.
     # Eğer zaten SplitcomplexNumber ise doğrudan döndür
     if isinstance(s, SplitcomplexNumber):
         return s
@@ -8428,7 +8921,7 @@ def _parse_splitcomplex(s) -> SplitcomplexNumber:
         pass
     
     raise ValueError(f"Geçersiz Split-Complex sayı formatı: '{s}' (Real, Split veya sadece Real bekleniyor)")
-
+"""
 """
 def _parse_dual(s) -> DualNumber:
     #String'i veya sayıyı DualNumber'a dönüştürür.
