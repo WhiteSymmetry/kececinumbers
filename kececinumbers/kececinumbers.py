@@ -87,7 +87,7 @@ except Exception:
 
 # Better type definition
 Numeric = Union[int, float, complex]
-# Number = Union[int, float, complex]
+Number = Union[int, float, complex]
 _T = TypeVar("_T", bound="BaseNumber")
 
 # ==============================================================================
@@ -117,213 +117,927 @@ TYPE_SUPERREAL = 21
 TYPE_TERNARY = 22
 TYPE_HYPERCOMPLEX = 23
 
+Number = Union[int, float, complex]
 
-# ==============================================================================
-# --- CUSTOM NUMBER CLASS DEFINITIONS ---
-# ==============================================================================
+
+def Real(x: float) -> HypercomplexNumber:
+    """Generate a real number (1D hypercomplex)."""
+    return HypercomplexNumber.from_real(x)
+
+
+def Complex(real: float, imag: float) -> HypercomplexNumber:
+    """Generate a complex number (2D hypercomplex)."""
+    return HypercomplexNumber.from_complex(real, imag)
+
+
+def Quaternion(w: float, x: float, y: float, z: float) -> HypercomplexNumber:
+    """Generate a quaternion (4D hypercomplex)."""
+    return HypercomplexNumber.from_quaternion(w, x, y, z)
+
+
+def Octonion(*coeffs: float) -> HypercomplexNumber:
+    """Generate an octonion (8D hypercomplex)."""
+    return HypercomplexNumber.from_octonion(*coeffs)
+
 
 """
-@property
-def coeffs(self):
-    #Dörtlü sayının tüm katsayılarını liste olarak döndürür.
-    return [self.w, self.x, self.y, self.z, self.e, self.f, self.g, self.h]
+def Bicomplex(z1_real: float, z1_imag: float, z2_real: float, z2_imag: float) -> BicomplexNumber:
+    Generate a bicomplex number.
+Argument 1,2 to "BicomplexNumber" has incompatible type "HypercomplexNumber"; expected "complex"  [arg-type]
+    z1 = HypercomplexNumber(z1_real, z1_imag, dimension=2)
+    z2 = HypercomplexNumber(z2_real, z2_imag, dimension=2)
+    return BicomplexNumber(z1, z2)
 """
 
 
-@dataclass
-class BaseNumber(ABC):
-    """Tüm Keçeci sayı tipleri için ortak arayüz."""
+def Bicomplex(
+    z1_real: float, z1_imag: float, z2_real: float, z2_imag: float
+) -> BicomplexNumber:
+    """Generate a bicomplex number from real/imag parts."""
+    # Doğrudan complex sayılar oluştur
+    z1 = complex(z1_real, z1_imag)
+    z2 = complex(z2_real, z2_imag)
+    return BicomplexNumber(z1, z2)
 
-    # Using init=False since we set it in __init__
-    _value: Numeric = field(init=False)
 
-    def __init__(self, value: Numeric) -> None:
-        self._value = self._coerce(value)
+def Neutrosophic(determinate: float, indeterminate: float) -> NeutrosophicNumber:
+    """Generate a neutrosophic number."""
+    return NeutrosophicNumber(determinate, indeterminate)
 
-    @staticmethod
-    def _coerce(v: Numeric) -> Numeric:
-        """Convert input to valid numeric type."""
-        if isinstance(v, (int, float, complex)):
-            return v
-        raise TypeError(f"Geçersiz sayı tipi: {type(v)}")
 
-    @property
-    @abstractmethod
-    def coeffs(self) -> np.ndarray:
-        """NumPy array katsayıları."""
-        pass
+def Sedenion(*coeffs) -> HypercomplexNumber:
+    """Generate a sedenion."""
+    coeffs_tuple = tuple(coeffs)
+    if len(coeffs_tuple) != 16:
+        coeffs_tuple = coeffs_tuple + (0.0,) * (16 - len(coeffs_tuple))
+    return HypercomplexNumber(*coeffs_tuple, dimension=16)
 
-    @property
-    def value(self) -> Numeric:
-        return self._value
 
-    # ------------------------------------------------------------------ #
-    # Helper method to extract numeric value
-    # ------------------------------------------------------------------ #
-    def _extract_numeric(self, other: BaseNumber | Numeric) -> Numeric:
-        """Extract numeric value from either BaseNumber or numeric type."""
-        if isinstance(other, BaseNumber):
-            return other._value
-        elif isinstance(other, (int, float, complex)):
-            return other
-        else:
-            raise TypeError(f"Unsupported type: {type(other)}")
+def Pathion(*coeffs) -> HypercomplexNumber:
+    """Generate a pathion."""
+    coeffs_tuple = tuple(coeffs)
+    if len(coeffs_tuple) != 32:
+        coeffs_tuple = coeffs_tuple + (0.0,) * (32 - len(coeffs_tuple))
+    return HypercomplexNumber(*coeffs_tuple, dimension=32)
 
-    # ------------------------------------------------------------------ #
-    # Matematiksel operator overload'ları
-    # ------------------------------------------------------------------ #
 
-    def __add__(self: _T, other: BaseNumber | Numeric) -> _T:
-        other_val = self._extract_numeric(other)
-        # Type narrowing for arithmetic operations
-        result: Numeric
-        if isinstance(self._value, complex) or isinstance(other_val, complex):
-            result = self._value + other_val
-        else:
-            # For int/float combinations
-            result = self._value + other_val
-        return self.__class__(result)
+def Chingon(*coeffs) -> HypercomplexNumber:
+    """Generate a chingon."""
+    coeffs_tuple = tuple(coeffs)
+    if len(coeffs_tuple) != 64:
+        coeffs_tuple = coeffs_tuple + (0.0,) * (64 - len(coeffs_tuple))
+    return HypercomplexNumber(*coeffs_tuple, dimension=64)
 
-    def __radd__(self: _T, other: Numeric) -> _T:
-        return self.__add__(other)
 
-    def __sub__(self: _T, other: BaseNumber | Numeric) -> _T:
-        other_val = self._extract_numeric(other)
-        result: Numeric
-        if isinstance(self._value, complex) or isinstance(other_val, complex):
-            result = self._value - other_val
-        else:
-            result = self._value - other_val
-        return self.__class__(result)
+def Routon(*coeffs) -> HypercomplexNumber:
+    """Generate a routon."""
+    coeffs_tuple = tuple(coeffs)
+    if len(coeffs_tuple) != 128:
+        coeffs_tuple = coeffs_tuple + (0.0,) * (128 - len(coeffs_tuple))
+    return HypercomplexNumber(*coeffs_tuple, dimension=128)
 
-    def __rsub__(self: _T, other: Numeric) -> _T:
-        other_val = other
-        result: Numeric
-        if isinstance(self._value, complex) or isinstance(other_val, complex):
-            result = other_val - self._value
-        else:
-            result = other_val - self._value
-        return self.__class__(result)
 
-    def __mul__(self: _T, other: BaseNumber | Numeric) -> _T:
-        other_val = self._extract_numeric(other)
-        result: Numeric
-        if isinstance(self._value, complex) or isinstance(other_val, complex):
-            result = self._value * other_val
-        else:
-            result = self._value * other_val
-        return self.__class__(result)
+def Voudon(*coeffs) -> HypercomplexNumber:
+    """Generate a voudon."""
+    coeffs_tuple = tuple(coeffs)
+    if len(coeffs_tuple) != 256:
+        coeffs_tuple = coeffs_tuple + (0.0,) * (256 - len(coeffs_tuple))
+    return HypercomplexNumber(*coeffs_tuple, dimension=256)
 
-    def __rmul__(self: _T, other: Numeric) -> _T:
-        return self.__mul__(other)
+def _generate_sequence(
+    start_value: Any,
+    add_value: Any,
+    iterations: int,
+    operation: str,
+    include_intermediate_steps: bool = False,
+) -> List[Any]:
+    """
+    Generate a sequence based on the operation.
 
-    def __truediv__(self: _T, other: BaseNumber | Numeric) -> _T:
-        other_val = self._extract_numeric(other)
-        if other_val == 0:
-            raise ZeroDivisionError("division by zero")
-        result: Numeric
-        if isinstance(self._value, complex) or isinstance(other_val, complex):
-            result = self._value / other_val
-        else:
-            result = self._value / other_val
-        return self.__class__(result)
+    Args:
+        start_value: Starting value
+        add_value: Value to use in operation
+        iterations: Number of iterations
+        operation: Operation to perform
+        include_intermediate_steps: Whether to include intermediate steps
 
-    def __rtruediv__(self: _T, other: Numeric) -> _T:
-        if self._value == 0:
-            raise ZeroDivisionError("division by zero")
-        result: Numeric
-        if isinstance(self._value, complex) or isinstance(other, complex):
-            result = other / self._value
-        else:
-            result = other / self._value
-        return self.__class__(result)
+    Returns:
+        List of generated values. If include_intermediate_steps=True,
+        returns a list of dictionaries with step information.
+    """
+    from typing import Dict, Union
 
-    def __mod__(self: _T, divisor: Numeric) -> _T:
-        if isinstance(self._value, complex) or isinstance(divisor, complex):
-            raise TypeError("Modulo not supported for complex numbers")
-        # For int/float
-        if isinstance(self._value, (int, float)) and isinstance(divisor, (int, float)):
-            result: Numeric = self._value % divisor
-        else:
-            raise TypeError(
-                f"Unsupported types for modulo: {type(self._value)}, {type(divisor)}"
+    if include_intermediate_steps:
+        # Detaylı log için dictionary listesi
+        detailed_result: List[Dict[str, Any]] = []
+
+        # Başlangıç değerini ekle
+        detailed_result.append(
+            {
+                "step": 0,
+                "operation": "start",
+                "value": start_value,
+                "description": f"Start: {start_value}",
+            }
+        )
+
+        current = start_value
+
+        for i in range(1, iterations):
+            try:
+                previous = current
+
+                # İşlemi gerçekleştir
+                if operation == "add":
+                    current = current + add_value
+                    op_symbol = "+"
+                elif operation == "multiply":
+                    current = current * add_value
+                    op_symbol = "×"
+                elif operation == "subtract":
+                    current = current - add_value
+                    op_symbol = "-"
+                elif operation == "divide":
+                    current = _safe_divide(current, add_value)
+                    op_symbol = "/"
+                elif operation == "mod":
+                    current = _safe_mod(current, add_value)
+                    op_symbol = "%"
+                elif operation == "power":
+                    current = _safe_power(current, add_value)
+                    op_symbol = "^"
+                else:
+                    raise ValueError(f"Unsupported operation: {operation}")
+
+                # Detaylı log ekle
+                detailed_result.append(
+                    {
+                        "step": i,
+                        "operation": operation,
+                        "previous": previous,
+                        "value": current,
+                        "description": f"Step {i}: {previous} {op_symbol} {add_value} = {current}",
+                    }
+                )
+
+            except Exception as e:
+                logger.warning(f"Error at iteration {i}: {e}")
+
+                # Hata durumunda default değer
+                default_val = _generate_default_value(current)
+                
+                detailed_result.append(
+                    {
+                        "step": i,
+                        "operation": operation,
+                        "error": str(e),
+                        "value": default_val,
+                        "description": f"Step {i}: ERROR - {e}",
+                    }
+                )
+
+                current = default_val
+
+        return detailed_result  # Dictionary listesi döndür
+
+    else:
+        # Basit liste (sadece değerler)
+        simple_result: List[Any] = [start_value]
+        current = start_value
+
+        for i in range(1, iterations):
+            try:
+                # İşlemi gerçekleştir
+                if operation == "add":
+                    current = current + add_value
+                elif operation == "multiply":
+                    current = current * add_value
+                elif operation == "subtract":
+                    current = current - add_value
+                elif operation == "divide":
+                    current = _safe_divide(current, add_value)
+                elif operation == "mod":
+                    current = _safe_mod(current, add_value)
+                elif operation == "power":
+                    current = _safe_power(current, add_value)
+                else:
+                    raise ValueError(f"Unsupported operation: {operation}")
+
+                simple_result.append(current)
+
+            except Exception as e:
+                logger.warning(f"Error at iteration {i}: {e}")
+
+                # Hata durumunda default değer
+                default_val = _generate_default_value(current)
+                simple_result.append(default_val)
+                current = default_val
+
+        return simple_result  # Basit liste döndür
+
+
+# Daha basit ve güvenli versiyon (alternatif)
+def generate_sequence_safe(
+    start_value: Any,
+    add_value: Any,
+    iterations: int,
+    operation: str,
+    include_intermediate_steps: bool = False,
+) -> Union[List[Any], List[Dict[str, Any]]]:
+    """
+    Safer version with separate return types.
+    """
+    if include_intermediate_steps:
+        return _generate_detailed_sequence(
+            start_value, add_value, iterations, operation
+        )
+    else:
+        return _generate_simple_sequence(start_value, add_value, iterations, operation)
+
+
+def _generate_detailed_sequence(
+    start_value: Any, add_value: Any, iterations: int, operation: str
+) -> List[Dict[str, Any]]:
+    """Generate detailed sequence with step information."""
+    result: List[Dict[str, Any]] = []
+
+    result.append(
+        {
+            "step": 0,
+            "operation": "start",
+            "value": start_value,
+            "description": f"Start: {start_value}",
+        }
+    )
+
+    current = start_value
+
+    for i in range(1, iterations):
+        try:
+            previous = current
+
+            if operation == "add":
+                current = current + add_value
+                op_symbol = "+"
+            elif operation == "multiply":
+                current = current * add_value
+                op_symbol = "×"
+            elif operation == "subtract":
+                current = current - add_value
+                op_symbol = "-"
+            elif operation == "divide":
+                current = _safe_divide(current, add_value)
+                op_symbol = "/"
+            elif operation == "mod":
+                current = _safe_mod(current, add_value)
+                op_symbol = "%"
+            elif operation == "power":
+                current = _safe_power(current, add_value)
+                op_symbol = "^"
+            else:
+                raise ValueError(f"Unsupported operation: {operation}")
+
+            result.append(
+                {
+                    "step": i,
+                    "operation": operation,
+                    "previous": previous,
+                    "value": current,
+                    "description": f"Step {i}: {previous} {op_symbol} {add_value} = {current}",
+                }
             )
-        return self.__class__(result)
 
-    # ------------------------------------------------------------------ #
-    # Karşılaştırmalar
-    # ------------------------------------------------------------------ #
+        except Exception as e:
+            logger.warning(f"Error at iteration {i}: {e}")
 
-    def _to_real(self) -> float:
-        """Sadece gerçek sayılara dönüştürür."""
-        if isinstance(self._value, complex):
-            if abs(self._value.imag) > 1e-12:
-                raise ValueError("Cannot compare complex with non-zero imaginary part")
-            return self._value.real
-        # Convert int/float to float
-        return float(self._value)
+            # Generate appropriate default value
+            default_val = _generate_default_value(current)
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, BaseNumber):
-            return NotImplemented  # Return the value, not type annotation
+            result.append(
+                {
+                    "step": i,
+                    "operation": operation,
+                    "error": str(e),
+                    "value": default_val,
+                    "description": f"Step {i}: ERROR - {e}",
+                }
+            )
 
+            current = default_val
+
+    return result
+
+
+def _generate_simple_sequence(
+    start_value: Any, add_value: Any, iterations: int, operation: str
+) -> List[Any]:
+    """Generate simple sequence of values."""
+    result: List[Any] = [start_value]
+    current = start_value
+
+    for i in range(1, iterations):
         try:
-            return math.isclose(self._to_real(), other._to_real(), rel_tol=1e-12)
-        except (ValueError, TypeError):
-            return NotImplemented  # Return the value, not type annotation
+            if operation == "add":
+                current = current + add_value
+            elif operation == "multiply":
+                current = current * add_value
+            elif operation == "subtract":
+                current = current - add_value
+            elif operation == "divide":
+                current = _safe_divide(current, add_value)
+            elif operation == "mod":
+                current = _safe_mod(current, add_value)
+            elif operation == "power":
+                current = _safe_power(current, add_value)
+            else:
+                raise ValueError(f"Unsupported operation: {operation}")
 
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self._value!r})"
+            result.append(current)
 
-    # ------------------------------------------------------------------ #
-    # Alt sınıfların doldurması gereken soyut metodlar
-    # ------------------------------------------------------------------ #
+        except Exception as e:
+            logger.warning(f"Error at iteration {i}: {e}")
 
-    def components(self) -> list[Numeric]:
-        """Bileşen listesini (Python list) döndürür."""
-        coeffs = self.coeffs
-        if isinstance(coeffs, np.ndarray):
-            return coeffs.tolist()
+            # Generate appropriate default value
+            default_val = _generate_default_value(current)
+            result.append(default_val)
+            current = default_val
+
+    return result
+
+
+def _generate_default_value(current_value: Any) -> Any:
+    """Generate appropriate default value based on current value type."""
+    try:
+        if hasattr(type(current_value), "__call__"):
+            return type(current_value)()
+        elif isinstance(current_value, (int, float)):
+            return 0
+        elif isinstance(current_value, complex):
+            return complex(0, 0)
+        elif isinstance(current_value, str):
+            return ""
+        elif isinstance(current_value, (list, tuple)):
+            return type(current_value)()
+        else:
+            # Try to get real part if exists
+            try:
+                if hasattr(current_value, "real"):
+                    return type(current_value)(0)
+            except:
+                pass
+
+            return 0
+    except Exception:
+        return 0
+
+
+# Alternatif olarak, tüm işlemleri tek bir fonksiyonda yöneten basit versiyon
+def apply_operation(a: Any, b: Any, operation: str) -> Any:
+    """
+    Apply an operation between two values with proper error handling.
+    
+    Args:
+        a: First value
+        b: Second value
+        operation: Operation to apply ('add', 'subtract', 'multiply', 'divide', 'mod', 'power')
+        
+    Returns:
+        Result of the operation
+    """
+    if operation == "add":
+        return a + b
+    elif operation == "subtract":
+        return a - b
+    elif operation == "multiply":
+        return a * b
+    elif operation == "divide":
+        return _safe_divide(a, b)
+    elif operation == "mod":
+        return _safe_mod(a, b)
+    elif operation == "power":
+        return _safe_power(a, b)
+    else:
+        raise ValueError(f"Unsupported operation: {operation}")
+
+
+# Grafik çizimi için yardımcı fonksiyon
+def extract_values_for_plotting(sequence: List[Any]) -> List[float]:
+    """
+    Extract numeric values from sequence for plotting.
+
+    Args:
+        sequence: Sequence generated by _generate_sequence
+
+    Returns:
+        List of float values suitable for plotting
+    """
+    values: List[float] = []
+
+    for item in sequence:
         try:
-            return list(coeffs)  # type: ignore[arg-type]
-        except Exception:
-            return [coeffs]  # type: ignore[list-item]
+            if isinstance(item, dict):
+                # Dictionary'den 'value' anahtarını al
+                value = item.get("value", 0)
+            else:
+                value = item
 
-    def magnitude(self) -> float:
-        """
-        Euclidean norm = √( Σ_i coeff_i² )
-        NumPy'nin `linalg.norm` fonksiyonu C-hızında hesaplar.
-        """
-        return float(np.linalg.norm(self.coeffs))
+            # Float'a çevirmeye çalış
+            if isinstance(value, (int, float, complex)):
+                if isinstance(value, complex):
+                    # Complex için magnitude
+                    values.append(abs(value))
+                else:
+                    values.append(float(value))
+            elif hasattr(value, "real"):
+                # real attribute'u olan nesneler için
+                values.append(float(value.real))
+            else:
+                # String veya diğer tipler için
+                try:
+                    values.append(float(str(value)))
+                except (ValueError, TypeError):
+                    values.append(0.0)
 
-    def __hash__(self) -> int:
-        # NaN ve -0.0 gibi durumları göz önünde bulundurun
-        return hash(tuple(np.round(self.coeffs, decimals=10)))
+        except Exception as e:
+            logger.debug(f"Error extracting value for plotting: {e}")
+            values.append(0.0)
 
-    def phase(self) -> float:
-        """
-        Güvenli phase hesaplayıcı:
-        - Eğer value complex ise imag/real üzerinden phase hesaplanır.
-        - Eğer coeffs varsa, ilk bileşenin complex olması durumunda phase döner.
-        - Diğer durumlarda 0.0 döndürür (tanımsız phase için güvenli fallback).
-        """
+    return values
+
+def get_random_types_batch(
+    num_types: int = 5,
+    iterations_per_type: int = 5,
+    start_value_raw: Union[str, float, int] = "0",
+    add_value_raw: Union[str, float, int] = "1.0",
+    seed: Optional[int] = None,
+) -> dict:
+    """
+    Generate multiple random types in one batch.
+
+    Args:
+        num_types: Number of different types to generate
+        iterations_per_type: Iterations per type
+        start_value_raw: Starting value
+        add_value_raw: Value to add
+        seed: Random seed
+
+    Returns:
+        Dictionary with type names as keys and lists as values
+    """
+    if seed is not None:
+        random.seed(seed)
+
+    type_names_list = [
+        "Positive Real",
+        "Negative Real",
+        "Complex",
+        "Float",
+        "Rational",
+        "Quaternion",
+        "Neutrosophic",
+        "Neutrosophic Complex",
+        "Hyperreal",
+        "Bicomplex",
+        "Neutrosophic Bicomplex",
+        "Octonion",
+        "Sedenion",
+        "Clifford",
+        "Dual",
+        "Split-Complex",
+        "Pathion",
+        "Chingon",
+        "Routon",
+        "Voudon",
+        "Super Real",
+        "Ternary",
+    ]
+
+    # Select random types without replacement
+    available_types = list(range(1, len(type_names_list) + 1))
+    selected_types = random.sample(
+        available_types, min(num_types, len(available_types))
+    )
+
+    results = {}
+
+    for type_choice in selected_types:
+        type_name = type_names_list[type_choice - 1]
         try:
-            # If underlying value is complex
-            if isinstance(self._value, complex):
-                return math.atan2(self._value.imag, self._value.real)
-            # If there's coeffs, use the first coefficient
-            coeffs = self.coeffs
-            if isinstance(coeffs, (list, tuple, np.ndarray)) and len(coeffs) > 0:
-                first = coeffs[0]
-                if isinstance(first, (complex, np.complex128, np.complex64)):
-                    return math.atan2(first.imag, first.real)
-            # If value has real/imag attributes (like some custom complex types)
-            if hasattr(self._value, "real") and hasattr(self._value, "imag"):
-                return math.atan2(self._value.imag, self._value.real)  # type: ignore[attr-defined]
-        except Exception:
+            numbers = get_with_params(
+                kececi_type_choice=type_choice,
+                iterations=iterations_per_type,
+                start_value_raw=str(start_value_raw),
+                add_value_raw=str(add_value_raw),
+            )
+            results[type_name] = numbers
+        except Exception as e:
+            logger.error(f"Failed to generate type {type_name}: {e}")
+            results[type_name] = []
+
+    return results
+
+def _parse_complex_like_string(s: str) -> List[float]:
+    """
+    Karmaşık sayı benzeri string'i float listesine çevirir.
+    Örnek: "1+2i-3j+4k" -> [1.0, 2.0, -3.0, 4.0, ...]
+    """
+    if not s:
+        return [0.0]
+
+    # Normalize et
+    s = s.replace(" ", "").replace("J", "j").replace("I", "j").upper()
+
+    # Tüm imajiner birimleri normalize et
+    units = [
+        "J",
+        "I",
+        "K",
+        "E",
+        "F",
+        "G",
+        "H",
+        "L",
+        "M",
+        "N",
+        "O",
+        "P",
+        "Q",
+        "R",
+        "S",
+        "T",
+    ]
+
+    # İlk bileşen (reel kısım)
+    result = [0.0] * (len(units) + 1)
+
+    # Reel kısmı bul
+    pattern = r"^([+-]?\d*\.?\d*)(?![" + "".join(units) + "])"
+    match = re.match(pattern, s)
+    if match and match.group(1):
+        result[0] = _safe_float_convert(match.group(1))
+
+    # Her bir imajiner birim için
+    for i, unit in enumerate(units, 1):
+        pattern = r"([+-]?\d*\.?\d*)" + re.escape(unit)
+        matches = re.findall(pattern, s)
+        if matches:
+            # Son eşleşmeyi al (tekrarlanmışsa)
+            last_match = matches[-1]
+            result[i] = _safe_float_convert(last_match)
+
+    return result
+
+def _parse_engineering_notation(s: str) -> float:
+    """Parse engineering notation (1.5k, 2.3m, etc.)"""
+    import re
+
+    s = s.strip().lower()
+
+    # Mühendislik çarpanları
+    multipliers = {
+        "k": 1e3,
+        "m": 1e-3,
+        "meg": 1e6,
+        "g": 1e9,
+        "t": 1e12,
+        "μ": 1e-6,
+        "u": 1e-6,
+        "n": 1e-9,
+        "p": 1e-12,
+        "f": 1e-15,
+        "a": 1e-18,
+        "mil": 1000,  # thousand
+    }
+
+    # Regex pattern
+    pattern = r"^([+-]?\d*\.?\d+)\s*([a-zμ]+)?$"
+    match = re.match(pattern, s)
+
+    if match:
+        try:
+            value = float(match.group(1))
+            unit = match.group(2) or ""
+
+            if unit in multipliers:
+                return value * multipliers[unit]
+            elif unit == "":
+                return value
+
+            # Özel birimler
+            if unit.startswith("e"):
+                # 1.5e-3 gibi
+                return float(s)
+        except (ValueError, KeyError):
             pass
+
+    # Standart float dönüşümü
+    return float(s)
+
+def _parse_fraction(s: Union[str, float, int]) -> float:
+    """
+    Parse fraction strings like '1353/2791' or mixed numbers like '1 1/2'
+    """
+    if isinstance(s, (int, float)):
+        return float(s)
+
+    s_str = str(s).strip()
+
+    # Empty string
+    if not s_str:
         return 0.0
 
+    # Already a float string
+    try:
+        return float(s_str)
+    except ValueError:
+        pass
+
+    # Check for mixed numbers like "1 1/2"
+    if " " in s_str and "/" in s_str:
+        try:
+            whole_part, frac_part = s_str.split(" ", 1)
+            whole = float(whole_part) if whole_part else 0.0
+            num, den = frac_part.split("/")
+            fraction = float(num) / float(den) if float(den) != 0 else 0.0
+            return whole + fraction
+        except (ValueError, ZeroDivisionError):
+            pass
+
+    # Check for simple fractions like "1353/2791"
+    if "/" in s_str:
+        try:
+            num, den = s_str.split("/")
+            # Handle both integer and float numerator/denominator
+            numerator = float(num) if "." in num else int(num)
+            denominator = float(den) if "." in den else int(den)
+            if denominator == 0:
+                logger.warning(f"Division by zero in fraction: {s_str}")
+                return float("inf") if numerator >= 0 else float("-inf")
+            return numerator / denominator
+        except (ValueError, ZeroDivisionError):
+            pass
+
+    # Try using Fraction class for more robust parsing
+    try:
+        return float(Fraction(s_str))
+    except (ValueError, ZeroDivisionError):
+        logger.warning(f"Could not parse as fraction: {s_str}")
+
+    # Last resort
+    try:
+        return float(s_str)
+    except ValueError:
+        logger.error(f"Failed to parse numeric value: {s_str}")
+        raise ValueError(f"Invalid numeric format: {s_str}")
+
+def _parse_super_real(s: Any) -> float:
+    """
+    Parse input as super real/hyperreal number with extended support.
+
+    Supports:
+    - Standard real numbers: 3.14, -2.5, etc.
+    - Infinity representations: ∞, inf, infinity
+    - Infinitesimals: ε, epsilon, dx, dt
+    - Scientific notation: 1.23e-4, 5.67E+8
+    - Engineering notation: 1.5k, 2.3M, 4.7m (k=1e3, M=1e6, m=1e-3, etc.)
+    - Fractions: 1/2, 3/4, etc.
+    - Mixed numbers: 1 1/2, 2 3/4
+    - Percentage: 50%, 12.5%
+    - Special constants: π, pi, e, φ, phi
+    - Hypercomplex numbers (extract real part)
+
+    Returns:
+        float: Parsed real number (always float, never int)
+    """
+    import re
+    import math
+    import warnings
+
+    try:
+        # 1. Direkt sayısal tipler
+        if isinstance(s, (int, float)):
+            return float(s)
+
+        # 2. Kompleks sayılar (reel kısmı al)
+        if isinstance(s, complex):
+            return float(s.real)
+
+        # 3. HypercomplexNumber tipini kontrol et
+        if hasattr(s, "__class__") and s.__class__.__name__ == "HypercomplexNumber":
+            try:
+                return float(s.real)
+            except AttributeError:
+                pass
+
+        # 4. String'e dönüştür
+        if not isinstance(s, str):
+            s = str(s)
+
+        s_original = s  # Orijinal string'i sakla
+        s = s.strip().lower()
+
+        # 5. Özel durumlar/boş giriş
+        if s in ["", "nan", "null", "none", "undefined"]:
+            return 0.0
+
+        # 6. Sonsuzluk değerleri
+        infinity_patterns = {
+            "∞": float("inf"),
+            "inf": float("inf"),
+            "infinity": float("inf"),
+            "+∞": float("inf"),
+            "+inf": float("inf"),
+            "+infinity": float("inf"),
+            "-∞": float("-inf"),
+            "-inf": float("-inf"),
+            "-infinity": float("-inf"),
+        }
+
+        if s in infinity_patterns:
+            return infinity_patterns[s]
+
+        # 7. Bilimsel sabitler
+        constants = {
+            "π": math.pi,
+            "pi": math.pi,
+            "e": math.e,
+            "φ": (1 + math.sqrt(5)) / 2,  # Altın oran
+            "phi": (1 + math.sqrt(5)) / 2,
+            "tau": 2 * math.pi,
+            "γ": 0.5772156649015329,  # Euler-Mascheroni sabiti
+        }
+
+        if s in constants:
+            return constants[s]
+
+        # 8. Mühendislik notasyonu (k, M, G, m, μ, n, p, etc.)
+        engineering_units = {
+            "k": 1e3,  # kilo
+            "m": 1e-3,  # milli (küçük m)
+            "meg": 1e6,  # mega
+            "g": 1e9,  # giga
+            "t": 1e12,  # tera
+            "μ": 1e-6,  # mikro
+            "u": 1e-6,  # mikro (alternatif)
+            "n": 1e-9,  # nano
+            "p": 1e-12,  # piko
+            "f": 1e-15,  # femto
+            "a": 1e-18,  # atto
+        }
+
+        # Mühendislik notasyonu regex'i (case-insensitive)
+        eng_match = re.match(r"^\s*([+-]?\d*\.?\d+)\s*([a-zA-Zμ]+)\s*$", s_original)
+        if eng_match:
+            try:
+                value = float(eng_match.group(1))
+                unit = eng_match.group(2).lower()
+
+                if unit in engineering_units:
+                    return value * engineering_units[unit]
+                elif unit == "mil":  # bin (thousand)
+                    return value * 1000
+            except (ValueError, KeyError):
+                pass
+
+        # 9. Yüzde notasyonu
+        if s.endswith("%"):
+            try:
+                # Orijinal string'den % işaretini kaldır (büyük/küçük harf fark etmez)
+                value_str = s_original.rstrip("%").strip()
+                value = float(value_str)
+                return value / 100.0
+            except ValueError:
+                pass
+
+        # 10. Kesirler ve karışık sayılar
+        # Karışık sayı: "1 1/2"
+        mixed_match = re.match(r"^\s*(\d+)\s+(\d+)/(\d+)\s*$", s)
+        if mixed_match:
+            try:
+                whole = int(mixed_match.group(1))
+                num = int(mixed_match.group(2))
+                den = int(mixed_match.group(3))
+                return float(whole) + (float(num) / float(den))
+            except (ValueError, ZeroDivisionError):
+                pass
+
+        # Basit kesir: "3/4"
+        if "/" in s and " " not in s:
+            try:
+                parts = s.split("/")
+                if len(parts) == 2:
+                    num = float(parts[0])
+                    den = float(parts[1])
+                    if den != 0:
+                        result = num / den
+                        return float(result)  # Açıkça float
+            except (ValueError, ZeroDivisionError) as e:
+                warnings.warn(
+                    f"Fraction parse failed: {e}", RuntimeWarning, stacklevel=2
+                )
+                return 0.0
+
+        # 11. Infinitesimal notasyonu (ε, epsilon, dx, etc.)
+        infinitesimals = {
+            "ε": 1e-10,
+            "epsilon": 1e-10,
+            "δ": 1e-10,
+            "delta": 1e-10,
+            "dx": 1e-10,
+            "dt": 1e-10,
+            "dh": 1e-10,
+            "infinitesimal": 1e-15,
+        }
+
+        if s in infinitesimals:
+            return infinitesimals[s]
+
+        # 12. Parantez içindeki ifadeler
+        if "(" in s and ")" in s:
+            # İçeriği al ve tekrar dene
+            inner_start = s.find("(") + 1
+            inner_end = s.find(")")
+            if inner_start < inner_end:
+                inner = s[inner_start:inner_end].strip()
+                if inner:
+                    try:
+                        return _parse_super_real(inner)
+                    except:
+                        pass
+
+        # 13. Standart float dönüşümü (son çare)
+        try:
+            # Bilimsel notasyon desteği
+            return float(s)
+        except ValueError:
+            # Romawi rakamları
+            roman_numerals = {
+                "i": 1,
+                "ii": 2,
+                "iii": 3,
+                "iv": 4,
+                "v": 5,
+                "vi": 6,
+                "vii": 7,
+                "viii": 8,
+                "ix": 9,
+                "x": 10,
+            }
+            if s in roman_numerals:
+                return float(roman_numerals[s])
+
+    except Exception as e:
+        warnings.warn(
+            f"Super real parse error for '{s}': {e}", RuntimeWarning, stacklevel=2
+        )
+
+    # 14. Hiçbir şey işe yaramazsa
+    return 0.0
+
+
+def is_super_real_expression(expr: str) -> bool:
+    """Check if string looks like a super real expression."""
+    super_real_indicators = [
+        "∞",
+        "inf",
+        "epsilon",
+        "ε",
+        "δ",
+        "dx",
+        "dt",
+        "pi",
+        "π",
+        "e",
+        "phi",
+        "φ",
+        "tau",
+        "γ",
+        "k",
+        "m",
+        "meg",
+        "g",
+        "t",
+        "μ",
+        "n",
+        "p",
+        "%",
+        "/",
+    ]
+
+    expr_lower = expr.lower()
+    return any(indicator in expr_lower for indicator in super_real_indicators)
+
+
+def normalize_super_real(value: float) -> float:
+    """Normalize super real values (e.g., replace very small numbers with 0)."""
+    EPSILON = 1e-15
+
+    if abs(value) < EPSILON:
+        return 0.0
+    elif math.isinf(value):
+        return float("inf") if value > 0 else float("-inf")
+    else:
+        return value
 
 class ComplexNumber:
     """Complex number implementation."""
@@ -455,2149 +1169,401 @@ class ComplexNumber:
         """Convert to HypercomplexNumber."""
         return HypercomplexNumber(self.real, self.imag, dimension=2)
 
-
-# =============================================
-# Unified Number System: HypercomplexNumber
-# =============================================
-
-
-class HypercomplexNumber:
+def _find_kececi_prime_number(sequence: List[Any]) -> Optional[Any]:
     """
-    Unified hypercomplex number implementation for all dimensions.
-    Supports: Real (1), Complex (2), Quaternion (4), Octonion (8), etc.
+    Find a Keçeci Prime Number in the sequence.
+    This is a placeholder implementation - customize based on your definition.
+
+    Args:
+        sequence: List of generated numbers
+
+    Returns:
+        The first Keçeci Prime Number found, or None
     """
+    if not sequence:
+        return None
 
-    # Dimension names
-    DIM_NAMES = {
-        1: "Real",
-        2: "Complex",
-        4: "Quaternion",
-        8: "Octonion",
-        16: "Sedenion",
-        32: "Pathion",
-        64: "Chingon",
-        128: "Routon",
-        256: "Voudon",
-    }
-
-    def __init__(self, *components: float, dimension: Optional[int] = None):
-        """
-        Initialize hypercomplex number.
-
-        Args:
-            *components: Number components
-            dimension: Dimension (power of 2). If None, inferred from components.
-        """
-        if dimension is None:
-            # Find smallest power of 2 >= len(components)
-            n = len(components)
-            dimension = 1
-            while dimension < n and dimension < 256:
-                dimension <<= 1
-
-        if dimension & (dimension - 1) != 0 or dimension < 1:
-            raise ValueError(f"Dimension must be power of 2 (1-256), got {dimension}")
-
-        self.dimension = dimension
-
-        # Pad or truncate components
-        if len(components) < dimension:
-            coeffs_tuple = components + (0.0,) * (dimension - len(components))
-        elif len(components) > dimension:
-            coeffs_tuple = components[:dimension]
-        else:
-            coeffs_tuple = components
-
-        self.coeffs: Tuple[float, ...] = coeffs_tuple
-
-        # Type name
-        self.type_name = self.DIM_NAMES.get(dimension, f"Hypercomplex{dimension}")
-
-    @classmethod
-    def from_real(cls, value: float) -> "HypercomplexNumber":
-        """Generate from a real number."""
-        return cls(value, dimension=1)
-
-    @classmethod
-    def from_complex(cls, real: float, imag: float) -> "HypercomplexNumber":
-        """Generate from complex components."""
-        return cls(real, imag, dimension=2)
-
-    @classmethod
-    def from_quaternion(
-        cls, w: float, x: float, y: float, z: float
-    ) -> "HypercomplexNumber":
-        """Generate from quaternion components."""
-        return cls(w, x, y, z, dimension=4)
-
-    @classmethod
-    def from_octonion(cls, *coeffs: float) -> "HypercomplexNumber":
-        """Generate from octonion components."""
-        if len(coeffs) != 8:
-            coeffs = coeffs + (0.0,) * (8 - len(coeffs))
-        return cls(*coeffs, dimension=8)
-
-    @classmethod
-    def from_any(cls, value: Any) -> "HypercomplexNumber":
-        """Generate from any numeric type."""
-        if isinstance(value, HypercomplexNumber):
-            return value
-        elif isinstance(value, (int, float)):
-            return cls.from_real(float(value))
-        elif isinstance(value, complex):
-            return cls.from_complex(value.real, value.imag)
-        elif isinstance(value, ComplexNumber):
-            return cls.from_complex(value.real, value.imag)
-        elif isinstance(value, (list, tuple)):
-            return cls(*value)
-        else:
-            try:
-                return cls.from_real(float(value))
-            except:
-                raise ValueError(f"Cannot convert {type(value)} to HypercomplexNumber")
-
-    @property
-    def real(self) -> float:
-        """Real part (first component)."""
-        return self.coeffs[0]
-
-    @property
-    def imag(self) -> float:
-        """Imaginary part (for complex numbers)."""
-        if self.dimension >= 2:
-            return self.coeffs[1]
-        return 0.0
-
-    def __len__(self):
-        return self.dimension
-
-    def __getitem__(self, idx):
-        return self.coeffs[idx]
-
-    def __iter__(self):
-        return iter(self.coeffs)
-
-    def __add__(self, other):
-        # Convert other to HypercomplexNumber if needed
-        if not isinstance(other, HypercomplexNumber):
-            try:
-                other = self.from_any(other)
-            except:
-                return NotImplemented
-
-        # Handle different dimensions
-        if self.dimension != other.dimension:
-            common_dim = max(self.dimension, other.dimension)
-            self_padded = self.pad_to_dimension(common_dim)
-            other_padded = other.pad_to_dimension(common_dim)
-            return self_padded + other_padded
-
-        new_coeffs = tuple(a + b for a, b in zip(self.coeffs, other.coeffs))
-        return HypercomplexNumber(*new_coeffs, dimension=self.dimension)
-
-    def __radd__(self, other):
-        return self.__add__(other)
-
-    def __sub__(self, other):
-        # Convert other to HypercomplexNumber if needed
-        if not isinstance(other, HypercomplexNumber):
-            try:
-                other = self.from_any(other)
-            except:
-                return NotImplemented
-
-        # Handle different dimensions
-        if self.dimension != other.dimension:
-            common_dim = max(self.dimension, other.dimension)
-            self_padded = self.pad_to_dimension(common_dim)
-            other_padded = other.pad_to_dimension(common_dim)
-            return self_padded - other_padded
-
-        new_coeffs = tuple(a - b for a, b in zip(self.coeffs, other.coeffs))
-        return HypercomplexNumber(*new_coeffs, dimension=self.dimension)
-
-    def __rsub__(self, other):
-        # Convert other to HypercomplexNumber
+    # Placeholder: Look for numbers with special properties
+    # This should be customized based on your specific definition of KPN
+    for num in sequence:
         try:
-            other_num = self.from_any(other)
-            return other_num - self
-        except:
-            return NotImplemented
+            # Example: Check if magnitude is prime (for complex-like numbers)
+            if hasattr(num, "magnitude"):
+                mag = float(num.magnitude())
+                if mag > 1 and all(mag % i != 0 for i in range(2, int(mag**0.5) + 1)):
+                    return num
+
+            # Example: Check real part for floats
+            elif isinstance(num, (int, float)):
+                if num > 1 and all(num % i != 0 for i in range(2, int(num**0.5) + 1)):
+                    return num
+
+            # Add more checks for other number types...
 
-    def _multiply_complex(self, other: "HypercomplexNumber") -> "HypercomplexNumber":
-        """Complex multiplication (dimension 2)."""
-        a, b = self.coeffs
-        c, d = other.coeffs
-        real = a * c - b * d
-        imag = a * d + b * c
-        return HypercomplexNumber(real, imag, dimension=2)
-
-    def _multiply_quaternion(self, other: "HypercomplexNumber") -> "HypercomplexNumber":
-        """Quaternion multiplication (dimension 4)."""
-        w1, x1, y1, z1 = self.coeffs
-        w2, x2, y2, z2 = other.coeffs
-
-        w = w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2
-        x = w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2
-        y = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2
-        z = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
-
-        return HypercomplexNumber(w, x, y, z, dimension=4)
-
-    def __mul__(self, other):
-        # Convert other to HypercomplexNumber if needed
-        if not isinstance(other, HypercomplexNumber):
-            try:
-                other = self.from_any(other)
-            except:
-                return NotImplemented
-
-        # Handle different dimensions
-        if self.dimension != other.dimension:
-            common_dim = max(self.dimension, other.dimension)
-            self_padded = self.pad_to_dimension(common_dim)
-            other_padded = other.pad_to_dimension(common_dim)
-            return self_padded * other_padded
-
-        # Different multiplication rules based on dimension
-        if self.dimension == 1:
-            # Real multiplication
-            return HypercomplexNumber(self.coeffs[0] * other.coeffs[0], dimension=1)
-
-        elif self.dimension == 2:
-            # Complex multiplication
-            return self._multiply_complex(other)
-
-        elif self.dimension == 4:
-            # Quaternion multiplication
-            return self._multiply_quaternion(other)
-
-        else:
-            # For higher dimensions, use component-wise as fallback
-            warnings.warn(
-                f"Using component-wise multiplication for {self.type_name}",
-                RuntimeWarning,
-            )
-            new_coeffs = tuple(a * b for a, b in zip(self.coeffs, other.coeffs))
-            return HypercomplexNumber(*new_coeffs, dimension=self.dimension)
-
-    def __rmul__(self, other):
-        return self.__mul__(other)
-
-    def __truediv__(self, other):
-        # Convert other to HypercomplexNumber if needed
-        if not isinstance(other, HypercomplexNumber):
-            try:
-                other = self.from_any(other)
-            except:
-                return NotImplemented
-
-        # Use inverse for division
-        return self * other.inverse()
-
-    def __rtruediv__(self, other):
-        # Convert other to HypercomplexNumber
-        try:
-            other_num = self.from_any(other)
-            return other_num / self
-        except:
-            return NotImplemented
-
-    def __neg__(self):
-        new_coeffs = tuple(-c for c in self.coeffs)
-        return HypercomplexNumber(*new_coeffs, dimension=self.dimension)
-
-    def __pos__(self):
-        return self
-
-    def __abs__(self):
-        return self.norm()
-
-    def __eq__(self, other):
-        if not isinstance(other, HypercomplexNumber):
-            try:
-                other = self.from_any(other)
-            except:
-                return False
-
-        if self.dimension != other.dimension:
-            return False
-
-        return all(
-            math.isclose(a, b, abs_tol=1e-12) for a, b in zip(self.coeffs, other.coeffs)
-        )
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __hash__(self):
-        return hash(tuple(round(c, 12) for c in self.coeffs))
-
-    def __repr__(self):
-        return f"HypercomplexNumber({', '.join(map(str, self.coeffs))}, dimension={self.dimension})"
-
-    def __str__(self):
-        if self.dimension == 1:
-            return f"{self.type_name}({self.coeffs[0]})"
-        elif self.dimension == 2:
-            a, b = self.coeffs
-            if b >= 0:
-                return f"{self.type_name}({a} + {b}i)"
-            else:
-                return f"{self.type_name}({a} - {-b}i)"
-        elif self.dimension <= 8:
-            non_zero = [(i, c) for i, c in enumerate(self.coeffs) if abs(c) > 1e-10]
-            if not non_zero:
-                return f"{self.type_name}(0)"
-
-            parts = []
-            for i, c in non_zero:
-                if i == 0:
-                    parts.append(f"{c:.4f}")
-                else:
-                    sign = "+" if c >= 0 else "-"
-                    parts.append(f"{sign} {abs(c):.4f}e{i}")
-            return f"{self.type_name}({' '.join(parts)})"
-        else:
-            return f"{self.type_name}[real={self.real:.4f}, norm={self.norm():.4f}, dim={self.dimension}]"
-
-    def norm(self) -> float:
-        """Euclidean norm."""
-        return math.sqrt(sum(c**2 for c in self.coeffs))
-
-    def conjugate(self):
-        """Conjugate (negate all imaginary parts)."""
-        if self.dimension == 1:
-            return self
-
-        new_coeffs = list(self.coeffs)
-        for i in range(1, self.dimension):
-            new_coeffs[i] = -new_coeffs[i]
-
-        return HypercomplexNumber(*new_coeffs, dimension=self.dimension)
-
-    def inverse(self):
-        """Multiplicative inverse."""
-        norm_sq = self.norm() ** 2
-        if norm_sq == 0:
-            raise ZeroDivisionError("Cannot invert zero element")
-
-        conj = self.conjugate()
-        new_coeffs = tuple(c / norm_sq for c in conj.coeffs)
-        return HypercomplexNumber(*new_coeffs, dimension=self.dimension)
-
-    def pad_to_dimension(self, new_dim: int) -> "HypercomplexNumber":
-        """Pad to higher dimension with zeros."""
-        if new_dim < self.dimension:
-            raise ValueError(
-                f"Cannot pad to smaller dimension: {new_dim} < {self.dimension}"
-            )
-
-        if new_dim == self.dimension:
-            return self
-
-        new_coeffs = self.coeffs + (0.0,) * (new_dim - self.dimension)
-        return HypercomplexNumber(*new_coeffs, dimension=new_dim)
-
-    def truncate_to_dimension(self, new_dim: int) -> "HypercomplexNumber":
-        """Truncate to smaller dimension."""
-        if new_dim > self.dimension:
-            raise ValueError(
-                f"Cannot truncate to larger dimension: {new_dim} > {self.dimension}"
-            )
-
-        if new_dim == self.dimension:
-            return self
-
-        new_coeffs = self.coeffs[:new_dim]
-        return HypercomplexNumber(*new_coeffs, dimension=new_dim)
-
-    def to_list(self) -> List[float]:
-        """Convert to Python list."""
-        return list(self.coeffs)
-
-    def to_numpy(self) -> np.ndarray:
-        """Convert to numpy array."""
-        return np.array(self.coeffs, dtype=np.float64)
-
-    def copy(self) -> "HypercomplexNumber":
-        """Generate a copy."""
-        return HypercomplexNumber(*self.coeffs, dimension=self.dimension)
-
-    def __float__(self):
-        """Convert to float (returns real part)."""
-        return float(self.real)
-
-    def to_complex(self) -> complex:
-        """Convert to Python complex if possible."""
-        if self.dimension >= 2:
-            return complex(self.coeffs[0], self.coeffs[1])
-        return complex(self.coeffs[0], 0.0)
-
-    def to_hypercomplex(self) -> "HypercomplexNumber":
-        """Convert to HypercomplexNumber (identity for this class)."""
-        return self
-
-
-class quaternion(BaseNumber):
-    """
-    BaseNumber'dan türetilmiş Kuaterniyon sınıfı
-    """
-
-    def __init__(self, w: float = 1.0, x: float = 0.0, y: float = 0.0, z: float = 0.0):
-        self.w = float(w)
-        self.x = float(x)
-        self.y = float(y)
-        self.z = float(z)
-        # BaseNumber'ı initialize et - value olarak skalar kısmı kullan
-        super().__init__(self.w)
-
-    @property
-    def coeffs(self) -> np.ndarray:
-        return np.array([self.w, self.x, self.y, self.z])
-
-    # BaseNumber'dan gelen metodlar otomatik olarak çalışır:
-    # - magnitude() -> norm() ile aynı işi yapar
-    # - phase() -> quaternion için anlamlı olmayabilir, override edilebilir
-    # - components() -> [w, x, y, z] döndürür
-
-    # ------------------------------------------------------------------ #
-    # Helper method to extract quaternion from various types
-    # ------------------------------------------------------------------ #
-    def _extract_quat(self, other: Any) -> "quaternion":
-        """Extract quaternion value from various input types."""
-        if isinstance(other, quaternion):
-            return other
-        elif isinstance(other, (int, float)):
-            # Scalar -> quaternion with only real part
-            return quaternion(float(other), 0.0, 0.0, 0.0)
-        elif isinstance(other, BaseNumber):
-            # Try to convert BaseNumber to quaternion
-            try:
-                # Get the scalar value from BaseNumber
-                scalar = other._extract_numeric(other)
-                if isinstance(scalar, (int, float)):
-                    return quaternion(float(scalar), 0.0, 0.0, 0.0)
-                elif isinstance(scalar, complex):
-                    return quaternion(float(scalar.real), float(scalar.imag), 0.0, 0.0)
-            except (AttributeError, TypeError):
-                pass
-        raise TypeError(f"Cannot convert {type(other)} to quaternion")
-
-    @classmethod
-    def from_axis_angle(
-        cls,
-        axis: Union[List[float], Tuple[float, float, float], np.ndarray],
-        angle: float,
-    ) -> "quaternion":
-        """Eksen-açı gösteriminden kuaterniyon oluşturur."""
-        axis = np.asarray(axis, dtype=float)
-        axis_norm = np.linalg.norm(axis)
-
-        if axis_norm == 0:
-            raise ValueError("Eksen vektörü sıfır olamaz")
-
-        axis = axis / axis_norm
-        half_angle = angle / 2.0
-        sin_half = math.sin(half_angle)
-
-        return cls(
-            w=math.cos(half_angle),
-            x=axis[0] * sin_half,
-            y=axis[1] * sin_half,
-            z=axis[2] * sin_half,
-        )
-
-    @classmethod
-    def from_euler(
-        cls, roll: float, pitch: float, yaw: float, order: str = "zyx"
-    ) -> "quaternion":
-        """
-        Euler açılarından kuaterniyon oluşturur.
-
-        Args:
-            roll: X ekseni etrafında dönme (radyan)
-            pitch: Y ekseni etrafında dönme (radyan)
-            yaw: Z ekseni etrafında dönme (radyan)
-            order: Dönme sırası ('zyx', 'xyz', 'yxz', vb.)
-
-        Returns:
-            quaternion: Kuaterniyon nesnesi
-        """
-        cy = math.cos(yaw * 0.5)
-        sy = math.sin(yaw * 0.5)
-        cp = math.cos(pitch * 0.5)
-        sp = math.sin(pitch * 0.5)
-        cr = math.cos(roll * 0.5)
-        sr = math.sin(roll * 0.5)
-
-        if order == "zyx":  # Yaw, Pitch, Roll
-            w = cy * cp * cr + sy * sp * sr
-            x = cy * cp * sr - sy * sp * cr
-            y = sy * cp * sr + cy * sp * cr
-            z = sy * cp * cr - cy * sp * sr
-        elif order == "xyz":  # Roll, Pitch, Yaw
-            w = cr * cp * cy + sr * sp * sy
-            x = sr * cp * cy - cr * sp * sy
-            y = cr * sp * cy + sr * cp * sy
-            z = cr * cp * sy - sr * sp * cy
-        else:
-            raise ValueError(f"Desteklenmeyen dönme sırası: {order}")
-
-        return cls(w, x, y, z)
-
-    @classmethod
-    def from_rotation_matrix(cls, R: np.ndarray) -> "quaternion":
-        """
-        Dönüşüm matrisinden kuaterniyon oluşturur.
-
-        Args:
-            R: 3x3 dönüşüm matrisi
-
-        Returns:
-            quaternion: Kuaterniyon nesnesi
-        """
-        if R.shape != (3, 3):
-            raise ValueError("Matris 3x3 boyutunda olmalıdır")
-
-        trace = np.trace(R)
-
-        if trace > 0:
-            S = math.sqrt(trace + 1.0) * 2
-            w = 0.25 * S
-            x = (R[2, 1] - R[1, 2]) / S
-            y = (R[0, 2] - R[2, 0]) / S
-            z = (R[1, 0] - R[0, 1]) / S
-        elif R[0, 0] > R[1, 1] and R[0, 0] > R[2, 2]:
-            S = math.sqrt(1.0 + R[0, 0] - R[1, 1] - R[2, 2]) * 2
-            w = (R[2, 1] - R[1, 2]) / S
-            x = 0.25 * S
-            y = (R[0, 1] + R[1, 0]) / S
-            z = (R[0, 2] + R[2, 0]) / S
-        elif R[1, 1] > R[2, 2]:
-            S = math.sqrt(1.0 + R[1, 1] - R[0, 0] - R[2, 2]) * 2
-            w = (R[0, 2] - R[2, 0]) / S
-            x = (R[0, 1] + R[1, 0]) / S
-            y = 0.25 * S
-            z = (R[1, 2] + R[2, 1]) / S
-        else:
-            S = math.sqrt(1.0 + R[2, 2] - R[0, 0] - R[1, 1]) * 2
-            w = (R[1, 0] - R[0, 1]) / S
-            x = (R[0, 2] + R[2, 0]) / S
-            y = (R[1, 2] + R[2, 1]) / S
-            z = 0.25 * S
-
-        return cls(w, x, y, z).normalized()
-
-    # ------------------------------------------------------------------ #
-    # Quaternion-specific methods (keep all your existing methods)
-    # ------------------------------------------------------------------ #
-
-    def conjugate(self) -> "quaternion":
-        """Kuaterniyonun eşleniğini döndürür."""
-        return quaternion(self.w, -self.x, -self.y, -self.z)
-
-    def norm(self) -> float:
-        """Kuaterniyonun normunu döndürür."""
-        return math.sqrt(self.w**2 + self.x**2 + self.y**2 + self.z**2)
-
-    def magnitude(self) -> float:
-        """BaseNumber compatibility - same as norm()."""
-        return self.norm()
-
-    def normalized(self) -> "quaternion":
-        """Normalize edilmiş kuaterniyonu döndürür."""
-        n = self.norm()
-        if n == 0:
-            return quaternion(1, 0, 0, 0)
-        return quaternion(self.w / n, self.x / n, self.y / n, self.z / n)
-
-    def inverse(self) -> "quaternion":
-        """Kuaterniyonun tersini döndürür."""
-        norm_sq = self.w**2 + self.x**2 + self.y**2 + self.z**2
-        if norm_sq == 0:
-            return quaternion(1, 0, 0, 0)
-        conj = self.conjugate()
-        return quaternion(
-            conj.w / norm_sq, conj.x / norm_sq, conj.y / norm_sq, conj.z / norm_sq
-        )
-
-    def to_axis_angle(self) -> Tuple[np.ndarray, float]:
-        """
-        Kuaterniyonu eksen-açı gösterimine dönüştürür.
-
-        Returns:
-            Tuple[np.ndarray, float]: (eksen, açı)
-        """
-        if abs(self.w) > 1:
-            q = self.normalized()
-        else:
-            q = self
-
-        angle = 2 * math.acos(q.w)
-
-        if abs(angle) < 1e-10:
-            return np.array([1.0, 0.0, 0.0]), 0.0
-
-        s = math.sqrt(1 - q.w**2)
-        if s < 1e-10:
-            axis = np.array([1.0, 0.0, 0.0])
-        else:
-            axis = np.array([q.x / s, q.y / s, q.z / s])
-
-        return axis, angle
-
-    def to_euler(self, order: str = "zyx") -> Tuple[float, float, float]:
-        """
-        Kuaterniyonu Euler açılarına dönüştürür.
-
-        Args:
-            order: Dönme sırası
-
-        Returns:
-            Tuple[float, float, float]: (roll, pitch, yaw)
-        """
-        q = self.normalized()
-
-        if order == "zyx":  # Yaw, Pitch, Roll
-            # Roll (x-axis rotation)
-            sinr_cosp = 2 * (q.w * q.x + q.y * q.z)
-            cosr_cosp = 1 - 2 * (q.x**2 + q.y**2)
-            roll = math.atan2(sinr_cosp, cosr_cosp)
-
-            # Pitch (y-axis rotation)
-            sinp = 2 * (q.w * q.y - q.z * q.x)
-            if abs(sinp) >= 1:
-                pitch = math.copysign(math.pi / 2, sinp)
-            else:
-                pitch = math.asin(sinp)
-
-            # Yaw (z-axis rotation)
-            siny_cosp = 2 * (q.w * q.z + q.x * q.y)
-            cosy_cosp = 1 - 2 * (q.y**2 + q.z**2)
-            yaw = math.atan2(siny_cosp, cosy_cosp)
-
-            return roll, pitch, yaw
-        else:
-            raise ValueError(f"Desteklenmeyen dönme sırası: {order}")
-
-    def to_rotation_matrix(self) -> np.ndarray:
-        """
-        Kuaterniyonu dönüşüm matrisine dönüştürür.
-
-        Returns:
-            np.ndarray: 3x3 dönüşüm matrisi
-        """
-        q = self.normalized()
-
-        # 3x3 dönüşüm matrisi
-        R = np.zeros((3, 3))
-
-        # Matris elemanlarını hesapla
-        R[0, 0] = 1 - 2 * (q.y**2 + q.z**2)
-        R[0, 1] = 2 * (q.x * q.y - q.w * q.z)
-        R[0, 2] = 2 * (q.x * q.z + q.w * q.y)
-
-        R[1, 0] = 2 * (q.x * q.y + q.w * q.z)
-        R[1, 1] = 1 - 2 * (q.x**2 + q.z**2)
-        R[1, 2] = 2 * (q.y * q.z - q.w * q.x)
-
-        R[2, 0] = 2 * (q.x * q.z - q.w * q.y)
-        R[2, 1] = 2 * (q.y * q.z + q.w * q.x)
-        R[2, 2] = 1 - 2 * (q.x**2 + q.y**2)
-
-        return R
-
-    def rotate_vector(
-        self, v: Union[List[float], Tuple[float, float, float], np.ndarray]
-    ) -> np.ndarray:
-        """
-        Vektörü kuaterniyon ile döndürür.
-
-        Args:
-            v: Döndürülecek 3 boyutlu vektör
-
-        Returns:
-            np.ndarray: Döndürülmüş vektör
-        """
-        v = np.asarray(v, dtype=float)
-        if v.shape != (3,):
-            raise ValueError("Vektör 3 boyutlu olmalıdır")
-
-        q = self.normalized()
-        q_vec = np.array([q.x, q.y, q.z])
-        q_w = q.w
-
-        # Kuaterniyon çarpımı ile döndürme
-        v_rot = v + 2 * np.cross(q_vec, np.cross(q_vec, v) + q_w * v)
-        return v_rot
-
-    def slerp(self, other: "quaternion", t: float) -> "quaternion":
-        """
-        Küresel lineer interpolasyon (SLERP) yapar.
-
-        Args:
-            other: Hedef kuaterniyon
-            t: İnterpolasyon parametresi [0, 1]
-
-        Returns:
-            quaternion: İnterpole edilmiş kuaterniyon
-        """
-        if t <= 0:
-            return self.normalized()
-        if t >= 1:
-            return other.normalized()
-
-        q1 = self.normalized()
-        q2 = other.normalized()
-
-        # Nokta çarpım
-        cos_half_theta = q1.w * q2.w + q1.x * q2.x + q1.y * q2.y + q1.z * q2.z
-
-        # Eğer q1 ve q2 aynı yöndeyse
-        if abs(cos_half_theta) >= 1.0:
-            return q1
-
-        # Eğer negatif nokta çarpım, kuaterniyonları ters çevir
-        if cos_half_theta < 0:
-            q2 = quaternion(-q2.w, -q2.x, -q2.y, -q2.z)
-            cos_half_theta = -cos_half_theta
-
-        half_theta = math.acos(cos_half_theta)
-        sin_half_theta = math.sqrt(1.0 - cos_half_theta**2)
-
-        if abs(sin_half_theta) < 1e-10:
-            return quaternion(
-                q1.w * 0.5 + q2.w * 0.5,
-                q1.x * 0.5 + q2.x * 0.5,
-                q1.y * 0.5 + q2.y * 0.5,
-                q1.z * 0.5 + q2.z * 0.5,
-            ).normalized()
-
-        ratio_a = math.sin((1 - t) * half_theta) / sin_half_theta
-        ratio_b = math.sin(t * half_theta) / sin_half_theta
-
-        return quaternion(
-            q1.w * ratio_a + q2.w * ratio_b,
-            q1.x * ratio_a + q2.x * ratio_b,
-            q1.y * ratio_a + q2.y * ratio_b,
-            q1.z * ratio_a + q2.z * ratio_b,
-        ).normalized()
-
-    # ------------------------------------------------------------------ #
-    # Operator overloads - Liskov compliant
-    # ------------------------------------------------------------------ #
-
-    def __add__(
-        self, other: Union["quaternion", BaseNumber, int, float, complex]
-    ) -> "quaternion":
-        """Quaternion addition - Liskov compliant."""
-        try:
-            q_other = self._extract_quat(other)
-            return quaternion(
-                self.w + q_other.w,
-                self.x + q_other.x,
-                self.y + q_other.y,
-                self.z + q_other.z,
-            )
-        except TypeError:
-            return NotImplemented
-
-    def __radd__(self, other: Union[BaseNumber, int, float, complex]) -> "quaternion":
-        """Right addition."""
-        return self.__add__(other)
-
-    def __sub__(
-        self, other: Union["quaternion", BaseNumber, int, float, complex]
-    ) -> "quaternion":
-        """Quaternion subtraction - Liskov compliant."""
-        try:
-            q_other = self._extract_quat(other)
-            return quaternion(
-                self.w - q_other.w,
-                self.x - q_other.x,
-                self.y - q_other.y,
-                self.z - q_other.z,
-            )
-        except TypeError:
-            return NotImplemented
-
-    def __rsub__(self, other: Union[BaseNumber, int, float, complex]) -> "quaternion":
-        """Right subtraction."""
-        try:
-            q_other = self._extract_quat(other)
-            return quaternion(
-                q_other.w - self.w,
-                q_other.x - self.x,
-                q_other.y - self.y,
-                q_other.z - self.z,
-            )
-        except TypeError:
-            return NotImplemented
-
-    def __mul__(
-        self, other: Union["quaternion", BaseNumber, int, float, complex]
-    ) -> "quaternion":
-        """Quaternion multiplication - Liskov compliant."""
-        try:
-            q_other = self._extract_quat(other)
-
-            # Hamilton product for quaternion-quaternion multiplication
-            w = (
-                self.w * q_other.w
-                - self.x * q_other.x
-                - self.y * q_other.y
-                - self.z * q_other.z
-            )
-            x = (
-                self.w * q_other.x
-                + self.x * q_other.w
-                + self.y * q_other.z
-                - self.z * q_other.y
-            )
-            y = (
-                self.w * q_other.y
-                - self.x * q_other.z
-                + self.y * q_other.w
-                + self.z * q_other.x
-            )
-            z = (
-                self.w * q_other.z
-                + self.x * q_other.y
-                - self.y * q_other.x
-                + self.z * q_other.w
-            )
-
-            return quaternion(w, x, y, z)
-        except TypeError:
-            return NotImplemented
-
-    def __rmul__(self, other: Union[BaseNumber, int, float, complex]) -> "quaternion":
-        """Right multiplication."""
-        return self.__mul__(other)
-
-    def __truediv__(
-        self, other: Union["quaternion", BaseNumber, int, float, complex]
-    ) -> "quaternion":
-        """Quaternion division - Liskov compliant."""
-        try:
-            q_other = self._extract_quat(other)
-
-            # Division as multiplication by inverse
-            norm_sq = q_other.w**2 + q_other.x**2 + q_other.y**2 + q_other.z**2
-            if norm_sq == 0:
-                raise ZeroDivisionError("division by zero quaternion")
-
-            # Compute inverse of other quaternion
-            inv_w = q_other.w / norm_sq
-            inv_x = -q_other.x / norm_sq
-            inv_y = -q_other.y / norm_sq
-            inv_z = -q_other.z / norm_sq
-
-            # Multiply self by inverse
-            return self * quaternion(inv_w, inv_x, inv_y, inv_z)
-        except TypeError:
-            return NotImplemented
-
-    def __rtruediv__(
-        self, other: Union[BaseNumber, int, float, complex]
-    ) -> "quaternion":
-        """Right division."""
-        try:
-            q_other = self._extract_quat(other)
-            return q_other / self
-        except TypeError:
-            return NotImplemented
-
-    def __neg__(self) -> "quaternion":
-        """Negate quaternion."""
-        return quaternion(-self.w, -self.x, -self.y, -self.z)
-
-    # ------------------------------------------------------------------ #
-    # Comparison operators - Liskov compliant
-    # ------------------------------------------------------------------ #
-
-    def __eq__(self, other: object) -> bool:
-        """Equality check - Liskov compliant."""
-        if not isinstance(other, quaternion):
-            return False
-
-        return (
-            math.isclose(self.w, other.w)
-            and math.isclose(self.x, other.x)
-            and math.isclose(self.y, other.y)
-            and math.isclose(self.z, other.z)
-        )
-
-    def __ne__(self, other: object) -> bool:
-        return not self.__eq__(other)
-
-    def __repr__(self) -> str:
-        """String representation."""
-        return f"quaternion(w={self.w:.6f}, x={self.x:.6f}, y={self.y:.6f}, z={self.z:.6f})"
-
-    def __str__(self) -> str:
-        """String format."""
-        return f"{self.w:.6f} + {self.x:.6f}i + {self.y:.6f}j + {self.z:.6f}k"
-
-    def to_array(self) -> np.ndarray:
-        """Kuaterniyonu numpy array'e dönüştürür."""
-        return np.array([self.w, self.x, self.y, self.z])
-
-    def to_list(self) -> List[float]:
-        """Kuaterniyonu listeye dönüştürür."""
-        return [self.w, self.x, self.y, self.z]
-
-    @classmethod
-    def identity(cls) -> "quaternion":
-        """Birim kuaterniyon döndürür."""
-        return cls(1.0, 0.0, 0.0, 0.0)
-
-    def is_identity(self, tolerance: float = 1e-10) -> bool:
-        """Birim kuaterniyon olup olmadığını kontrol eder."""
-        return (
-            abs(self.w - 1.0) < tolerance
-            and abs(self.x) < tolerance
-            and abs(self.y) < tolerance
-            and abs(self.z) < tolerance
-        )
-
-    @classmethod
-    def parse(cls, s) -> "quaternion":
-        """Çeşitli formatlardan quaternion oluşturur.
-
-        Args:
-            s: Dönüştürülecek değer
-
-        Returns:
-            quaternion: Dönüştürülmüş kuaterniyon
-        """
-        return _parse_quaternion_from_csv(s)
-
-    @classmethod
-    def from_csv_string(cls, s: str) -> "quaternion":
-        """CSV string'inden quaternion oluşturur.
-
-        Args:
-            s: Virgülle ayrılmış string ("w,x,y,z" veya "scalar")
-
-        Returns:
-            quaternion: Dönüştürülmüş kuaterniyon
-        """
-        return _parse_quaternion_from_csv(s)
-
-    @classmethod
-    def from_complex(cls, c: complex) -> "quaternion":
-        """Complex sayıdan quaternion oluşturur (sadece gerçek kısım kullanılır).
-
-        Args:
-            c: Complex sayı
-
-        Returns:
-            quaternion: Dönüştürülmüş kuaterniyon
-        """
-        return quaternion(float(c.real), 0, 0, 0)
-
-
-@dataclass
-class TernaryNumber:
-    def __init__(self, digits: list):
-        """
-        Üçlü sayıyı oluşturur. Verilen değer bir liste olmalıdır.
-
-        :param digits: Üçlü sayının rakamlarını temsil eden liste.
-        """
-        self.digits = digits
-
-    @classmethod
-    def from_ternary_string(cls, ternary_str: str) -> "TernaryNumber":
-        """Üçlü sayı sistemindeki stringi TernaryNumber'a dönüştürür."""
-        ternary_str = ternary_str.strip()
-        if not all(c in "012" for c in ternary_str):
-            raise ValueError("Üçlü sayı sadece 0, 1 ve 2 rakamlarından oluşabilir.")
-        digits = [int(c) for c in ternary_str]
-        return cls(digits)
-
-    @classmethod
-    def from_decimal(cls, decimal: int) -> "TernaryNumber":
-        """Ondalık sayıyı üçlü sayı sistemine dönüştürür."""
-        if decimal == 0:
-            return cls([0])
-        digits = []
-        while decimal > 0:
-            digits.append(decimal % 3)
-            decimal = decimal // 3
-        return cls(digits[::-1] if digits else [0])
-
-    def to_decimal(self):
-        """Üçlü sayının ondalık karşılığını döndürür."""
-        decimal_value = 0
-        for i, digit in enumerate(reversed(self.digits)):
-            decimal_value += digit * (3**i)
-        return decimal_value
-
-    def __repr__(self):
-        """Nesnenin yazdırılabilir temsilini döndürür."""
-        return f"TernaryNumber({self.digits})"
-
-    def __str__(self):
-        """Nesnenin string temsilini döndürür."""
-        return "".join(map(str, self.digits))
-
-    def __add__(self, other):
-        """Toplama işlemini destekler."""
-        if isinstance(other, TernaryNumber):
-            result_decimal = self.to_decimal() + other.to_decimal()
-        elif isinstance(other, (int, str)):
-            result_decimal = self.to_decimal() + int(other)
-        else:
-            raise TypeError(
-                "TernaryNumber'ın başka bir sayıya veya TernaryNumber'e eklenebilir."
-            )
-        return TernaryNumber.from_decimal(result_decimal)
-
-    def __radd__(self, other):
-        """Toplama işleminin sağ taraf desteklenmesini sağlar."""
-        return self.__add__(other)
-
-    def __sub__(self, other):
-        """Çıkarma işlemini destekler."""
-        if isinstance(other, TernaryNumber):
-            result_decimal = self.to_decimal() - other.to_decimal()
-        elif isinstance(other, (int, str)):
-            result_decimal = self.to_decimal() - int(other)
-        else:
-            raise TypeError(
-                "TernaryNumber'dan başka bir sayıya veya başka bir TernaryNumber çıkartılabilir."
-            )
-        if result_decimal < 0:
-            raise ValueError("Bir üçlü sayıdan daha büyük bir sayı çıkaramazsınız.")
-        return TernaryNumber.from_decimal(result_decimal)
-
-    def __rsub__(self, other):
-        """Çıkarma işleminin sağ taraf desteklenmesini sağlar."""
-        if isinstance(other, (int, str)):
-            result_decimal = int(other) - self.to_decimal()
-        else:
-            raise TypeError("TernaryNumber'dan bir sayı çıkartılabilir.")
-        if result_decimal < 0:
-            raise ValueError("Bir üçlü sayıdan daha büyük bir sayı çıkaramazsınız.")
-        return TernaryNumber.from_decimal(result_decimal)
-
-    def __mul__(self, scalar):
-        """Skaler çarpım işlemini destekler."""
-        if not isinstance(scalar, (int, float)):
-            raise TypeError("TernaryNumber sadece skaler ile çarpılabilir.")
-        result_decimal = self.to_decimal() * scalar
-        return TernaryNumber.from_decimal(int(result_decimal))
-
-    def __rmul__(self, other):
-        """Çarpma işleminin sağ taraf desteklenmesini sağlar."""
-        return self.__mul__(other)
-
-    # Üçlü sayı sisteminde bölme işlemi, ondalık karşılığa dönüştürülerek yapılmalıdır.
-    def __truediv__(self, other):
-        """Bölme işlemini destekler."""
-        if isinstance(other, TernaryNumber):
-            other_decimal = other.to_decimal()
-            if other_decimal == 0:
-                raise ZeroDivisionError("Bir TernaryNumber sıfırla bölünemez.")
-            result_decimal = self.to_decimal() / other_decimal
-            return TernaryNumber.from_decimal(int(round(result_decimal)))
-        elif isinstance(other, (int, float)):
-            if other == 0:
-                raise ZeroDivisionError("Sıfırla bölme hatası.")
-            result_decimal = self.to_decimal() / other
-            return TernaryNumber.from_decimal(int(round(result_decimal)))
-        else:
-            raise TypeError(
-                "TernaryNumber'i bir sayı veya başka bir TernaryNumber ile bölebilirsiniz."
-            )
-
-    # üçlü sayı sisteminde bölme işlemi, ondalık karşılığa dönüştürülerek yapılmalıdır.
-    def __rtruediv__(self, other):
-        """Bölme işleminin sağ taraf desteklenmesini sağlar."""
-        if isinstance(other, (int, float)):
-            self_decimal = self.to_decimal()
-            if self_decimal == 0:
-                raise ZeroDivisionError("Sıfırla bölme hatası.")
-            result_decimal = other / self_decimal
-            return TernaryNumber.from_decimal(int(round(result_decimal)))
-        else:
-            raise TypeError("TernaryNumber ile bir sayı bölünebilir.")
-
-    def __eq__(self, other):
-        """Eşitlik kontrolü yapar."""
-        if isinstance(other, TernaryNumber):
-            return self.digits == other.digits
-        elif isinstance(other, (int, str)):
-            return self.to_decimal() == int(other)
-        else:
-            return False
-
-    def __ne__(self, other):
-        """Eşitsizlik kontrolü yapar."""
-        return not self.__eq__(other)
-
-
-# Superreal Sayılar
-@dataclass
-class SuperrealNumber:
-    # def __init__(self, real_part=0.0):
-    def __init__(self, real: float, split: float = 0.0):
-        """
-        SuperrealNumber nesnesini oluşturur.
-
-        :param real_part: Gerçek sayı bileşeni (float).
-        """
-        # self.real = real_part
-        self.real = real
-        self.split = split
-
-    def __repr__(self):
-        """Nesnenin yazdırılabilir temsilini döndürür."""
-        return f"SuperrealNumber({self.real})"
-
-    def __str__(self):
-        """Nesnenin string temsilini döndürür."""
-        return str(self.real)
-
-    def __add__(self, other):
-        """Toplama işlemini destekler."""
-        if isinstance(other, SuperrealNumber):
-            return SuperrealNumber(self.real + other.real)
-        elif isinstance(other, (int, float)):
-            return SuperrealNumber(self.real + other)
-        else:
-            raise TypeError(
-                "SuperrealNumber'e bir sayı veya başka bir SuperrealNumber eklenebilir."
-            )
-
-    def __radd__(self, other):
-        """Toplama işleminin sağ taraf desteklenmesini sağlar."""
-        return self.__add__(other)
-
-    def __sub__(self, other):
-        """Çıkarma işlemini destekler."""
-        if isinstance(other, SuperrealNumber):
-            return SuperrealNumber(self.real - other.real)
-        elif isinstance(other, (int, float)):
-            return SuperrealNumber(self.real - other)
-        else:
-            raise TypeError(
-                "SuperrealNumber'dan bir sayı veya başka bir SuperrealNumber çıkarılabilir."
-            )
-
-    def __rsub__(self, other):
-        """Çıkarma işleminin sağ taraf desteklenmesini sağlar."""
-        return self.__neg__().__add__(other)
-
-    def __mul__(self, other):
-        """Çarpma işlemini destekler."""
-        if isinstance(other, SuperrealNumber):
-            return SuperrealNumber(self.real * other.real)
-        elif isinstance(other, (int, float)):
-            return SuperrealNumber(self.real * other)
-        else:
-            raise TypeError(
-                "SuperrealNumber ile bir sayı veya başka bir SuperrealNumber çarpılabilir."
-            )
-
-    def __rmul__(self, other):
-        """Çarpma işleminin sağ taraf desteklenmesini sağlar."""
-        return self.__mul__(other)
-
-    def __truediv__(self, other):
-        """Bölme işlemini destekler."""
-        if isinstance(other, SuperrealNumber):
-            if other.real == 0:
-                raise ZeroDivisionError("Bir SuperrealNumber sıfırla bölünemez.")
-            return SuperrealNumber(self.real / other.real)
-        elif isinstance(other, (int, float)):
-            if other == 0:
-                raise ZeroDivisionError("Sıfırla bölme hatası.")
-            return SuperrealNumber(self.real / other)
-        else:
-            raise TypeError(
-                "SuperrealNumber'i bir sayı veya başka bir SuperrealNumber ile bölebilirsiniz."
-            )
-
-    def __rtruediv__(self, other):
-        """Bölme işleminin sağ taraf desteklenmesini sağlar."""
-        if self.real == 0:
-            raise ZeroDivisionError("Sıfırla bölme hatası.")
-        return SuperrealNumber(other / self.real)
-
-    def __neg__(self):
-        """Negatif değeri döndürür."""
-        return SuperrealNumber(-self.real)
-
-    def __eq__(self, other):
-        """Eşitlik kontrolü yapar."""
-        if isinstance(other, SuperrealNumber):
-            return self.real == other.real
-        elif isinstance(other, (int, float)):
-            return self.real == other
-        else:
-            return False
-
-    def __ne__(self, other):
-        """Eşitsizlik kontrolü yapar."""
-        return not self.__eq__(other)
-
-    def __lt__(self, other):
-        """Küçük olma kontrolü yapar."""
-        if isinstance(other, SuperrealNumber):
-            return self.real < other.real
-        elif isinstance(other, (int, float)):
-            return self.real < other
-        else:
-            raise TypeError("SuperrealNumber ile karşılaştırılabilir.")
-
-    def __le__(self, other):
-        """Küçük veya eşit kontrolü yapar."""
-        return self.__lt__(other) or self.__eq__(other)
-
-    def __gt__(self, other):
-        """Büyük olma kontrolü yapar."""
-        return not self.__le__(other)
-
-    def __ge__(self, other):
-        """Büyük veya eşit kontrolü yapar."""
-        return not self.__lt__(other)
-
-
-@dataclass
-class PathionNumber:
-    """32-bileşenli Pathion sayısı"""
-
-    def __init__(self, *coeffs):
-        if (
-            len(coeffs) == 1
-            and hasattr(coeffs[0], "__iter__")
-            and not isinstance(coeffs[0], str)
-        ):
-            coeffs = coeffs[0]
-
-        if len(coeffs) != 32:
-            coeffs = list(coeffs) + [0.0] * (32 - len(coeffs))
-            if len(coeffs) > 32:
-                coeffs = coeffs[:32]
-
-        self.coeffs = [float(c) for c in coeffs]
-
-    @property
-    def real(self) -> float:
-        """İlk bileşen – “gerçek” kısım."""
-        return float(self.coeffs[0])
-
-    # def real(self):
-    #    Gerçek kısım (ilk bileşen)
-    #    return self.coeffs[0]
-
-    def __iter__(self):
-        return iter(self.coeffs)
-
-    def __getitem__(self, index):
-        return self.coeffs[index]
-
-    def __len__(self):
-        return len(self.coeffs)
-
-    def __str__(self):
-        return f"PathionNumber({', '.join(map(str, self.coeffs))})"
-
-    def __repr__(self):
-        return f"PathionNumber({', '.join(map(str, self.coeffs))})"
-        # return f"PathionNumber({self.coeffs})"
-
-    def __add__(self, other):
-        if isinstance(other, PathionNumber):
-            return PathionNumber([a + b for a, b in zip(self.coeffs, other.coeffs)])
-        else:
-            # Skaler toplama
-            new_coeffs = self.coeffs.copy()
-            new_coeffs[0] += float(other)
-            return PathionNumber(new_coeffs)
-
-    def __sub__(self, other):
-        if isinstance(other, PathionNumber):
-            return PathionNumber([a - b for a, b in zip(self.coeffs, other.coeffs)])
-        else:
-            new_coeffs = self.coeffs.copy()
-            new_coeffs[0] -= float(other)
-            return PathionNumber(new_coeffs)
-
-    def __mul__(self, other):
-        if isinstance(other, PathionNumber):
-            # Basitçe bileşen bazlı çarpma (gerçek Cayley-Dickson çarpımı yerine)
-            return PathionNumber([a * b for a, b in zip(self.coeffs, other.coeffs)])
-        else:
-            # Skaler çarpma
-            return PathionNumber([c * float(other) for c in self.coeffs])
-
-    def __mod__(self, divisor):
-        return PathionNumber([c % divisor for c in self.coeffs])
-
-    def __eq__(self, other):
-        if not isinstance(other, PathionNumber):
-            return NotImplemented
-        return np.allclose(self.coeffs, other.coeffs, atol=1e-10)
-        # if isinstance(other, PathionNumber):
-        #    return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
-        # return False
-
-    def __truediv__(self, other):
-        """Bölme operatörü: /"""
-        if isinstance(other, (int, float)):
-            # Skaler bölme
-            return PathionNumber([c / other for c in self.coeffs])
-        else:
-            raise TypeError(
-                f"Unsupported operand type(s) for /: 'PathionNumber' and '{type(other).__name__}'"
-            )
-
-    def __floordiv__(self, other):
-        """Tam sayı bölme operatörü: //"""
-        if isinstance(other, (int, float)):
-            # Skaler tam sayı bölme
-            return PathionNumber([c // other for c in self.coeffs])
-        else:
-            raise TypeError(
-                f"Unsupported operand type(s) for //: 'PathionNumber' and '{type(other).__name__}'"
-            )
-
-    def __rtruediv__(self, other):
-        """Sağdan bölme: other / PathionNumber"""
-        if isinstance(other, (int, float)):
-            # Bu daha karmaşık olabilir, basitçe bileşen bazlı bölme
-            return PathionNumber(
-                [other / c if c != 0 else float("inf") for c in self.coeffs]
-            )
-        else:
-            raise TypeError(
-                f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'PathionNumber'"
-            )
-
-    # ------------------------------------------------------------------
-    # Yeni eklenen yardımcı metodlar
-    # ------------------------------------------------------------------
-    def components(self):
-        """Bileşen listesini (Python list) döndürür."""
-        return list(self.coeffs)
-
-    def magnitude(self) -> float:
-        """
-        Euclidean norm = √( Σ_i coeff_i² )
-        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
-        """
-        return float(np.linalg.norm(self.coeffs))
-
-    def __hash__(self):
-        # NaN ve -0.0 gibi durumları göz önünde bulundurun
-        return hash(tuple(np.round(self.coeffs, decimals=10)))
-
-    def phase(self):
-        # Güvenli phase: ilk bileşene bak, eğer complex ise angle döndür, değilse 0.0
-        try:
-            first = self.coeffs[0] if self.coeffs else 0.0
-            if isinstance(first, complex):
-                return math.atan2(first.imag, first.real)
         except Exception:
-            pass
-        return 0.0
+            continue
 
+    return None
 
-from dataclasses import dataclass, field
-from typing import (
-    List,
-    Union,
-    Any,
-    Optional,
-    Iterable,
-    Tuple,
-    Dict,
-    Generator,
-    Callable,
-    overload,
-    cast,
-)
-import numpy as np
-import math
-import re
-import warnings
-
-
-@dataclass
-class ChingonNumber:
+def _float_mod_zero(x: Any, divisor: int, tol: float = 1e-12) -> bool:
     """
-    64-bileşenli gelişmiş sayı sistemi.
+    Check if float value is divisible by divisor within tolerance.
 
-    Chingon sayıları, 64 farklı bileşenden oluşan hiper kompleks sayıları temsil eder.
-    Her bileşen bir boyutu/ekseni temsil eder ve çok boyutlu işlemler için kullanılır.
+    Args:
+        x: Value to check
+        divisor: Divisor
+        tol: Tolerance
+
+    Returns:
+        True if divisible, False otherwise
     """
-
-    coeffs: List[float] = field(default_factory=lambda: [0.0] * 64)
-
-    def __post_init__(self) -> None:
-        """Başlatma sonrası işlemler: tip dönüşümleri ve boyut kontrolü"""
-        # NumPy array'i liste olarak dönüştür
-        if isinstance(self.coeffs, np.ndarray):
-            self.coeffs = self.coeffs.tolist()
-        elif isinstance(self.coeffs, tuple):
-            self.coeffs = list(self.coeffs)
-        elif not isinstance(self.coeffs, list):
-            # Diğer tipleri listeye çevirmeye çalış
-            try:
-                self.coeffs = list(self.coeffs)
-            except Exception as e:
-                raise TypeError(
-                    f"Cannot convert {type(self.coeffs)} to list for ChingonNumber: {e}"
-                )
-
-        # Uzunluk kontrolü ve ayarlama
-        if len(self.coeffs) != 64:
-            if len(self.coeffs) < 64:
-                # Eksik bileşenleri 0 ile tamamla
-                self.coeffs = self.coeffs + [0.0] * (64 - len(self.coeffs))
-            else:
-                # Fazla bileşenleri kes
-                warnings.warn(
-                    f"ChingonNumber expects 64 components, got {len(self.coeffs)}. Truncating.",
-                    RuntimeWarning,
-                    stacklevel=2,
-                )
-                self.coeffs = self.coeffs[:64]
-
-        # Tüm bileşenleri float'a çevir
-        processed_coeffs: List[float] = []
-        for i, c in enumerate(self.coeffs):
-            try:
-                if isinstance(c, complex):
-                    # Complex için real kısmı al
-                    processed_coeffs.append(float(c.real))
-                elif isinstance(c, (int, float, np.number)):
-                    # Sayısal tipler için float'a çevir
-                    processed_coeffs.append(float(c))
-                else:
-                    # Diğer tipler için string üzerinden çevir
-                    processed_coeffs.append(float(str(c)))
-            except (ValueError, TypeError) as e:
-                warnings.warn(
-                    f"Component {i} of ChingonNumber cannot be converted to float: {c}. Using 0.0.",
-                    RuntimeWarning,
-                    stacklevel=2,
-                )
-                processed_coeffs.append(0.0)
-
-        self.coeffs = processed_coeffs
-
-        # Numpy array önbelleği
-        self._np_array: Optional[np.ndarray] = None
-
-    @property
-    def n(self) -> np.ndarray:
-        """NumPy array özelliği (önbelleklenmiş)"""
-        if self._np_array is None:
-            self._np_array = np.array(self.coeffs, dtype=np.float64)
-        return self._np_array
-
-    @classmethod
-    def zeros(cls) -> "ChingonNumber":
-        """Tüm bileşenleri sıfır olan ChingonNumber"""
-        return cls([0.0] * 64)
-
-    @classmethod
-    def ones(cls) -> "ChingonNumber":
-        """Tüm bileşenleri bir olan ChingonNumber"""
-        return cls([1.0] * 64)
-
-    @classmethod
-    def eye(cls, index: int) -> "ChingonNumber":
-        """Belirli bir indekste 1, diğerlerinde 0 olan birim vektör"""
-        if index < 0 or index >= 64:
-            raise IndexError(f"Index must be between 0 and 63, got {index}")
-        coeffs = [0.0] * 64
-        coeffs[index] = 1.0
-        return cls(coeffs)
-
-    @classmethod
-    def from_scalar(cls, value: Union[int, float, complex]) -> "ChingonNumber":
-        """Skaler değerden ChingonNumber oluştur"""
-        scalar = float(value.real) if isinstance(value, complex) else float(value)
-        coeffs = [scalar] + [0.0] * 63
-        return cls(coeffs)
-
-    @classmethod
-    def from_complex(cls, real: float, imag: float) -> "ChingonNumber":
-        """Complex sayıdan ChingonNumber oluştur"""
-        coeffs = [float(real), float(imag)] + [0.0] * 62
-        return cls(coeffs)
-
-    @classmethod
-    def from_string(cls, s: str) -> "ChingonNumber":
-        """String'den ChingonNumber oluştur"""
-        # Basit string parsing
-        s = s.strip()
-
-        if s.startswith("[") and s.endswith("]"):
-            s = s[1:-1]
-
-        if "," in s:
-            parts = [p.strip() for p in s.split(",")]
-            coeffs: List[float] = []
-            for p in parts:
-                try:
-                    coeffs.append(float(p))
-                except ValueError:
-                    coeffs.append(0.0)
-            return cls(coeffs)
-        else:
-            try:
-                scalar = float(s)
-                return cls.from_scalar(scalar)
-            except ValueError:
-                # Sembolik form: "1.0e0 + 2.0e1 + ..."
-                coeffs = [0.0] * 64
-                for i in range(64):
-                    pattern = rf"([+-]?\d*\.?\d*)\s*[eE]{i}"
-                    match = re.search(pattern, s)
-                    if match:
-                        coeff_str = match.group(1)
-                        if coeff_str in ["", "+"]:
-                            coeffs[i] = 1.0
-                        elif coeff_str == "-":
-                            coeffs[i] = -1.0
-                        else:
-                            coeffs[i] = float(coeff_str)
-                return cls(coeffs)
-
-    @classmethod
-    def from_iterable(cls, iterable: Iterable) -> "ChingonNumber":
-        """Iterable'dan ChingonNumber oluştur"""
-        return cls(list(iterable))
-
-    @classmethod
-    def from_numpy(cls, array: np.ndarray) -> "ChingonNumber":
-        """NumPy array'den ChingonNumber oluştur"""
-        return cls(array.tolist())
-
-    @classmethod
-    def random(
-        cls, low: float = -1.0, high: float = 1.0, seed: Optional[int] = None
-    ) -> "ChingonNumber":
-        """Rastgele ChingonNumber oluştur"""
-        if seed is not None:
-            np.random.seed(seed)
-        coeffs = np.random.uniform(low, high, 64).tolist()
-        return cls(coeffs)
-
-    @property
-    def real(self) -> float:
-        """İlk bileşen – gerçek kısım"""
-        return self.coeffs[0]
-
-    @real.setter
-    def real(self, value: Union[int, float, complex]) -> None:
-        """Gerçek kısımı ayarla"""
-        self.coeffs[0] = (
-            float(value.real) if isinstance(value, complex) else float(value)
+    try:
+        # Convert to float
+        float_val = float(x)
+        # Calculate remainder
+        remainder = float_val % divisor
+        # Check if remainder is close to 0 or close to divisor
+        return math.isclose(remainder, 0.0, abs_tol=tol) or math.isclose(
+            remainder, float(divisor), abs_tol=tol
         )
-        self._clear_cache()
+    except Exception:
+        return False
 
-    @property
-    def imag(self) -> float:
-        """İkinci bileşen – sanal kısım"""
-        return self.coeffs[1] if len(self.coeffs) > 1 else 0.0
+def _safe_divide(a: Any, b: Any) -> Any:
+    """Safe division with zero handling and better type support."""
+    try:
+        # First, check if we're dealing with zero division
+        if hasattr(b, "__float__"):
+            b_float = float(b)
+            if abs(b_float) < 1e-12:  # Near zero threshold
+                logger.warning(f"Division by near-zero value: {b}")
+                
+                # Handle infinity based on type
+                if hasattr(a, "__class__") and hasattr(a.__class__, "__call__"):
+                    try:
+                        # Try to create infinity of the same type
+                        if hasattr(a, "__mul__"):
+                            # For types that support multiplication
+                            try:
+                                inf_val = float('inf')
+                                # Check if type can handle infinity
+                                if hasattr(type(a)(1), '__mul__'):
+                                    return type(a)(1) * inf_val
+                            except:
+                                pass
+                        
+                        # Try alternative: return maximum value of type
+                        if hasattr(a, 'max_value'):
+                            return a.max_value()
+                    except:
+                        pass
+                
+                # Default fallback
+                return type(a)(float('inf')) if hasattr(type(a), '__call__') else float('inf')
 
-    @imag.setter
-    def imag(self, value: Union[int, float, complex]) -> None:
-        """Sanal kısmı ayarla"""
-        if len(self.coeffs) > 1:
-            self.coeffs[1] = (
-                float(value.real) if isinstance(value, complex) else float(value)
-            )
-            self._clear_cache()
-
-    def _clear_cache(self) -> None:
-        """Önbelleği temizle"""
-        self._np_array = None
-
-    # ===== TEMEL İŞLEMLER =====
-
-    def __iter__(self) -> Generator[float, None, None]:
-        """İterasyon desteği"""
-        return (c for c in self.coeffs)
-
-    def __getitem__(self, index: Union[int, slice]) -> Union[float, List[float]]:
-        """İndeksleme desteği"""
-        if isinstance(index, slice):
-            return self.coeffs[index]
-        elif isinstance(index, int):
-            if index < 0:
-                index = 64 + index
-            if 0 <= index < 64:
-                return self.coeffs[index]
-            else:
-                raise IndexError(f"Index {index} out of range for ChingonNumber (0-63)")
-        else:
-            raise TypeError(
-                f"ChingonNumber indices must be integers or slices, not {type(index)}"
-            )
-
-    def __setitem__(self, index: int, value: Union[int, float, complex]) -> None:
-        """Bileşen atama desteği"""
-        if index < 0:
-            index = 64 + index
-        if 0 <= index < 64:
-            self.coeffs[index] = (
-                float(value.real) if isinstance(value, complex) else float(value)
-            )
-            self._clear_cache()
-        else:
-            raise IndexError(f"Index {index} out of range for ChingonNumber (0-63)")
-
-    def __len__(self) -> int:
-        """Uzunluk (her zaman 64)"""
-        return 64
-
-    def __str__(self) -> str:
-        """Kullanıcı dostu string gösterimi"""
-        # Sıfır olmayan bileşenleri bul
-        non_zero = [(i, c) for i, c in enumerate(self.coeffs) if abs(c) > 1e-10]
-
-        if len(non_zero) == 0:
-            return "ChingonNumber(0)"
-        elif len(non_zero) <= 4:
-            # Az sayıda sıfır olmayan bileşen varsa hepsini göster
-            parts = [f"c{i}={c:.6g}" for i, c in non_zero]
-            return f"ChingonNumber({', '.join(parts)})"
-        else:
-            # Çok sayıda bileşen varsa özet göster
-            first = non_zero[:2]
-            last = non_zero[-1]
-            parts = [f"c{i}={c:.3g}" for i, c in first]
-            return f"ChingonNumber({', '.join(parts)}, ..., c{last[0]}={last[1]:.3g})"
-
-    def __repr__(self) -> str:
-        """Teknik string gösterimi"""
-        return f"ChingonNumber({self.coeffs})"
-
-    def __format__(self, format_spec: str) -> str:
-        """Formatlama desteği"""
-        if not format_spec:
-            return str(self)
-
-        if format_spec == "short":
-            # Kısa format
-            return f"CN[{self.coeffs[0]:.3g}, ..., {self.coeffs[-1]:.3g}]"
-        elif format_spec == "full":
-            # Tam format
-            return f"ChingonNumber({', '.join(f'{c:.6g}' for c in self.coeffs)})"
-        elif format_spec.startswith("prec"):
-            # Hassasiyet belirtilen format
+        # Special handling for complex numbers
+        if isinstance(a, complex) or isinstance(b, complex):
             try:
-                prec = int(format_spec[4:])
-                return f"CN[{', '.join(f'{c:.{prec}f}' for c in self.coeffs[:3])}, ...]"
+                return complex(a) / complex(b)
+            except ZeroDivisionError:
+                return complex(float('inf'), 0)
+
+        # Special handling for Fraction type
+        if 'Fraction' in str(type(a)) or 'Fraction' in str(type(b)):
+            try:
+                from fractions import Fraction
+                a_frac = Fraction(str(a)) if not isinstance(a, Fraction) else a
+                b_frac = Fraction(str(b)) if not isinstance(b, Fraction) else b
+                return a_frac / b_frac
             except:
-                return str(self)
-        else:
-            return str(self)
+                pass
 
-    # ===== ARİTMETİK İŞLEMLER =====
-    # Tüm overload'ları birlikte tanımla
-    @overload
-    def __add__(self, other: "ChingonNumber") -> "ChingonNumber": ...
+        # For custom number types that might have their own division
+        if hasattr(a, '__truediv__'):
+            try:
+                return a.__truediv__(b)
+            except:
+                pass
 
-    @overload
-    def __add__(self, other: int) -> "ChingonNumber": ...
+        if hasattr(a, '__div__'):
+            try:
+                return a.__div__(b)
+            except:
+                pass
 
-    @overload
-    def __add__(self, other: float) -> "ChingonNumber": ...
+        # Standard division for numeric types
+        return a / b
 
-    @overload
-    def __add__(self, other: complex) -> "ChingonNumber": ...
+    except ZeroDivisionError:
+        logger.warning(f"ZeroDivisionError: {a} / {b}")
+        # Try to return appropriate infinity
+        try:
+            # Get sign of a
+            if hasattr(a, '__float__'):
+                a_float = float(a)
+                inf_val = float('inf') if a_float >= 0 else float('-inf')
+            else:
+                inf_val = float('inf')
+            
+            # Try to convert to same type as a
+            if hasattr(type(a), '__call__'):
+                return type(a)(inf_val)
+            return inf_val
+        except:
+            return float('inf')
+    
+    except TypeError as e:
+        logger.warning(f"TypeError in division {a} / {b}: {e}")
+        # Try to convert to compatible types
+        try:
+            # Convert both to float if possible
+            a_float = float(a) if hasattr(a, '__float__') else a
+            b_float = float(b) if hasattr(b, '__float__') else b
+            return a_float / b_float
+        except:
+            # If conversion fails, try string-based approach for fractions
+            try:
+                from fractions import Fraction
+                a_str = str(a)
+                b_str = str(b)
+                result = Fraction(a_str) / Fraction(b_str)
+                # Convert back to original type if possible
+                if hasattr(type(a), '__call__'):
+                    try:
+                        return type(a)(float(result))
+                    except:
+                        return type(a)(str(result))
+                return float(result)
+            except:
+                raise ValueError(f"Cannot divide {type(a)} by {type(b)}")
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in division: {e}")
+        return a  # Return original as fallback
 
-    # Gerçek implementasyon (tüm overload'lardan sonra)
-    def __add__(self, other: Any) -> Any:
-        """Toplama: self + other"""
-        if isinstance(other, ChingonNumber):
-            return ChingonNumber([a + b for a, b in zip(self.coeffs, other.coeffs)])
-        elif isinstance(other, (int, float)):
-            new_coeffs = self.coeffs.copy()
-            new_coeffs[0] += float(other)
-            return ChingonNumber(new_coeffs)
-        elif isinstance(other, complex):
-            new_coeffs = self.coeffs.copy()
-            new_coeffs[0] += float(other.real)
-            if len(new_coeffs) > 1:
-                new_coeffs[1] += float(other.imag)
-            return ChingonNumber(new_coeffs)
-        return NotImplemented
 
-    @overload
-    def __radd__(self, other: Union[int, float]) -> "ChingonNumber": ...
+# Daha iyi mod fonksiyonu
+def _safe_mod(a: Any, b: Any) -> Any:
+    """Safe modulo operation with better type support."""
+    try:
+        # Check for zero
+        if hasattr(b, "__float__"):
+            b_float = float(b)
+            if abs(b_float) < 1e-12:
+                logger.warning(f"Modulo by near-zero value: {b}")
+                raise ZeroDivisionError("Modulo by (near) zero")
 
-    def __radd__(self, other: Any) -> Any:
-        """Sağdan toplama: other + self"""
-        return self.__add__(other)
+        # Special handling for integers and floats
+        if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+            return a % b
 
-    @overload
-    def __sub__(self, other: "ChingonNumber") -> "ChingonNumber": ...
+        # For custom types with __mod__ method
+        if hasattr(a, '__mod__'):
+            return a % b
 
-    @overload
-    def __sub__(self, other: Union[int, float]) -> "ChingonNumber": ...
+        # For complex numbers, modulus returns magnitude
+        if isinstance(a, complex):
+            return abs(a) % abs(b) if isinstance(b, complex) else abs(a) % b
 
-    def __sub__(self, other: Any) -> Any:
-        """Çıkarma: self - other"""
-        if isinstance(other, ChingonNumber):
-            return ChingonNumber([a - b for a, b in zip(self.coeffs, other.coeffs)])
-        elif isinstance(other, (int, float)):
-            new_coeffs = self.coeffs.copy()
-            new_coeffs[0] -= float(other)
-            return ChingonNumber(new_coeffs)
-        elif isinstance(other, complex):
-            new_coeffs = self.coeffs.copy()
-            new_coeffs[0] -= float(other.real)
-            if len(new_coeffs) > 1:
-                new_coeffs[1] -= float(other.imag)
-            return ChingonNumber(new_coeffs)
-        elif isinstance(other, np.ndarray):
-            if other.shape == (64,):
-                return ChingonNumber((self.n - other).tolist())
-        return NotImplemented
+        # Try to convert to float
+        a_float = float(a) if hasattr(a, '__float__') else a
+        b_float = float(b) if hasattr(b, '__float__') else b
+        
+        return a_float % b_float
 
-    @overload
-    def __rsub__(self, other: Union[int, float]) -> "ChingonNumber": ...
+    except ZeroDivisionError:
+        logger.warning(f"Modulo by zero: {a} % {b}")
+        # For modulo by zero, return the dividend (mathematical convention in some systems)
+        return a
+    
+    except TypeError as e:
+        logger.warning(f"TypeError in modulo {a} % {b}: {e}")
+        # Try alternative approaches
+        try:
+            # Convert to decimal
+            from decimal import Decimal, InvalidOperation
+            a_dec = Decimal(str(a))
+            b_dec = Decimal(str(b))
+            if b_dec == 0:
+                return a_dec
+            # Python Decimal doesn't have % operator, use remainder method
+            return float(a_dec % b_dec)
+        except:
+            # Last resort: return a
+            return a
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in modulo: {e}")
+        return a
 
-    def __rsub__(self, other: Any) -> Any:
-        """Sağdan çıkarma: other - self"""
-        if isinstance(other, (int, float)):
-            new_coeffs = [-c for c in self.coeffs]
-            new_coeffs[0] += float(other)
-            return ChingonNumber(new_coeffs)
-        elif isinstance(other, complex):
-            new_coeffs = [-c for c in self.coeffs]
-            new_coeffs[0] += float(other.real)
-            if len(new_coeffs) > 1:
-                new_coeffs[1] += float(other.imag)
-            return ChingonNumber(new_coeffs)
-        elif isinstance(other, np.ndarray):
-            if other.shape == (64,):
-                return ChingonNumber((other - self.n).tolist())
-        return NotImplemented
 
-    @overload
-    def __mul__(self, other: "ChingonNumber") -> "ChingonNumber": ...
+# Daha iyi power fonksiyonu
+def _safe_power(a: Any, b: Any) -> Any:
+    """Safe power operation with better type support."""
+    try:
+        # For standard numeric types
+        if isinstance(a, (int, float, complex)) and isinstance(b, (int, float)):
+            # Handle negative base with non-integer exponent
+            if isinstance(a, (int, float)) and a < 0 and not float(b).is_integer():
+                # This results in complex number
+                import cmath
+                result = cmath.exp(b * cmath.log(a))
+                logger.debug(f"Complex result from {a} ** {b}: {result}")
+                return result
+            return a ** b
 
-    @overload
-    def __mul__(self, other: Union[int, float]) -> "ChingonNumber": ...
+        # For complex numbers
+        if isinstance(a, complex) or isinstance(b, complex):
+            return complex(a) ** complex(b)
 
-    def __mul__(self, other: Any) -> Any:
-        """Çarpma: self * other"""
-        if isinstance(other, ChingonNumber):
-            # Hadamard product (element-wise multiplication)
-            return ChingonNumber([a * b for a, b in zip(self.coeffs, other.coeffs)])
-        elif isinstance(other, (int, float)):
-            return ChingonNumber([c * float(other) for c in self.coeffs])
-        elif isinstance(other, complex):
-            # Complex çarpma: sadece real kısmı al
-            return ChingonNumber([c * float(other.real) for c in self.coeffs])
-        elif isinstance(other, np.ndarray):
-            if other.shape == (64,):
-                return ChingonNumber((self.n * other).tolist())
-        return NotImplemented
+        # For custom types with __pow__ method
+        if hasattr(a, '__pow__'):
+            try:
+                return a ** b
+            except:
+                # Try with three arguments if needed
+                if hasattr(a, '__pow__') and callable(getattr(a, '__pow__')):
+                    return pow(a, b)
 
-    @overload
-    def __rmul__(self, other: Union[int, float]) -> "ChingonNumber": ...
+        # Try converting to float
+        a_float = float(a) if hasattr(a, '__float__') else a
+        b_float = float(b) if hasattr(b, '__float__') else b
+        
+        # Handle negative base with non-integer exponent
+        if isinstance(a_float, (int, float)) and a_float < 0 and not float(b_float).is_integer():
+            import cmath
+            return cmath.exp(b_float * cmath.log(a_float))
+        
+        return a_float ** b_float
 
-    def __rmul__(self, other: Any) -> Any:
-        """Sağdan çarpma: other * self"""
-        return self.__mul__(other)
+    except ValueError as e:
+        logger.warning(f"ValueError in power {a} ** {b}: {e}")
+        # Try using math.pow for real numbers
+        try:
+            import math
+            return math.pow(float(a), float(b))
+        except:
+            # Try using cmath for complex results
+            try:
+                import cmath
+                return cmath.exp(float(b) * cmath.log(float(a)))
+            except:
+                raise ValueError(f"Cannot compute {a} ** {b}")
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in power: {e}")
+        # Return a sensible default
+        if hasattr(a, '__mul__'):
+            try:
+                # Return a * a for b=2, or a for b=1, etc.
+                if b == 2:
+                    return a * a
+                elif b == 1:
+                    return a
+                elif b == 0:
+                    return type(a)(1) if hasattr(type(a), '__call__') else 1
+            except:
+                pass
+        return a
 
-    @overload
-    def __truediv__(self, other: Union[int, float]) -> "ChingonNumber": ...
 
-    @overload
-    def __truediv__(self, other: "ChingonNumber") -> "ChingonNumber": ...
+def _safe_mod(a: Any, b: Any) -> Any:
+    """Safe modulo operation."""
+    try:
+        # Check if b is effectively zero
+        if hasattr(b, "__abs__") and abs(b) < 1e-12:
+            logger.warning("Modulo by near-zero value")
+            return a  # Return original
 
-    def __truediv__(self, other: Any) -> Any:
-        """Bölme: self / other"""
-        if isinstance(other, (int, float)):
-            if abs(float(other)) < 1e-12:
-                raise ZeroDivisionError("Division by zero")
-            return ChingonNumber([c / float(other) for c in self.coeffs])
-        elif isinstance(other, ChingonNumber):
-            # Element-wise division
-            new_coeffs: List[float] = []
-            for a, b in zip(self.coeffs, other.coeffs):
-                if abs(b) < 1e-12:
-                    # Sıfıra bölme
-                    if abs(a) < 1e-12:
-                        new_coeffs.append(float("nan"))  # 0/0
-                    else:
-                        new_coeffs.append(float("inf") if a >= 0 else float("-inf"))
-                else:
-                    new_coeffs.append(a / b)
-            return ChingonNumber(new_coeffs)
-        elif isinstance(other, complex):
-            if abs(other) < 1e-12:
-                raise ZeroDivisionError("Division by complex zero")
-            return ChingonNumber([c / abs(other) for c in self.coeffs])
-        elif isinstance(other, np.ndarray):
-            if other.shape == (64,):
-                with np.errstate(divide="ignore", invalid="ignore"):
-                    result = self.n / other
-                    result[np.isinf(result)] = float("inf")
-                    result[np.isnan(result)] = float("nan")
-                return ChingonNumber(result.tolist())
-        return NotImplemented
+        return a % b
+    except Exception as e:
+        logger.warning(f"Modulo error: {e}")
+        return a  # Return original value on error
 
-    @overload
-    def __rtruediv__(self, other: Union[int, float]) -> "ChingonNumber": ...
 
-    def __rtruediv__(self, other: Any) -> Any:
-        """Sağdan bölme: other / self"""
-        if isinstance(other, (int, float)):
-            new_coeffs: List[float] = []
-            other_float = float(other)
-            for c in self.coeffs:
-                if abs(c) < 1e-12:
-                    if abs(other_float) < 1e-12:
-                        new_coeffs.append(float("nan"))
-                    else:
-                        new_coeffs.append(
-                            float("inf") if other_float >= 0 else float("-inf")
-                        )
-                else:
-                    new_coeffs.append(other_float / c)
-            return ChingonNumber(new_coeffs)
-        elif isinstance(other, complex):
-            new_coeffs = []
-            other_complex = complex(other)
-            for c in self.coeffs:
-                if abs(c) < 1e-12:
-                    if abs(other_complex) < 1e-12:
-                        new_coeffs.append(float("nan"))
-                    else:
-                        new_coeffs.append(float("inf"))
-                else:
-                    new_coeffs.append(abs(other_complex) / abs(c))
-            return ChingonNumber(new_coeffs)
-        elif isinstance(other, np.ndarray):
-            if other.shape == (64,):
-                with np.errstate(divide="ignore", invalid="ignore"):
-                    result = other / self.n
-                    result[np.isinf(result)] = float("inf")
-                    result[np.isnan(result)] = float("nan")
-                return ChingonNumber(result.tolist())
-        return NotImplemented
+def _safe_float(value: Any) -> float:
+    """
+    Güvenli float dönüşümü.
 
-    def __floordiv__(self, other: Any) -> "ChingonNumber":
-        """Tam sayı bölme: self // other"""
-        if isinstance(other, (int, float)):
-            if abs(float(other)) < 1e-12:
-                raise ZeroDivisionError("Integer division by zero")
-            return ChingonNumber([c // float(other) for c in self.coeffs])
-        elif isinstance(other, complex):
-            if abs(other) < 1e-12:
-                raise ZeroDivisionError("Integer division by complex zero")
-            return ChingonNumber([c // abs(other) for c in self.coeffs])
-        return NotImplemented
+    Args:
+        value: Dönüştürülecek değer
 
-    def __mod__(self, other: Any) -> "ChingonNumber":
-        """Modülüs: self % other"""
-        if isinstance(other, (int, float)):
-            if abs(float(other)) < 1e-12:
-                raise ZeroDivisionError("Modulo by zero")
-            return ChingonNumber([c % float(other) for c in self.coeffs])
-        elif isinstance(other, complex):
-            if abs(other) < 1e-12:
-                raise ZeroDivisionError("Modulo by complex zero")
-            return ChingonNumber([c % abs(other) for c in self.coeffs])
-        return NotImplemented
-
-    def __pow__(self, exponent: Any) -> "ChingonNumber":
-        """Üs alma: self ** exponent"""
-        if isinstance(exponent, (int, float)):
-            return ChingonNumber([c ** float(exponent) for c in self.coeffs])
-        elif isinstance(exponent, complex):
-            return ChingonNumber([c ** abs(exponent) for c in self.coeffs])
-        return NotImplemented
-
-    def __neg__(self) -> "ChingonNumber":
-        """Negatif: -self"""
-        return ChingonNumber([-c for c in self.coeffs])
-
-    def __pos__(self) -> "ChingonNumber":
-        """Pozitif: +self"""
-        return self
-
-    def __abs__(self) -> float:
-        """Mutlak değer (büyüklük/norm)"""
-        return self.norm()
-
-    # ===== KARŞILAŞTIRMA İŞLEMLERİ =====
-
-    def __eq__(self, other: Any) -> bool:
-        """Eşitlik: self == other"""
-        if isinstance(other, ChingonNumber):
-            return np.allclose(self.coeffs, other.coeffs, atol=1e-10)
-        elif isinstance(other, (int, float)):
-            return np.allclose(self.coeffs, [float(other)] + [0.0] * 63, atol=1e-10)
-        elif isinstance(other, complex):
-            return (
-                abs(self.coeffs[0] - other.real) < 1e-10
-                and abs(self.coeffs[1] - other.imag) < 1e-10
-                and np.allclose(self.coeffs[2:], [0.0] * 62, atol=1e-10)
-            )
-        return NotImplemented
-
-    def __ne__(self, other: Any) -> bool:
-        """Eşit değil: self != other"""
-        result = self.__eq__(other)
-        if result is NotImplemented:
-            return NotImplemented
-        return not result
-
-    def __lt__(self, other: Any) -> bool:
-        """Küçük: self < other"""
-        if isinstance(other, (int, float)):
-            return self.norm() < float(other)
-        elif isinstance(other, ChingonNumber):
-            return self.norm() < other.norm()
-        return NotImplemented
-
-    def __le__(self, other: Any) -> bool:
-        """Küçük veya eşit: self <= other"""
-        if isinstance(other, (int, float)):
-            return self.norm() <= float(other)
-        elif isinstance(other, ChingonNumber):
-            return self.norm() <= other.norm()
-        return NotImplemented
-
-    def __gt__(self, other: Any) -> bool:
-        """Büyük: self > other"""
-        if isinstance(other, (int, float)):
-            return self.norm() > float(other)
-        elif isinstance(other, ChingonNumber):
-            return self.norm() > other.norm()
-        return NotImplemented
-
-    def __ge__(self, other: Any) -> bool:
-        """Büyük veya eşit: self >= other"""
-        if isinstance(other, (int, float)):
-            return self.norm() >= float(other)
-        elif isinstance(other, ChingonNumber):
-            return self.norm() >= other.norm()
-        return NotImplemented
-
-    # ===== MATEMATİKSEL FONKSİYONLAR =====
-
-    def norm(self) -> float:
-        """Euclidean norm (büyüklük)"""
-        return float(np.linalg.norm(self.coeffs))
-
-    def norm_squared(self) -> float:
-        """Norm karesi"""
-        return float(np.dot(self.coeffs, self.coeffs))
-
-    def magnitude(self) -> float:
-        """Büyüklük (norm ile aynı)"""
-        return self.norm()
-
-    def normalize(self) -> "ChingonNumber":
-        """Birim norma normalize et"""
-        mag = self.norm()
-        if mag < 1e-12:
-            return ChingonNumber.zeros()
-        return ChingonNumber([c / mag for c in self.coeffs])
-
-    def conjugate(self) -> "ChingonNumber":
-        """Karmaşık eşlenik benzeri"""
-        return ChingonNumber([-c for c in self.coeffs])
-
-    def dot(self, other: "ChingonNumber") -> float:
-        """İç çarpım"""
-        if not isinstance(other, ChingonNumber):
-            raise TypeError(f"Dot product requires ChingonNumber, got {type(other)}")
-        return float(np.dot(self.coeffs, other.coeffs))
-
-    def cross(self, other: "ChingonNumber") -> "ChingonNumber":
-        """Çapraz çarpım (ilk 3 bileşen için)"""
-        if not isinstance(other, ChingonNumber):
-            raise TypeError(f"Cross product requires ChingonNumber, got {type(other)}")
-
-        # İlk 3 bileşen için 3D cross product
-        a1, a2, a3 = self.coeffs[0], self.coeffs[1], self.coeffs[2]
-        b1, b2, b3 = other.coeffs[0], other.coeffs[1], other.coeffs[2]
-
-        result = [a2 * b3 - a3 * b2, a3 * b1 - a1 * b3, a1 * b2 - a2 * b1] + [0.0] * 61
-
-        return ChingonNumber(result)
-
-    def phase(self) -> float:
-        """Faz açısı (gerçek kısım için)"""
-        if self.norm() < 1e-12:
+    Returns:
+        Float değeri
+    """
+    if isinstance(value, (float, int)):
+        return float(value)
+    elif isinstance(value, complex):
+        return float(value.real)
+    elif isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            value_upper = value.upper().strip()
+            if value_upper in ["", "NAN", "NULL", "NONE"]:
+                return 0.0
+            elif value_upper in ["INF", "INFINITY"]:
+                return float("inf")
+            elif value_upper in ["-INF", "-INFINITY"]:
+                return float("-inf")
+            elif value == "+":
+                return 1.0
+            elif value == "-":
+                return -1.0
             return 0.0
-        return (
-            math.atan2(self.coeffs[1], self.coeffs[0]) if len(self.coeffs) > 1 else 0.0
-        )
+    else:
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return 0.0
 
-    def to_polar(self) -> Tuple[float, float]:
-        """Kutupsal koordinatlara dönüşüm"""
-        return self.norm(), self.phase()
+def _safe_float_convert(value: Any) -> float:
+    """
+    Güvenli float dönüşümü.
 
-    # ===== DÖNÜŞÜMLER =====
+    Args:
+        value: Dönüştürülecek değer
 
-    def to_list(self) -> List[float]:
-        """Liste olarak döndür"""
-        return self.coeffs.copy()
-
-    def to_tuple(self) -> Tuple[float, ...]:
-        """Tuple olarak döndür"""
-        return tuple(self.coeffs)
-
-    def to_numpy(self) -> np.ndarray:
-        """NumPy array olarak döndür"""
-        return np.array(self.coeffs, dtype=np.float64)
-
-    def to_complex(self) -> complex:
-        """Complex sayıya dönüştür (ilk 2 bileşen)"""
-        return complex(self.coeffs[0], self.coeffs[1] if len(self.coeffs) > 1 else 0.0)
-
-    def to_dict(self) -> Dict[str, float]:
-        """Sözlük olarak döndür"""
-        return {f"c{i}": c for i, c in enumerate(self.coeffs)}
-
-    def to_string(self, precision: int = 6, fmt: str = "comma") -> str:
-        """String'e dönüştür"""
-        if fmt == "comma":
-            return ",".join(f"{c:.{precision}f}" for c in self.coeffs)
-        elif fmt == "bracket":
-            return f"[{', '.join(f'{c:.{precision}f}' for c in self.coeffs)}]"
-        elif fmt == "symbolic":
-            parts = []
-            for i, c in enumerate(self.coeffs):
-                if abs(c) > 1e-10:
-                    if i == 0:
-                        parts.append(f"{c:.{precision}f}")
-                    else:
-                        parts.append(f"{c:.{precision}f}e{i}")
-            return " + ".join(parts) if parts else "0"
-        else:
-            return str(self)
-
-    # ===== YARDIMCI METODLAR =====
-
-    def copy(self) -> "ChingonNumber":
-        """Kopyasını oluştur"""
-        return ChingonNumber(self.coeffs.copy())
-
-    def is_zero(self, tolerance: float = 1e-12) -> bool:
-        """Sıfıra yakın mı kontrol et"""
-        return self.norm() < tolerance
-
-    def is_unit(self, tolerance: float = 1e-12) -> bool:
-        """Birim vektör mü kontrol et"""
-        return abs(self.norm() - 1.0) < tolerance
-
-    def max_component(self) -> Tuple[int, float]:
-        """En büyük bileşeni ve değerini döndür"""
-        idx = int(np.argmax(np.abs(self.coeffs)))  # numpy int'i Python int'e çevir
-        return idx, self.coeffs[idx]
-
-    def min_component(self) -> Tuple[int, float]:
-        """En küçük bileşeni ve değerini döndür"""
-        idx = int(np.argmin(np.abs(self.coeffs)))  # numpy int'i Python int'e çevir
-        return idx, self.coeffs[idx]
-
-    def apply(self, func: Callable[[float], float]) -> "ChingonNumber":
-        """Fonksiyonu tüm bileşenlere uygula"""
-        return ChingonNumber([func(c) for c in self.coeffs])
-
-    def sum(self) -> float:
-        """Tüm bileşenlerin toplamı"""
-        return sum(self.coeffs)
-
-    def mean(self) -> float:
-        """Bileşenlerin ortalaması"""
-        return sum(self.coeffs) / 64
-
-    def std(self) -> float:
-        """Bileşenlerin standart sapması"""
-        mean = self.mean()
-        variance = sum((c - mean) ** 2 for c in self.coeffs) / 64
-        return math.sqrt(variance)
-
-    def abs(self) -> "ChingonNumber":
-        """Her bileşenin mutlak değeri"""
-        return ChingonNumber([abs(c) for c in self.coeffs])
-
-    def sign(self) -> "ChingonNumber":
-        """Her bileşenin işareti"""
-        return ChingonNumber([1.0 if c >= 0 else -1.0 for c in self.coeffs])
-
-    def floor(self) -> "ChingonNumber":
-        """Her bileşenin taban değeri"""
-        return ChingonNumber([math.floor(c) for c in self.coeffs])
-
-    def ceil(self) -> "ChingonNumber":
-        """Her bileşenin tavan değeri"""
-        return ChingonNumber([math.ceil(c) for c in self.coeffs])
-
-    def round(self, decimals: int = 0) -> "ChingonNumber":
-        """Her bileşeni yuvarla"""
-        return ChingonNumber([round(c, decimals) for c in self.coeffs])
-
-    def clip(
-        self, min_val: float = -float("inf"), max_val: float = float("inf")
-    ) -> "ChingonNumber":
-        """Bileşenleri sınırla"""
-        return ChingonNumber([max(min_val, min(max_val, c)) for c in self.coeffs])
-
-    # ===== OPERATÖRLER =====
-
-    def __hash__(self) -> int:
-        """Hash değeri"""
-        # Yuvarlama ile hassasiyet sorunlarını önle
-        rounded = tuple(round(c, 12) for c in self.coeffs)
-        return hash(rounded)
-
-    def __bool__(self) -> bool:
-        """Boolean dönüşümü"""
-        return not self.is_zero()
-
-    def __complex__(self) -> complex:
-        """Complex dönüşümü"""
-        return self.to_complex()
-
-    def __float__(self) -> float:
-        """Float dönüşümü (ilk bileşen)"""
-        return float(self.coeffs[0])
-
-    def __int__(self) -> int:
-        """Integer dönüşümü (ilk bileşen)"""
-        return int(self.coeffs[0])
-
-    def __contains__(self, value: float) -> bool:
-        """İçerik kontrolü"""
-        return any(abs(c - value) < 1e-10 for c in self.coeffs)
-
-    def __reversed__(self) -> Generator[float, None, None]:
-        """Tersine iterasyon"""
-        return (c for c in reversed(self.coeffs))
-
-    def __sizeof__(self) -> int:
-        """Bellek boyutu"""
-        import sys
-
-        return sys.getsizeof(self.coeffs) + sys.getsizeof(self._np_array or 0)
-
+    Returns:
+        Float değeri veya 0.0
+    """
+    if isinstance(value, (float, int)):
+        return float(value)
+    elif isinstance(value, complex):
+        return float(value.real)  # veya abs(value) seçeneği
+    elif isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            # Özel semboller
+            value_upper = value.upper().strip()
+            if value_upper in ["", "NAN", "NULL", "NONE"]:
+                return 0.0
+            elif value_upper == "INF" or value_upper == "INFINITY":
+                return float("inf")
+            elif value_upper == "-INF" or value_upper == "-INFINITY":
+                return float("-inf")
+            # '+' veya '-' işaretleri
+            elif value == "+":
+                return 1.0
+            elif value == "-":
+                return -1.0
+            else:
+                try:
+                    # Karmaşık sayı string'i olabilir
+                    if "j" in value or "J" in value:
+                        c = complex(value)
+                        return float(c.real)
+                except ValueError:
+                    pass
+                return 0.0
+    else:
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return 0.0
 
 # ===== GLOBAL FONKSİYONLAR =====
-
-
 def chingon_zeros() -> ChingonNumber:
     """Sıfır ChingonNumber"""
     return ChingonNumber.zeros()
@@ -2665,21 +1631,1813 @@ def chingon_unit_vector(index: int) -> ChingonNumber:
     coeffs[index] = 1.0
     return ChingonNumber(coeffs)
 
+# Yardımcı fonksiyon: Sequence'i temizle
+def clean_sequence_for_plotting(sequence: List[Any]) -> List[Any]:
+    """
+    Her türlü sequence'i plot fonksiyonu için temizler.
+    """
+    if not sequence:
+        return []
+
+    # Eğer dictionary listesi ise
+    if isinstance(sequence[0], dict):
+        cleaned = []
+        for item in sequence:
+            if isinstance(item, dict):
+                # Önce 'value' anahtarını ara
+                for key in ["value", "result", "numeric_value", "added", "modified"]:
+                    if key in item:
+                        cleaned.append(item[key])
+                        break
+                else:
+                    cleaned.append(0)
+            else:
+                cleaned.append(item)
+        sequence = cleaned
+
+    # String, tuple, list içeriyorsa temizle
+    cleaned_sequence = []
+    for item in sequence:
+        cleaned_sequence.append(extract_numeric_value(item))
+
+    return cleaned_sequence
+
+
+def extract_numeric_value(item: Any) -> float:
+    """
+    Her türlü değerden sayısal değer çıkar.
+    Tüm dönüşümler float tipinde olacak.
+    """
+    # 1. Doğrudan sayısal tipler
+    if isinstance(item, (int, float)):
+        return float(item)
+
+    # 2. Fraction tipi
+    if isinstance(item, Fraction):
+        return float(item)
+
+    # 3. Decimal tipi
+    if isinstance(item, Decimal):
+        return float(item)
+
+    # 4. Complex sayılar (sadece gerçek kısmı)
+    if isinstance(item, complex):
+        return float(item.real)
+
+    # 5. String işleme
+    if isinstance(item, str):
+        item = item.strip()
+        if not item:
+            return 0.0
+
+        # Kesir kontrolü
+        if "/" in item:
+            try:
+                # Örnek: "3/4", "1 1/2"
+                if " " in item:  # Karışık sayı: "1 1/2"
+                    whole, fraction = item.split(" ", 1)
+                    num, den = fraction.split("/")
+                    return float(whole) + (float(num) / float(den))
+                else:  # Basit kesir: "3/4"
+                    num, den = item.split("/")
+                    return float(num) / float(den)
+            except (ValueError, ZeroDivisionError):
+                pass
+
+        # Normal sayısal dize
+        try:
+            # Bilimsel gösterim ve diğer formatları da destekle
+            return float(item)
+        except (ValueError, TypeError):
+            return 0.0
+
+    # 6. Dizi/Iterable tipler
+    if isinstance(item, (tuple, list, set)):
+        for element in item:
+            value = extract_numeric_value(element)
+            if value != 0:
+                return value
+        return 0.0
+
+    # 7. Diğer tipler için deneme
+    try:
+        return float(item)
+    except (ValueError, TypeError, AttributeError):
+        return 0.0
+
+
+def extract_numeric_values(sequence: List[Any], strict: bool = False) -> List[float]:
+    """
+    Her türlü değerden sayısal değerleri çıkar.
+
+    Args:
+        sequence: İşlenecek dizi
+        strict: True ise, dönüştürülemeyen değerler için ValueError fırlatır
+
+    Returns:
+        Sayısal değerler listesi
+    """
+    result: List[float] = []
+
+    for item in sequence:
+        try:
+            value = extract_numeric_value(item)
+            result.append(value)
+        except Exception as e:
+            if strict:
+                raise ValueError(
+                    f"Failed to extract numeric value from {item!r}"
+                ) from e
+            result.append(0.0)
+
+    return result
+
+
+# Ek yardımcı fonksiyonlar
+def extract_clean_numbers(
+    sequence: List[Any], remove_zeros: bool = False
+) -> List[float]:
+    """
+    Temiz sayısal değerleri çıkar ve opsiyonel olarak sıfırları kaldır.
+    """
+    values = extract_numeric_values(sequence)
+    if remove_zeros:
+        values = [v for v in values if v != 0]
+    return values
+
+
+def find_first_numeric(sequence: List[Any]) -> Optional[float]:
+    """
+    Dizideki ilk geçerli sayısal değeri bulur.
+    """
+    for item in sequence:
+        value = extract_numeric_value(item)
+        if value != 0:
+            return value
+    return None
+
+
+def extract_fraction_values(
+    sequence: List[Any],
+) -> tuple[List[float], List[int], List[int]]:
+    """Safely extract values from Fraction sequence."""
+    float_vals: List[float] = []
+    numerators: List[int] = []
+    denominators: List[int] = []
+
+    for item in sequence:
+        if isinstance(item, Fraction):
+            float_vals.append(float(item))
+            numerators.append(item.numerator)
+            denominators.append(item.denominator)
+        else:
+            # Diğer tipler için fallback
+            try:
+                float_vals.append(float(item))
+                # Fraction olmadığı için pay/payda uydur
+                if isinstance(item, (int, float)):
+                    numerators.append(int(item))
+                    denominators.append(1)
+                else:
+                    numerators.append(0)
+                    denominators.append(1)
+            except (ValueError, TypeError):
+                float_vals.append(0.0)
+                numerators.append(0)
+                denominators.append(1)
+
+    return float_vals, numerators, denominators
+
+
+def extract_complex_values(
+    sequence: List[Any],
+) -> tuple[List[float], List[float], List[float]]:
+    """Safely extract complex values."""
+    real_parts: List[float] = []
+    imag_parts: List[float] = []
+    magnitudes: List[float] = []
+
+    for item in sequence:
+        if isinstance(item, complex):
+            real_parts.append(float(item.real))
+            imag_parts.append(float(item.imag))
+            magnitudes.append(float(abs(item)))
+        else:
+            # Complex değilse sıfır ekle
+            real_parts.append(0.0)
+            imag_parts.append(0.0)
+            magnitudes.append(0.0)
+
+    return real_parts, imag_parts, magnitudes
+
+# Fabrika fonksiyonları
+def neutrosophic_zero() -> NeutrosophicNumber:
+    """Sıfır Nötrosofik sayı"""
+    return NeutrosophicNumber(0, 0, 0)
+
+
+def neutrosophic_one() -> NeutrosophicNumber:
+    """Bir Nötrosofik sayı"""
+    return NeutrosophicNumber(1, 0, 0)
+
+
+def neutrosophic_i() -> NeutrosophicNumber:
+    """Belirsizlik birimi"""
+    return NeutrosophicNumber(0, 1, 0)
+
+
+def neutrosophic_f() -> NeutrosophicNumber:
+    """Yanlışlık birimi"""
+    return NeutrosophicNumber(0, 0, 1)
+
+def parse_to_hyperreal(s: Any) -> "HyperrealNumber":
+    """Parse to Hyperreal object directly"""
+    from typing import TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        from .kececinumbers import HyperrealNumber
+
+    finite, infinitesimal, seq = _parse_hyperreal(s)
+    return HyperrealNumber(sequence=seq)
+
+# Yardımcı fonksiyonlar
+def parse_to_neutrosophic(s: Any) -> "NeutrosophicNumber":
+    """Parse to NeutrosophicNumber object directly"""
+    from typing import TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        from .kececinumbers import NeutrosophicNumber
+
+    t, i, f = _parse_neutrosophic(s)
+    return NeutrosophicNumber(t, i, f)
+
+def _safe_divide(a: Any, b: Any) -> Any:
+    """Safe division with zero handling."""
+    try:
+        # Check if b is effectively zero
+        if hasattr(b, "__abs__"):
+            if abs(b) < 1e-12:  # Near zero threshold
+                # Return infinity or handle based on type
+                if hasattr(a, "__mul__"):
+                    try:
+                        return a * float("inf")
+                    except:
+                        pass
+                return (
+                    type(a)(float("inf"))
+                    if hasattr(type(a), "__call__")
+                    else float("inf")
+                )
+
+        return a / b
+    except ZeroDivisionError:
+        return type(a)(float("inf")) if hasattr(type(a), "__call__") else float("inf")
+    except Exception as e:
+        logger.warning(f"Division error: {e}")
+        return a  # Return original value on error
+
+
+def _safe_mod(a: Any, b: Any) -> Any:
+    """Safe modulo operation."""
+    try:
+        # Check if b is effectively zero
+        if hasattr(b, "__abs__") and abs(b) < 1e-12:
+            logger.warning("Modulo by near-zero value")
+            return a  # Return original
+
+        return a % b
+    except Exception as e:
+        logger.warning(f"Modulo error: {e}")
+        return a  # Return original value on error
+
+
+def _safe_power(a: Any, b: Any) -> Any:
+    """Safe power operation."""
+    try:
+        # For complex cases or special number types
+        if hasattr(a, "__pow__"):
+            return a**b
+        else:
+            # Fallback for basic types
+            return math.pow(float(a), float(b))
+    except Exception as e:
+        logger.warning(f"Power operation error: {e}")
+        return a  # Return original value on error
+
+
+# ==============================================================================
+# --- CUSTOM NUMBER CLASS DEFINITIONS ---
+# ==============================================================================
+class HypercomplexNumber:
+    """
+    Unified wrapper for Cayley-Dickson hypercomplex numbers.
+    Uses the cayley_dickson_algebra function for mathematically correct operations.
+    
+    Supports dimensions: 1, 2, 4, 8, 16, 32, 64, 128, 256 (powers of 2)
+    """
+    
+    # Dimension to class name mapping
+    DIMENSION_NAMES = {
+        1: "Real",
+        2: "Complex", 
+        4: "Quaternion",
+        8: "Octonion",
+        16: "Sedenion",
+        32: "Pathion",
+        64: "Chingon",
+        128: "Routon",
+        256: "Voudon"
+    }
+    
+    # Cache for CD algebra classes
+    _cd_classes = {}
+    
+    def __init__(self, *components: float, dimension: Optional[int] = None):
+        """
+        Initialize a hypercomplex number.
+        
+        Args:
+            *components: The components of the number
+            dimension: The dimension (must be power of 2). If None, inferred from components.
+        
+        Raises:
+            ValueError: If dimension is not a power of 2 or doesn't match components
+        """
+        # Determine dimension
+        if dimension is None:
+            # Find next power of 2 >= len(components)
+            n = len(components)
+            if n == 0:
+                dimension = 1
+            else:
+                # Find smallest power of 2 >= n
+                dimension = 1
+                while dimension < n:
+                    dimension <<= 1
+        else:
+            # Validate dimension
+            if dimension not in self.DIMENSION_NAMES:
+                raise ValueError(f"Dimension must be a power of 2 up to 256, got {dimension}")
+        
+        self.dimension = dimension
+        self._cd_class = self._get_cd_class(dimension)
+        
+        # Pad components with zeros if necessary
+        if len(components) < dimension:
+            components = list(components) + [0.0] * (dimension - len(components))
+        elif len(components) > dimension:
+            components = components[:dimension]
+        
+        # Create the CD number
+        self._cd_number = self._cd_class(*components)
+    
+    @classmethod
+    def _get_cd_class(cls, dimension: int):
+        """Get or create the Cayley-Dickson class for the given dimension."""
+        if dimension not in cls._cd_classes:
+            # Calculate level: dimension = 2^level
+            level = 0
+            temp = dimension
+            while temp > 1:
+                temp >>= 1
+                level += 1
+            
+            # Create the CD algebra
+            cls._cd_classes[dimension] = cayley_dickson_algebra(level, float)
+        
+        return cls._cd_classes[dimension]
+    
+    @classmethod
+    def from_cd_number(cls, cd_number) -> 'HypercomplexNumber':
+        """Create from an existing CD number."""
+        dimension = cd_number.dimensions
+        components = cd_number.coefficients()
+        return cls(*components, dimension=dimension)
+    
+    @property
+    def coeffs(self) -> List[float]:
+        """Get all coefficients as a list."""
+        return list(self._cd_number.coefficients())
+    
+    @property
+    def real(self) -> float:
+        """Get the real part."""
+        return self._cd_number.real_coefficient()
+    
+    @real.setter
+    def real(self, value: float):
+        """Set the real part by creating a new number."""
+        coeffs = self.coeffs
+        coeffs[0] = float(value)
+        self._cd_number = self._cd_class(*coeffs)
+    
+    @property
+    def imag(self) -> List[float]:
+        """Get imaginary parts (all except real)."""
+        return self.coeffs[1:]
+    
+    def __len__(self) -> int:
+        """Return dimension."""
+        return self.dimension
+    
+    def __getitem__(self, index: int) -> float:
+        """Get component by index."""
+        return self.coeffs[index]
+    
+    def __iter__(self):
+        """Iterate over components."""
+        return iter(self.coeffs)
+    
+    # Arithmetic operations
+    def __add__(self, other: Union['HypercomplexNumber', float, int]) -> 'HypercomplexNumber':
+        """Addition."""
+        if isinstance(other, (int, float)):
+            # Convert scalar to same dimension
+            other_coeffs = [float(other)] + [0.0] * (self.dimension - 1)
+            other_cd = self._cd_class(*other_coeffs)
+            result = self._cd_number + other_cd
+        elif isinstance(other, HypercomplexNumber):
+            # Check if dimensions match
+            if self.dimension != other.dimension:
+                # Find common dimension (max of the two)
+                common_dim = max(self.dimension, other.dimension)
+                self_padded = self.pad_to_dimension(common_dim)
+                other_padded = other.pad_to_dimension(common_dim)
+                return self_padded + other_padded
+            
+            result = self._cd_number + other._cd_number
+        else:
+            return NotImplemented
+        
+        return HypercomplexNumber.from_cd_number(result)
+    
+    def __radd__(self, other: Union[float, int]) -> 'HypercomplexNumber':
+        """Right addition."""
+        return self.__add__(other)
+    
+    def __sub__(self, other: Union['HypercomplexNumber', float, int]) -> 'HypercomplexNumber':
+        """Subtraction."""
+        if isinstance(other, (int, float)):
+            other_coeffs = [float(other)] + [0.0] * (self.dimension - 1)
+            other_cd = self._cd_class(*other_coeffs)
+            result = self._cd_number - other_cd
+        elif isinstance(other, HypercomplexNumber):
+            if self.dimension != other.dimension:
+                common_dim = max(self.dimension, other.dimension)
+                self_padded = self.pad_to_dimension(common_dim)
+                other_padded = other.pad_to_dimension(common_dim)
+                return self_padded - other_padded
+            
+            result = self._cd_number - other._cd_number
+        else:
+            return NotImplemented
+        
+        return HypercomplexNumber.from_cd_number(result)
+    
+    def __rsub__(self, other: Union[float, int]) -> 'HypercomplexNumber':
+        """Right subtraction."""
+        if isinstance(other, (int, float)):
+            other_coeffs = [float(other)] + [0.0] * (self.dimension - 1)
+            other_cd = self._cd_class(*other_coeffs)
+            result = other_cd - self._cd_number
+            return HypercomplexNumber.from_cd_number(result)
+        return NotImplemented
+    
+    def __mul__(self, other: Union['HypercomplexNumber', float, int]) -> 'HypercomplexNumber':
+        """Multiplication using Cayley-Dickson construction."""
+        if isinstance(other, (int, float)):
+            # Scalar multiplication
+            result = self._cd_number * float(other)
+        elif isinstance(other, HypercomplexNumber):
+            if self.dimension != other.dimension:
+                common_dim = max(self.dimension, other.dimension)
+                self_padded = self.pad_to_dimension(common_dim)
+                other_padded = other.pad_to_dimension(common_dim)
+                return self_padded * other_padded
+            
+            # Use Cayley-Dickson multiplication
+            result = self._cd_number * other._cd_number
+        else:
+            return NotImplemented
+        
+        return HypercomplexNumber.from_cd_number(result)
+    
+    def __rmul__(self, other: Union[float, int]) -> 'HypercomplexNumber':
+        """Right multiplication."""
+        return self.__mul__(other)
+    
+    def __truediv__(self, other: Union['HypercomplexNumber', float, int]) -> 'HypercomplexNumber':
+        """Division."""
+        if isinstance(other, (int, float)):
+            if other == 0:
+                raise ZeroDivisionError("Cannot divide by zero")
+            result = self._cd_number / float(other)
+        elif isinstance(other, HypercomplexNumber):
+            if self.dimension != other.dimension:
+                common_dim = max(self.dimension, other.dimension)
+                self_padded = self.pad_to_dimension(common_dim)
+                other_padded = other.pad_to_dimension(common_dim)
+                return self_padded / other_padded
+            
+            result = self._cd_number / other._cd_number
+        else:
+            return NotImplemented
+        
+        return HypercomplexNumber.from_cd_number(result)
+    
+    def __rtruediv__(self, other: Union[float, int]) -> 'HypercomplexNumber':
+        """Right division."""
+        if isinstance(other, (int, float)):
+            other_coeffs = [float(other)] + [0.0] * (self.dimension - 1)
+            other_cd = self._cd_class(*other_coeffs)
+            result = other_cd / self._cd_number
+            return HypercomplexNumber.from_cd_number(result)
+        return NotImplemented
+    
+    def __neg__(self) -> 'HypercomplexNumber':
+        """Negation."""
+        result = -self._cd_number
+        return HypercomplexNumber.from_cd_number(result)
+    
+    def __pos__(self) -> 'HypercomplexNumber':
+        """Unary plus."""
+        return self
+    
+    def __abs__(self) -> float:
+        """Magnitude."""
+        return float(self._cd_number.norm())
+    
+    def __eq__(self, other: object) -> bool:
+        """Equality."""
+        if isinstance(other, HypercomplexNumber):
+            if self.dimension != other.dimension:
+                return False
+            return self._cd_number == other._cd_number
+        elif isinstance(other, (int, float)):
+            # Compare with scalar
+            if self.dimension == 1:
+                return self.real == float(other)
+            # For higher dimensions, check if only real part matches
+            return self.real == float(other) and all(abs(c) < 1e-12 for c in self.imag)
+        return False
+    
+    def __ne__(self, other: object) -> bool:
+        """Inequality."""
+        return not self.__eq__(other)
+    
+    def conjugate(self) -> 'HypercomplexNumber':
+        """Return the conjugate."""
+        result = self._cd_number.conjugate()
+        return HypercomplexNumber.from_cd_number(result)
+    
+    def norm(self) -> float:
+        """Return the norm (magnitude)."""
+        return float(self._cd_number.norm())
+    
+    def magnitude(self) -> float:
+        """Alias for norm."""
+        return self.norm()
+    
+    def norm_squared(self) -> float:
+        """Return the squared norm."""
+        return float(self._cd_number.norm_squared())
+    
+    def inverse(self) -> 'HypercomplexNumber':
+        """Return the multiplicative inverse."""
+        result = self._cd_number.inverse()
+        return HypercomplexNumber.from_cd_number(result)
+    
+    def normalize(self) -> 'HypercomplexNumber':
+        """Return a normalized version."""
+        norm = self.norm()
+        if norm == 0:
+            raise ZeroDivisionError("Cannot normalize zero hypercomplex number")
+        return HypercomplexNumber(*(c / norm for c in self.coeffs), dimension=self.dimension)
+    
+    def dot(self, other: 'HypercomplexNumber') -> float:
+        """Dot product."""
+        if not isinstance(other, HypercomplexNumber):
+            raise TypeError("Dot product requires another HypercomplexNumber")
+        
+        if self.dimension != other.dimension:
+            common_dim = max(self.dimension, other.dimension)
+            self_padded = self.pad_to_dimension(common_dim)
+            other_padded = other.pad_to_dimension(common_dim)
+            return self_padded.dot(other_padded)
+        
+        return sum(a * b for a, b in zip(self.coeffs, other.coeffs))
+    
+    def pad_to_dimension(self, new_dimension: int) -> 'HypercomplexNumber':
+        """Pad to a higher dimension with zeros."""
+        if new_dimension < self.dimension:
+            raise ValueError(f"Cannot pad to smaller dimension: {new_dimension} < {self.dimension}")
+        
+        if new_dimension == self.dimension:
+            return self
+        
+        coeffs = self.coeffs + [0.0] * (new_dimension - self.dimension)
+        return HypercomplexNumber(*coeffs, dimension=new_dimension)
+    
+    def truncate_to_dimension(self, new_dimension: int) -> 'HypercomplexNumber':
+        """Truncate to a smaller dimension."""
+        if new_dimension > self.dimension:
+            raise ValueError(f"Cannot truncate to larger dimension: {new_dimension} > {self.dimension}")
+        
+        if new_dimension == self.dimension:
+            return self
+        
+        coeffs = self.coeffs[:new_dimension]
+        return HypercomplexNumber(*coeffs, dimension=new_dimension)
+    
+    def to_list(self) -> List[float]:
+        """Convert to Python list."""
+        return self.coeffs.copy()
+    
+    def to_tuple(self) -> Tuple[float, ...]:
+        """Convert to tuple."""
+        return tuple(self.coeffs)
+    
+    def to_numpy(self) -> np.ndarray:
+        """Convert to numpy array."""
+        return np.array(self.coeffs, dtype=np.float64)
+    
+    def copy(self) -> 'HypercomplexNumber':
+        """Create a copy."""
+        return HypercomplexNumber(*self.coeffs, dimension=self.dimension)
+    
+    @property
+    def type_name(self) -> str:
+        """Get the type name (Real, Complex, Quaternion, etc.)."""
+        return self.DIMENSION_NAMES.get(self.dimension, f"CD{self.dimension}")
+    
+    def __str__(self) -> str:
+        """String representation."""
+        non_zero = [(i, c) for i, c in enumerate(self.coeffs) if abs(c) > 1e-10]
+        
+        if not non_zero:
+            return f"{self.type_name}(0)"
+        
+        if len(non_zero) <= 4:
+            parts = []
+            for i, c in non_zero:
+                if i == 0:
+                    parts.append(f"{c:.6f}")
+                else:
+                    sign = "+" if c >= 0 else "-"
+                    parts.append(f"{sign} {abs(c):.6f}e{i}")
+            return f"{self.type_name}({' '.join(parts)})"
+        else:
+            return f"{self.type_name}[{len(non_zero)} non-zero, real={self.real:.6f}, norm={self.norm():.6f}]"
+    
+    def __repr__(self) -> str:
+        """Detailed representation."""
+        return f"HypercomplexNumber({', '.join(map(str, self.coeffs))}, dimension={self.dimension})"
+    
+    def summary(self) -> str:
+        """Return a summary."""
+        non_zero = sum(1 for c in self.coeffs if abs(c) > 1e-10)
+        max_coeff = max(abs(c) for c in self.coeffs)
+        min_non_zero = min(abs(c) for c in self.coeffs if abs(c) > 0)
+        
+        return (f"{self.type_name} Summary:\n"
+                f"  Dimension: {self.dimension}\n"
+                f"  Non-zero components: {non_zero}\n"
+                f"  Real part: {self.real:.6f}\n"
+                f"  Norm: {self.norm():.6f}\n"
+                f"  Max component: {max_coeff:.6f}\n"
+                f"  Min non-zero: {min_non_zero:.6f if non_zero > 0 else 0}")
+
+# Yardımcı Fonksiyonlar:
+# Factory functions for specific hypercomplex types
+def Real(x: float) -> HypercomplexNumber:
+    """Create a real number (dimension 1)."""
+    return HypercomplexNumber(x, dimension=1)
+
+def Complex(real: float, imag: float) -> HypercomplexNumber:
+    """Create a complex number (dimension 2)."""
+    return HypercomplexNumber(real, imag, dimension=2)
+
+def Quaternion(w: float, x: float, y: float, z: float) -> HypercomplexNumber:
+    """Create a quaternion (dimension 4)."""
+    return HypercomplexNumber(w, x, y, z, dimension=4)
+
+def Octonion(*components) -> HypercomplexNumber:
+    """Create an octonion (dimension 8)."""
+    if len(components) != 8:
+        components = list(components) + [0.0] * (8 - len(components))
+    return HypercomplexNumber(*components, dimension=8)
+
+def Sedenion(*components) -> HypercomplexNumber:
+    """Create a sedenion (dimension 16)."""
+    if len(components) != 16:
+        components = list(components) + [0.0] * (16 - len(components))
+    return HypercomplexNumber(*components, dimension=16)
+
+def Pathion(*components) -> HypercomplexNumber:
+    """Create a pathion (dimension 32)."""
+    if len(components) != 32:
+        components = list(components) + [0.0] * (32 - len(components))
+    return HypercomplexNumber(*components, dimension=32)
+
+def Chingon(*components) -> HypercomplexNumber:
+    """Create a chingon (dimension 64)."""
+    if len(components) != 64:
+        components = list(components) + [0.0] * (64 - len(components))
+    return HypercomplexNumber(*components, dimension=64)
+
+def Routon(*components) -> HypercomplexNumber:
+    """Create a routon (dimension 128)."""
+    if len(components) != 128:
+        components = list(components) + [0.0] * (128 - len(components))
+    return HypercomplexNumber(*components, dimension=128)
+
+def Voudon(*components) -> HypercomplexNumber:
+    """Create a voudon (dimension 256)."""
+    if len(components) != 256:
+        components = list(components) + [0.0] * (256 - len(components))
+    return HypercomplexNumber(*components, dimension=256)
+
+class quaternion:
+    """
+    Kuaterniyon sınıfı: w + xi + yj + zk formatında
+    
+    Attributes:
+        w: Reel kısım
+        x: i bileşeni
+        y: j bileşeni
+        z: k bileşeni
+    """
+    
+    w: float = 1.0
+    x: float = 0.0
+    y: float = 0.0
+    z: float = 0.0
+    
+    def __init__(self, w: float = 1.0, x: float = 0.0, y: float = 0.0, z: float = 0.0):
+        """
+        Kuaterniyon oluşturur.
+        
+        Args:
+            w: Reel kısım
+            x: i bileşeni
+            y: j bileşeni
+            z: k bileşeni
+        """
+        self.w = float(w)
+        self.x = float(x)
+        self.y = float(y)
+        self.z = float(z)
+    
+    @classmethod
+    def from_axis_angle(cls, axis: Union[List[float], Tuple[float, float, float], np.ndarray], angle: float) -> 'quaternion':
+        """
+        Eksen-açı gösteriminden kuaterniyon oluşturur.
+        
+        Args:
+            axis: Dönme ekseni (3 boyutlu vektör)
+            angle: Radyan cinsinden dönme açısı
+        
+        Returns:
+            quaternion: Kuaterniyon nesnesi
+        """
+        axis = np.asarray(axis, dtype=float)
+        axis_norm = np.linalg.norm(axis)
+        
+        if axis_norm == 0:
+            raise ValueError("Eksen vektörü sıfır olamaz")
+        
+        axis = axis / axis_norm
+        half_angle = angle / 2.0
+        sin_half = math.sin(half_angle)
+        
+        return cls(
+            w=math.cos(half_angle),
+            x=axis[0] * sin_half,
+            y=axis[1] * sin_half,
+            z=axis[2] * sin_half
+        )
+    
+    @classmethod
+    def from_euler(cls, roll: float, pitch: float, yaw: float, 
+                   order: str = 'zyx') -> 'quaternion':
+        """
+        Euler açılarından kuaterniyon oluşturur.
+        
+        Args:
+            roll: X ekseni etrafında dönme (radyan)
+            pitch: Y ekseni etrafında dönme (radyan)
+            yaw: Z ekseni etrafında dönme (radyan)
+            order: Dönme sırası ('zyx', 'xyz', 'yxz', vb.)
+        
+        Returns:
+            quaternion: Kuaterniyon nesnesi
+        """
+        cy = math.cos(yaw * 0.5)
+        sy = math.sin(yaw * 0.5)
+        cp = math.cos(pitch * 0.5)
+        sp = math.sin(pitch * 0.5)
+        cr = math.cos(roll * 0.5)
+        sr = math.sin(roll * 0.5)
+        
+        if order == 'zyx':  # Yaw, Pitch, Roll
+            w = cy * cp * cr + sy * sp * sr
+            x = cy * cp * sr - sy * sp * cr
+            y = sy * cp * sr + cy * sp * cr
+            z = sy * cp * cr - cy * sp * sr
+        elif order == 'xyz':  # Roll, Pitch, Yaw
+            w = cr * cp * cy + sr * sp * sy
+            x = sr * cp * cy - cr * sp * sy
+            y = cr * sp * cy + sr * cp * sy
+            z = cr * cp * sy - sr * sp * cy
+        else:
+            raise ValueError(f"Desteklenmeyen dönme sırası: {order}")
+        
+        return cls(w, x, y, z)
+    
+    @classmethod
+    def from_rotation_matrix(cls, R: np.ndarray) -> 'quaternion':
+        """
+        Dönüşüm matrisinden kuaterniyon oluşturur.
+        
+        Args:
+            R: 3x3 dönüşüm matrisi
+        
+        Returns:
+            quaternion: Kuaterniyon nesnesi
+        """
+        if R.shape != (3, 3):
+            raise ValueError("Matris 3x3 boyutunda olmalıdır")
+        
+        trace = np.trace(R)
+        
+        if trace > 0:
+            S = math.sqrt(trace + 1.0) * 2
+            w = 0.25 * S
+            x = (R[2, 1] - R[1, 2]) / S
+            y = (R[0, 2] - R[2, 0]) / S
+            z = (R[1, 0] - R[0, 1]) / S
+        elif R[0, 0] > R[1, 1] and R[0, 0] > R[2, 2]:
+            S = math.sqrt(1.0 + R[0, 0] - R[1, 1] - R[2, 2]) * 2
+            w = (R[2, 1] - R[1, 2]) / S
+            x = 0.25 * S
+            y = (R[0, 1] + R[1, 0]) / S
+            z = (R[0, 2] + R[2, 0]) / S
+        elif R[1, 1] > R[2, 2]:
+            S = math.sqrt(1.0 + R[1, 1] - R[0, 0] - R[2, 2]) * 2
+            w = (R[0, 2] - R[2, 0]) / S
+            x = (R[0, 1] + R[1, 0]) / S
+            y = 0.25 * S
+            z = (R[1, 2] + R[2, 1]) / S
+        else:
+            S = math.sqrt(1.0 + R[2, 2] - R[0, 0] - R[1, 1]) * 2
+            w = (R[1, 0] - R[0, 1]) / S
+            x = (R[0, 2] + R[2, 0]) / S
+            y = (R[1, 2] + R[2, 1]) / S
+            z = 0.25 * S
+        
+        return cls(w, x, y, z).normalized()
+    
+    def conjugate(self) -> 'quaternion':
+        """Kuaterniyonun eşleniğini döndürür."""
+        return quaternion(self.w, -self.x, -self.y, -self.z)
+    
+    def norm(self) -> float:
+        """Kuaterniyonun normunu döndürür."""
+        return math.sqrt(self.w**2 + self.x**2 + self.y**2 + self.z**2)
+    
+    def normalized(self) -> 'quaternion':
+        """Normalize edilmiş kuaterniyonu döndürür."""
+        n = self.norm()
+        if n == 0:
+            return quaternion(1, 0, 0, 0)
+        return quaternion(self.w/n, self.x/n, self.y/n, self.z/n)
+    
+    def inverse(self) -> 'quaternion':
+        """Kuaterniyonun tersini döndürür."""
+        norm_sq = self.w**2 + self.x**2 + self.y**2 + self.z**2
+        if norm_sq == 0:
+            return quaternion(1, 0, 0, 0)
+        conj = self.conjugate()
+        return quaternion(conj.w/norm_sq, conj.x/norm_sq, conj.y/norm_sq, conj.z/norm_sq)
+    
+    def to_axis_angle(self) -> Tuple[np.ndarray, float]:
+        """
+        Kuaterniyonu eksen-açı gösterimine dönüştürür.
+        
+        Returns:
+            Tuple[np.ndarray, float]: (eksen, açı)
+        """
+        if abs(self.w) > 1:
+            q = self.normalized()
+        else:
+            q = self
+        
+        angle = 2 * math.acos(q.w)
+        
+        if abs(angle) < 1e-10:
+            return np.array([1.0, 0.0, 0.0]), 0.0
+        
+        s = math.sqrt(1 - q.w**2)
+        if s < 1e-10:
+            axis = np.array([1.0, 0.0, 0.0])
+        else:
+            axis = np.array([q.x/s, q.y/s, q.z/s])
+        
+        return axis, angle
+    
+    def to_euler(self, order: str = 'zyx') -> Tuple[float, float, float]:
+        """
+        Kuaterniyonu Euler açılarına dönüştürür.
+        
+        Args:
+            order: Dönme sırası
+        
+        Returns:
+            Tuple[float, float, float]: (roll, pitch, yaw)
+        """
+        q = self.normalized()
+        
+        if order == 'zyx':  # Yaw, Pitch, Roll
+            # Roll (x-axis rotation)
+            sinr_cosp = 2 * (q.w * q.x + q.y * q.z)
+            cosr_cosp = 1 - 2 * (q.x**2 + q.y**2)
+            roll = math.atan2(sinr_cosp, cosr_cosp)
+            
+            # Pitch (y-axis rotation)
+            sinp = 2 * (q.w * q.y - q.z * q.x)
+            if abs(sinp) >= 1:
+                pitch = math.copysign(math.pi / 2, sinp)
+            else:
+                pitch = math.asin(sinp)
+            
+            # Yaw (z-axis rotation)
+            siny_cosp = 2 * (q.w * q.z + q.x * q.y)
+            cosy_cosp = 1 - 2 * (q.y**2 + q.z**2)
+            yaw = math.atan2(siny_cosp, cosy_cosp)
+            
+            return roll, pitch, yaw
+        else:
+            raise ValueError(f"Desteklenmeyen dönme sırası: {order}")
+    
+    def to_rotation_matrix(self) -> np.ndarray:
+        """
+        Kuaterniyonu dönüşüm matrisine dönüştürür.
+        
+        Returns:
+            np.ndarray: 3x3 dönüşüm matrisi
+        """
+        q = self.normalized()
+        
+        # 3x3 dönüşüm matrisi
+        R = np.zeros((3, 3))
+        
+        # Matris elemanlarını hesapla
+        R[0, 0] = 1 - 2*(q.y**2 + q.z**2)
+        R[0, 1] = 2*(q.x*q.y - q.w*q.z)
+        R[0, 2] = 2*(q.x*q.z + q.w*q.y)
+        
+        R[1, 0] = 2*(q.x*q.y + q.w*q.z)
+        R[1, 1] = 1 - 2*(q.x**2 + q.z**2)
+        R[1, 2] = 2*(q.y*q.z - q.w*q.x)
+        
+        R[2, 0] = 2*(q.x*q.z - q.w*q.y)
+        R[2, 1] = 2*(q.y*q.z + q.w*q.x)
+        R[2, 2] = 1 - 2*(q.x**2 + q.y**2)
+        
+        return R
+    
+    def rotate_vector(self, v: Union[List[float], Tuple[float, float, float], np.ndarray]) -> np.ndarray:
+        """
+        Vektörü kuaterniyon ile döndürür.
+        
+        Args:
+            v: Döndürülecek 3 boyutlu vektör
+        
+        Returns:
+            np.ndarray: Döndürülmüş vektör
+        """
+        v = np.asarray(v, dtype=float)
+        if v.shape != (3,):
+            raise ValueError("Vektör 3 boyutlu olmalıdır")
+        
+        q = self.normalized()
+        q_vec = np.array([q.x, q.y, q.z])
+        q_w = q.w
+        
+        # Kuaterniyon çarpımı ile döndürme
+        v_rot = v + 2 * np.cross(q_vec, np.cross(q_vec, v) + q_w * v)
+        return v_rot
+    
+    def slerp(self, other: 'quaternion', t: float) -> 'quaternion':
+        """
+        Küresel lineer interpolasyon (SLERP) yapar.
+        
+        Args:
+            other: Hedef kuaterniyon
+            t: İnterpolasyon parametresi [0, 1]
+        
+        Returns:
+            quaternion: İnterpole edilmiş kuaterniyon
+        """
+        if t <= 0:
+            return self.normalized()
+        if t >= 1:
+            return other.normalized()
+        
+        q1 = self.normalized()
+        q2 = other.normalized()
+        
+        # Nokta çarpım
+        cos_half_theta = q1.w*q2.w + q1.x*q2.x + q1.y*q2.y + q1.z*q2.z
+        
+        # Eğer q1 ve q2 aynı yöndeyse
+        if abs(cos_half_theta) >= 1.0:
+            return q1
+        
+        # Eğer negatif nokta çarpım, kuaterniyonları ters çevir
+        if cos_half_theta < 0:
+            q2 = quaternion(-q2.w, -q2.x, -q2.y, -q2.z)
+            cos_half_theta = -cos_half_theta
+        
+        half_theta = math.acos(cos_half_theta)
+        sin_half_theta = math.sqrt(1.0 - cos_half_theta**2)
+        
+        if abs(sin_half_theta) < 1e-10:
+            return quaternion(
+                q1.w * 0.5 + q2.w * 0.5,
+                q1.x * 0.5 + q2.x * 0.5,
+                q1.y * 0.5 + q2.y * 0.5,
+                q1.z * 0.5 + q2.z * 0.5
+            ).normalized()
+        
+        ratio_a = math.sin((1 - t) * half_theta) / sin_half_theta
+        ratio_b = math.sin(t * half_theta) / sin_half_theta
+        
+        return quaternion(
+            q1.w * ratio_a + q2.w * ratio_b,
+            q1.x * ratio_a + q2.x * ratio_b,
+            q1.y * ratio_a + q2.y * ratio_b,
+            q1.z * ratio_a + q2.z * ratio_b
+        ).normalized()
+    
+    def __add__(self, other: 'quaternion') -> 'quaternion':
+        """Kuaterniyon toplama."""
+        if isinstance(other, quaternion):
+            return quaternion(self.w + other.w, self.x + other.x, self.y + other.y, self.z + other.z)
+        raise TypeError("Sadece quaternion ile toplanabilir")
+    
+    def __sub__(self, other: 'quaternion') -> 'quaternion':
+        """Kuaterniyon çıkarma."""
+        if isinstance(other, quaternion):
+            return quaternion(self.w - other.w, self.x - other.x, self.y - other.y, self.z - other.z)
+        raise TypeError("Sadece quaternion ile çıkarılabilir")
+    
+    def __mul__(self, other: Union['quaternion', float, int]) -> 'quaternion':
+        """Kuaterniyon çarpma veya skaler çarpma."""
+        if isinstance(other, (int, float)):
+            return quaternion(self.w * other, self.x * other, self.y * other, self.z * other)
+        elif isinstance(other, quaternion):
+            # Hamilton çarpımı
+            w = self.w*other.w - self.x*other.x - self.y*other.y - self.z*other.z
+            x = self.w*other.x + self.x*other.w + self.y*other.z - self.z*other.y
+            y = self.w*other.y - self.x*other.z + self.y*other.w + self.z*other.x
+            z = self.w*other.z + self.x*other.y - self.y*other.x + self.z*other.w
+            return quaternion(w, x, y, z)
+        raise TypeError("Sadece quaternion veya skaler ile çarpılabilir")
+    
+    def __rmul__(self, other: Union[float, int]) -> 'quaternion':
+        """Sağ taraftan skaler çarpma."""
+        return self.__mul__(other)
+    
+    def __truediv__(self, other: Union[float, int]) -> 'quaternion':
+        """Skaler bölme."""
+        if isinstance(other, (int, float)):
+            if other == 0:
+                raise ZeroDivisionError("Sıfıra bölme hatası")
+            return quaternion(self.w / other, self.x / other, self.y / other, self.z / other)
+        raise TypeError("Sadece skaler ile bölünebilir")
+    
+    def __eq__(self, other: 'quaternion') -> bool:
+        """Eşitlik kontrolü."""
+        if isinstance(other, quaternion):
+            return (math.isclose(self.w, other.w) and 
+                    math.isclose(self.x, other.x) and 
+                    math.isclose(self.y, other.y) and 
+                    math.isclose(self.z, other.z))
+        return False
+    
+    def __ne__(self, other: 'quaternion') -> bool:
+        """Eşitsizlik kontrolü."""
+        return not self.__eq__(other)
+    
+    def __neg__(self) -> 'quaternion':
+        """Negatif kuaterniyon."""
+        return quaternion(-self.w, -self.x, -self.y, -self.z)
+    
+    def __repr__(self) -> str:
+        """Nesnenin temsili."""
+        return f"quaternion(w={self.w:.6f}, x={self.x:.6f}, y={self.y:.6f}, z={self.z:.6f})"
+    
+    def __str__(self) -> str:
+        """String temsili."""
+        return f"{self.w:.6f} + {self.x:.6f}i + {self.y:.6f}j + {self.z:.6f}k"
+    
+    def to_array(self) -> np.ndarray:
+        """Kuaterniyonu numpy array'e dönüştürür."""
+        return np.array([self.w, self.x, self.y, self.z])
+    
+    def to_list(self) -> List[float]:
+        """Kuaterniyonu listeye dönüştürür."""
+        return [self.w, self.x, self.y, self.z]
+    
+    @classmethod
+    def identity(cls) -> 'quaternion':
+        """Birim kuaterniyon döndürür."""
+        return cls(1.0, 0.0, 0.0, 0.0)
+    
+    def is_identity(self, tolerance: float = 1e-10) -> bool:
+        """Birim kuaterniyon olup olmadığını kontrol eder."""
+        return (abs(self.w - 1.0) < tolerance and 
+                abs(self.x) < tolerance and 
+                abs(self.y) < tolerance and 
+                abs(self.z) < tolerance)
+    
+    @classmethod
+    def parse(cls, s) -> 'quaternion':
+        """Çeşitli formatlardan quaternion oluşturur.
+        
+        Args:
+            s: Dönüştürülecek değer
+            
+        Returns:
+            quaternion: Dönüştürülmüş kuaterniyon
+        """
+        return _parse_quaternion_from_csv(s)
+    
+    @classmethod
+    def from_csv_string(cls, s: str) -> 'quaternion':
+        """CSV string'inden quaternion oluşturur.
+        
+        Args:
+            s: Virgülle ayrılmış string ("w,x,y,z" veya "scalar")
+            
+        Returns:
+            quaternion: Dönüştürülmüş kuaterniyon
+        """
+        return _parse_quaternion_from_csv(s)
+    
+    @classmethod
+    def from_complex(cls, c: complex) -> 'quaternion':
+        """Complex sayıdan quaternion oluşturur (sadece gerçek kısım kullanılır).
+        
+        Args:
+            c: Complex sayı
+            
+        Returns:
+            quaternion: Dönüştürülmüş kuaterniyon
+        """
+        return quaternion(float(c.real), 0, 0, 0)
+
+@dataclass
+class TernaryNumber:
+    def __init__(self, digits: list):
+        """
+        Üçlü sayıyı oluşturur. Verilen değer bir liste olmalıdır.
+
+        :param digits: Üçlü sayının rakamlarını temsil eden liste.
+        """
+        self.digits = digits
+
+    @classmethod
+    def from_ternary_string(cls, ternary_str: str) -> 'TernaryNumber':
+        """Üçlü sayı sistemindeki stringi TernaryNumber'a dönüştürür."""
+        ternary_str = ternary_str.strip()
+        if not all(c in '012' for c in ternary_str):
+            raise ValueError("Üçlü sayı sadece 0, 1 ve 2 rakamlarından oluşabilir.")
+        digits = [int(c) for c in ternary_str]
+        return cls(digits)
+
+    @classmethod
+    def from_decimal(cls, decimal: int) -> 'TernaryNumber':
+        """Ondalık sayıyı üçlü sayı sistemine dönüştürür."""
+        if decimal == 0:
+            return cls([0])
+        digits = []
+        while decimal > 0:
+            digits.append(decimal % 3)
+            decimal = decimal // 3
+        return cls(digits[::-1] if digits else [0])
+
+    def to_decimal(self):
+        """Üçlü sayının ondalık karşılığını döndürür."""
+        decimal_value = 0
+        for i, digit in enumerate(reversed(self.digits)):
+            decimal_value += digit * (3 ** i)
+        return decimal_value
+
+    def __repr__(self):
+        """Nesnenin yazdırılabilir temsilini döndürür."""
+        return f"TernaryNumber({self.digits})"
+
+    def __str__(self):
+        """Nesnenin string temsilini döndürür."""
+        return ''.join(map(str, self.digits))
+
+    def __add__(self, other):
+        """Toplama işlemini destekler."""
+        if isinstance(other, TernaryNumber):
+            result_decimal = self.to_decimal() + other.to_decimal()
+        elif isinstance(other, (int, str)):
+            result_decimal = self.to_decimal() + int(other)
+        else:
+            raise TypeError("TernaryNumber'ın başka bir sayıya veya TernaryNumber'e eklenebilir.")
+        return TernaryNumber.from_decimal(result_decimal)
+
+    def __radd__(self, other):
+        """Toplama işleminin sağ taraf desteklenmesini sağlar."""
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        """Çıkarma işlemini destekler."""
+        if isinstance(other, TernaryNumber):
+            result_decimal = self.to_decimal() - other.to_decimal()
+        elif isinstance(other, (int, str)):
+            result_decimal = self.to_decimal() - int(other)
+        else:
+            raise TypeError("TernaryNumber'dan başka bir sayıya veya başka bir TernaryNumber çıkartılabilir.")
+        if result_decimal < 0:
+            raise ValueError("Bir üçlü sayıdan daha büyük bir sayı çıkaramazsınız.")
+        return TernaryNumber.from_decimal(result_decimal)
+
+    def __rsub__(self, other):
+        """Çıkarma işleminin sağ taraf desteklenmesini sağlar."""
+        if isinstance(other, (int, str)):
+            result_decimal = int(other) - self.to_decimal()
+        else:
+            raise TypeError("TernaryNumber'dan bir sayı çıkartılabilir.")
+        if result_decimal < 0:
+            raise ValueError("Bir üçlü sayıdan daha büyük bir sayı çıkaramazsınız.")
+        return TernaryNumber.from_decimal(result_decimal)
+
+    def __mul__(self, scalar):
+        """Skaler çarpım işlemini destekler."""
+        if not isinstance(scalar, (int, float)):
+            raise TypeError("TernaryNumber sadece skaler ile çarpılabilir.")
+        result_decimal = self.to_decimal() * scalar
+        return TernaryNumber.from_decimal(int(result_decimal))
+
+    def __rmul__(self, other):
+        """ Çarpma işleminin sağ taraf desteklenmesini sağlar. """
+        return self.__mul__(other)
+
+    # Üçlü sayı sisteminde bölme işlemi, ondalık karşılığa dönüştürülerek yapılmalıdır.
+    def __truediv__(self, other):
+        """ Bölme işlemini destekler. """
+        if isinstance(other, TernaryNumber):
+            other_decimal = other.to_decimal()
+            if other_decimal == 0:
+                raise ZeroDivisionError("Bir TernaryNumber sıfırla bölünemez.")
+            result_decimal = self.to_decimal() / other_decimal
+            return TernaryNumber.from_decimal(int(round(result_decimal)))
+        elif isinstance(other, (int, float)):
+            if other == 0:
+                raise ZeroDivisionError("Sıfırla bölme hatası.")
+            result_decimal = self.to_decimal() / other
+            return TernaryNumber.from_decimal(int(round(result_decimal)))
+        else:
+            raise TypeError("TernaryNumber'i bir sayı veya başka bir TernaryNumber ile bölebilirsiniz.")
+
+    # üçlü sayı sisteminde bölme işlemi, ondalık karşılığa dönüştürülerek yapılmalıdır.
+    def __rtruediv__(self, other):
+        """ Bölme işleminin sağ taraf desteklenmesini sağlar. """
+        if isinstance(other, (int, float)):
+            self_decimal = self.to_decimal()
+            if self_decimal == 0:
+                raise ZeroDivisionError("Sıfırla bölme hatası.")
+            result_decimal = other / self_decimal
+            return TernaryNumber.from_decimal(int(round(result_decimal)))
+        else:
+            raise TypeError("TernaryNumber ile bir sayı bölünebilir.")
+
+    def __eq__(self, other):
+        """Eşitlik kontrolü yapar."""
+        if isinstance(other, TernaryNumber):
+            return self.digits == other.digits
+        elif isinstance(other, (int, str)):
+            return self.to_decimal() == int(other)
+        else:
+            return False
+
+    def __ne__(self, other):
+        """Eşitsizlik kontrolü yapar."""
+        return not self.__eq__(other)
+
+# Superreal Sayılar
+@dataclass
+class SuperrealNumber:
+    #def __init__(self, real_part=0.0):
+    def __init__(self, real: float, split: float = 0.0):
+        """
+        SuperrealNumber nesnesini oluşturur.
+        
+        :param real_part: Gerçek sayı bileşeni (float).
+        """
+        #self.real = real_part
+        self.real = real
+        self.split = split
+
+    def __repr__(self):
+        """ Nesnenin yazdırılabilir temsilini döndürür. """
+        return f"SuperrealNumber({self.real})"
+
+    def __str__(self):
+        """ Nesnenin string temsilini döndürür. """
+        return str(self.real)
+
+    def __add__(self, other):
+        """ Toplama işlemini destekler. """
+        if isinstance(other, SuperrealNumber):
+            return SuperrealNumber(self.real + other.real)
+        elif isinstance(other, (int, float)):
+            return SuperrealNumber(self.real + other)
+        else:
+            raise TypeError("SuperrealNumber'e bir sayı veya başka bir SuperrealNumber eklenebilir.")
+
+    def __radd__(self, other):
+        """ Toplama işleminin sağ taraf desteklenmesini sağlar. """
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        """ Çıkarma işlemini destekler. """
+        if isinstance(other, SuperrealNumber):
+            return SuperrealNumber(self.real - other.real)
+        elif isinstance(other, (int, float)):
+            return SuperrealNumber(self.real - other)
+        else:
+            raise TypeError("SuperrealNumber'dan bir sayı veya başka bir SuperrealNumber çıkarılabilir.")
+
+    def __rsub__(self, other):
+        """ Çıkarma işleminin sağ taraf desteklenmesini sağlar. """
+        return self.__neg__().__add__(other)
+
+    def __mul__(self, other):
+        """ Çarpma işlemini destekler. """
+        if isinstance(other, SuperrealNumber):
+            return SuperrealNumber(self.real * other.real)
+        elif isinstance(other, (int, float)):
+            return SuperrealNumber(self.real * other)
+        else:
+            raise TypeError("SuperrealNumber ile bir sayı veya başka bir SuperrealNumber çarpılabilir.")
+
+    def __rmul__(self, other):
+        """ Çarpma işleminin sağ taraf desteklenmesini sağlar. """
+        return self.__mul__(other)
+
+    def __truediv__(self, other):
+        """ Bölme işlemini destekler. """
+        if isinstance(other, SuperrealNumber):
+            if other.real == 0:
+                raise ZeroDivisionError("Bir SuperrealNumber sıfırla bölünemez.")
+            return SuperrealNumber(self.real / other.real)
+        elif isinstance(other, (int, float)):
+            if other == 0:
+                raise ZeroDivisionError("Sıfırla bölme hatası.")
+            return SuperrealNumber(self.real / other)
+        else:
+            raise TypeError("SuperrealNumber'i bir sayı veya başka bir SuperrealNumber ile bölebilirsiniz.")
+
+    def __rtruediv__(self, other):
+        """ Bölme işleminin sağ taraf desteklenmesini sağlar. """
+        if self.real == 0:
+            raise ZeroDivisionError("Sıfırla bölme hatası.")
+        return SuperrealNumber(other / self.real)
+
+    def __neg__(self):
+        """ Negatif değeri döndürür. """
+        return SuperrealNumber(-self.real)
+
+    def __eq__(self, other):
+        """ Eşitlik kontrolü yapar. """
+        if isinstance(other, SuperrealNumber):
+            return self.real == other.real
+        elif isinstance(other, (int, float)):
+            return self.real == other
+        else:
+            return False
+
+    def __ne__(self, other):
+        """ Eşitsizlik kontrolü yapar. """
+        return not self.__eq__(other)
+
+    def __lt__(self, other):
+        """ Küçük olma kontrolü yapar. """
+        if isinstance(other, SuperrealNumber):
+            return self.real < other.real
+        elif isinstance(other, (int, float)):
+            return self.real < other
+        else:
+            raise TypeError("SuperrealNumber ile karşılaştırılabilir.")
+
+    def __le__(self, other):
+        """ Küçük veya eşit kontrolü yapar. """
+        return self.__lt__(other) or self.__eq__(other)
+
+    def __gt__(self, other):
+        """ Büyük olma kontrolü yapar. """
+        return not self.__le__(other)
+
+    def __ge__(self, other):
+        """ Büyük veya eşit kontrolü yapar. """
+        return not self.__lt__(other)
+
+@dataclass
+class BaseNumber(ABC):
+    """Tüm Keçeci sayı tipleri için ortak arayüz."""
+
+    def __init__(self, value: Number):
+        self._value = self._coerce(value)
+
+    @staticmethod
+    def _coerce(v: Number) -> Number:
+        if isinstance(v, (int, float, complex)):
+            return v
+        raise TypeError(f"Geçersiz sayı tipi: {type(v)}")
+
+    @property
+    def value(self) -> Number:
+        return self._value
+
+    # ------------------------------------------------------------------ #
+    # Matematiksel operator overload’ları (tek yönlü)
+    # ------------------------------------------------------------------ #
+    def __add__(self, other: Union["BaseNumber", Number]) -> "BaseNumber":
+        other_val = other.value if isinstance(other, BaseNumber) else other
+        return self.__class__(self._value + other_val)
+
+    def __radd__(self, other: Number) -> "BaseNumber":
+        return self.__add__(other)
+
+    def __sub__(self, other: Union["BaseNumber", Number]) -> "BaseNumber":
+        other_val = other.value if isinstance(other, BaseNumber) else other
+        return self.__class__(self._value - other_val)
+
+    def __rsub__(self, other: Number) -> "BaseNumber":
+        return self.__class__(other - self._value)
+
+    def __mul__(self, other: Union["BaseNumber", Number]) -> "BaseNumber":
+        other_val = other.value if isinstance(other, BaseNumber) else other
+        return self.__class__(self._value * other_val)
+
+    def __rmul__(self, other: Number) -> "BaseNumber":
+        return self.__add__(other)
+
+    def __truediv__(self, other: Union["BaseNumber", Number]) -> "BaseNumber":
+        other_val = other.value if isinstance(other, BaseNumber) else other
+        if other_val == 0:
+            raise ZeroDivisionError("division by zero")
+        return self.__class__(self._value / other_val)
+
+    def __rtruediv__(self, other: Number) -> "BaseNumber":
+        if self._value == 0:
+            raise ZeroDivisionError("division by zero")
+        return self.__class__(other / self._value)
+
+    def __mod__(self, divisor: Number) -> "BaseNumber":
+        return self.__class__(self._value % divisor)
+
+    # ------------------------------------------------------------------ #
+    # Karşılaştırmalar
+    # ------------------------------------------------------------------ #
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, BaseNumber):
+            return NotImplemented
+        return math.isclose(float(self._value), float(other._value), rel_tol=1e-12)
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self._value!r})"
+
+    # ------------------------------------------------------------------ #
+    # Alt sınıfların doldurması gereken soyut metodlar
+    # ------------------------------------------------------------------ #
+    def components(self):
+        """Bileşen listesini (Python list) döndürür."""
+        # Daha dayanıklı dönüş: coeffs bir numpy array veya python list olabilir.
+        if hasattr(self, 'coeffs'):
+            coeffs = getattr(self, 'coeffs')
+            if isinstance(coeffs, np.ndarray):
+                return coeffs.tolist()
+            try:
+                return list(coeffs)
+            except Exception:
+                return [coeffs]
+        # Fallback: tek değer
+        return [self._value]
+
+    def magnitude(self) -> float:
+        """
+        Euclidean norm = √( Σ_i coeff_i² )
+        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
+        """
+        return float(np.linalg.norm(self.coeffs))
+
+    def __hash__(self):
+        # NaN ve -0.0 gibi durumları göz önünde bulundurun
+        return hash(tuple(np.round(self.coeffs, decimals=10)))
+
+    def phase(self):
+        """
+        Güvenli phase hesaplayıcı:
+        - Eğer value complex ise imag/real üzerinden phase hesaplanır.
+        - Eğer coeffs varsa, ilk bileşenin complex olması durumunda phase döner.
+        - Diğer durumlarda 0.0 döndürür (tanımsız phase için güvenli fallback).
+        """
+        try:
+            # If underlying value is complex
+            if isinstance(self._value, complex):
+                return math.atan2(self._value.imag, self._value.real)
+            # If there's coeffs, use the first coefficient
+            if hasattr(self, 'coeffs'):
+                coeffs = getattr(self, 'coeffs')
+                if isinstance(coeffs, (list, tuple, np.ndarray)) and len(coeffs) > 0:
+                    first = coeffs[0]
+                    if isinstance(first, complex):
+                        return math.atan2(first.imag, first.real)
+            # If value has real/imag attributes (like some custom complex types)
+            if hasattr(self._value, 'real') and hasattr(self._value, 'imag'):
+                return math.atan2(self._value.imag, self._value.real)
+        except Exception:
+            pass
+        return 0.0
+
+@dataclass
+class PathionNumber:
+    """32-bileşenli Pathion sayısı"""
+    
+    def __init__(self, *coeffs):
+        if len(coeffs) == 1 and hasattr(coeffs[0], '__iter__') and not isinstance(coeffs[0], str):
+            coeffs = coeffs[0]
+        
+        if len(coeffs) != 32:
+            coeffs = list(coeffs) + [0.0] * (32 - len(coeffs))
+            if len(coeffs) > 32:
+                coeffs = coeffs[:32]
+        
+        self.coeffs = [float(c) for c in coeffs]
+    
+    @property
+    def real(self) -> float:
+        """İlk bileşen – “gerçek” kısım."""
+        return float(self.coeffs[0])
+    #def real(self):
+    #    Gerçek kısım (ilk bileşen)
+    #    return self.coeffs[0]
+    
+    def __iter__(self):
+        return iter(self.coeffs)
+    
+    def __getitem__(self, index):
+        return self.coeffs[index]
+    
+    def __len__(self):
+        return len(self.coeffs)
+    
+    def __str__(self):
+        return f"PathionNumber({', '.join(map(str, self.coeffs))})"
+
+    def __repr__(self):
+        return f"PathionNumber({', '.join(map(str, self.coeffs))})"
+        #return f"PathionNumber({self.coeffs})"
+    
+    def __add__(self, other):
+        if isinstance(other, PathionNumber):
+            return PathionNumber([a + b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            # Skaler toplama
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] += float(other)
+            return PathionNumber(new_coeffs)
+    
+    def __sub__(self, other):
+        if isinstance(other, PathionNumber):
+            return PathionNumber([a - b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] -= float(other)
+            return PathionNumber(new_coeffs)
+    
+    def __mul__(self, other):
+        if isinstance(other, PathionNumber):
+            # Basitçe bileşen bazlı çarpma (gerçek Cayley-Dickson çarpımı yerine)
+            return PathionNumber([a * b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            # Skaler çarpma
+            return PathionNumber([c * float(other) for c in self.coeffs])
+    
+    def __mod__(self, divisor):
+        return PathionNumber([c % divisor for c in self.coeffs])
+    
+    def __eq__(self, other):
+        if not isinstance(other, PathionNumber):
+            return NotImplemented
+        return np.allclose(self.coeffs, other.coeffs, atol=1e-10)
+        #if isinstance(other, PathionNumber):
+        #    return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
+        #return False
+
+    def __truediv__(self, other):
+        """Bölme operatörü: / """
+        if isinstance(other, (int, float)):
+            # Skaler bölme
+            return PathionNumber([c / other for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: 'PathionNumber' and '{type(other).__name__}'")
+    
+    def __floordiv__(self, other):
+        """Tam sayı bölme operatörü: // """
+        if isinstance(other, (int, float)):
+            # Skaler tam sayı bölme
+            return PathionNumber([c // other for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for //: 'PathionNumber' and '{type(other).__name__}'")
+    
+    def __rtruediv__(self, other):
+        """Sağdan bölme: other / PathionNumber"""
+        if isinstance(other, (int, float)):
+            # Bu daha karmaşık olabilir, basitçe bileşen bazlı bölme
+            return PathionNumber([other / c if c != 0 else float('inf') for c in self.coeffs])
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'PathionNumber'")
+
+    # ------------------------------------------------------------------
+    # Yeni eklenen yardımcı metodlar
+    # ------------------------------------------------------------------
+    def components(self):
+        """Bileşen listesini (Python list) döndürür."""
+        return list(self.coeffs)
+
+    def magnitude(self) -> float:
+        """
+        Euclidean norm = √( Σ_i coeff_i² )
+        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
+        """
+        return float(np.linalg.norm(self.coeffs))
+
+    def __hash__(self):
+        # NaN ve -0.0 gibi durumları göz önünde bulundurun
+        return hash(tuple(np.round(self.coeffs, decimals=10)))
+
+    def phase(self):
+        # Güvenli phase: ilk bileşene bak, eğer complex ise angle döndür, değilse 0.0
+        try:
+            first = self.coeffs[0] if self.coeffs else 0.0
+            if isinstance(first, complex):
+                return math.atan2(first.imag, first.real)
+        except Exception:
+            pass
+        return 0.0
+
+@dataclass
+class ChingonNumber:
+    """64-bileşenli Chingon sayısı"""  # Açıklama düzeltildi
+    
+    def __init__(self, *coeffs):
+        if len(coeffs) == 1 and hasattr(coeffs[0], '__iter__') and not isinstance(coeffs[0], str):
+            coeffs = coeffs[0]
+        
+        if len(coeffs) != 64:
+            coeffs = list(coeffs) + [0.0] * (64 - len(coeffs))
+            if len(coeffs) > 64:
+                coeffs = coeffs[:64]
+        
+        self.coeffs = [float(c) for c in coeffs]
+    
+    @property
+    def real(self) -> float:
+        """İlk bileşen – “gerçek” kısım."""
+        return float(self.coeffs[0])
+    #def real(self):
+    #    Gerçek kısım (ilk bileşen)
+    #    return self.coeffs[0]
+    
+    def __iter__(self):
+        return iter(self.coeffs)
+    
+    def __getitem__(self, index):
+        return self.coeffs[index]
+    
+    def __len__(self):
+        return len(self.coeffs)
+    
+    def __str__(self):
+        return f"ChingonNumber({', '.join(map(str, self.coeffs))})"
+    
+    def __repr__(self):
+        return f"({', '.join(map(str, self.coeffs))})"
+        #return f"ChingonNumber({self.coeffs})"
+    
+    def __add__(self, other):
+        if isinstance(other, ChingonNumber):
+            return ChingonNumber([a + b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            # Skaler toplama
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] += float(other)
+            return ChingonNumber(new_coeffs)
+    
+    def __sub__(self, other):
+        if isinstance(other, ChingonNumber):
+            return ChingonNumber([a - b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] -= float(other)
+            return ChingonNumber(new_coeffs)
+    
+    def __mul__(self, other):
+        if isinstance(other, ChingonNumber):
+            # Basitçe bileşen bazlı çarpma
+            return ChingonNumber([a * b for a, b in zip(self.coeffs, other.coeffs)])  # ChingonNumber döndür
+        else:
+            # Skaler çarpma
+            return ChingonNumber([c * float(other) for c in self.coeffs])  # ChingonNumber döndür
+    
+    def __mod__(self, divisor):
+        return ChingonNumber([c % divisor for c in self.coeffs])  # ChingonNumber döndür
+    
+    def __eq__(self, other):
+        if not isinstance(other, ChingonNumber):
+            return NotImplemented
+        return np.allclose(self.coeffs, other.coeffs, atol=1e-10)
+        #if isinstance(other, ChingonNumber):  # ChingonNumber ile karşılaştır
+        #    return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
+        #return False
+
+    def __truediv__(self, other):
+        """Bölme operatörü: / """
+        if isinstance(other, (int, float)):
+            # Skaler bölme
+            return ChingonNumber([c / other for c in self.coeffs])  # ChingonNumber döndür
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: 'ChingonNumber' and '{type(other).__name__}'")  # ChingonNumber
+    
+    def __floordiv__(self, other):
+        """Tam sayı bölme operatörü: // """
+        if isinstance(other, (int, float)):
+            # Skaler tam sayı bölme
+            return ChingonNumber([c // other for c in self.coeffs])  # ChingonNumber döndür
+        else:
+            raise TypeError(f"Unsupported operand type(s) for //: 'ChingonNumber' and '{type(other).__name__}'")  # ChingonNumber
+    
+    def __rtruediv__(self, other):
+        """Sağdan bölme: other / ChingonNumber"""
+        if isinstance(other, (int, float)):
+            return ChingonNumber([other / c if c != 0 else float('inf') for c in self.coeffs])  # ChingonNumber döndür
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'ChingonNumber'")  # ChingonNumber
+
+    def components(self):
+        """Bileşen listesini (Python list) döndürür."""
+        return list(self.coeffs)
+
+    def magnitude(self) -> float:
+        """
+        Euclidean norm = √( Σ_i coeff_i² )
+        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
+        """
+        return float(np.linalg.norm(self.coeffs))
+
+    def __hash__(self):
+        # NaN ve -0.0 gibi durumları göz önünde bulundurun
+        return hash(tuple(np.round(self.coeffs, decimals=10)))
+
+    def phase(self):
+        # Güvenli phase: ilk bileşene bak, eğer complex ise angle döndür, değilse 0.0
+        try:
+            first = self.coeffs[0] if self.coeffs else 0.0
+            if isinstance(first, complex):
+                return math.atan2(first.imag, first.real)
+        except Exception:
+            pass
+        return 0.0
+
+import numpy as np
+import math
+from dataclasses import dataclass, field
+from typing import List, Union, Tuple, Any
 
 @dataclass
 class RoutonNumber:
     """
     128-dimensional hypercomplex number (Routon).
-
+    
     Routon numbers extend the Cayley-Dickson construction.
     They have 128 components and are high-dimensional algebraic structures.
-
+    
     Note: True Routon multiplication is extremely complex (128x128 multiplication table).
     This implementation uses simplified operations for practical use.
     """
-
+    
     coeffs: List[float] = field(default_factory=lambda: [0.0] * 128)
-
+    
     def __post_init__(self):
         """Validate and normalize coefficients after initialization."""
         if len(self.coeffs) != 128:
@@ -2688,75 +3446,75 @@ class RoutonNumber:
                 self.coeffs = list(self.coeffs) + [0.0] * (128 - len(self.coeffs))
             else:
                 self.coeffs = self.coeffs[:128]
-
+        
         # Ensure all are floats
         self.coeffs = [float(c) for c in self.coeffs]
-
+    
     @classmethod
-    def from_scalar(cls, value: float) -> "RoutonNumber":
-        """Generate a Routon number from a scalar (real number)."""
+    def from_scalar(cls, value: float) -> 'RoutonNumber':
+        """Create a Routon number from a scalar (real number)."""
         coeffs = [0.0] * 128
         coeffs[0] = float(value)
         return cls(coeffs)
-
+    
     @classmethod
-    def from_list(cls, values: List[float]) -> "RoutonNumber":
-        """Generate from a list of up to 128 values."""
+    def from_list(cls, values: List[float]) -> 'RoutonNumber':
+        """Create from a list of up to 128 values."""
         if len(values) > 128:
             raise ValueError(f"List too long ({len(values)}), maximum 128 elements")
         coeffs = list(values) + [0.0] * (128 - len(values))
         return cls(coeffs)
-
+    
     @classmethod
-    def from_iterable(cls, values: Any) -> "RoutonNumber":
-        """Generate from any iterable."""
+    def from_iterable(cls, values: Any) -> 'RoutonNumber':
+        """Create from any iterable."""
         return cls.from_list(list(values))
-
+    
     @classmethod
-    def basis_element(cls, index: int) -> "RoutonNumber":
-        """Generate a basis Routon (1 at position index, 0 elsewhere)."""
+    def basis_element(cls, index: int) -> 'RoutonNumber':
+        """Create a basis Routon (1 at position index, 0 elsewhere)."""
         if not 0 <= index < 128:
             raise ValueError(f"Index must be between 0 and 127, got {index}")
         coeffs = [0.0] * 128
         coeffs[index] = 1.0
         return cls(coeffs)
-
+    
     @property
     def real(self) -> float:
         """Get the real part (first component)."""
         return self.coeffs[0]
-
+    
     @real.setter
     def real(self, value: float):
         """Set the real part."""
         self.coeffs[0] = float(value)
-
+    
     @property
     def imag(self) -> List[float]:
         """Get the imaginary parts (all except real)."""
         return self.coeffs[1:]
-
+    
     def __getitem__(self, index: int) -> float:
         """Get component by index."""
         if not 0 <= index < 128:
             raise IndexError(f"Index {index} out of range for Routon")
         return self.coeffs[index]
-
+    
     def __setitem__(self, index: int, value: float):
         """Set component by index."""
         if not 0 <= index < 128:
             raise IndexError(f"Index {index} out of range for Routon")
         self.coeffs[index] = float(value)
-
+    
     def __len__(self) -> int:
         """Return number of components (always 128)."""
         return 128
-
+    
     def __iter__(self):
         """Iterate over components."""
         return iter(self.coeffs)
-
-    def __add__(self, other: Union["RoutonNumber", float, int]) -> "RoutonNumber":
+    
+    def __add__(self, other: Union['RoutonNumber', float, int]) -> 'RoutonNumber':
         """Add two Routon numbers or Routon and scalar."""
         if isinstance(other, RoutonNumber):
             new_coeffs = [a + b for a, b in zip(self.coeffs, other.coeffs)]
@@ -2766,12 +3524,12 @@ class RoutonNumber:
             new_coeffs[0] += float(other)
             return RoutonNumber(new_coeffs)
         return NotImplemented
-
-    def __radd__(self, other: Union[float, int]) -> "RoutonNumber":
+    
+    def __radd__(self, other: Union[float, int]) -> 'RoutonNumber':
         """Right addition: scalar + Routon."""
         return self.__add__(other)
-
-    def __sub__(self, other: Union["RoutonNumber", float, int]) -> "RoutonNumber":
+    
+    def __sub__(self, other: Union['RoutonNumber', float, int]) -> 'RoutonNumber':
         """Subtract two Routon numbers or Routon and scalar."""
         if isinstance(other, RoutonNumber):
             new_coeffs = [a - b for a, b in zip(self.coeffs, other.coeffs)]
@@ -2781,19 +3539,19 @@ class RoutonNumber:
             new_coeffs[0] -= float(other)
             return RoutonNumber(new_coeffs)
         return NotImplemented
-
-    def __rsub__(self, other: Union[float, int]) -> "RoutonNumber":
+    
+    def __rsub__(self, other: Union[float, int]) -> 'RoutonNumber':
         """Right subtraction: scalar - Routon."""
         if isinstance(other, (int, float)):
             new_coeffs = [-c for c in self.coeffs]
             new_coeffs[0] += float(other)
             return RoutonNumber(new_coeffs)
         return NotImplemented
-
-    def __mul__(self, other: Union["RoutonNumber", float, int]) -> "RoutonNumber":
+    
+    def __mul__(self, other: Union['RoutonNumber', float, int]) -> 'RoutonNumber':
         """
         Multiply Routon by scalar or another Routon (simplified).
-
+        
         Note: True Routon multiplication would require a 128x128 multiplication table.
         This implementation uses element-wise multiplication for Routon x Routon,
         which is mathematically incorrect but practical for many applications.
@@ -2808,12 +3566,12 @@ class RoutonNumber:
             new_coeffs = [a * b for a, b in zip(self.coeffs, other.coeffs)]
             return RoutonNumber(new_coeffs)
         return NotImplemented
-
-    def __rmul__(self, other: Union[float, int]) -> "RoutonNumber":
+    
+    def __rmul__(self, other: Union[float, int]) -> 'RoutonNumber':
         """Right multiplication: scalar * Routon."""
         return self.__mul__(other)
-
-    def __truediv__(self, scalar: Union[float, int]) -> "RoutonNumber":
+    
+    def __truediv__(self, scalar: Union[float, int]) -> 'RoutonNumber':
         """Divide Routon by scalar."""
         if isinstance(scalar, (int, float)):
             if scalar == 0:
@@ -2821,8 +3579,8 @@ class RoutonNumber:
             new_coeffs = [c / float(scalar) for c in self.coeffs]
             return RoutonNumber(new_coeffs)
         return NotImplemented
-
-    def __floordiv__(self, scalar: Union[float, int]) -> "RoutonNumber":
+    
+    def __floordiv__(self, scalar: Union[float, int]) -> 'RoutonNumber':
         """Floor divide Routon by scalar."""
         if isinstance(scalar, (int, float)):
             if scalar == 0:
@@ -2830,8 +3588,8 @@ class RoutonNumber:
             new_coeffs = [c // float(scalar) for c in self.coeffs]
             return RoutonNumber(new_coeffs)
         return NotImplemented
-
-    def __mod__(self, divisor: Union[float, int]) -> "RoutonNumber":
+    
+    def __mod__(self, divisor: Union[float, int]) -> 'RoutonNumber':
         """Modulo operation on Routon components."""
         if isinstance(divisor, (int, float)):
             if divisor == 0:
@@ -2839,115 +3597,113 @@ class RoutonNumber:
             new_coeffs = [c % float(divisor) for c in self.coeffs]
             return RoutonNumber(new_coeffs)
         return NotImplemented
-
-    def __neg__(self) -> "RoutonNumber":
+    
+    def __neg__(self) -> 'RoutonNumber':
         """Negate the Routon number."""
         return RoutonNumber([-c for c in self.coeffs])
-
-    def __pos__(self) -> "RoutonNumber":
+    
+    def __pos__(self) -> 'RoutonNumber':
         """Unary plus."""
         return self
-
+    
     def __abs__(self) -> float:
         """Absolute value (magnitude)."""
         return self.magnitude()
-
+    
     def __eq__(self, other: object) -> bool:
         """Check equality with another Routon."""
         if not isinstance(other, RoutonNumber):
             return False
-        return all(
-            math.isclose(a, b, abs_tol=1e-12) for a, b in zip(self.coeffs, other.coeffs)
-        )
-
+        return all(math.isclose(a, b, abs_tol=1e-12) for a, b in zip(self.coeffs, other.coeffs))
+    
     def __ne__(self, other: object) -> bool:
         """Check inequality."""
         return not self.__eq__(other)
-
+    
     def __hash__(self) -> int:
         """Hash based on rounded components to avoid floating-point issues."""
         return hash(tuple(round(c, 12) for c in self.coeffs))
-
+    
     def magnitude(self) -> float:
         """
         Calculate Euclidean norm (magnitude) of the Routon.
-
+        
         Returns:
             float: sqrt(Σ_i coeff_i²)
         """
         return float(np.linalg.norm(self.coeffs))
-
+    
     def norm(self) -> float:
         """Alias for magnitude."""
         return self.magnitude()
-
-    def conjugate(self) -> "RoutonNumber":
+    
+    def conjugate(self) -> 'RoutonNumber':
         """Return the conjugate (negate all imaginary parts)."""
         new_coeffs = self.coeffs.copy()
         for i in range(1, 128):
             new_coeffs[i] = -new_coeffs[i]
         return RoutonNumber(new_coeffs)
-
-    def dot(self, other: "RoutonNumber") -> float:
+    
+    def dot(self, other: 'RoutonNumber') -> float:
         """Dot product with another Routon."""
         if not isinstance(other, RoutonNumber):
             raise TypeError("Dot product requires another RoutonNumber")
         return sum(a * b for a, b in zip(self.coeffs, other.coeffs))
-
-    def normalize(self) -> "RoutonNumber":
+    
+    def normalize(self) -> 'RoutonNumber':
         """Return a normalized (unit) version."""
         mag = self.magnitude()
         if mag == 0:
             raise ZeroDivisionError("Cannot normalize zero Routon")
         return RoutonNumber([c / mag for c in self.coeffs])
-
+    
     def to_list(self) -> List[float]:
         """Convert to Python list."""
         return self.coeffs.copy()
-
+    
     def to_tuple(self) -> Tuple[float, ...]:
         """Convert to tuple."""
         return tuple(self.coeffs)
-
+    
     def to_numpy(self) -> np.ndarray:
         """Convert to numpy array."""
         return np.array(self.coeffs, dtype=np.float64)
-
-    def copy(self) -> "RoutonNumber":
-        """Generate a copy."""
+    
+    def copy(self) -> 'RoutonNumber':
+        """Create a copy."""
         return RoutonNumber(self.coeffs.copy())
-
+    
     def components(self) -> List[float]:
         """Get components as list (alias for to_list)."""
         return self.to_list()
-
+    
     def phase(self) -> float:
         """
         Compute phase (angle) of the Routon number.
-
+        
         For high-dimensional numbers, phase is not uniquely defined.
         This implementation returns the angle of the projection onto
         the real-imaginary plane.
         """
         if self.magnitude() == 0:
             return 0.0
-
+        
         # Compute magnitude of imaginary parts
         imag_magnitude = math.sqrt(sum(i**2 for i in self.imag))
         if imag_magnitude == 0:
             return 0.0
-
+        
         # Angle between real part and imaginary vector
         return math.atan2(imag_magnitude, self.real)
-
+    
     def __str__(self) -> str:
         """Human-readable string representation."""
         # For 128 dimensions, show a summary
         non_zero = [(i, c) for i, c in enumerate(self.coeffs) if abs(c) > 1e-10]
-
+        
         if not non_zero:
             return "Routon(0)"
-
+        
         if len(non_zero) <= 5:
             # Show all non-zero components
             parts = []
@@ -2961,7 +3717,7 @@ class RoutonNumber:
         else:
             # Show summary
             return f"Routon[{len(non_zero)} non-zero components, real={self.real:.6f}, mag={self.magnitude():.6f}]"
-
+    
     def __repr__(self) -> str:
         """Detailed representation showing first few components."""
         if len(self.coeffs) <= 8:
@@ -2970,39 +3726,36 @@ class RoutonNumber:
             first_five = self.coeffs[:5]
             last_five = self.coeffs[-5:]
             return f"RoutonNumber({first_five} ... {last_five})"
-
+    
     def summary(self) -> str:
         """Return a summary of the Routon number."""
         non_zero = sum(1 for c in self.coeffs if abs(c) > 1e-10)
         max_coeff = max(abs(c) for c in self.coeffs)
         min_coeff = min(abs(c) for c in self.coeffs if abs(c) > 0)
-
-        return (
-            f"RoutonNumber Summary:\n"
-            f"  Dimensions: 128\n"
-            f"  Non-zero components: {non_zero}\n"
-            f"  Real part: {self.real:.6f}\n"
-            f"  Magnitude: {self.magnitude():.6f}\n"
-            f"  Phase: {self.phase():.6f} rad\n"
-            f"  Max component: {max_coeff:.6f}\n"
-            f"  Min non-zero: {min_coeff:.6f if non_zero > 0 else 0}"
-        )
-
+        
+        return (f"RoutonNumber Summary:\n"
+                f"  Dimensions: 128\n"
+                f"  Non-zero components: {non_zero}\n"
+                f"  Real part: {self.real:.6f}\n"
+                f"  Magnitude: {self.magnitude():.6f}\n"
+                f"  Phase: {self.phase():.6f} rad\n"
+                f"  Max component: {max_coeff:.6f}\n"
+                f"  Min non-zero: {min_coeff:.6f if non_zero > 0 else 0}")
 
 @dataclass
 class VoudonNumber:
     """
     256-dimensional hypercomplex number (Voudon).
-
+    
     Voudon numbers extend the Cayley-Dickson construction beyond sedenions.
     They have 256 components and are extremely high-dimensional algebraic structures.
-
+    
     Note: True Voudon multiplication is extremely complex (256x256 multiplication table).
     This implementation uses simplified operations for practical use.
     """
-
+    
     coeffs: List[float] = field(default_factory=lambda: [0.0] * 256)
-
+    
     def __post_init__(self):
         """Validate and normalize coefficients after initialization."""
         if len(self.coeffs) != 256:
@@ -3011,75 +3764,75 @@ class VoudonNumber:
                 self.coeffs = list(self.coeffs) + [0.0] * (256 - len(self.coeffs))
             else:
                 self.coeffs = self.coeffs[:256]
-
+        
         # Ensure all are floats
         self.coeffs = [float(c) for c in self.coeffs]
-
+    
     @classmethod
-    def from_scalar(cls, value: float) -> "VoudonNumber":
-        """Generate a Voudon number from a scalar (real number)."""
+    def from_scalar(cls, value: float) -> 'VoudonNumber':
+        """Create a Voudon number from a scalar (real number)."""
         coeffs = [0.0] * 256
         coeffs[0] = float(value)
         return cls(coeffs)
-
+    
     @classmethod
-    def from_list(cls, values: List[float]) -> "VoudonNumber":
-        """Generate from a list of up to 256 values."""
+    def from_list(cls, values: List[float]) -> 'VoudonNumber':
+        """Create from a list of up to 256 values."""
         if len(values) > 256:
             raise ValueError(f"List too long ({len(values)}), maximum 256 elements")
         coeffs = list(values) + [0.0] * (256 - len(values))
         return cls(coeffs)
-
+    
     @classmethod
-    def from_iterable(cls, values: Any) -> "VoudonNumber":
-        """Generate from any iterable."""
+    def from_iterable(cls, values: Any) -> 'VoudonNumber':
+        """Create from any iterable."""
         return cls.from_list(list(values))
-
+    
     @classmethod
-    def basis_element(cls, index: int) -> "VoudonNumber":
-        """Generate a basis Voudon (1 at position index, 0 elsewhere)."""
+    def basis_element(cls, index: int) -> 'VoudonNumber':
+        """Create a basis Voudon (1 at position index, 0 elsewhere)."""
         if not 0 <= index < 256:
             raise ValueError(f"Index must be between 0 and 255, got {index}")
         coeffs = [0.0] * 256
         coeffs[index] = 1.0
         return cls(coeffs)
-
+    
     @property
     def real(self) -> float:
         """Get the real part (first component)."""
         return self.coeffs[0]
-
+    
     @real.setter
     def real(self, value: float):
         """Set the real part."""
         self.coeffs[0] = float(value)
-
+    
     @property
     def imag(self) -> List[float]:
         """Get the imaginary parts (all except real)."""
         return self.coeffs[1:]
-
+    
     def __getitem__(self, index: int) -> float:
         """Get component by index."""
         if not 0 <= index < 256:
             raise IndexError(f"Index {index} out of range for Voudon")
         return self.coeffs[index]
-
+    
     def __setitem__(self, index: int, value: float):
         """Set component by index."""
         if not 0 <= index < 256:
             raise IndexError(f"Index {index} out of range for Voudon")
         self.coeffs[index] = float(value)
-
+    
     def __len__(self) -> int:
         """Return number of components (always 256)."""
         return 256
-
+    
     def __iter__(self):
         """Iterate over components."""
         return iter(self.coeffs)
-
-    def __add__(self, other: Union["VoudonNumber", float, int]) -> "VoudonNumber":
+    
+    def __add__(self, other: Union['VoudonNumber', float, int]) -> 'VoudonNumber':
         """Add two Voudon numbers or Voudon and scalar."""
         if isinstance(other, VoudonNumber):
             new_coeffs = [a + b for a, b in zip(self.coeffs, other.coeffs)]
@@ -3089,12 +3842,12 @@ class VoudonNumber:
             new_coeffs[0] += float(other)
             return VoudonNumber(new_coeffs)
         return NotImplemented
-
-    def __radd__(self, other: Union[float, int]) -> "VoudonNumber":
+    
+    def __radd__(self, other: Union[float, int]) -> 'VoudonNumber':
         """Right addition: scalar + Voudon."""
         return self.__add__(other)
-
-    def __sub__(self, other: Union["VoudonNumber", float, int]) -> "VoudonNumber":
+    
+    def __sub__(self, other: Union['VoudonNumber', float, int]) -> 'VoudonNumber':
         """Subtract two Voudon numbers or Voudon and scalar."""
         if isinstance(other, VoudonNumber):
             new_coeffs = [a - b for a, b in zip(self.coeffs, other.coeffs)]
@@ -3104,19 +3857,19 @@ class VoudonNumber:
             new_coeffs[0] -= float(other)
             return VoudonNumber(new_coeffs)
         return NotImplemented
-
-    def __rsub__(self, other: Union[float, int]) -> "VoudonNumber":
+    
+    def __rsub__(self, other: Union[float, int]) -> 'VoudonNumber':
         """Right subtraction: scalar - Voudon."""
         if isinstance(other, (int, float)):
             new_coeffs = [-c for c in self.coeffs]
             new_coeffs[0] += float(other)
             return VoudonNumber(new_coeffs)
         return NotImplemented
-
-    def __mul__(self, other: Union["VoudonNumber", float, int]) -> "VoudonNumber":
+    
+    def __mul__(self, other: Union['VoudonNumber', float, int]) -> 'VoudonNumber':
         """
         Multiply Voudon by scalar or another Voudon (simplified).
-
+        
         Note: True Voudon multiplication would require a 256x256 multiplication table.
         This implementation uses element-wise multiplication for Voudon x Voudon,
         which is mathematically incorrect but practical for many applications.
@@ -3131,12 +3884,12 @@ class VoudonNumber:
             new_coeffs = [a * b for a, b in zip(self.coeffs, other.coeffs)]
             return VoudonNumber(new_coeffs)
         return NotImplemented
-
-    def __rmul__(self, other: Union[float, int]) -> "VoudonNumber":
+    
+    def __rmul__(self, other: Union[float, int]) -> 'VoudonNumber':
         """Right multiplication: scalar * Voudon."""
         return self.__mul__(other)
-
-    def __truediv__(self, scalar: Union[float, int]) -> "VoudonNumber":
+    
+    def __truediv__(self, scalar: Union[float, int]) -> 'VoudonNumber':
         """Divide Voudon by scalar."""
         if isinstance(scalar, (int, float)):
             if scalar == 0:
@@ -3144,8 +3897,8 @@ class VoudonNumber:
             new_coeffs = [c / float(scalar) for c in self.coeffs]
             return VoudonNumber(new_coeffs)
         return NotImplemented
-
-    def __floordiv__(self, scalar: Union[float, int]) -> "VoudonNumber":
+    
+    def __floordiv__(self, scalar: Union[float, int]) -> 'VoudonNumber':
         """Floor divide Voudon by scalar."""
         if isinstance(scalar, (int, float)):
             if scalar == 0:
@@ -3153,8 +3906,8 @@ class VoudonNumber:
             new_coeffs = [c // float(scalar) for c in self.coeffs]
             return VoudonNumber(new_coeffs)
         return NotImplemented
-
-    def __mod__(self, divisor: Union[float, int]) -> "VoudonNumber":
+    
+    def __mod__(self, divisor: Union[float, int]) -> 'VoudonNumber':
         """Modulo operation on Voudon components."""
         if isinstance(divisor, (int, float)):
             if divisor == 0:
@@ -3162,115 +3915,113 @@ class VoudonNumber:
             new_coeffs = [c % float(divisor) for c in self.coeffs]
             return VoudonNumber(new_coeffs)
         return NotImplemented
-
-    def __neg__(self) -> "VoudonNumber":
+    
+    def __neg__(self) -> 'VoudonNumber':
         """Negate the Voudon number."""
         return VoudonNumber([-c for c in self.coeffs])
-
-    def __pos__(self) -> "VoudonNumber":
+    
+    def __pos__(self) -> 'VoudonNumber':
         """Unary plus."""
         return self
-
+    
     def __abs__(self) -> float:
         """Absolute value (magnitude)."""
         return self.magnitude()
-
+    
     def __eq__(self, other: object) -> bool:
         """Check equality with another Voudon."""
         if not isinstance(other, VoudonNumber):
             return False
-        return all(
-            math.isclose(a, b, abs_tol=1e-12) for a, b in zip(self.coeffs, other.coeffs)
-        )
-
+        return all(math.isclose(a, b, abs_tol=1e-12) for a, b in zip(self.coeffs, other.coeffs))
+    
     def __ne__(self, other: object) -> bool:
         """Check inequality."""
         return not self.__eq__(other)
-
+    
     def __hash__(self) -> int:
         """Hash based on rounded components to avoid floating-point issues."""
         return hash(tuple(round(c, 12) for c in self.coeffs))
-
+    
     def magnitude(self) -> float:
         """
         Calculate Euclidean norm (magnitude) of the Voudon.
-
+        
         Returns:
             float: sqrt(Σ_i coeff_i²)
         """
         return float(np.linalg.norm(self.coeffs))
-
+    
     def norm(self) -> float:
         """Alias for magnitude."""
         return self.magnitude()
-
-    def conjugate(self) -> "VoudonNumber":
+    
+    def conjugate(self) -> 'VoudonNumber':
         """Return the conjugate (negate all imaginary parts)."""
         new_coeffs = self.coeffs.copy()
         for i in range(1, 256):
             new_coeffs[i] = -new_coeffs[i]
         return VoudonNumber(new_coeffs)
-
-    def dot(self, other: "VoudonNumber") -> float:
+    
+    def dot(self, other: 'VoudonNumber') -> float:
         """Dot product with another Voudon."""
         if not isinstance(other, VoudonNumber):
             raise TypeError("Dot product requires another VoudonNumber")
         return sum(a * b for a, b in zip(self.coeffs, other.coeffs))
-
-    def normalize(self) -> "VoudonNumber":
+    
+    def normalize(self) -> 'VoudonNumber':
         """Return a normalized (unit) version."""
         mag = self.magnitude()
         if mag == 0:
             raise ZeroDivisionError("Cannot normalize zero Voudon")
         return VoudonNumber([c / mag for c in self.coeffs])
-
+    
     def to_list(self) -> List[float]:
         """Convert to Python list."""
         return self.coeffs.copy()
-
+    
     def to_tuple(self) -> Tuple[float, ...]:
         """Convert to tuple."""
         return tuple(self.coeffs)
-
+    
     def to_numpy(self) -> np.ndarray:
         """Convert to numpy array."""
         return np.array(self.coeffs, dtype=np.float64)
-
-    def copy(self) -> "VoudonNumber":
-        """Generate a copy."""
+    
+    def copy(self) -> 'VoudonNumber':
+        """Create a copy."""
         return VoudonNumber(self.coeffs.copy())
-
+    
     def components(self) -> List[float]:
         """Get components as list (alias for to_list)."""
         return self.to_list()
-
+    
     def phase(self) -> float:
         """
         Compute phase (angle) of the Voudon number.
-
+        
         For high-dimensional numbers, phase is not uniquely defined.
         This implementation returns the angle of the projection onto
         the real-imaginary plane.
         """
         if self.magnitude() == 0:
             return 0.0
-
+        
         # Compute magnitude of imaginary parts
         imag_magnitude = math.sqrt(sum(i**2 for i in self.imag))
         if imag_magnitude == 0:
             return 0.0
-
+        
         # Angle between real part and imaginary vector
         return math.atan2(imag_magnitude, self.real)
-
+    
     def __str__(self) -> str:
         """Human-readable string representation."""
         # For 256 dimensions, show a summary
         non_zero = [(i, c) for i, c in enumerate(self.coeffs) if abs(c) > 1e-10]
-
+        
         if not non_zero:
             return "Voudon(0)"
-
+        
         if len(non_zero) <= 5:
             # Show all non-zero components
             parts = []
@@ -3284,7 +4035,7 @@ class VoudonNumber:
         else:
             # Show summary
             return f"Voudon[{len(non_zero)} non-zero components, real={self.real:.6f}, mag={self.magnitude():.6f}]"
-
+    
     def __repr__(self) -> str:
         """Detailed representation showing first few components."""
         if len(self.coeffs) <= 8:
@@ -3293,40 +4044,36 @@ class VoudonNumber:
             first_five = self.coeffs[:5]
             last_five = self.coeffs[-5:]
             return f"VoudonNumber({first_five} ... {last_five})"
-
+    
     def summary(self) -> str:
         """Return a summary of the Voudon number."""
         non_zero = sum(1 for c in self.coeffs if abs(c) > 1e-10)
         max_coeff = max(abs(c) for c in self.coeffs)
         min_coeff = min(abs(c) for c in self.coeffs if abs(c) > 0)
-
-        return (
-            f"VoudonNumber Summary:\n"
-            f"  Dimensions: 256\n"
-            f"  Non-zero components: {non_zero}\n"
-            f"  Real part: {self.real:.6f}\n"
-            f"  Magnitude: {self.magnitude():.6f}\n"
-            f"  Phase: {self.phase():.6f} rad\n"
-            f"  Max component: {max_coeff:.6f}\n"
-            f"  Min non-zero: {min_coeff:.6f if non_zero > 0 else 0}"
-        )
-
+        
+        return (f"VoudonNumber Summary:\n"
+                f"  Dimensions: 256\n"
+                f"  Non-zero components: {non_zero}\n"
+                f"  Real part: {self.real:.6f}\n"
+                f"  Magnitude: {self.magnitude():.6f}\n"
+                f"  Phase: {self.phase():.6f} rad\n"
+                f"  Max component: {max_coeff:.6f}\n"
+                f"  Min non-zero: {min_coeff:.6f if non_zero > 0 else 0}")
 
 @dataclass
 class OctonionNumber:
     """
     Represents an octonion number with 8 components.
     Implements octonion multiplication rules (non-commutative, non-associative).
-
+    
     Octonions are 8-dimensional hypercomplex numbers that extend quaternions.
     They have applications in string theory, quantum mechanics, and geometry.
-
+    
     Attributes:
     ----------
     w, x, y, z, e, f, g, h : float
         The 8 components of the octonion
     """
-
     w: float = 0.0
     x: float = 0.0
     y: float = 0.0
@@ -3335,22 +4082,22 @@ class OctonionNumber:
     f: float = 0.0
     g: float = 0.0
     h: float = 0.0
-
+    
     # Private field for phase computation
     _phase: float = field(init=False, default=0.0)
-
+    
     def __post_init__(self):
-        """Initialize phase after the object is Generated."""
+        """Initialize phase after the object is created."""
         self._compute_phase()
-
+    
     @classmethod
-    def from_list(cls, components: List[float]) -> "OctonionNumber":
+    def from_list(cls, components: List[float]) -> 'OctonionNumber':
         """
-        Generate OctonionNumber from a list of components.
-
+        Create OctonionNumber from a list of components.
+        
         Args:
             components: List of 1-8 float values
-
+        
         Returns:
             OctonionNumber instance
         """
@@ -3363,54 +4110,54 @@ class OctonionNumber:
         else:
             # Truncate if more than 8 components
             return cls(*components[:8])
-
+    
     @classmethod
-    def from_scalar(cls, scalar: float) -> "OctonionNumber":
+    def from_scalar(cls, scalar: float) -> 'OctonionNumber':
         """
-        Generate OctonionNumber from a scalar (real number).
-
+        Create OctonionNumber from a scalar (real number).
+        
         Args:
             scalar: Real number to convert to octonion
-
+        
         Returns:
             OctonionNumber with scalar as real part, others zero
         """
         return cls(w=float(scalar))
-
+    
     @classmethod
-    def from_complex(cls, z: complex) -> "OctonionNumber":
+    def from_complex(cls, z: complex) -> 'OctonionNumber':
         """
-        Generate OctonionNumber from a complex number.
-
+        Create OctonionNumber from a complex number.
+        
         Args:
             z: Complex number to convert to octonion
-
+        
         Returns:
             OctonionNumber with complex as first two components
         """
         return cls(w=z.real, x=z.imag)
-
+    
     @property
     def coeffs(self) -> List[float]:
         """Get all components as a list."""
         return [self.w, self.x, self.y, self.z, self.e, self.f, self.g, self.h]
-
+    
     @property
     def real(self) -> float:
         """Get the real part (first component)."""
         return self.w
-
+    
     @real.setter
     def real(self, value: float):
         """Set the real part."""
         self.w = float(value)
         self._compute_phase()
-
+    
     @property
     def imag(self) -> List[float]:
         """Get the imaginary parts (all except real)."""
         return [self.x, self.y, self.z, self.e, self.f, self.g, self.h]
-
+    
     def _compute_phase(self) -> None:
         """Compute and store the phase (angle) of the octonion."""
         magnitude = self.magnitude()
@@ -3425,42 +4172,43 @@ class OctonionNumber:
             else:
                 # Angle between real part and imaginary vector
                 self._phase = np.arctan2(imag_magnitude, self.real)
-
+    
     def components(self) -> List[float]:
         """Get components as list (alias for coeffs)."""
         return self.coeffs
-
+    
     def magnitude(self) -> float:
         """
         Calculate the Euclidean norm (magnitude) of the octonion.
-
+        
         Returns:
             float: sqrt(w² + x² + y² + z² + e² + f² + g² + h²)
         """
         return float(np.linalg.norm(self.coeffs))
-
+    
     def norm(self) -> float:
         """Alias for magnitude."""
         return self.magnitude()
-
-    def conjugate(self) -> "OctonionNumber":
+    
+    def conjugate(self) -> 'OctonionNumber':
         """
         Return the conjugate of the octonion.
-
+        
         Returns:
             OctonionNumber with signs of imaginary parts flipped
         """
         return OctonionNumber(
-            self.w, -self.x, -self.y, -self.z, -self.e, -self.f, -self.g, -self.h
+            self.w, -self.x, -self.y, -self.z,
+            -self.e, -self.f, -self.g, -self.h
         )
-
-    def inverse(self) -> "OctonionNumber":
+    
+    def inverse(self) -> 'OctonionNumber':
         """
         Return the multiplicative inverse.
-
+        
         Returns:
             OctonionNumber: o⁻¹ such that o * o⁻¹ = o⁻¹ * o = 1
-
+        
         Raises:
             ZeroDivisionError: If magnitude is zero
         """
@@ -3469,282 +4217,170 @@ class OctonionNumber:
             raise ZeroDivisionError("Cannot invert zero octonion")
         conj = self.conjugate()
         return OctonionNumber(
-            conj.w / mag_sq,
-            conj.x / mag_sq,
-            conj.y / mag_sq,
-            conj.z / mag_sq,
-            conj.e / mag_sq,
-            conj.f / mag_sq,
-            conj.g / mag_sq,
-            conj.h / mag_sq,
+            conj.w / mag_sq, conj.x / mag_sq, conj.y / mag_sq, conj.z / mag_sq,
+            conj.e / mag_sq, conj.f / mag_sq, conj.g / mag_sq, conj.h / mag_sq
         )
-
-    def dot(self, other: "OctonionNumber") -> float:
+    
+    def dot(self, other: 'OctonionNumber') -> float:
         """
         Compute the dot product with another octonion.
-
+        
         Args:
             other: Another OctonionNumber
-
+        
         Returns:
             float: Dot product (sum of component-wise products)
         """
         if not isinstance(other, OctonionNumber):
             raise TypeError("Dot product requires another OctonionNumber")
-
+        
         return sum(a * b for a, b in zip(self.coeffs, other.coeffs))
-
-    def normalize(self) -> "OctonionNumber":
+    
+    def normalize(self) -> 'OctonionNumber':
         """
         Return a normalized (unit) version of this octonion.
-
+        
         Returns:
             OctonionNumber with magnitude 1
-
+        
         Raises:
             ZeroDivisionError: If magnitude is zero
         """
         mag = self.magnitude()
         if mag == 0:
             raise ZeroDivisionError("Cannot normalize zero octonion")
-
+        
         return OctonionNumber(
-            self.w / mag,
-            self.x / mag,
-            self.y / mag,
-            self.z / mag,
-            self.e / mag,
-            self.f / mag,
-            self.g / mag,
-            self.h / mag,
+            self.w / mag, self.x / mag, self.y / mag, self.z / mag,
+            self.e / mag, self.f / mag, self.g / mag, self.h / mag
         )
-
+    
     def phase(self) -> float:
         """
         Get the phase (angle) of the octonion.
-
+        
         Returns:
             float: Phase angle in radians
         """
         return self._phase
-
+    
     # Operator overloads
-    def __add__(self, other: Union["OctonionNumber", float, int]) -> "OctonionNumber":
+    def __add__(self, other: Union['OctonionNumber', float, int]) -> 'OctonionNumber':
         if isinstance(other, OctonionNumber):
             return OctonionNumber(
-                self.w + other.w,
-                self.x + other.x,
-                self.y + other.y,
-                self.z + other.z,
-                self.e + other.e,
-                self.f + other.f,
-                self.g + other.g,
-                self.h + other.h,
+                self.w + other.w, self.x + other.x, self.y + other.y, self.z + other.z,
+                self.e + other.e, self.f + other.f, self.g + other.g, self.h + other.h
             )
         elif isinstance(other, (int, float)):
-            return OctonionNumber(
-                self.w + other, self.x, self.y, self.z, self.e, self.f, self.g, self.h
-            )
+            return OctonionNumber(self.w + other, self.x, self.y, self.z,
+                                 self.e, self.f, self.g, self.h)
         return NotImplemented
-
-    def __radd__(self, other: Union[float, int]) -> "OctonionNumber":
+    
+    def __radd__(self, other: Union[float, int]) -> 'OctonionNumber':
         return self.__add__(other)
-
-    def __sub__(self, other: Union["OctonionNumber", float, int]) -> "OctonionNumber":
+    
+    def __sub__(self, other: Union['OctonionNumber', float, int]) -> 'OctonionNumber':
         if isinstance(other, OctonionNumber):
             return OctonionNumber(
-                self.w - other.w,
-                self.x - other.x,
-                self.y - other.y,
-                self.z - other.z,
-                self.e - other.e,
-                self.f - other.f,
-                self.g - other.g,
-                self.h - other.h,
+                self.w - other.w, self.x - other.x, self.y - other.y, self.z - other.z,
+                self.e - other.e, self.f - other.f, self.g - other.g, self.h - other.h
             )
         elif isinstance(other, (int, float)):
-            return OctonionNumber(
-                self.w - other, self.x, self.y, self.z, self.e, self.f, self.g, self.h
-            )
+            return OctonionNumber(self.w - other, self.x, self.y, self.z,
+                                 self.e, self.f, self.g, self.h)
         return NotImplemented
-
-    def __rsub__(self, other: Union[float, int]) -> "OctonionNumber":
+    
+    def __rsub__(self, other: Union[float, int]) -> 'OctonionNumber':
         if isinstance(other, (int, float)):
             return OctonionNumber(
-                other - self.w,
-                -self.x,
-                -self.y,
-                -self.z,
-                -self.e,
-                -self.f,
-                -self.g,
-                -self.h,
+                other - self.w, -self.x, -self.y, -self.z,
+                -self.e, -self.f, -self.g, -self.h
             )
         return NotImplemented
-
-    def __mul__(self, other: Union["OctonionNumber", float, int]) -> "OctonionNumber":
+    
+    def __mul__(self, other: Union['OctonionNumber', float, int]) -> 'OctonionNumber':
         if isinstance(other, OctonionNumber):
             # Octonion multiplication (non-commutative, non-associative)
-            w = (
-                self.w * other.w
-                - self.x * other.x
-                - self.y * other.y
-                - self.z * other.z
-                - self.e * other.e
-                - self.f * other.f
-                - self.g * other.g
-                - self.h * other.h
-            )
-            x = (
-                self.w * other.x
-                + self.x * other.w
-                + self.y * other.z
-                - self.z * other.y
-                + self.e * other.f
-                - self.f * other.e
-                + self.g * other.h
-                - self.h * other.g
-            )
-            y = (
-                self.w * other.y
-                - self.x * other.z
-                + self.y * other.w
-                + self.z * other.x
-                + self.e * other.g
-                - self.g * other.e
-                - self.f * other.h
-                + self.h * other.f
-            )
-            z = (
-                self.w * other.z
-                + self.x * other.y
-                - self.y * other.x
-                + self.z * other.w
-                + self.e * other.h
-                - self.h * other.e
-                + self.f * other.g
-                - self.g * other.f
-            )
-            e = (
-                self.w * other.e
-                - self.x * other.f
-                - self.y * other.g
-                - self.z * other.h
-                + self.e * other.w
-                + self.f * other.x
-                + self.g * other.y
-                + self.h * other.z
-            )
-            f = (
-                self.w * other.f
-                + self.x * other.e
-                - self.y * other.h
-                + self.z * other.g
-                - self.e * other.x
-                + self.f * other.w
-                - self.g * other.z
-                + self.h * other.y
-            )
-            g = (
-                self.w * other.g
-                + self.x * other.h
-                + self.y * other.e
-                - self.z * other.f
-                - self.e * other.y
-                + self.f * other.z
-                + self.g * other.w
-                - self.h * other.x
-            )
-            h = (
-                self.w * other.h
-                - self.x * other.g
-                + self.y * other.f
-                + self.z * other.e
-                - self.e * other.z
-                - self.f * other.y
-                + self.g * other.x
-                + self.h * other.w
-            )
-
+            w = self.w * other.w - self.x * other.x - self.y * other.y - self.z * other.z \
+                - self.e * other.e - self.f * other.f - self.g * other.g - self.h * other.h
+            x = self.w * other.x + self.x * other.w + self.y * other.z - self.z * other.y \
+                + self.e * other.f - self.f * other.e + self.g * other.h - self.h * other.g
+            y = self.w * other.y - self.x * other.z + self.y * other.w + self.z * other.x \
+                + self.e * other.g - self.g * other.e - self.f * other.h + self.h * other.f
+            z = self.w * other.z + self.x * other.y - self.y * other.x + self.z * other.w \
+                + self.e * other.h - self.h * other.e + self.f * other.g - self.g * other.f
+            e = self.w * other.e - self.x * other.f - self.y * other.g - self.z * other.h \
+                + self.e * other.w + self.f * other.x + self.g * other.y + self.h * other.z
+            f = self.w * other.f + self.x * other.e - self.y * other.h + self.z * other.g \
+                - self.e * other.x + self.f * other.w - self.g * other.z + self.h * other.y
+            g = self.w * other.g + self.x * other.h + self.y * other.e - self.z * other.f \
+                - self.e * other.y + self.f * other.z + self.g * other.w - self.h * other.x
+            h = self.w * other.h - self.x * other.g + self.y * other.f + self.z * other.e \
+                - self.e * other.z - self.f * other.y + self.g * other.x + self.h * other.w
+            
             return OctonionNumber(w, x, y, z, e, f, g, h)
-
+        
         elif isinstance(other, (int, float)):
             # Scalar multiplication
             return OctonionNumber(
-                self.w * other,
-                self.x * other,
-                self.y * other,
-                self.z * other,
-                self.e * other,
-                self.f * other,
-                self.g * other,
-                self.h * other,
+                self.w * other, self.x * other, self.y * other, self.z * other,
+                self.e * other, self.f * other, self.g * other, self.h * other
             )
-
+        
         return NotImplemented
-
-    def __rmul__(self, other: Union[float, int]) -> "OctonionNumber":
+    
+    def __rmul__(self, other: Union[float, int]) -> 'OctonionNumber':
         return self.__mul__(other)
-
-    def __truediv__(self, scalar: Union[float, int]) -> "OctonionNumber":
+    
+    def __truediv__(self, scalar: Union[float, int]) -> 'OctonionNumber':
         if isinstance(scalar, (int, float)):
             if scalar == 0:
                 raise ZeroDivisionError("Cannot divide octonion by zero")
             return OctonionNumber(
-                self.w / scalar,
-                self.x / scalar,
-                self.y / scalar,
-                self.z / scalar,
-                self.e / scalar,
-                self.f / scalar,
-                self.g / scalar,
-                self.h / scalar,
+                self.w / scalar, self.x / scalar, self.y / scalar, self.z / scalar,
+                self.e / scalar, self.f / scalar, self.g / scalar, self.h / scalar
             )
         return NotImplemented
-
-    def __neg__(self) -> "OctonionNumber":
+    
+    def __neg__(self) -> 'OctonionNumber':
         return OctonionNumber(
-            -self.w, -self.x, -self.y, -self.z, -self.e, -self.f, -self.g, -self.h
+            -self.w, -self.x, -self.y, -self.z,
+            -self.e, -self.f, -self.g, -self.h
         )
-
+    
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, OctonionNumber):
             return False
-
+        
         tol = 1e-12
         return all(abs(a - b) < tol for a, b in zip(self.coeffs, other.coeffs))
-
+    
     def __ne__(self, other: object) -> bool:
         return not self.__eq__(other)
-
+    
     def __hash__(self) -> int:
         # Round to avoid floating-point precision issues
         return hash(tuple(round(c, 10) for c in self.coeffs))
-
+    
     def __str__(self) -> str:
-        return (
-            f"Octonion({self.w:.6f}, {self.x:.6f}, {self.y:.6f}, {self.z:.6f}, "
-            f"{self.e:.6f}, {self.f:.6f}, {self.g:.6f}, {self.h:.6f})"
-        )
-
+        return f"Octonion({self.w:.6f}, {self.x:.6f}, {self.y:.6f}, {self.z:.6f}, " \
+               f"{self.e:.6f}, {self.f:.6f}, {self.g:.6f}, {self.h:.6f})"
+    
     def __repr__(self) -> str:
-        return (
-            f"OctonionNumber({self.w}, {self.x}, {self.y}, {self.z}, "
-            f"{self.e}, {self.f}, {self.g}, {self.h})"
-        )
-
+        return f"OctonionNumber({self.w}, {self.x}, {self.y}, {self.z}, " \
+               f"{self.e}, {self.f}, {self.g}, {self.h})"
+    
     def to_tuple(self) -> Tuple[float, ...]:
         """Convert to tuple."""
         return tuple(self.coeffs)
-
+    
     def to_numpy(self) -> np.ndarray:
         """Convert to numpy array."""
         return np.array(self.coeffs, dtype=np.float64)
-
-    def copy(self) -> "OctonionNumber":
-        """Generate a copy of this octonion."""
+    
+    def copy(self) -> 'OctonionNumber':
+        """Create a copy of this octonion."""
         return OctonionNumber(*self.coeffs)
-
 
 # Bazı önemli oktonyon sabitleri
 ZERO = OctonionNumber(0, 0, 0, 0, 0, 0, 0, 0)
@@ -3757,10 +4393,8 @@ F = OctonionNumber(0, 0, 0, 0, 0, 1, 0, 0)
 G = OctonionNumber(0, 0, 0, 0, 0, 0, 1, 0)
 H = OctonionNumber(0, 0, 0, 0, 0, 0, 0, 1)
 
-
 class Constants:
     """Oktonyon sabitleri (alias'lar)."""
-
     ZERO = ZERO
     ONE = ONE
     I = I
@@ -3771,11 +4405,1441 @@ class Constants:
     G = G
     H = H
 
+@dataclass
+class NeutrosophicNumber:
+    """Represents a neutrosophic number of the form t + iI + fF."""
+    t: float  # truth
+    i: float  # indeterminacy
+    f: float  # falsity
 
-from dataclasses import dataclass, field
-from typing import Union, List, Any, Tuple, Optional
-import math
+    def __init__(self, t: float, i: float, f: float = 0.0):
+        self.t = t
+        self.i = i
+        self.f = f
 
+    def __add__(self, other: Any) -> "NeutrosophicNumber":
+        if isinstance(other, NeutrosophicNumber):
+            return NeutrosophicNumber(self.t + other.t, self.i + other.i, self.f + other.f)
+        if isinstance(other, (int, float)):
+            return NeutrosophicNumber(self.t + other, self.i, self.f)
+        return NotImplemented
+
+    def __sub__(self, other: Any) -> "NeutrosophicNumber":
+        if isinstance(other, NeutrosophicNumber):
+            return NeutrosophicNumber(self.t - other.t, self.i - other.i, self.f - other.f)
+        if isinstance(other, (int, float)):
+            return NeutrosophicNumber(self.t - other, self.i, self.f)
+        return NotImplemented
+
+    def __mul__(self, other: Any) -> "NeutrosophicNumber":
+        if isinstance(other, NeutrosophicNumber):
+            return NeutrosophicNumber(
+                self.t * other.t,
+                self.t * other.i + self.i * other.t + self.i * other.i,
+                self.t * other.f + self.f * other.t + self.f * other.f
+            )
+        if isinstance(other, (int, float)):
+            return NeutrosophicNumber(self.t * other, self.i * other, self.f * other)
+        return NotImplemented
+
+    def __truediv__(self, divisor: float) -> "NeutrosophicNumber":
+        if isinstance(divisor, (int, float)):
+            if divisor == 0:
+                raise ZeroDivisionError("Cannot divide by zero.")
+            return NeutrosophicNumber(self.t / divisor, self.i / divisor, self.f / divisor)
+        raise TypeError("Only scalar division is supported.")
+
+    def __str__(self) -> str:
+        parts = []
+        if self.t != 0:
+            parts.append(f"{self.t}")
+        if self.i != 0:
+            parts.append(f"{self.i}I")
+        if self.f != 0:
+            parts.append(f"{self.f}F")
+        return " + ".join(parts) if parts else "0"
+
+# Nötrosofik Karmaşık Sayı Sınıfı
+@dataclass
+class NeutrosophicComplexNumber:
+    """
+    Represents a neutrosophic complex number: (a + bj) + cI
+    where I is the indeterminacy unit
+    """
+
+    real: float = 0.0
+    imag: float = 0.0
+    indeterminacy: float = 0.0
+
+    def __post_init__(self):
+        self.real = float(self.real)
+        self.imag = float(self.imag)
+        self.indeterminacy = float(self.indeterminacy)
+
+    @property
+    def complex_part(self) -> complex:
+        """Karmaşık kısmı döndür"""
+        return complex(self.real, self.imag)
+
+    # Operatörler
+    def __add__(self, other: Any) -> "NeutrosophicComplexNumber":
+        if isinstance(other, NeutrosophicComplexNumber):
+            return NeutrosophicComplexNumber(
+                self.real + other.real,
+                self.imag + other.imag,
+                self.indeterminacy + other.indeterminacy,
+            )
+        elif isinstance(other, (int, float)):
+            return NeutrosophicComplexNumber(
+                self.real + other, self.imag, self.indeterminacy
+            )
+        elif isinstance(other, complex):
+            return NeutrosophicComplexNumber(
+                self.real + other.real, self.imag + other.imag, self.indeterminacy
+            )
+        return NotImplemented
+
+    def __radd__(self, other: Any) -> "NeutrosophicComplexNumber":
+        return self.__add__(other)
+
+    def __sub__(self, other: Any) -> "NeutrosophicComplexNumber":
+        if isinstance(other, NeutrosophicComplexNumber):
+            return NeutrosophicComplexNumber(
+                self.real - other.real,
+                self.imag - other.imag,
+                self.indeterminacy - other.indeterminacy,
+            )
+        elif isinstance(other, (int, float)):
+            return NeutrosophicComplexNumber(
+                self.real - other, self.imag, self.indeterminacy
+            )
+        elif isinstance(other, complex):
+            return NeutrosophicComplexNumber(
+                self.real - other.real, self.imag - other.imag, self.indeterminacy
+            )
+        return NotImplemented
+
+    def __rsub__(self, other: Any) -> "NeutrosophicComplexNumber":
+        if isinstance(other, (int, float)):
+            return NeutrosophicComplexNumber(
+                other - self.real, -self.imag, -self.indeterminacy
+            )
+        elif isinstance(other, complex):
+            return NeutrosophicComplexNumber(
+                other.real - self.real, other.imag - self.imag, -self.indeterminacy
+            )
+        return NotImplemented
+
+    def __mul__(self, other: Any) -> "NeutrosophicComplexNumber":
+        if isinstance(other, NeutrosophicComplexNumber):
+            # Karmaşık çarpma + belirsizlik yayılımı
+            new_real = self.real * other.real - self.imag * other.imag
+            new_imag = self.real * other.imag + self.imag * other.real
+
+            # Belirsizlik yayılımı (basitleştirilmiş model)
+            mag_sq_self = self.real**2 + self.imag**2
+            mag_sq_other = other.real**2 + other.imag**2
+            new_indeterminacy = (
+                self.indeterminacy
+                + other.indeterminacy
+                + mag_sq_self * other.indeterminacy
+                + mag_sq_other * self.indeterminacy
+            )
+
+            return NeutrosophicComplexNumber(new_real, new_imag, new_indeterminacy)
+        elif isinstance(other, complex):
+            new_real = self.real * other.real - self.imag * other.imag
+            new_imag = self.real * other.imag + self.imag * other.real
+            return NeutrosophicComplexNumber(new_real, new_imag, self.indeterminacy)
+        elif isinstance(other, (int, float)):
+            return NeutrosophicComplexNumber(
+                self.real * other, self.imag * other, self.indeterminacy * other
+            )
+        return NotImplemented
+
+    def __rmul__(self, other: Any) -> "NeutrosophicComplexNumber":
+        return self.__mul__(other)
+
+    def __truediv__(self, other: Any) -> "NeutrosophicComplexNumber":
+        if isinstance(other, (int, float)):
+            if other == 0:
+                raise ZeroDivisionError("Cannot divide by zero")
+            return NeutrosophicComplexNumber(
+                self.real / other, self.imag / other, self.indeterminacy / other
+            )
+        return NotImplemented
+
+    def __neg__(self) -> "NeutrosophicComplexNumber":
+        return NeutrosophicComplexNumber(-self.real, -self.imag, -self.indeterminacy)
+
+    def __abs__(self) -> float:
+        """Büyüklük (karmaşık norm + belirsizlik)"""
+        complex_mag = math.sqrt(self.real**2 + self.imag**2)
+        return math.sqrt(complex_mag**2 + self.indeterminacy**2)
+
+    # Karşılaştırma
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, NeutrosophicComplexNumber):
+            return NotImplemented
+        return (
+            math.isclose(self.real, other.real, abs_tol=1e-12)
+            and math.isclose(self.imag, other.imag, abs_tol=1e-12)
+            and math.isclose(self.indeterminacy, other.indeterminacy, abs_tol=1e-12)
+        )
+
+    # String temsilleri
+    def __str__(self) -> str:
+        parts = []
+        if abs(self.real) > 1e-12 or abs(self.imag) > 1e-12:
+            if abs(self.imag) < 1e-12:
+                parts.append(f"{self.real:.6g}")
+            else:
+                parts.append(f"({self.real:.6g}{self.imag:+.6g}j)")
+        if abs(self.indeterminacy) > 1e-12:
+            parts.append(f"{self.indeterminacy:.6g}I")
+        return " + ".join(parts) if parts else "0"
+
+    def __repr__(self) -> str:
+        return f"NeutrosophicComplexNumber(real={self.real}, imag={self.imag}, indeterminacy={self.indeterminacy})"
+
+    # Yardımcı metodlar
+    def conjugate(self) -> "NeutrosophicComplexNumber":
+        """Karmaşık eşlenik alır, belirsizlik değişmez"""
+        return NeutrosophicComplexNumber(self.real, -self.imag, self.indeterminacy)
+
+    def magnitude_sq(self) -> float:
+        """Karmaşık kısmın büyüklüğünün karesi"""
+        return self.real**2 + self.imag**2
+
+    def phase(self) -> float:
+        """Faz açısı"""
+        if abs(self.real) < 1e-12 and abs(self.imag) < 1e-12:
+            return 0.0
+        return math.atan2(self.imag, self.real)
+
+    def to_polar(self) -> Tuple[float, float, float]:
+        """Kutupsal koordinatlara dönüşüm"""
+        r = math.sqrt(self.real**2 + self.imag**2)
+        theta = self.phase()
+        return (r, theta, self.indeterminacy)
+
+    @classmethod
+    def from_polar(
+        cls, r: float, theta: float, indeterminacy: float = 0.0
+    ) -> "NeutrosophicComplexNumber":
+        """Kutupsal koordinatlardan oluştur"""
+        return cls(r * math.cos(theta), r * math.sin(theta), indeterminacy)
+
+@dataclass
+class HyperrealNumber:
+    """Represents a hyperreal number as a sequence of real numbers."""
+    sequence: List[float]
+
+    def __init__(self, *args):
+        if len(args) == 1 and isinstance(args[0], list):
+            self.sequence = args[0]
+        else:
+            self.sequence = list(args)
+
+    def __add__(self, other: Any) -> "HyperrealNumber":
+        if isinstance(other, HyperrealNumber):
+            # Sequence'leri eşit uzunluğa getir
+            max_len = max(len(self.sequence), len(other.sequence))
+            seq1 = self.sequence + [0.0] * (max_len - len(self.sequence))
+            seq2 = other.sequence + [0.0] * (max_len - len(other.sequence))
+            return HyperrealNumber([a + b for a, b in zip(seq1, seq2)])
+        elif isinstance(other, (int, float)):
+            new_seq = self.sequence.copy()
+            new_seq[0] += other  # Sadece finite part'a ekle
+            return HyperrealNumber(new_seq)
+        return NotImplemented
+
+    def __sub__(self, other: Any) -> "HyperrealNumber":
+        if isinstance(other, HyperrealNumber):
+            max_len = max(len(self.sequence), len(other.sequence))
+            seq1 = self.sequence + [0.0] * (max_len - len(self.sequence))
+            seq2 = other.sequence + [0.0] * (max_len - len(other.sequence))
+            return HyperrealNumber([a - b for a, b in zip(seq1, seq2)])
+        elif isinstance(other, (int, float)):
+            new_seq = self.sequence.copy()
+            new_seq[0] -= other
+            return HyperrealNumber(new_seq)
+        return NotImplemented
+
+    def __mul__(self, scalar: float) -> "HyperrealNumber":
+        if isinstance(scalar, (int, float)):
+            return HyperrealNumber([x * scalar for x in self.sequence])
+        return NotImplemented
+
+    def __rmul__(self, scalar: float) -> "HyperrealNumber":
+        return self.__mul__(scalar)
+
+    def __truediv__(self, divisor: float) -> "HyperrealNumber":
+        if isinstance(divisor, (int, float)):
+            if divisor == 0:
+                raise ZeroDivisionError("Scalar division by zero.")
+            return HyperrealNumber([x / divisor for x in self.sequence])
+        raise TypeError("Only scalar division is supported.")
+
+    def __mod__(self, divisor: float) -> "HyperrealNumber":
+        if isinstance(divisor, (int, float)):
+            return HyperrealNumber([x % divisor for x in self.sequence])
+        raise TypeError("Modulo only supported with a scalar divisor.")
+
+    def __str__(self) -> str:
+        if len(self.sequence) <= 5:
+            return f"Hyperreal{self.sequence}"
+        return f"Hyperreal({self.sequence[:3]}...)" 
+
+    @property
+    def finite(self):
+        """Returns the finite part (first component)"""
+        return self.sequence[0] if self.sequence else 0.0
+
+    @property
+    def infinitesimal(self):
+        """Returns the first infinitesimal part (second component)"""
+        return self.sequence[1] if len(self.sequence) > 1 else 0.0
+
+@dataclass
+class BicomplexNumber:
+    """Represents a bicomplex number with two complex components."""
+    z1: complex  # First complex component
+    z2: complex  # Second complex component
+
+    def __add__(self, other: Any) -> "BicomplexNumber":
+        if isinstance(other, BicomplexNumber):
+            return BicomplexNumber(self.z1 + other.z1, self.z2 + other.z2)
+        elif isinstance(other, (int, float, complex)):
+            return BicomplexNumber(self.z1 + other, self.z2)
+        else:
+            raise TypeError(f"Unsupported operand type(s) for +: 'BicomplexNumber' and '{type(other).__name__}'")
+
+    def __sub__(self, other: Any) -> "BicomplexNumber":
+        if isinstance(other, BicomplexNumber):
+            return BicomplexNumber(self.z1 - other.z1, self.z2 - other.z2)
+        elif isinstance(other, (int, float, complex)):
+            return BicomplexNumber(self.z1 - other, self.z2)
+        else:
+            raise TypeError(f"Unsupported operand type(s) for -: 'BicomplexNumber' and '{type(other).__name__}'")
+
+    def __mul__(self, other: Any) -> "BicomplexNumber":
+        if isinstance(other, BicomplexNumber):
+            return BicomplexNumber(
+                self.z1 * other.z1 - self.z2 * other.z2,
+                self.z1 * other.z2 + self.z2 * other.z1
+            )
+        elif isinstance(other, (int, float, complex)):
+            return BicomplexNumber(self.z1 * other, self.z2 * other)
+        else:
+            raise TypeError(f"Unsupported operand type(s) for *: 'BicomplexNumber' and '{type(other).__name__}'")
+
+    def __truediv__(self, divisor: float) -> "BicomplexNumber":
+        if isinstance(divisor, (int, float)):
+            if divisor == 0:
+                raise ZeroDivisionError("Division by zero")
+            return BicomplexNumber(self.z1 / divisor, self.z2 / divisor)
+        else:
+            raise TypeError("Only scalar division is supported")
+
+    def __str__(self) -> str:
+        parts = []
+        if self.z1 != 0j:
+            parts.append(f"({self.z1.real}+{self.z1.imag}j)")
+        if self.z2 != 0j:
+            parts.append(f"({self.z2.real}+{self.z2.imag}j)e")
+        return " + ".join(parts) if parts else "0"
+
+def _parse_bicomplex(s: Any) -> BicomplexNumber:
+    """
+    Universally parse input into a BicomplexNumber.
+
+    Features from both versions combined:
+    1. Type checking and direct returns for BicomplexNumber
+    2. Handles numeric types (int, float, numpy) -> z1 = num, z2 = 0
+    3. Handles complex numbers -> z1 = complex, z2 = 0
+    4. Handles iterables (list, tuple) of 1, 2, or 4 numbers
+    5. String parsing with multiple formats:
+       - Comma-separated "a,b,c,d" or "a,b" or "a"
+       - Explicit "(a+bj)+(c+dj)e" format
+       - Complex strings like "1+2j", "3j", "4"
+       - Fallback to complex() parsing
+    6. Robust error handling with logging
+    7. Final fallback to zero bicomplex
+
+    Args:
+        s: Input to parse (any type)
+
+    Returns:
+        Parsed BicomplexNumber or BicomplexNumber(0,0) on failure
+    """
+    try:
+        # Feature 1: Direct return if already BicomplexNumber
+        if isinstance(s, BicomplexNumber):
+            return s
+
+        # Feature 2: Handle numeric scalars
+        if isinstance(s, (int, float, np.floating, np.integer)):
+            return BicomplexNumber(complex(float(s), 0.0), complex(0.0, 0.0))
+
+        # Feature 3: Handle complex numbers
+        if isinstance(s, complex):
+            return BicomplexNumber(s, complex(0.0, 0.0))
+
+        # Feature 4: Handle iterables (non-string)
+        if hasattr(s, "__iter__") and not isinstance(s, str):
+            parts = list(s)
+            if len(parts) == 4:
+                # Four numbers: (z1_real, z1_imag, z2_real, z2_imag)
+                return BicomplexNumber(
+                    complex(float(parts[0]), float(parts[1])),
+                    complex(float(parts[2]), float(parts[3])),
+                )
+            elif len(parts) == 2:
+                # Two numbers: (real, imag) for z1
+                return BicomplexNumber(
+                    complex(float(parts[0]), float(parts[1])), complex(0.0, 0.0)
+                )
+            elif len(parts) == 1:
+                # Single number: real part of z1
+                return BicomplexNumber(complex(float(parts[0]), 0.0), complex(0.0, 0.0))
+
+        # Convert to string for further parsing
+        if not isinstance(s, str):
+            s = str(s)
+
+        s_clean = s.strip().replace(" ", "")
+
+        # Feature 5.1: Comma-separated numeric list
+        if "," in s_clean:
+            parts = [p for p in s_clean.split(",") if p != ""]
+            try:
+                nums = [float(p) for p in parts]
+                if len(nums) == 4:
+                    return BicomplexNumber(
+                        complex(nums[0], nums[1]), complex(nums[2], nums[3])
+                    )
+                elif len(nums) == 2:
+                    return BicomplexNumber(complex(nums[0], nums[1]), complex(0.0, 0.0))
+                elif len(nums) == 1:
+                    return BicomplexNumber(complex(nums[0], 0.0), complex(0.0, 0.0))
+            except ValueError:
+                # Not purely numeric, continue to other formats
+                pass
+
+        # Feature 5.2: Explicit "(a+bj)+(c+dj)e" format
+        if "e" in s_clean and "(" in s_clean:
+            # Try both patterns from both versions
+            patterns = [
+                # From first version
+                r"\(\s*([+-]?\d*\.?\d+)\s*([+-])\s*([\d\.]*)j\s*\)\s*(?:\+)\s*\(\s*([+-]?\d*\.?\d+)\s*([+-])\s*([\d\.]*)j\s*\)e",
+                # From second version
+                r"\(([-\d.]+)\s*([+-]?)\s*([-\d.]*)j\)\s*\+\s*\(([-\d.]+)\s*([+-]?)\s*([-\d.]*)j\)e",
+            ]
+
+            for pattern in patterns:
+                match = re.search(pattern, s_clean)
+                if match:
+                    try:
+                        # Parse groups (adapt based on pattern)
+                        groups = match.groups()
+                        if len(groups) == 6:
+                            if pattern == patterns[0]:
+                                # First version pattern
+                                z1_real = float(groups[0])
+                                z1_imag_sign = -1.0 if groups[1] == "-" else 1.0
+                                z1_imag_val = (
+                                    float(groups[2])
+                                    if groups[2] not in ["", None]
+                                    else 1.0
+                                )
+                                z1_imag = z1_imag_sign * z1_imag_val
+
+                                z2_real = float(groups[3])
+                                z2_imag_sign = -1.0 if groups[4] == "-" else 1.0
+                                z2_imag_val = (
+                                    float(groups[5])
+                                    if groups[5] not in ["", None]
+                                    else 1.0
+                                )
+                                z2_imag = z2_imag_sign * z2_imag_val
+                            else:
+                                # Second version pattern
+                                z1_real = float(groups[0])
+                                z1_imag_sign = -1 if groups[1] == "-" else 1
+                                z1_imag_val = float(groups[2] or "1")
+                                z1_imag = z1_imag_sign * z1_imag_val
+
+                                z2_real = float(groups[3])
+                                z2_imag_sign = -1 if groups[4] == "-" else 1
+                                z2_imag_val = float(groups[5] or "1")
+                                z2_imag = z2_imag_sign * z2_imag_val
+
+                            return BicomplexNumber(
+                                complex(z1_real, z1_imag), complex(z2_real, z2_imag)
+                            )
+                    except Exception:
+                        continue
+
+        # Feature 5.3: Complex number parsing (common patterns)
+        if "j" in s_clean:
+            # If string contains 'j', try to parse as complex
+            try:
+                # Try direct complex() parsing first
+                c = complex(s_clean)
+                return BicomplexNumber(c, complex(0.0, 0.0))
+            except ValueError:
+                # Try regex-based parsing for malformed complex numbers
+                pattern = r"^([+-]?\d*\.?\d*)([+-]?\d*\.?\d*)j$"
+                match = re.match(pattern, s_clean)
+                if match:
+                    real_part = match.group(1)
+                    imag_part = match.group(2)
+
+                    # Handle edge cases
+                    if real_part in ["", "+", "-"]:
+                        real_part = real_part + "1" if real_part else "0"
+                    if imag_part in ["", "+", "-"]:
+                        imag_part = imag_part + "1" if imag_part else "0"
+
+                    return BicomplexNumber(
+                        complex(float(real_part or 0), float(imag_part or 0)),
+                        complex(0.0, 0.0),
+                    )
+
+        # Feature 5.4: Simple real number
+        try:
+            real_val = float(s_clean)
+            return BicomplexNumber(complex(real_val, 0.0), complex(0.0, 0.0))
+        except ValueError:
+            pass
+
+        # Feature 6: Fallback - try to extract any numeric part
+        try:
+            num_token = _extract_numeric_part(s_clean)
+            if num_token:
+                return BicomplexNumber(
+                    complex(float(num_token), 0.0), complex(0.0, 0.0)
+                )
+        except Exception:
+            pass
+
+    except Exception as e:
+        # Feature 7: Logging on error
+        if "logger" in globals():
+            logger.warning(f"Bicomplex parsing failed for {repr(s)}: {e}")
+        else:
+            print(f"Bicomplex parsing error for '{s}': {e}")
+
+    # Final fallback: return zero bicomplex
+    return BicomplexNumber(complex(0.0, 0.0), complex(0.0, 0.0))
+
+def _parse_universal(s: Union[str, Any], target_type: str) -> Any:
+    """
+    Universal parser - Çeşitli sayı türlerini string'den veya diğer tiplerden parse eder
+    
+    Args:
+        s: Parse edilecek input (string, sayı, liste, vs.)
+        target_type: Hedef tür ("real", "complex", "quaternion", "octonion", 
+                   "sedenion", "pathion", "chingon", "routon", "voudon", "bicomplex")
+    
+    Returns:
+        Parse edilmiş değer veya hata durumunda varsayılan değer
+        
+    Özellikler:
+        - "real": Float'a çevirir, hata durumunda 0.0 döner
+        - "complex": _parse_complex fonksiyonunu çağırır (mevcut mantık korunur)
+        - "quaternion": 4 bileşenli hiperkompleks sayı
+        - "octonion": 8 bileşenli hiperkompleks sayı
+        - "sedenion": 16 bileşenli hiperkompleks sayı
+        - "pathion": 32 bileşenli hiperkompleks sayı
+        - "chingon": 64 bileşenli hiperkompleks sayı
+        - "routon": 128 bileşenli hiperkompleks sayı
+        - "voudon": 256 bileşenli hiperkompleks sayı
+        - "bicomplex": _parse_bicomplex fonksiyonunu çağırır (özel durum)
+    """
+    try:
+        # Bicomplex özel durumu (mevcut implementasyonu koru)
+        if target_type == "bicomplex":
+            return _parse_bicomplex(s)
+        
+        # Complex özel durumu (mevcut implementasyonu koru)
+        if target_type == "complex":
+            return _parse_complex(s)
+        
+        # Real özel durumu
+        if target_type == "real":
+            try:
+                if isinstance(s, (int, float)):
+                    return float(s)
+                
+                if isinstance(s, complex):
+                    return float(s.real)
+                
+                if isinstance(s, HypercomplexNumber):
+                    return float(s.real)
+                
+                # Mevcut complex parser'ı kullan, sonra real kısmını al
+                c = _parse_complex(s)
+                return float(c.real)
+            except Exception as e:
+                warnings.warn(f"Real parse error: {e}", RuntimeWarning)
+                return 0.0
+        
+        # HypercomplexNumber kullanacak tipler için mapping
+        hypercomplex_map = {
+            "quaternion": 4,
+            "octonion": 8,
+            "sedenion": 16,
+            "pathion": 32,
+            "chingon": 64,
+            "routon": 128,
+            "voudon": 256
+        }
+        
+        if target_type in hypercomplex_map:
+            dimension = hypercomplex_map[target_type]
+            return _parse_to_hypercomplex(s, dimension)
+        
+        # Eğer target_type tanınmıyorsa None döndür
+        warnings.warn(f"Unknown target_type: {target_type}", RuntimeWarning)
+        return None
+    
+    except Exception as e:
+        warnings.warn(f"Universal parser error for {target_type}: {e}", RuntimeWarning)
+        # Hata durumunda varsayılan değer döndür
+        return _get_default_value(target_type)
+
+
+# Mevcut _parse_complex fonksiyonunuzu aynen koruyoruz
+def _parse_complex(s) -> complex:
+    """Bir string'i veya sayıyı complex sayıya dönüştürür.
+    "real,imag", "real+imag(i/j)", "real", "imag(i/j)" formatlarını destekler.
+    Float ve int tiplerini de doğrudan kabul eder.
+    """
+    # Eğer zaten complex sayıysa doğrudan döndür
+    if isinstance(s, complex):
+        return s
+
+    # Eğer HypercomplexNumber ise, ilk iki bileşeni kullan
+    if isinstance(s, HypercomplexNumber):
+        if s.dimension >= 2:
+            return complex(s[0], s[1])
+        else:
+            return complex(s.real, 0.0)
+
+    # Eğer float veya int ise doğrudan complex'e dönüştür
+    if isinstance(s, (float, int)):
+        return complex(s)
+
+    # String işlemleri için önce string'e dönüştür
+    if isinstance(s, str):
+        s = s.strip().replace("J", "j").replace("i", "j")  # Hem J hem i yerine j kullan
+    else:
+        s = str(s).strip().replace("J", "j").replace("i", "j")
+
+    # 1. Eğer "real,imag" formatındaysa
+    if "," in s:
+        parts = s.split(",")
+        if len(parts) == 2:
+            try:
+                return complex(float(parts[0]), float(parts[1]))
+            except ValueError:
+                pass  # Devam et
+
+    # 2. Python'ın kendi complex() dönüştürücüsünü kullanmayı dene (örn: "1+2j", "3j", "-5")
+    try:
+        return complex(s)
+    except ValueError:
+        # 3. Sadece real kısmı varsa (örn: "5")
+        try:
+            return complex(float(s), 0)
+        except ValueError:
+            # 4. Sadece sanal kısmı varsa (örn: "2j", "j")
+            if s.endswith("j"):
+                try:
+                    imag_val = float(s[:-1]) if s[:-1] else 1.0  # "j" -> 1.0j
+                    return complex(0, imag_val)
+                except ValueError:
+                    pass
+
+            # 5. Fallback: varsayılan kompleks sayı
+            warnings.warn(
+                f"Geçersiz kompleks sayı formatı: '{s}', 0+0j döndürülüyor",
+                RuntimeWarning,
+            )
+            return complex(0, 0)
+
+def parse_to_neutrosophic(s: Any) -> "NeutrosophicNumber":
+    """Parse to NeutrosophicNumber object directly"""
+    from typing import TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        from .kececinumbers import NeutrosophicNumber
+
+    t, i, f = _parse_neutrosophic(s)
+    return NeutrosophicNumber(t, i, f)
+
+def parse_to_hyperreal(s: Any) -> "HyperrealNumber":
+    """Parse to Hyperreal object directly"""
+    from typing import TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        from .kececinumbers import HyperrealNumber
+
+    finite, infinitesimal, seq = _parse_hyperreal(s)
+    return HyperrealNumber(sequence=seq)
+
+def _parse_to_hypercomplex(s: Any, dimension: int) -> HypercomplexNumber:
+    """Parse input to HypercomplexNumber with specific dimension."""
+    try:
+        # Eğer zaten HypercomplexNumber ise
+        if isinstance(s, HypercomplexNumber):
+            if s.dimension == dimension:
+                return s
+            elif s.dimension < dimension:
+                return s.pad_to_dimension(dimension)
+            else:
+                return s.truncate_to_dimension(dimension)
+        
+        # Sayısal tipler
+        if isinstance(s, (int, float)):
+            coeffs = [float(s)] + [0.0] * (dimension - 1)
+            return HypercomplexNumber(*coeffs, dimension=dimension)
+        
+        if isinstance(s, complex):
+            coeffs = [s.real, s.imag] + [0.0] * (dimension - 2)
+            return HypercomplexNumber(*coeffs, dimension=dimension)
+        
+        # İterable tipler (list, tuple, numpy array, vs.)
+        if hasattr(s, '__iter__') and not isinstance(s, str):
+            coeffs = list(s)
+            if len(coeffs) < dimension:
+                coeffs = coeffs + [0.0] * (dimension - len(coeffs))
+            elif len(coeffs) > dimension:
+                coeffs = coeffs[:dimension]
+            return HypercomplexNumber(*coeffs, dimension=dimension)
+        
+        # String parsing
+        if not isinstance(s, str):
+            s = str(s)
+        
+        s = s.strip()
+        
+        # Parantezleri kaldır
+        s = s.strip('[]{}()')
+        
+        # Boş string kontrolü
+        if not s:
+            coeffs = [0.0] * dimension
+            return HypercomplexNumber(*coeffs, dimension=dimension)
+        
+        # Virgülle ayrılmış liste
+        if ',' in s:
+            parts = [p.strip() for p in s.split(',') if p.strip()]
+            
+            if not parts:
+                coeffs = [0.0] * dimension
+                return HypercomplexNumber(*coeffs, dimension=dimension)
+            
+            try:
+                coeffs = [float(p) for p in parts]
+                if len(coeffs) < dimension:
+                    coeffs = coeffs + [0.0] * (dimension - len(coeffs))
+                elif len(coeffs) > dimension:
+                    coeffs = coeffs[:dimension]
+                return HypercomplexNumber(*coeffs, dimension=dimension)
+            except ValueError as e:
+                raise ValueError(f"Invalid numeric value in string: '{s}' -> {e}")
+        
+        # Tek sayı olarak dene
+        try:
+            coeffs = [float(s)] + [0.0] * (dimension - 1)
+            return HypercomplexNumber(*coeffs, dimension=dimension)
+        except ValueError:
+            pass
+        
+        # Kompleks string olarak dene
+        try:
+            c = complex(s)
+            coeffs = [c.real, c.imag] + [0.0] * (dimension - 2)
+            return HypercomplexNumber(*coeffs, dimension=dimension)
+        except ValueError:
+            pass
+        
+        # Fallback: sıfır
+        coeffs = [0.0] * dimension
+        return HypercomplexNumber(*coeffs, dimension=dimension)
+    
+    except Exception as e:
+        warnings.warn(f"Hypercomplex parse error (dim={dimension}) for input {repr(s)}: {e}", RuntimeWarning)
+        return _get_default_hypercomplex(dimension)
+
+
+def _get_default_value(target_type: str) -> Any:
+    """Get default value for target type."""
+    defaults = {
+        "real": 0.0,
+        "complex": complex(0, 0),
+        "quaternion": HypercomplexNumber(0, 0, 0, 0, dimension=4),
+        "octonion": HypercomplexNumber(*([0.0] * 8), dimension=8),
+        "sedenion": HypercomplexNumber(*([0.0] * 16), dimension=16),
+        "pathion": HypercomplexNumber(*([0.0] * 32), dimension=32),
+        "chingon": HypercomplexNumber(*([0.0] * 64), dimension=64),
+        "routon": HypercomplexNumber(*([0.0] * 128), dimension=128),
+        "voudon": HypercomplexNumber(*([0.0] * 256), dimension=256),
+        "bicomplex": _parse_bicomplex("0") if '_parse_bicomplex' in globals() else None
+    }
+    
+    return defaults.get(target_type, None)
+
+
+def _get_default_hypercomplex(dimension: int) -> HypercomplexNumber:
+    """Get default HypercomplexNumber for dimension."""
+    coeffs = [0.0] * dimension
+    return HypercomplexNumber(*coeffs, dimension=dimension)
+
+def _parse_real(s: Any) -> float:
+    """Parse input as real number (float)."""
+    try:
+        if isinstance(s, (int, float)):
+            return float(s)
+        
+        if isinstance(s, complex):
+            return float(s.real)
+        
+        if isinstance(s, HypercomplexNumber):
+            return float(s.real)
+        
+        if not isinstance(s, str):
+            s = str(s)
+        
+        s = s.strip()
+        return float(s)
+    
+    except Exception as e:
+        warnings.warn(f"Real parse error: {e}", RuntimeWarning)
+        return 0.0
+
+def kececi_bicomplex_algorithm(
+    start: BicomplexNumber, 
+    add_val: BicomplexNumber, 
+    iterations: int, 
+    include_intermediate: bool = True,
+    mod_value: float = 100.0
+) -> list:
+    """
+    Gerçek Keçeci algoritmasının bikompleks versiyonunu uygular.
+    
+    Bu algoritma orijinal Keçeci sayı üretecini bikompleks sayılara genişletir.
+    
+    Parametreler:
+    ------------
+    start : BicomplexNumber
+        Algoritmanın başlangıç değeri
+    add_val : BicomplexNumber
+        Her iterasyonda eklenen değer
+    iterations : int
+        İterasyon sayısı
+    include_intermediate : bool, varsayılan=True
+        Ara adımları dizie ekleme
+    mod_value : float, varsayılan=100.0
+        Mod işlemi için kullanılacak değer
+    
+    Döndürür:
+    --------
+    list[BicomplexNumber]
+        Üretilen Keçeci bikompleks dizisi
+    
+    Özellikler:
+    ----------
+    1. Toplama işlemi
+    2. Mod alma işlemi (Keçeci algoritmasının karakteristik özelliği)
+    3. Ara adımların eklenmesi (isteğe bağlı)
+    4. Asal sayı kontrolü
+    5. Sıfır değerinde resetleme
+    """
+    sequence = [start]
+    current = start
+    
+    for i in range(iterations):
+        # 1. Toplama işlemi
+        current = current + add_val
+        
+        # 2. Keçeci algoritmasının özelliği: Mod alma
+        # z1 ve z2 için mod alma (gerçek ve sanal kısımlar ayrı ayrı)
+        current = BicomplexNumber(
+            complex(current.z1.real % mod_value, current.z1.imag % mod_value),
+            complex(current.z2.real % mod_value, current.z2.imag % mod_value)
+        )
+        
+        # 3. Ara adımları ekle (Keçeci algoritmasının karakteristik özelliği)
+        if include_intermediate:
+            # Ara değerler için özel işlemler
+            intermediate = current * BicomplexNumber(complex(0.5, 0), complex(0, 0))
+            sequence.append(intermediate)
+        
+        sequence.append(current)
+        
+        # 4. Asal sayı kontrolü (Keçeci algoritmasının önemli bir parçası)
+        # Bu kısım algoritmanın detayına göre özelleştirilebilir
+        magnitude = abs(current.z1) + abs(current.z2)
+        if magnitude > 1:
+            # Basit asallık testi (büyük sayılar için verimsiz)
+            is_prime = True
+            sqrt_mag = int(magnitude**0.5) + 1
+            for j in range(2, sqrt_mag):
+                if magnitude % j == 0:
+                    is_prime = False
+                    break
+            
+            if is_prime:
+                print(f"Keçeci Prime bulundu - adım {i}: büyüklük = {magnitude:.2f}")
+        
+        # 5. Özel durum: Belirli değerlere ulaşıldığında resetleme
+        if abs(current.z1) < 1e-10 and abs(current.z2) < 1e-10:
+            current = start  # Başa dön
+    
+    return sequence
+
+
+def kececi_bicomplex_advanced(
+    start: BicomplexNumber, 
+    add_val: BicomplexNumber, 
+    iterations: int, 
+    include_intermediate: bool = True,
+    mod_real: float = 50.0,
+    mod_imag: float = 50.0,
+    feedback_interval: int = 10
+) -> list:
+    """
+    Gelişmiş Keçeci algoritması - daha karmaşık matematiksel işlemler içerir.
+    
+    Bu algoritma standart Keçeci algoritmasını daha gelişmiş matematiksel
+    işlemlerle genişletir: doğrusal olmayan dönüşümler, modüler aritmetik,
+    çapraz çarpımlar ve dinamik feedback mekanizmaları.
+    
+    Parametreler:
+    ------------
+    start : BicomplexNumber
+        Algoritmanın başlangıç değeri
+    add_val : BicomplexNumber
+        Her iterasyonda eklenen değer
+    iterations : int
+        İterasyon sayısı
+    include_intermediate : bool, varsayılan=True
+        Ara adımları (çapraz çarpımları) dizie ekleme
+    mod_real : float, varsayılan=50.0
+        Gerçel kısımlar için mod değeri
+    mod_imag : float, varsayılan=50.0
+        Sanal kısımlar için mod değeri
+    feedback_interval : int, varsayılan=10
+        Feedback perturbasyonlarının uygulanma aralığı
+    
+    Döndürür:
+    --------
+    list[BicomplexNumber]
+        Üretilen gelişmiş Keçeci bikompleks dizisi
+    
+    Özellikler:
+    ----------
+    1. Temel toplama işlemi
+    2. Doğrusal olmayan dönüşümler (karekök)
+    3. Modüler aritmetik
+    4. Çapraz çarpım ara değerleri
+    5. Dinamik feedback perturbasyonları
+    """
+    sequence = [start]
+    current = start
+    
+    for i in range(iterations):
+        # 1. Temel toplama
+        current = current + add_val
+        
+        # 2. Doğrusal olmayan dönüşümler (Keçeci algoritmasının özelliği)
+        # Karekök alma işlemleri - negatif değerler için güvenli hale getirildi
+        try:
+            z1_real_sqrt = math.sqrt(abs(current.z1.real)) * (1 if current.z1.real >= 0 else 1j)
+            z1_imag_sqrt = math.sqrt(abs(current.z1.imag)) * (1 if current.z1.imag >= 0 else 1j)
+            z2_real_sqrt = math.sqrt(abs(current.z2.real)) * (1 if current.z2.real >= 0 else 1j)
+            z2_imag_sqrt = math.sqrt(abs(current.z2.imag)) * (1 if current.z2.imag >= 0 else 1j)
+            
+            current = BicomplexNumber(
+                complex(z1_real_sqrt.real if isinstance(z1_real_sqrt, complex) else z1_real_sqrt,
+                       z1_imag_sqrt.real if isinstance(z1_imag_sqrt, complex) else z1_imag_sqrt),
+                complex(z2_real_sqrt.real if isinstance(z2_real_sqrt, complex) else z2_real_sqrt,
+                       z2_imag_sqrt.real if isinstance(z2_imag_sqrt, complex) else z2_imag_sqrt)
+            )
+        except (ValueError, TypeError):
+            # Karekök hatası durumunda alternatif yaklaşım
+            current = BicomplexNumber(
+                complex(np.sqrt(abs(current.z1.real)), np.sqrt(abs(current.z1.imag))),
+                complex(np.sqrt(abs(current.z2.real)), np.sqrt(abs(current.z2.imag)))
+            )
+        
+        # 3. Modüler aritmetik
+        current = BicomplexNumber(
+            complex(current.z1.real % mod_real, current.z1.imag % mod_imag),
+            complex(current.z2.real % mod_real, current.z2.imag % mod_imag)
+        )
+        
+        # 4. Ara adımlar (çapraz çarpımlar)
+        if include_intermediate:
+            # Çapraz çarpım ara değerleri
+            cross_product = BicomplexNumber(
+                complex(current.z1.real * current.z2.imag, 0),
+                complex(0, current.z1.imag * current.z2.real)
+            )
+            sequence.append(cross_product)
+        
+        sequence.append(current)
+        
+        # 5. Dinamik sistem davranışı için feedback
+        if feedback_interval > 0 and i % feedback_interval == 0 and i > 0:
+            # Periyodik perturbasyon ekle (kaotik davranışı artırmak için)
+            perturbation = BicomplexNumber(
+                complex(0.1 * math.sin(i), 0.1 * math.cos(i)),
+                complex(0.05 * math.sin(i*0.5), 0.05 * math.cos(i*0.5))
+            )
+            current = current + perturbation
+    
+    return sequence
+
+def _has_bicomplex_format(s: str) -> bool:
+    """Checks if string has bicomplex format (comma-separated)."""
+    return ',' in s and s.count(',') in [1, 3]  # 2 or 4 components
+
+@dataclass
+class NeutrosophicBicomplexNumber:
+    def __init__(self, a, b, c, d, e, f, g, h):
+        self.a = float(a)
+        self.b = float(b)
+        self.c = float(c)
+        self.d = float(d)
+        self.e = float(e)
+        self.f = float(f)
+        self.g = float(g)
+        self.h = float(h)
+
+    def __repr__(self):
+        return f"NeutrosophicBicomplexNumber({self.a}, {self.b}, {self.c}, {self.d}, {self.e}, {self.f}, {self.g}, {self.h})"
+
+    def __str__(self):
+        return f"({self.a} + {self.b}i) + ({self.c} + {self.d}i)I + ({self.e} + {self.f}i)j + ({self.g} + {self.h}i)Ij"
+
+    def __add__(self, other):
+        if isinstance(other, NeutrosophicBicomplexNumber):
+            return NeutrosophicBicomplexNumber(
+                self.a + other.a, self.b + other.b, self.c + other.c, self.d + other.d,
+                self.e + other.e, self.f + other.f, self.g + other.g, self.h + other.h
+            )
+        return NotImplemented
+
+    def __mul__(self, other):
+        # Basitleştirilmiş çarpım (tam bicomplex kuralı karmaşık)
+        if isinstance(other, (int, float)):
+            return NeutrosophicBicomplexNumber(
+                *(other * x for x in [self.a, self.b, self.c, self.d, self.e, self.f, self.g, self.h])
+            )
+        return NotImplemented
+
+    def __truediv__(self, scalar):
+        if isinstance(scalar, (int, float)):
+            if scalar == 0:
+                raise ZeroDivisionError("Division by zero")
+            return NeutrosophicBicomplexNumber(
+                self.a / scalar, self.b / scalar, self.c / scalar, self.d / scalar,
+                self.e / scalar, self.f / scalar, self.g / scalar, self.h / scalar
+            )
+        return NotImplemented
+
+    def __eq__(self, other):
+        """Equality with tolerance for float comparison."""
+        if not isinstance(other, NeutrosophicBicomplexNumber):
+            return False
+        tol = 1e-12
+        return all(abs(getattr(self, attr) - getattr(other, attr)) < tol 
+                   for attr in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'])
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+@dataclass
+class SedenionNumber:
+    """
+    Sedenion (16-dimensional hypercomplex number) implementation.
+    
+    Sedenions are 16-dimensional numbers that extend octonions via the 
+    Cayley-Dickson construction. They are non-commutative, non-associative,
+    and not even alternative.
+    
+    Components: e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15
+    where e0 is the real part.
+    """
+    coeffs: List[float] = field(default_factory=lambda: [0.0] * 16)
+    
+    def __post_init__(self):
+        """Validate and ensure coefficients are correct length."""
+        if len(self.coeffs) != 16:
+            raise ValueError(f"Sedenion must have exactly 16 components, got {len(self.coeffs)}")
+        # Ensure all are floats
+        self.coeffs = [float(c) for c in self.coeffs]
+    
+    @classmethod
+    def from_scalar(cls, value: float) -> 'SedenionNumber':
+        """Create a sedenion from a scalar (real number)."""
+        coeffs = [0.0] * 16
+        coeffs[0] = float(value)
+        return cls(coeffs)
+    
+    @classmethod
+    def from_list(cls, values: List[float]) -> 'SedenionNumber':
+        """Create a sedenion from a list of up to 16 values."""
+        if len(values) > 16:
+            raise ValueError(f"List too long ({len(values)}), maximum 16 elements")
+        coeffs = list(values) + [0.0] * (16 - len(values))
+        return cls(coeffs)
+    
+    @classmethod
+    def basis_element(cls, index: int) -> 'SedenionNumber':
+        """Create a basis sedenion (1 at position index, 0 elsewhere)."""
+        if not 0 <= index < 16:
+            raise ValueError(f"Index must be between 0 and 15, got {index}")
+        coeffs = [0.0] * 16
+        coeffs[index] = 1.0
+        return cls(coeffs)
+    
+    @property
+    def real(self) -> float:
+        """Get the real part (first component)."""
+        return self.coeffs[0]
+    
+    @real.setter
+    def real(self, value: float):
+        """Set the real part."""
+        self.coeffs[0] = float(value)
+    
+    @property
+    def imag(self) -> List[float]:
+        """Get the imaginary parts (all except real)."""
+        return self.coeffs[1:]
+    
+    def __getitem__(self, index: int) -> float:
+        """Get component by index."""
+        if not 0 <= index < 16:
+            raise IndexError(f"Index {index} out of range for sedenion")
+        return self.coeffs[index]
+    
+    def __setitem__(self, index: int, value: float):
+        """Set component by index."""
+        if not 0 <= index < 16:
+            raise IndexError(f"Index {index} out of range for sedenion")
+        self.coeffs[index] = float(value)
+    
+    def __len__(self) -> int:
+        """Return number of components (always 16)."""
+        return 16
+    
+    def __iter__(self):
+        """Iterate over components."""
+        return iter(self.coeffs)
+    
+    def __add__(self, other: Union['SedenionNumber', float, int]) -> 'SedenionNumber':
+        """Add two sedenions or sedenion and scalar."""
+        if isinstance(other, SedenionNumber):
+            new_coeffs = [a + b for a, b in zip(self.coeffs, other.coeffs)]
+            return SedenionNumber(new_coeffs)
+        elif isinstance(other, (int, float)):
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] += float(other)
+            return SedenionNumber(new_coeffs)
+        return NotImplemented
+    
+    def __radd__(self, other: Union[float, int]) -> 'SedenionNumber':
+        """Right addition: scalar + sedenion."""
+        return self.__add__(other)
+    
+    def __sub__(self, other: Union['SedenionNumber', float, int]) -> 'SedenionNumber':
+        """Subtract two sedenions or sedenion and scalar."""
+        if isinstance(other, SedenionNumber):
+            new_coeffs = [a - b for a, b in zip(self.coeffs, other.coeffs)]
+            return SedenionNumber(new_coeffs)
+        elif isinstance(other, (int, float)):
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] -= float(other)
+            return SedenionNumber(new_coeffs)
+        return NotImplemented
+    
+    def __rsub__(self, other: Union[float, int]) -> 'SedenionNumber':
+        """Right subtraction: scalar - sedenion."""
+        if isinstance(other, (int, float)):
+            new_coeffs = [-c for c in self.coeffs]
+            new_coeffs[0] += float(other)
+            return SedenionNumber(new_coeffs)
+        return NotImplemented
+    
+    def __mul__(self, other: Union['SedenionNumber', float, int]) -> 'SedenionNumber':
+        """Multiply sedenion by scalar or another sedenion (simplified)."""
+        if isinstance(other, (int, float)):
+            # Scalar multiplication
+            new_coeffs = [c * float(other) for c in self.coeffs]
+            return SedenionNumber(new_coeffs)
+        elif isinstance(other, SedenionNumber):
+            # NOTE: This is NOT the true sedenion multiplication!
+            # True sedenion multiplication requires a 16x16 multiplication table.
+            # This is a simplified element-wise multiplication for demonstration.
+            # For real applications, implement proper sedenion multiplication.
+            new_coeffs = [a * b for a, b in zip(self.coeffs, other.coeffs)]
+            return SedenionNumber(new_coeffs)
+        return NotImplemented
+    
+    def __rmul__(self, other: Union[float, int]) -> 'SedenionNumber':
+        """Right multiplication: scalar * sedenion."""
+        return self.__mul__(other)
+    
+    def __truediv__(self, scalar: Union[float, int]) -> 'SedenionNumber':
+        """Divide sedenion by scalar."""
+        if isinstance(scalar, (int, float)):
+            if scalar == 0:
+                raise ZeroDivisionError("Cannot divide sedenion by zero")
+            new_coeffs = [c / float(scalar) for c in self.coeffs]
+            return SedenionNumber(new_coeffs)
+        return NotImplemented
+    
+    def __floordiv__(self, scalar: Union[float, int]) -> 'SedenionNumber':
+        """Floor divide sedenion by scalar."""
+        if isinstance(scalar, (int, float)):
+            if scalar == 0:
+                raise ZeroDivisionError("Cannot divide sedenion by zero")
+            new_coeffs = [c // float(scalar) for c in self.coeffs]
+            return SedenionNumber(new_coeffs)
+        return NotImplemented
+    
+    def __mod__(self, divisor: Union[float, int]) -> 'SedenionNumber':
+        """Modulo operation on sedenion components."""
+        if isinstance(divisor, (int, float)):
+            if divisor == 0:
+                raise ZeroDivisionError("Cannot take modulo by zero")
+            new_coeffs = [c % float(divisor) for c in self.coeffs]
+            return SedenionNumber(new_coeffs)
+        return NotImplemented
+    
+    def __neg__(self) -> 'SedenionNumber':
+        """Negate the sedenion."""
+        return SedenionNumber([-c for c in self.coeffs])
+    
+    def __pos__(self) -> 'SedenionNumber':
+        """Unary plus."""
+        return self
+    
+    def __abs__(self) -> float:
+        """Absolute value (magnitude)."""
+        return self.magnitude()
+    
+    def __eq__(self, other: object) -> bool:
+        """Check equality with another sedenion."""
+        if not isinstance(other, SedenionNumber):
+            return False
+        return all(math.isclose(a, b, abs_tol=1e-12) for a, b in zip(self.coeffs, other.coeffs))
+    
+    def __ne__(self, other: object) -> bool:
+        """Check inequality."""
+        return not self.__eq__(other)
+    
+    def __hash__(self) -> int:
+        """Hash based on rounded components to avoid floating-point issues."""
+        return hash(tuple(round(c, 10) for c in self.coeffs))
+    
+    def magnitude(self) -> float:
+        """
+        Calculate Euclidean norm (magnitude) of the sedenion.
+        
+        Returns:
+            float: sqrt(Σ_i coeff_i²)
+        """
+        return float(np.linalg.norm(self.coeffs))
+    
+    def norm(self) -> float:
+        """Alias for magnitude."""
+        return self.magnitude()
+    
+    def conjugate(self) -> 'SedenionNumber':
+        """Return the conjugate (negate all imaginary parts)."""
+        new_coeffs = self.coeffs.copy()
+        for i in range(1, 16):
+            new_coeffs[i] = -new_coeffs[i]
+        return SedenionNumber(new_coeffs)
+    
+    def dot(self, other: 'SedenionNumber') -> float:
+        """Dot product with another sedenion."""
+        if not isinstance(other, SedenionNumber):
+            raise TypeError("Dot product requires another SedenionNumber")
+        return sum(a * b for a, b in zip(self.coeffs, other.coeffs))
+    
+    def normalize(self) -> 'SedenionNumber':
+        """Return a normalized (unit) version."""
+        mag = self.magnitude()
+        if mag == 0:
+            raise ZeroDivisionError("Cannot normalize zero sedenion")
+        return SedenionNumber([c / mag for c in self.coeffs])
+    
+    def to_list(self) -> List[float]:
+        """Convert to Python list."""
+        return self.coeffs.copy()
+    
+    def to_tuple(self) -> Tuple[float, ...]:
+        """Convert to tuple."""
+        return tuple(self.coeffs)
+    
+    def to_numpy(self) -> np.ndarray:
+        """Convert to numpy array."""
+        return np.array(self.coeffs, dtype=np.float64)
+    
+    def copy(self) -> 'SedenionNumber':
+        """Create a copy."""
+        return SedenionNumber(self.coeffs.copy())
+    
+    def __str__(self) -> str:
+        """Human-readable string representation."""
+        # Show only non-zero components for clarity
+        non_zero = [(i, c) for i, c in enumerate(self.coeffs) if abs(c) > 1e-10]
+        if not non_zero:
+            return "Sedenion(0)"
+        
+        parts = []
+        for i, c in non_zero:
+            if i == 0:
+                parts.append(f"{c:.6f}")
+            else:
+                sign = "+" if c >= 0 else "-"
+                parts.append(f"{sign} {abs(c):.6f}e{i}")
+        
+        return f"Sedenion({' '.join(parts)})"
+    
+    def __repr__(self) -> str:
+        """Detailed representation."""
+        return f"SedenionNumber({self.coeffs})"
+
+@dataclass
+class ChingonNumber:
+    """64-bileşenli Chingon sayısı"""  # Açıklama düzeltildi
+    
+    def __init__(self, *coeffs):
+        if len(coeffs) == 1 and hasattr(coeffs[0], '__iter__') and not isinstance(coeffs[0], str):
+            coeffs = coeffs[0]
+        
+        if len(coeffs) != 64:
+            coeffs = list(coeffs) + [0.0] * (64 - len(coeffs))
+            if len(coeffs) > 64:
+                coeffs = coeffs[:64]
+        
+        self.coeffs = [float(c) for c in coeffs]
+    
+    @property
+    def real(self) -> float:
+        """İlk bileşen – “gerçek” kısım."""
+        return float(self.coeffs[0])
+    #def real(self):
+    #    Gerçek kısım (ilk bileşen)
+    #    return self.coeffs[0]
+    
+    def __iter__(self):
+        return iter(self.coeffs)
+    
+    def __getitem__(self, index):
+        return self.coeffs[index]
+    
+    def __len__(self):
+        return len(self.coeffs)
+    
+    def __str__(self):
+        return f"ChingonNumber({', '.join(map(str, self.coeffs))})"
+    
+    def __repr__(self):
+        return f"({', '.join(map(str, self.coeffs))})"
+        #return f"ChingonNumber({self.coeffs})"
+    
+    def __add__(self, other):
+        if isinstance(other, ChingonNumber):
+            return ChingonNumber([a + b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            # Skaler toplama
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] += float(other)
+            return ChingonNumber(new_coeffs)
+    
+    def __sub__(self, other):
+        if isinstance(other, ChingonNumber):
+            return ChingonNumber([a - b for a, b in zip(self.coeffs, other.coeffs)])
+        else:
+            new_coeffs = self.coeffs.copy()
+            new_coeffs[0] -= float(other)
+            return ChingonNumber(new_coeffs)
+    
+    def __mul__(self, other):
+        if isinstance(other, ChingonNumber):
+            # Basitçe bileşen bazlı çarpma
+            return ChingonNumber([a * b for a, b in zip(self.coeffs, other.coeffs)])  # ChingonNumber döndür
+        else:
+            # Skaler çarpma
+            return ChingonNumber([c * float(other) for c in self.coeffs])  # ChingonNumber döndür
+    
+    def __mod__(self, divisor):
+        return ChingonNumber([c % divisor for c in self.coeffs])  # ChingonNumber döndür
+    
+    def __eq__(self, other):
+        if not isinstance(other, ChingonNumber):
+            return NotImplemented
+        return np.allclose(self.coeffs, other.coeffs, atol=1e-10)
+        #if isinstance(other, ChingonNumber):  # ChingonNumber ile karşılaştır
+        #    return all(math.isclose(a, b, abs_tol=1e-10) for a, b in zip(self.coeffs, other.coeffs))
+        #return False
+
+    def __truediv__(self, other):
+        """Bölme operatörü: / """
+        if isinstance(other, (int, float)):
+            # Skaler bölme
+            return ChingonNumber([c / other for c in self.coeffs])  # ChingonNumber döndür
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: 'ChingonNumber' and '{type(other).__name__}'")  # ChingonNumber
+    
+    def __floordiv__(self, other):
+        """Tam sayı bölme operatörü: // """
+        if isinstance(other, (int, float)):
+            # Skaler tam sayı bölme
+            return ChingonNumber([c // other for c in self.coeffs])  # ChingonNumber döndür
+        else:
+            raise TypeError(f"Unsupported operand type(s) for //: 'ChingonNumber' and '{type(other).__name__}'")  # ChingonNumber
+    
+    def __rtruediv__(self, other):
+        """Sağdan bölme: other / ChingonNumber"""
+        if isinstance(other, (int, float)):
+            return ChingonNumber([other / c if c != 0 else float('inf') for c in self.coeffs])  # ChingonNumber döndür
+        else:
+            raise TypeError(f"Unsupported operand type(s) for /: '{type(other).__name__}' and 'ChingonNumber'")  # ChingonNumber
+
+    def components(self):
+        """Bileşen listesini (Python list) döndürür."""
+        return self.coeffs.tolist()
+
+    def magnitude(self) -> float:
+        """
+        Euclidean norm = √( Σ_i coeff_i² )
+        NumPy’nin `linalg.norm` fonksiyonu C‑hızında hesaplar.
+        """
+        return float(np.linalg.norm(self.coeffs))
+
+    def __hash__(self):
+        # NaN ve -0.0 gibi durumları göz önünde bulundurun
+        return hash(tuple(np.round(self.coeffs, decimals=10)))
+
+    def phase(self):
+        # compute and return the phase value
+        return self._phase   # or whatever logic you need
+
+@property
+def coeffs(self):
+    return [self.w, self.x, self.y, self.z, self.e, self.f, self.g, self.h]
 
 # Ana Nötrosofik sayı sınıfı
 @dataclass
@@ -4160,52 +6224,131 @@ class NeutrosophicComplexNumber:
         """Kutupsal koordinatlardan oluştur"""
         return cls(r * math.cos(theta), r * math.sin(theta), indeterminacy)
 
+@dataclass
+class NeutrosophicComplexNumber:
+    """
+    Represents a number with a complex part and an indeterminacy level.
+    z = (a + bj) + cI, where I = indeterminacy.
+    """
 
-# Hiperreel Sayı Sınıfı
+    def __init__(self, real: float = 0.0, imag: float = 0.0, indeterminacy: float = 0.0):
+        self.real = float(real)
+        self.imag = float(imag)
+        self.indeterminacy = float(indeterminacy)
+
+    def __repr__(self) -> str:
+        return f"NeutrosophicComplexNumber(real={self.real}, imag={self.imag}, indeterminacy={self.indeterminacy})"
+
+    def __str__(self) -> str:
+        return f"({self.real}{self.imag:+}j) + {self.indeterminacy}I"
+
+    def __add__(self, other: Any) -> "NeutrosophicComplexNumber":
+        if isinstance(other, NeutrosophicComplexNumber):
+            return NeutrosophicComplexNumber(
+                self.real + other.real,
+                self.imag + other.imag,
+                self.indeterminacy + other.indeterminacy
+            )
+        if isinstance(other, (int, float)):
+            return NeutrosophicComplexNumber(self.real + other, self.imag, self.indeterminacy)
+        if isinstance(other, complex):
+            return NeutrosophicComplexNumber(self.real + other.real, self.imag + other.imag, self.indeterminacy)
+        return NotImplemented
+
+    def __sub__(self, other: Any) -> "NeutrosophicComplexNumber":
+        if isinstance(other, NeutrosophicComplexNumber):
+            return NeutrosophicComplexNumber(
+                self.real - other.real,
+                self.imag - other.imag,
+                self.indeterminacy - other.indeterminacy
+            )
+        if isinstance(other, (int, float)):
+            return NeutrosophicComplexNumber(self.real - other, self.imag, self.indeterminacy)
+        if isinstance(other, complex):
+            return NeutrosophicComplexNumber(self.real - other.real, self.imag - other.imag, self.indeterminacy)
+        return NotImplemented
+
+    def __mul__(self, other: Any) -> "NeutrosophicComplexNumber":
+        if isinstance(other, NeutrosophicComplexNumber):
+            new_real = self.real * other.real - self.imag * other.imag
+            new_imag = self.real * other.imag + self.imag * other.real
+            # Indeterminacy: basitleştirilmiş model
+            new_indeterminacy = (self.indeterminacy + other.indeterminacy +
+                               self.magnitude_sq() * other.indeterminacy +
+                               other.magnitude_sq() * self.indeterminacy)
+            return NeutrosophicComplexNumber(new_real, new_imag, new_indeterminacy)
+        if isinstance(other, complex):
+            new_real = self.real * other.real - self.imag * other.imag
+            new_imag = self.real * other.imag + self.imag * other.real
+            return NeutrosophicComplexNumber(new_real, new_imag, self.indeterminacy)
+        if isinstance(other, (int, float)):
+            return NeutrosophicComplexNumber(
+                self.real * other,
+                self.imag * other,
+                self.indeterminacy * other
+            )
+        return NotImplemented
+
+    def __truediv__(self, divisor: Any) -> "NeutrosophicComplexNumber":
+        if isinstance(divisor, (int, float)):
+            if divisor == 0:
+                raise ZeroDivisionError("Cannot divide by zero.")
+            return NeutrosophicComplexNumber(
+                self.real / divisor,
+                self.imag / divisor,
+                self.indeterminacy / divisor
+            )
+        return NotImplemented  # complex / NeutrosophicComplex desteklenmiyor
+
+    def __radd__(self, other: Any) -> "NeutrosophicComplexNumber":
+        return self.__add__(other)
+
+    def __rsub__(self, other: Any) -> "NeutrosophicComplexNumber":
+        if isinstance(other, (int, float)):
+            return NeutrosophicComplexNumber(
+                other - self.real,
+                -self.imag,
+                -self.indeterminacy
+            )
+        return NotImplemented
+
+    def __rmul__(self, other: Any) -> "NeutrosophicComplexNumber":
+        return self.__mul__(other)
+
+    def magnitude_sq(self) -> float:
+        """Returns the squared magnitude of the complex part."""
+        return self.real**2 + self.imag**2
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, NeutrosophicComplexNumber):
+            return (abs(self.real - other.real) < 1e-12 and
+                    abs(self.imag - other.imag) < 1e-12 and
+                    abs(self.indeterminacy - other.indeterminacy) < 1e-12)
+        return False
+
 @dataclass
 class HyperrealNumber:
-    """
-    Represents a hyperreal number as a sequence.
-    Provides infinitesimal and infinite number support.
-    """
+    """Represents a hyperreal number as a sequence of real numbers."""
+    sequence: List[float]
 
-    sequence: List[float] = field(default_factory=list)
+    def __init__(self, *args):
+        if len(args) == 1 and isinstance(args[0], list):
+            self.sequence = args[0]
+        else:
+            self.sequence = list(args)
 
-    def __post_init__(self):
-        if not self.sequence:
-            self.sequence = [0.0]
-        self.sequence = [float(x) for x in self.sequence]
-
-    @property
-    def finite(self) -> float:
-        """Sonlu kısım"""
-        return self.sequence[0] if self.sequence else 0.0
-
-    @property
-    def infinitesimal(self) -> float:
-        """Birinci sonsuz küçük kısım"""
-        return self.sequence[1] if len(self.sequence) > 1 else 0.0
-
-    @property
-    def second_infinitesimal(self) -> float:
-        """İkinci sonsuz küçük kısım"""
-        return self.sequence[2] if len(self.sequence) > 2 else 0.0
-
-    # Operatörler
     def __add__(self, other: Any) -> "HyperrealNumber":
         if isinstance(other, HyperrealNumber):
+            # Sequence'leri eşit uzunluğa getir
             max_len = max(len(self.sequence), len(other.sequence))
             seq1 = self.sequence + [0.0] * (max_len - len(self.sequence))
             seq2 = other.sequence + [0.0] * (max_len - len(other.sequence))
             return HyperrealNumber([a + b for a, b in zip(seq1, seq2)])
         elif isinstance(other, (int, float)):
             new_seq = self.sequence.copy()
-            new_seq[0] += other
+            new_seq[0] += other  # Sadece finite part'a ekle
             return HyperrealNumber(new_seq)
         return NotImplemented
-
-    def __radd__(self, other: Any) -> "HyperrealNumber":
-        return self.__add__(other)
 
     def __sub__(self, other: Any) -> "HyperrealNumber":
         if isinstance(other, HyperrealNumber):
@@ -4219,1625 +6362,89 @@ class HyperrealNumber:
             return HyperrealNumber(new_seq)
         return NotImplemented
 
-    def __rsub__(self, other: Any) -> "HyperrealNumber":
-        if isinstance(other, (int, float)):
-            new_seq = [-x for x in self.sequence]
-            new_seq[0] += other
-            return HyperrealNumber(new_seq)
+    def __mul__(self, scalar: float) -> "HyperrealNumber":
+        if isinstance(scalar, (int, float)):
+            return HyperrealNumber([x * scalar for x in self.sequence])
         return NotImplemented
 
-    def __mul__(self, other: Any) -> "HyperrealNumber":
-        if isinstance(other, HyperrealNumber):
-            # Hiperreel çarpma: sadece ilk birkaç terim için
-            result = [0.0] * (len(self.sequence) + len(other.sequence) - 1)
-            for i, a in enumerate(self.sequence):
-                for j, b in enumerate(other.sequence):
-                    result[i + j] += a * b
-            return HyperrealNumber(result)
-        elif isinstance(other, (int, float)):
-            return HyperrealNumber([x * other for x in self.sequence])
-        return NotImplemented
+    def __rmul__(self, scalar: float) -> "HyperrealNumber":
+        return self.__mul__(scalar)
 
-    def __rmul__(self, other: Any) -> "HyperrealNumber":
-        return self.__mul__(other)
+    def __truediv__(self, divisor: float) -> "HyperrealNumber":
+        if isinstance(divisor, (int, float)):
+            if divisor == 0:
+                raise ZeroDivisionError("Scalar division by zero.")
+            return HyperrealNumber([x / divisor for x in self.sequence])
+        raise TypeError("Only scalar division is supported.")
 
-    def __truediv__(self, other: Any) -> "HyperrealNumber":
-        if isinstance(other, (int, float)):
-            if other == 0:
-                raise ZeroDivisionError("Cannot divide by zero")
-            return HyperrealNumber([x / other for x in self.sequence])
-        return NotImplemented
+    def __mod__(self, divisor: float) -> "HyperrealNumber":
+        if isinstance(divisor, (int, float)):
+            return HyperrealNumber([x % divisor for x in self.sequence])
+        raise TypeError("Modulo only supported with a scalar divisor.")
 
     def __str__(self) -> str:
-        if len(self.sequence) <= 3:
-            return f"HyperrealNumber{self.sequence}"
-        else:
-            truncated = self.sequence[:3]
-            return f"HyperrealNumber{truncated}..."
+        if len(self.sequence) <= 5:
+            return f"Hyperreal{self.sequence}"
+        return f"Hyperreal({self.sequence[:3]}...)" 
 
-    def __repr__(self) -> str:
-        return f"HyperrealNumber(sequence={self.sequence})"
+    @property
+    def finite(self):
+        """Returns the finite part (first component)"""
+        return self.sequence[0] if self.sequence else 0.0
 
-    @classmethod
-    def infinitesimal_number(cls, value: float = 1.0) -> "HyperrealNumber":
-        """Sonsuz küçük sayı oluştur"""
-        return cls([0.0, value])
+    @property
+    def infinitesimal(self):
+        """Returns the first infinitesimal part (second component)"""
+        return self.sequence[1] if len(self.sequence) > 1 else 0.0
 
-    @classmethod
-    def infinite_number(cls, value: float = 1.0) -> "HyperrealNumber":
-        """Sonsuz büyük sayı oluştur"""
-        return cls([value, 0.0, 0.0, 1.0])  # Son terim sonsuzluk için
-
-    def is_infinitesimal(self) -> bool:
-        """Sonsuz küçük mü?"""
-        return abs(self.finite) < 1e-12 and any(
-            abs(x) > 1e-12 for x in self.sequence[1:]
-        )
-
-    def is_infinite(self) -> bool:
-        """Sonsuz büyük mü?"""
-        return abs(self.finite) > 1e8  # Basit bir eşik değeri
-
-
-# Bikompleks Sayı Sınıfı
 @dataclass
 class BicomplexNumber:
-    """
-    Represents a bicomplex number: z1 + z2 * e
-    where e is a new imaginary unit with e² = -1
-    """
+    """Represents a bicomplex number with two complex components."""
+    z1: complex  # First complex component
+    z2: complex  # Second complex component
 
-    z1: complex = 0j
-    z2: complex = 0j
-
-    def __post_init__(self):
-        self.z1 = complex(self.z1)
-        self.z2 = complex(self.z2)
-
-    @property
-    def real(self) -> float:
-        """Gerçek kısım (z1'in gerçek kısmı)"""
-        return self.z1.real
-
-    @property
-    def imag1(self) -> float:
-        """Birinci sanal kısım (z1'in sanal kısmı)"""
-        return self.z1.imag
-
-    @property
-    def imag2(self) -> float:
-        """İkinci sanal kısım (z2'nin gerçek kısmı)"""
-        return self.z2.real
-
-    @property
-    def imag3(self) -> float:
-        """Üçüncü sanal kısım (z2'nin sanal kısmı)"""
-        return self.z2.imag
-
-    # Operatörler
     def __add__(self, other: Any) -> "BicomplexNumber":
         if isinstance(other, BicomplexNumber):
             return BicomplexNumber(self.z1 + other.z1, self.z2 + other.z2)
-        elif isinstance(other, (int, float)):
+        elif isinstance(other, (int, float, complex)):
             return BicomplexNumber(self.z1 + other, self.z2)
-        elif isinstance(other, complex):
-            return BicomplexNumber(self.z1 + other, self.z2)
-        return NotImplemented
-
-    def __radd__(self, other: Any) -> "BicomplexNumber":
-        return self.__add__(other)
+        else:
+            raise TypeError(f"Unsupported operand type(s) for +: 'BicomplexNumber' and '{type(other).__name__}'")
 
     def __sub__(self, other: Any) -> "BicomplexNumber":
         if isinstance(other, BicomplexNumber):
             return BicomplexNumber(self.z1 - other.z1, self.z2 - other.z2)
-        elif isinstance(other, (int, float)):
+        elif isinstance(other, (int, float, complex)):
             return BicomplexNumber(self.z1 - other, self.z2)
-        elif isinstance(other, complex):
-            return BicomplexNumber(self.z1 - other, self.z2)
-        return NotImplemented
-
-    def __rsub__(self, other: Any) -> "BicomplexNumber":
-        if isinstance(other, (int, float)):
-            return BicomplexNumber(other - self.z1, -self.z2)
-        elif isinstance(other, complex):
-            return BicomplexNumber(other - self.z1, -self.z2)
-        return NotImplemented
+        else:
+            raise TypeError(f"Unsupported operand type(s) for -: 'BicomplexNumber' and '{type(other).__name__}'")
 
     def __mul__(self, other: Any) -> "BicomplexNumber":
         if isinstance(other, BicomplexNumber):
-            # Bikompleks çarpma
             return BicomplexNumber(
                 self.z1 * other.z1 - self.z2 * other.z2,
-                self.z1 * other.z2 + self.z2 * other.z1,
+                self.z1 * other.z2 + self.z2 * other.z1
             )
-        elif isinstance(other, (int, float)):
+        elif isinstance(other, (int, float, complex)):
             return BicomplexNumber(self.z1 * other, self.z2 * other)
-        elif isinstance(other, complex):
-            return BicomplexNumber(self.z1 * other, self.z2 * other)
-        return NotImplemented
+        else:
+            raise TypeError(f"Unsupported operand type(s) for *: 'BicomplexNumber' and '{type(other).__name__}'")
 
-    def __rmul__(self, other: Any) -> "BicomplexNumber":
-        return self.__mul__(other)
+    def __truediv__(self, divisor: float) -> "BicomplexNumber":
+        if isinstance(divisor, (int, float)):
+            if divisor == 0:
+                raise ZeroDivisionError("Division by zero")
+            return BicomplexNumber(self.z1 / divisor, self.z2 / divisor)
+        else:
+            raise TypeError("Only scalar division is supported")
 
-    def __truediv__(self, other: Any) -> "BicomplexNumber":
-        if isinstance(other, (int, float)):
-            if other == 0:
-                raise ZeroDivisionError("Cannot divide by zero")
-            return BicomplexNumber(self.z1 / other, self.z2 / other)
-        return NotImplemented
-
-    def __neg__(self) -> "BicomplexNumber":
-        return BicomplexNumber(-self.z1, -self.z2)
-
-    def __abs__(self) -> float:
-        """Büyüklük"""
-        return math.sqrt(abs(self.z1) ** 2 + abs(self.z2) ** 2)
-
-    # String temsilleri
     def __str__(self) -> str:
         parts = []
         if self.z1 != 0j:
-            parts.append(f"({self.z1.real:.6g}{self.z1.imag:+.6g}j)")
+            parts.append(f"({self.z1.real}+{self.z1.imag}j)")
         if self.z2 != 0j:
-            parts.append(f"({self.z2.real:.6g}{self.z2.imag:+.6g}j)e")
+            parts.append(f"({self.z2.real}+{self.z2.imag}j)e")
         return " + ".join(parts) if parts else "0"
-
-    def __repr__(self) -> str:
-        return f"BicomplexNumber(z1={self.z1}, z2={self.z2})"
-
-    # Yardımcı metodlar
-    def conjugate1(self) -> "BicomplexNumber":
-        """Birinci eşlenik (z1'in eşleniği)"""
-        return BicomplexNumber(self.z1.conjugate(), self.z2)
-
-    def conjugate2(self) -> "BicomplexNumber":
-        """İkinci eşlenik (z2'nin eşleniği)"""
-        return BicomplexNumber(self.z1, self.z2.conjugate())
-
-    def full_conjugate(self) -> "BicomplexNumber":
-        """Tam eşlenik (her iki parçanın eşleniği)"""
-        return BicomplexNumber(self.z1.conjugate(), self.z2.conjugate())
-
-    def norm_sq(self) -> float:
-        """Normun karesi"""
-        return abs(self.z1) ** 2 + abs(self.z2) ** 2
-
-    def inverse(self) -> "BicomplexNumber":
-        """Ters eleman (eğer varsa)"""
-        norm_sq = self.norm_sq()
-        if norm_sq == 0:
-            raise ZeroDivisionError("BicomplexNumber number has no inverse")
-        return BicomplexNumber(self.z1.conjugate() / norm_sq, -self.z2 / norm_sq)
-
-
-# Fabrika fonksiyonları
-def neutrosophic_zero() -> NeutrosophicNumber:
-    """Sıfır Nötrosofik sayı"""
-    return NeutrosophicNumber(0, 0, 0)
-
-
-def neutrosophic_one() -> NeutrosophicNumber:
-    """Bir Nötrosofik sayı"""
-    return NeutrosophicNumber(1, 0, 0)
-
-
-def neutrosophic_i() -> NeutrosophicNumber:
-    """Belirsizlik birimi"""
-    return NeutrosophicNumber(0, 1, 0)
-
-
-def neutrosophic_f() -> NeutrosophicNumber:
-    """Yanlışlık birimi"""
-    return NeutrosophicNumber(0, 0, 1)
-
-
-def _parse_bicomplex(s: Any) -> BicomplexNumber:
-    """
-    Universally parse input into a BicomplexNumber.
-
-    Features from both versions combined:
-    1. Type checking and direct returns for BicomplexNumber
-    2. Handles numeric types (int, float, numpy) -> z1 = num, z2 = 0
-    3. Handles complex numbers -> z1 = complex, z2 = 0
-    4. Handles iterables (list, tuple) of 1, 2, or 4 numbers
-    5. String parsing with multiple formats:
-       - Comma-separated "a,b,c,d" or "a,b" or "a"
-       - Explicit "(a+bj)+(c+dj)e" format
-       - Complex strings like "1+2j", "3j", "4"
-       - Fallback to complex() parsing
-    6. Robust error handling with logging
-    7. Final fallback to zero bicomplex
-
-    Args:
-        s: Input to parse (any type)
-
-    Returns:
-        Parsed BicomplexNumber or BicomplexNumber(0,0) on failure
-    """
-    try:
-        # Feature 1: Direct return if already BicomplexNumber
-        if isinstance(s, BicomplexNumber):
-            return s
-
-        # Feature 2: Handle numeric scalars
-        if isinstance(s, (int, float, np.floating, np.integer)):
-            return BicomplexNumber(complex(float(s), 0.0), complex(0.0, 0.0))
-
-        # Feature 3: Handle complex numbers
-        if isinstance(s, complex):
-            return BicomplexNumber(s, complex(0.0, 0.0))
-
-        # Feature 4: Handle iterables (non-string)
-        if hasattr(s, "__iter__") and not isinstance(s, str):
-            parts = list(s)
-            if len(parts) == 4:
-                # Four numbers: (z1_real, z1_imag, z2_real, z2_imag)
-                return BicomplexNumber(
-                    complex(float(parts[0]), float(parts[1])),
-                    complex(float(parts[2]), float(parts[3])),
-                )
-            elif len(parts) == 2:
-                # Two numbers: (real, imag) for z1
-                return BicomplexNumber(
-                    complex(float(parts[0]), float(parts[1])), complex(0.0, 0.0)
-                )
-            elif len(parts) == 1:
-                # Single number: real part of z1
-                return BicomplexNumber(complex(float(parts[0]), 0.0), complex(0.0, 0.0))
-
-        # Convert to string for further parsing
-        if not isinstance(s, str):
-            s = str(s)
-
-        s_clean = s.strip().replace(" ", "")
-
-        # Feature 5.1: Comma-separated numeric list
-        if "," in s_clean:
-            parts = [p for p in s_clean.split(",") if p != ""]
-            try:
-                nums = [float(p) for p in parts]
-                if len(nums) == 4:
-                    return BicomplexNumber(
-                        complex(nums[0], nums[1]), complex(nums[2], nums[3])
-                    )
-                elif len(nums) == 2:
-                    return BicomplexNumber(complex(nums[0], nums[1]), complex(0.0, 0.0))
-                elif len(nums) == 1:
-                    return BicomplexNumber(complex(nums[0], 0.0), complex(0.0, 0.0))
-            except ValueError:
-                # Not purely numeric, continue to other formats
-                pass
-
-        # Feature 5.2: Explicit "(a+bj)+(c+dj)e" format
-        if "e" in s_clean and "(" in s_clean:
-            # Try both patterns from both versions
-            patterns = [
-                # From first version
-                r"\(\s*([+-]?\d*\.?\d+)\s*([+-])\s*([\d\.]*)j\s*\)\s*(?:\+)\s*\(\s*([+-]?\d*\.?\d+)\s*([+-])\s*([\d\.]*)j\s*\)e",
-                # From second version
-                r"\(([-\d.]+)\s*([+-]?)\s*([-\d.]*)j\)\s*\+\s*\(([-\d.]+)\s*([+-]?)\s*([-\d.]*)j\)e",
-            ]
-
-            for pattern in patterns:
-                match = re.search(pattern, s_clean)
-                if match:
-                    try:
-                        # Parse groups (adapt based on pattern)
-                        groups = match.groups()
-                        if len(groups) == 6:
-                            if pattern == patterns[0]:
-                                # First version pattern
-                                z1_real = float(groups[0])
-                                z1_imag_sign = -1.0 if groups[1] == "-" else 1.0
-                                z1_imag_val = (
-                                    float(groups[2])
-                                    if groups[2] not in ["", None]
-                                    else 1.0
-                                )
-                                z1_imag = z1_imag_sign * z1_imag_val
-
-                                z2_real = float(groups[3])
-                                z2_imag_sign = -1.0 if groups[4] == "-" else 1.0
-                                z2_imag_val = (
-                                    float(groups[5])
-                                    if groups[5] not in ["", None]
-                                    else 1.0
-                                )
-                                z2_imag = z2_imag_sign * z2_imag_val
-                            else:
-                                # Second version pattern
-                                z1_real = float(groups[0])
-                                z1_imag_sign = -1 if groups[1] == "-" else 1
-                                z1_imag_val = float(groups[2] or "1")
-                                z1_imag = z1_imag_sign * z1_imag_val
-
-                                z2_real = float(groups[3])
-                                z2_imag_sign = -1 if groups[4] == "-" else 1
-                                z2_imag_val = float(groups[5] or "1")
-                                z2_imag = z2_imag_sign * z2_imag_val
-
-                            return BicomplexNumber(
-                                complex(z1_real, z1_imag), complex(z2_real, z2_imag)
-                            )
-                    except Exception:
-                        continue
-
-        # Feature 5.3: Complex number parsing (common patterns)
-        if "j" in s_clean:
-            # If string contains 'j', try to parse as complex
-            try:
-                # Try direct complex() parsing first
-                c = complex(s_clean)
-                return BicomplexNumber(c, complex(0.0, 0.0))
-            except ValueError:
-                # Try regex-based parsing for malformed complex numbers
-                pattern = r"^([+-]?\d*\.?\d*)([+-]?\d*\.?\d*)j$"
-                match = re.match(pattern, s_clean)
-                if match:
-                    real_part = match.group(1)
-                    imag_part = match.group(2)
-
-                    # Handle edge cases
-                    if real_part in ["", "+", "-"]:
-                        real_part = real_part + "1" if real_part else "0"
-                    if imag_part in ["", "+", "-"]:
-                        imag_part = imag_part + "1" if imag_part else "0"
-
-                    return BicomplexNumber(
-                        complex(float(real_part or 0), float(imag_part or 0)),
-                        complex(0.0, 0.0),
-                    )
-
-        # Feature 5.4: Simple real number
-        try:
-            real_val = float(s_clean)
-            return BicomplexNumber(complex(real_val, 0.0), complex(0.0, 0.0))
-        except ValueError:
-            pass
-
-        # Feature 6: Fallback - try to extract any numeric part
-        try:
-            num_token = _extract_numeric_part(s_clean)
-            if num_token:
-                return BicomplexNumber(
-                    complex(float(num_token), 0.0), complex(0.0, 0.0)
-                )
-        except Exception:
-            pass
-
-    except Exception as e:
-        # Feature 7: Logging on error
-        if "logger" in globals():
-            logger.warning(f"Bicomplex parsing failed for {repr(s)}: {e}")
-        else:
-            print(f"Bicomplex parsing error for '{s}': {e}")
-
-    # Final fallback: return zero bicomplex
-    return BicomplexNumber(complex(0.0, 0.0), complex(0.0, 0.0))
-
-
-# =============================================
-# Utility Functions
-# =============================================
-
-
-def generate_cd_chain(max_level: int = 8) -> list:
-    """
-    Generate chain of Cayley-Dickson algebras.
-
-    Args:
-        max_level: Maximum level to generate
-
-    Returns:
-        List of cebr classes
-    """
-    return [cayley_dickson_cebr(i) for i in range(max_level + 1)]
-
-
-def cd_number_from_components(level: int, *components) -> object:
-    """
-    generate a Cayley-Dickson number from components.
-
-    Args:
-        level: cebr level
-        *components: Number components
-
-    Returns:
-        Cayley-Dickson number instance
-    """
-    cebr = cayley_dickson_cebr(level)
-    return cebr(*components)
-
-
-# Mevcut _parse_complex fonksiyonunuzu aynen koruyoruz
-def _parse_complex(s) -> complex:
-    """Bir string'i veya sayıyı complex sayıya dönüştürür.
-    "real,imag", "real+imag(i/j)", "real", "imag(i/j)" formatlarını destekler.
-    Float ve int tiplerini de doğrudan kabul eder.
-    """
-    # Eğer zaten complex sayıysa doğrudan döndür
-    if isinstance(s, complex):
-        return s
-
-    # Eğer HypercomplexNumber ise, ilk iki bileşeni kullan
-    if isinstance(s, HypercomplexNumber):
-        if s.dimension >= 2:
-            return complex(s[0], s[1])
-        else:
-            return complex(s.real, 0.0)
-
-    # Eğer float veya int ise doğrudan complex'e dönüştür
-    if isinstance(s, (float, int)):
-        return complex(s)
-
-    # String işlemleri için önce string'e dönüştür
-    if isinstance(s, str):
-        s = s.strip().replace("J", "j").replace("i", "j")  # Hem J hem i yerine j kullan
-    else:
-        s = str(s).strip().replace("J", "j").replace("i", "j")
-
-    # 1. Eğer "real,imag" formatındaysa
-    if "," in s:
-        parts = s.split(",")
-        if len(parts) == 2:
-            try:
-                return complex(float(parts[0]), float(parts[1]))
-            except ValueError:
-                pass  # Devam et
-
-    # 2. Python'ın kendi complex() dönüştürücüsünü kullanmayı dene (örn: "1+2j", "3j", "-5")
-    try:
-        return complex(s)
-    except ValueError:
-        # 3. Sadece real kısmı varsa (örn: "5")
-        try:
-            return complex(float(s), 0)
-        except ValueError:
-            # 4. Sadece sanal kısmı varsa (örn: "2j", "j")
-            if s.endswith("j"):
-                try:
-                    imag_val = float(s[:-1]) if s[:-1] else 1.0  # "j" -> 1.0j
-                    return complex(0, imag_val)
-                except ValueError:
-                    pass
-
-            # 5. Fallback: varsayılan kompleks sayı
-            warnings.warn(
-                f"Geçersiz kompleks sayı formatı: '{s}', 0+0j döndürülüyor",
-                RuntimeWarning,
-            )
-            return complex(0, 0)
-
-
-def _get_default_hypercomplex(dimension: int) -> HypercomplexNumber:
-    """Get default HypercomplexNumber for dimension."""
-    coeffs = [0.0] * dimension
-    return HypercomplexNumber(*coeffs, dimension=dimension)
-
-
-def _parse_to_hypercomplex(s: Any, dimension: int) -> HypercomplexNumber:
-    """Parse input to HypercomplexNumber with specific dimension."""
-    try:
-        # Eğer zaten HypercomplexNumber ise
-        if isinstance(s, HypercomplexNumber):
-            if s.dimension == dimension:
-                return s
-            elif s.dimension < dimension:
-                return s.pad_to_dimension(dimension)
-            else:
-                return s.truncate_to_dimension(dimension)
-
-        # Sayısal tipler
-        if isinstance(s, (int, float)):
-            coeffs = [float(s)] + [0.0] * (dimension - 1)
-            return HypercomplexNumber(*coeffs, dimension=dimension)
-
-        if isinstance(s, complex):
-            coeffs = [s.real, s.imag] + [0.0] * (dimension - 2)
-            return HypercomplexNumber(*coeffs, dimension=dimension)
-
-        # İterable tipler (list, tuple, numpy array, vs.)
-        if hasattr(s, "__iter__") and not isinstance(s, str):
-            coeffs = list(s)
-            if len(coeffs) < dimension:
-                coeffs = coeffs + [0.0] * (dimension - len(coeffs))
-            elif len(coeffs) > dimension:
-                coeffs = coeffs[:dimension]
-            return HypercomplexNumber(*coeffs, dimension=dimension)
-
-        # String parsing
-        if not isinstance(s, str):
-            s = str(s)
-
-        s = s.strip()
-
-        # Parantezleri kaldır
-        s = s.strip("[]{}()")
-
-        # Boş string kontrolü
-        if not s:
-            coeffs = [0.0] * dimension
-            return HypercomplexNumber(*coeffs, dimension=dimension)
-
-        # Virgülle ayrılmış liste
-        if "," in s:
-            parts = [p.strip() for p in s.split(",") if p.strip()]
-
-            if not parts:
-                coeffs = [0.0] * dimension
-                return HypercomplexNumber(*coeffs, dimension=dimension)
-
-            try:
-                coeffs = [float(p) for p in parts]
-                if len(coeffs) < dimension:
-                    coeffs = coeffs + [0.0] * (dimension - len(coeffs))
-                elif len(coeffs) > dimension:
-                    coeffs = coeffs[:dimension]
-                return HypercomplexNumber(*coeffs, dimension=dimension)
-            except ValueError as e:
-                raise ValueError(f"Invalid numeric value in string: '{s}' -> {e}")
-
-        # Tek sayı olarak dene
-        try:
-            coeffs = [float(s)] + [0.0] * (dimension - 1)
-            return HypercomplexNumber(*coeffs, dimension=dimension)
-        except ValueError:
-            pass
-
-        # Kompleks string olarak dene
-        try:
-            c = complex(s)
-            coeffs = [c.real, c.imag] + [0.0] * (dimension - 2)
-            return HypercomplexNumber(*coeffs, dimension=dimension)
-        except ValueError:
-            pass
-
-        # Fallback: sıfır
-        coeffs = [0.0] * dimension
-        return HypercomplexNumber(*coeffs, dimension=dimension)
-
-    except Exception as e:
-        warnings.warn(
-            f"Hypercomplex parse error (dim={dimension}) for input {repr(s)}: {e}",
-            RuntimeWarning,
-        )
-        return _get_default_hypercomplex(dimension)
-
-
-def _parse_real(s: Any) -> float:
-    """Parse input as real number (float)."""
-    try:
-        if isinstance(s, (int, float)):
-            return float(s)
-
-        if isinstance(s, complex):
-            return float(s.real)
-
-        if isinstance(s, HypercomplexNumber):
-            return float(s.real)
-
-        if not isinstance(s, str):
-            s = str(s)
-
-        s = s.strip()
-        return float(s)
-
-    except Exception as e:
-        warnings.warn(f"Real parse error: {e}", RuntimeWarning)
-        return 0.0
-
-
-def _parse_super_real(s: Any) -> float:
-    """
-    Parse input as super real/hyperreal number with extended support.
-
-    Supports:
-    - Standard real numbers: 3.14, -2.5, etc.
-    - Infinity representations: ∞, inf, infinity
-    - Infinitesimals: ε, epsilon, dx, dt
-    - Scientific notation: 1.23e-4, 5.67E+8
-    - Engineering notation: 1.5k, 2.3M, 4.7m (k=1e3, M=1e6, m=1e-3, etc.)
-    - Fractions: 1/2, 3/4, etc.
-    - Mixed numbers: 1 1/2, 2 3/4
-    - Percentage: 50%, 12.5%
-    - Special constants: π, pi, e, φ, phi
-    - Hypercomplex numbers (extract real part)
-
-    Returns:
-        float: Parsed real number (always float, never int)
-    """
-    import re
-    import math
-    import warnings
-
-    try:
-        # 1. Direkt sayısal tipler
-        if isinstance(s, (int, float)):
-            return float(s)
-
-        # 2. Kompleks sayılar (reel kısmı al)
-        if isinstance(s, complex):
-            return float(s.real)
-
-        # 3. HypercomplexNumber tipini kontrol et
-        if hasattr(s, "__class__") and s.__class__.__name__ == "HypercomplexNumber":
-            try:
-                return float(s.real)
-            except AttributeError:
-                pass
-
-        # 4. String'e dönüştür
-        if not isinstance(s, str):
-            s = str(s)
-
-        s_original = s  # Orijinal string'i sakla
-        s = s.strip().lower()
-
-        # 5. Özel durumlar/boş giriş
-        if s in ["", "nan", "null", "none", "undefined"]:
-            return 0.0
-
-        # 6. Sonsuzluk değerleri
-        infinity_patterns = {
-            "∞": float("inf"),
-            "inf": float("inf"),
-            "infinity": float("inf"),
-            "+∞": float("inf"),
-            "+inf": float("inf"),
-            "+infinity": float("inf"),
-            "-∞": float("-inf"),
-            "-inf": float("-inf"),
-            "-infinity": float("-inf"),
-        }
-
-        if s in infinity_patterns:
-            return infinity_patterns[s]
-
-        # 7. Bilimsel sabitler
-        constants = {
-            "π": math.pi,
-            "pi": math.pi,
-            "e": math.e,
-            "φ": (1 + math.sqrt(5)) / 2,  # Altın oran
-            "phi": (1 + math.sqrt(5)) / 2,
-            "tau": 2 * math.pi,
-            "γ": 0.5772156649015329,  # Euler-Mascheroni sabiti
-        }
-
-        if s in constants:
-            return constants[s]
-
-        # 8. Mühendislik notasyonu (k, M, G, m, μ, n, p, etc.)
-        engineering_units = {
-            "k": 1e3,  # kilo
-            "m": 1e-3,  # milli (küçük m)
-            "meg": 1e6,  # mega
-            "g": 1e9,  # giga
-            "t": 1e12,  # tera
-            "μ": 1e-6,  # mikro
-            "u": 1e-6,  # mikro (alternatif)
-            "n": 1e-9,  # nano
-            "p": 1e-12,  # piko
-            "f": 1e-15,  # femto
-            "a": 1e-18,  # atto
-        }
-
-        # Mühendislik notasyonu regex'i (case-insensitive)
-        eng_match = re.match(r"^\s*([+-]?\d*\.?\d+)\s*([a-zA-Zμ]+)\s*$", s_original)
-        if eng_match:
-            try:
-                value = float(eng_match.group(1))
-                unit = eng_match.group(2).lower()
-
-                if unit in engineering_units:
-                    return value * engineering_units[unit]
-                elif unit == "mil":  # bin (thousand)
-                    return value * 1000
-            except (ValueError, KeyError):
-                pass
-
-        # 9. Yüzde notasyonu
-        if s.endswith("%"):
-            try:
-                # Orijinal string'den % işaretini kaldır (büyük/küçük harf fark etmez)
-                value_str = s_original.rstrip("%").strip()
-                value = float(value_str)
-                return value / 100.0
-            except ValueError:
-                pass
-
-        # 10. Kesirler ve karışık sayılar
-        # Karışık sayı: "1 1/2"
-        mixed_match = re.match(r"^\s*(\d+)\s+(\d+)/(\d+)\s*$", s)
-        if mixed_match:
-            try:
-                whole = int(mixed_match.group(1))
-                num = int(mixed_match.group(2))
-                den = int(mixed_match.group(3))
-                return float(whole) + (float(num) / float(den))
-            except (ValueError, ZeroDivisionError):
-                pass
-
-        # Basit kesir: "3/4"
-        if "/" in s and " " not in s:
-            try:
-                parts = s.split("/")
-                if len(parts) == 2:
-                    num = float(parts[0])
-                    den = float(parts[1])
-                    if den != 0:
-                        result = num / den
-                        return float(result)  # Açıkça float
-            except (ValueError, ZeroDivisionError) as e:
-                warnings.warn(
-                    f"Fraction parse failed: {e}", RuntimeWarning, stacklevel=2
-                )
-                return 0.0
-
-        # 11. Infinitesimal notasyonu (ε, epsilon, dx, etc.)
-        infinitesimals = {
-            "ε": 1e-10,
-            "epsilon": 1e-10,
-            "δ": 1e-10,
-            "delta": 1e-10,
-            "dx": 1e-10,
-            "dt": 1e-10,
-            "dh": 1e-10,
-            "infinitesimal": 1e-15,
-        }
-
-        if s in infinitesimals:
-            return infinitesimals[s]
-
-        # 12. Parantez içindeki ifadeler
-        if "(" in s and ")" in s:
-            # İçeriği al ve tekrar dene
-            inner_start = s.find("(") + 1
-            inner_end = s.find(")")
-            if inner_start < inner_end:
-                inner = s[inner_start:inner_end].strip()
-                if inner:
-                    try:
-                        return _parse_super_real(inner)
-                    except:
-                        pass
-
-        # 13. Standart float dönüşümü (son çare)
-        try:
-            # Bilimsel notasyon desteği
-            return float(s)
-        except ValueError:
-            # Romawi rakamları
-            roman_numerals = {
-                "i": 1,
-                "ii": 2,
-                "iii": 3,
-                "iv": 4,
-                "v": 5,
-                "vi": 6,
-                "vii": 7,
-                "viii": 8,
-                "ix": 9,
-                "x": 10,
-            }
-            if s in roman_numerals:
-                return float(roman_numerals[s])
-
-    except Exception as e:
-        warnings.warn(
-            f"Super real parse error for '{s}': {e}", RuntimeWarning, stacklevel=2
-        )
-
-    # 14. Hiçbir şey işe yaramazsa
-    return 0.0
-
-
-def is_super_real_expression(expr: str) -> bool:
-    """Check if string looks like a super real expression."""
-    super_real_indicators = [
-        "∞",
-        "inf",
-        "epsilon",
-        "ε",
-        "δ",
-        "dx",
-        "dt",
-        "pi",
-        "π",
-        "e",
-        "phi",
-        "φ",
-        "tau",
-        "γ",
-        "k",
-        "m",
-        "meg",
-        "g",
-        "t",
-        "μ",
-        "n",
-        "p",
-        "%",
-        "/",
-    ]
-
-    expr_lower = expr.lower()
-    return any(indicator in expr_lower for indicator in super_real_indicators)
-
-
-def normalize_super_real(value: float) -> float:
-    """Normalize super real values (e.g., replace very small numbers with 0)."""
-    EPSILON = 1e-15
-
-    if abs(value) < EPSILON:
-        return 0.0
-    elif math.isinf(value):
-        return float("inf") if value > 0 else float("-inf")
-    else:
-        return value
-
-
-def _parse_universal(s: Union[str, Any], target_type: str) -> Any:
-    """
-    Universal parser - Çeşitli sayı türlerini string'den veya diğer tiplerden parse eder
-
-    Args:
-        s: Parse edilecek input (string, sayı, liste, vs.)
-        target_type: Hedef tür ("real", "complex", "quaternion", "octonion",
-                   "sedenion", "pathion", "chingon", "routon", "voudon", "bicomplex")
-
-    Returns:
-        Parse edilmiş değer veya hata durumunda varsayılan değer
-
-    Özellikler:
-        - "real": Float'a çevirir, hata durumunda 0.0 döner
-        - "complex": _parse_complex fonksiyonunu çağırır (mevcut mantık korunur)
-        - "quaternion": 4 bileşenli hiperkompleks sayı
-        - "octonion": 8 bileşenli hiperkompleks sayı
-        - "sedenion": 16 bileşenli hiperkompleks sayı
-        - "pathion": 32 bileşenli hiperkompleks sayı
-        - "chingon": 64 bileşenli hiperkompleks sayı
-        - "routon": 128 bileşenli hiperkompleks sayı
-        - "voudon": 256 bileşenli hiperkompleks sayı
-        - "bicomplex": _parse_bicomplex fonksiyonunu çağırır (özel durum)
-    """
-    try:
-        # Bicomplex özel durumu (mevcut implementasyonu koru)
-        if target_type == "bicomplex":
-            return _parse_bicomplex(s)
-
-        # Complex özel durumu (mevcut implementasyonu koru)
-        if target_type == "complex":
-            return _parse_complex(s)
-
-        # Real özel durumu
-        if target_type == "real":
-            try:
-                if isinstance(s, (int, float)):
-                    return float(s)
-
-                if isinstance(s, complex):
-                    return float(s.real)
-
-                if isinstance(s, HypercomplexNumber):
-                    return float(s.real)
-
-                # Mevcut complex parser'ı kullan, sonra real kısmını al
-                c = _parse_complex(s)
-                return float(c.real)
-            except Exception as e:
-                warnings.warn(f"Real parse error: {e}", RuntimeWarning)
-                return 0.0
-
-        # HypercomplexNumber kullanacak tipler için mapping
-        hypercomplex_map = {
-            "quaternion": 4,
-            "octonion": 8,
-            "sedenion": 16,
-            "pathion": 32,
-            "chingon": 64,
-            "routon": 128,
-            "voudon": 256,
-        }
-
-        if target_type in hypercomplex_map:
-            dimension = hypercomplex_map[target_type]
-            return _parse_to_hypercomplex(s, dimension)
-
-        # Eğer target_type tanınmıyorsa None döndür
-        warnings.warn(f"Unknown target_type: {target_type}", RuntimeWarning)
-        return None
-
-    except Exception as e:
-        warnings.warn(f"Universal parser error for {target_type}: {e}", RuntimeWarning)
-        # Hata durumunda varsayılan değer döndür
-        return _get_default_value(target_type)
-
-
-def _get_default_value(target_type: str) -> Any:
-    """Get default value for target type."""
-    defaults = {
-        "real": 0.0,
-        "complex": complex(0, 0),
-        "quaternion": HypercomplexNumber(0, 0, 0, 0, dimension=4),
-        "octonion": HypercomplexNumber(*([0.0] * 8), dimension=8),
-        "sedenion": HypercomplexNumber(*([0.0] * 16), dimension=16),
-        "pathion": HypercomplexNumber(*([0.0] * 32), dimension=32),
-        "chingon": HypercomplexNumber(*([0.0] * 64), dimension=64),
-        "routon": HypercomplexNumber(*([0.0] * 128), dimension=128),
-        "voudon": HypercomplexNumber(*([0.0] * 256), dimension=256),
-        "bicomplex": _parse_bicomplex("0") if "_parse_bicomplex" in globals() else None,
-    }
-
-    return defaults.get(target_type, None)
-
-
-# =============================================
-# Mathematical Sequences and Functions
-# =============================================
-
-
-def oresme_sequence(n_terms: int) -> List[float]:
-    """Generate Oresme sequence: n / 2^n."""
-    return [n / (2**n) for n in range(1, n_terms + 1)]
-
-
-def harmonic_numbers(n_terms: int) -> Generator[Fraction, None, None]:
-    """Generate harmonic numbers: H_n = 1 + 1/2 + ... + 1/n."""
-    current = Fraction(0)
-    for n in range(1, n_terms + 1):
-        current += Fraction(1, n)
-        yield current
-
-
-def binet_formula(n: int) -> float:
-    """Calculate nth Fibonacci number using Binet's formula."""
-    sqrt5 = math.sqrt(5)
-    phi = (1 + sqrt5) / 2
-    psi = (1 - sqrt5) / 2
-    return (phi**n - psi**n) / sqrt5
-
-
-def generate_cd_chain_names(max_level: int = 8) -> List[str]:
-    """Generate names of Cayley-Dickson algebras up to given level."""
-    names = [
-        "Real",
-        "Complex",
-        "Quaternion",
-        "Octonion",
-        "Sedenion",
-        "Pathion",
-        "Chingon",
-        "Routon",
-        "Voudon",
-    ]
-    return names[: max_level + 1]
-
-
-# =============================================
-# Cayley-Dickson Implementation
-# =============================================
-
-
-def cayley_dickson_process(cebr: type, base_type=float) -> type:
-    """
-    Apply the Cayley-Dickson construction to generate an algebra of twice the dimension.
-    """
-
-    class CayleyDicksonCebr:
-        """Hypercomplex algebra generated via Cayley-Dickson construction."""
-
-        dimensions: Optional[int] = None
-        base = base_type
-
-        def __init__(self, *args, pair=False):
-            if pair and len(args) == 2:
-                # (a, b) pair format
-                self.a = self._ensure_cebr(args[0], cebr)
-                self.b = self._ensure_cebr(args[1], cebr)
-            else:
-                # Handle various input formats
-                if len(args) == 1:
-                    arg = args[0]
-                    # Handle complex numbers
-                    if isinstance(arg, complex):
-                        # Convert complex to pair (real, imag)
-                        self.a = cebr(arg.real)
-                        self.b = cebr(arg.imag)
-                        return
-                    # Handle strings
-                    elif isinstance(arg, str):
-                        # Try to parse as complex
-                        try:
-                            c = complex(arg)
-                            self.a = cebr(c.real)
-                            self.b = cebr(c.imag)
-                            return
-                        except ValueError:
-                            pass
-                    # Handle iterables
-                    elif hasattr(arg, "__iter__"):
-                        components = list(arg)
-                    else:
-                        components = [arg]
-                else:
-                    components = list(args)
-
-                # Ensure even number of components
-                if len(components) % 2 != 0:
-                    components.append(base_type(0))
-
-                half = len(components) // 2
-                self.a = cebr(*components[:half])
-                self.b = cebr(*components[half:])
-
-        @staticmethod
-        def _ensure_cebr(value, cebr_class):
-            """Convert value to cebr instance if needed."""
-            if isinstance(value, cebr_class):
-                return value
-            # Handle complex numbers
-            elif isinstance(value, complex):
-                return cebr_class(value.real, value.imag)
-            # Handle single values
-            else:
-                return cebr_class(value)
-
-        @classmethod
-        def from_complex(cls, c: complex):
-            """Generate from a complex number."""
-            return cls(c.real, c.imag)
-
-        @classmethod
-        def from_pair(cls, a, b):
-            """Generate from a pair (a, b)."""
-            return cls(a, b, pair=True)
-
-        @property
-        def real(self) -> float:
-            """Real part."""
-            if hasattr(self.a, "real"):
-                return float(self.a.real)
-            elif hasattr(self.a, "value"):
-                return float(self.a.value)
-            else:
-                try:
-                    return float(self.a)
-                except:
-                    return 0.0
-
-        def coefficients(self):
-            """Get all coefficients as a tuple."""
-            if hasattr(self.a, "coefficients"):
-                a_coeffs = self.a.coefficients()
-            elif hasattr(self.a, "value"):
-                a_coeffs = (float(self.a.value),)
-            else:
-                try:
-                    a_coeffs = (float(self.a),)
-                except:
-                    a_coeffs = (0.0,)
-
-            if hasattr(self.b, "coefficients"):
-                b_coeffs = self.b.coefficients()
-            elif hasattr(self.b, "value"):
-                b_coeffs = (float(self.b.value),)
-            else:
-                try:
-                    b_coeffs = (float(self.b),)
-                except:
-                    b_coeffs = (0.0,)
-
-            return a_coeffs + b_coeffs
-
-        def __add__(self, other):
-            if isinstance(other, CayleyDicksonCebr):
-                return CayleyDicksonCebr(self.a + other.a, self.b + other.b, pair=True)
-
-            # Try to convert to this cebr
-            try:
-                other_cd = CayleyDicksonCebr(other)
-                return self + other_cd
-            except:
-                return NotImplemented
-
-        def __radd__(self, other):
-            return self.__add__(other)
-
-        def __sub__(self, other):
-            if isinstance(other, CayleyDicksonCebr):
-                return CayleyDicksonCebr(self.a - other.a, self.b - other.b, pair=True)
-
-            try:
-                other_cd = CayleyDicksonCebr(other)
-                return self - other_cd
-            except:
-                return NotImplemented
-
-        def __rsub__(self, other):
-            try:
-                other_cd = CayleyDicksonCebr(other)
-                return other_cd - self
-            except:
-                return NotImplemented
-
-        def __mul__(self, other):
-            if isinstance(other, CayleyDicksonCebr):
-                # Cayley-Dickson multiplication
-                a = self.a * other.a - other.b * self._conj_b()
-                b = self._conj_a() * other.b + other.a * self.b
-                return CayleyDicksonCebr(a, b, pair=True)
-
-            # Scalar multiplication
-            try:
-                other_cd = CayleyDicksonCebr(other)
-                return self * other_cd
-            except:
-                return NotImplemented
-
-        def __rmul__(self, other):
-            return self.__mul__(other)
-
-        def __truediv__(self, other):
-            if isinstance(other, CayleyDicksonCebr):
-                return self * other.inverse()
-
-            try:
-                other_cd = CayleyDicksonCebr(other)
-                return self / other_cd
-            except:
-                return NotImplemented
-
-        def __rtruediv__(self, other):
-            try:
-                other_cd = CayleyDicksonCebr(other)
-                return other_cd / self
-            except:
-                return NotImplemented
-
-        def __neg__(self):
-            return CayleyDicksonCebr(-self.a, -self.b, pair=True)
-
-        def __pos__(self):
-            return self
-
-        def __abs__(self):
-            return self.norm()
-
-        def __eq__(self, other):
-            if isinstance(other, CayleyDicksonCebr):
-                return self.a == other.a and self.b == other.b
-
-            try:
-                other_cd = CayleyDicksonCebr(other)
-                return self == other_cd
-            except:
-                return False
-
-        def __ne__(self, other):
-            return not self.__eq__(other)
-
-        def __hash__(self):
-            return hash((self.a, self.b))
-
-        def __str__(self):
-            coeffs = self.coefficients()
-            if len(coeffs) <= 8:
-                return f"({', '.join(f'{c:.4f}' for c in coeffs)})"
-            else:
-                return f"CD[{len(coeffs)}]({coeffs[0]:.4f}, ..., {coeffs[-1]:.4f})"
-
-        def __repr__(self):
-            coeffs = self.coefficients()
-            return f"{self.__class__.__name__}({', '.join(map(str, coeffs))})"
-
-        def _conj_a(self):
-            """Conjugate of a."""
-            if hasattr(self.a, "conjugate"):
-                return self.a.conjugate()
-            elif hasattr(self.a, "value"):
-                return self.a  # Real numbers are self-conjugate
-            return self.a
-
-        def _conj_b(self):
-            """Conjugate of b."""
-            if hasattr(self.b, "conjugate"):
-                return self.b.conjugate()
-            elif hasattr(self.b, "value"):
-                return self.b  # Real numbers are self-conjugate
-            return self.b
-
-        def conjugate(self):
-            """Conjugate: conj(a, b) = (conj(a), -b)."""
-            return CayleyDicksonCebr(self._conj_a(), -self.b, pair=True)
-
-        def norm(self) -> float:
-            """Euclidean norm."""
-
-            def get_norm_squared(x):
-                if hasattr(x, "norm_squared"):
-                    return float(x.norm_squared())
-                elif hasattr(x, "norm"):
-                    n = float(x.norm())
-                    return n * n
-                elif hasattr(x, "value"):
-                    val = float(x.value)
-                    return val * val
-                else:
-                    try:
-                        val = float(x)
-                        return val * val
-                    except:
-                        return 0.0
-
-            norm_sq = get_norm_squared(self.a) + get_norm_squared(self.b)
-            return math.sqrt(norm_sq)
-
-        def norm_squared(self):
-            """Square of the norm."""
-
-            def get_norm_squared(x):
-                if hasattr(x, "norm_squared"):
-                    return x.norm_squared()
-                elif hasattr(x, "norm"):
-                    n = x.norm()
-                    return n * n
-                elif hasattr(x, "value"):
-                    return x.value * x.value
-                else:
-                    try:
-                        return x * x
-                    except:
-                        return 0
-
-            return get_norm_squared(self.a) + get_norm_squared(self.b)
-
-        def inverse(self):
-            """Multiplicative inverse."""
-            norm_sq = self.norm_squared()
-            if float(norm_sq) == 0:
-                raise ZeroDivisionError("Cannot invert zero element")
-
-            conj = self.conjugate()
-            return CayleyDicksonCebr(conj.a / norm_sq, conj.b / norm_sq, pair=True)
-
-    # Set class attributes
-    if hasattr(cebr, "dimensions"):
-        CayleyDicksonCebr.dimensions = cebr.dimensions * 2
-
-    # Use the base class name properly
-    base_name = cebr.__name__ if hasattr(cebr, "__name__") else str(cebr)
-    CayleyDicksonCebr.__name__ = f"CD{base_name}"
-
-    return CayleyDicksonCebr
-
-
-def cayley_dickson_cebr(level: int, base_type=float) -> type:
-    """Generate Cayley-Dickson cebr of given level."""
-    if not isinstance(level, int) or level < 0:
-        raise ValueError(f"Level must be non-negative integer, got {level}")
-
-    # Start with real numbers
-    if level == 0:
-
-        class RealAlgebra:
-            dimensions = 1
-            base = base_type
-
-            def __init__(self, value):
-                self.value = base_type(value)
-
-            def __add__(self, other):
-                if isinstance(other, RealAlgebra):
-                    return RealAlgebra(self.value + other.value)
-                return RealAlgebra(self.value + base_type(other))
-
-            def __sub__(self, other):
-                if isinstance(other, RealAlgebra):
-                    return RealAlgebra(self.value - other.value)
-                return RealAlgebra(self.value - base_type(other))
-
-            def __mul__(self, other):
-                if isinstance(other, RealAlgebra):
-                    return RealAlgebra(self.value * other.value)
-                return RealAlgebra(self.value * base_type(other))
-
-            def __truediv__(self, other):
-                if isinstance(other, RealAlgebra):
-                    if other.value == 0:
-                        raise ZeroDivisionError("Division by zero")
-                    return RealAlgebra(self.value / other.value)
-                if base_type(other) == 0:
-                    raise ZeroDivisionError("Division by zero")
-                return RealAlgebra(self.value / base_type(other))
-
-            def __neg__(self):
-                return RealAlgebra(-self.value)
-
-            def __pos__(self):
-                return self
-
-            def __abs__(self):
-                return RealAlgebra(abs(self.value))
-
-            def __eq__(self, other):
-                if isinstance(other, RealAlgebra):
-                    return math.isclose(self.value, other.value)
-                return math.isclose(self.value, base_type(other))
-
-            def __repr__(self):
-                return f"RealAlgebra({self.value})"
-
-            def __str__(self):
-                return f"{self.value:.4f}"
-
-            def __float__(self):
-                return float(self.value)
-
-            @property
-            def real(self):
-                return float(self.value)
-
-            def conjugate(self):
-                return self
-
-            def norm(self):
-                return abs(float(self.value))
-
-            def norm_squared(self):
-                return self.value * self.value
-
-            def coefficients(self):
-                return (float(self.value),)
-
-        return RealAlgebra
-
-    # Apply construction level times
-    current_cebr = cayley_dickson_cebr(0, base_type)
-    for i in range(level):
-        current_cebr = cayley_dickson_process(current_cebr, base_type)
-
-    # Set name
-    if level == 0:
-        current_cebr.__name__ = "RealAlgebra"
-    elif level == 1:
-        current_cebr.__name__ = "Complex"
-    elif level == 2:
-        current_cebr.__name__ = "Quaternion"
-    elif level == 3:
-        current_cebr.__name__ = "Octonion"
-    elif level == 4:
-        current_cebr.__name__ = "Sedenion"
-    elif level == 5:
-        current_cebr.__name__ = "Pathion"
-    elif level == 6:
-        current_cebr.__name__ = "Chingon"
-    elif level == 7:
-        current_cebr.__name__ = "Routon"
-    elif level == 8:
-        current_cebr.__name__ = "Voudon"
-    else:
-        current_cebr.__name__ = f"CD{level}"
-
-    return current_cebr
-
-
-def kececi_bicomplex_algorithm(
-    start: BicomplexNumber,
-    add_val: BicomplexNumber,
-    iterations: int,
-    include_intermediate: bool = True,
-    mod_value: float = 100.0,
-) -> list:
-    """
-    Gerçek Keçeci algoritmasının bikompleks versiyonunu uygular.
-
-    Bu algoritma orijinal Keçeci sayı üretecini bikompleks sayılara genişletir.
-
-    Parametreler:
-    ------------
-    start : BicomplexNumber
-        Algoritmanın başlangıç değeri
-    add_val : BicomplexNumber
-        Her iterasyonda eklenen değer
-    iterations : int
-        İterasyon sayısı
-    include_intermediate : bool, varsayılan=True
-        Ara adımları dizie ekleme
-    mod_value : float, varsayılan=100.0
-        Mod işlemi için kullanılacak değer
-
-    Döndürür:
-    --------
-    list[BicomplexNumber]
-        Üretilen Keçeci bikompleks dizisi
-
-    Özellikler:
-    ----------
-    1. Toplama işlemi
-    2. Mod alma işlemi (Keçeci algoritmasının karakteristik özelliği)
-    3. Ara adımların eklenmesi (isteğe bağlı)
-    4. Asal sayı kontrolü
-    5. Sıfır değerinde resetleme
-    """
-    sequence = [start]
-    current = start
-
-    for i in range(iterations):
-        # 1. Toplama işlemi
-        current = current + add_val
-
-        # 2. Keçeci algoritmasının özelliği: Mod alma
-        # z1 ve z2 için mod alma (gerçek ve sanal kısımlar ayrı ayrı)
-        current = BicomplexNumber(
-            complex(current.z1.real % mod_value, current.z1.imag % mod_value),
-            complex(current.z2.real % mod_value, current.z2.imag % mod_value),
-        )
-
-        # 3. Ara adımları ekle (Keçeci algoritmasının karakteristik özelliği)
-        if include_intermediate:
-            # Ara değerler için özel işlemler
-            intermediate = current * BicomplexNumber(complex(0.5, 0), complex(0, 0))
-            sequence.append(intermediate)
-
-        sequence.append(current)
-
-        # 4. Asal sayı kontrolü (Keçeci algoritmasının önemli bir parçası)
-        # Bu kısım algoritmanın detayına göre özelleştirilebilir
-        magnitude = abs(current.z1) + abs(current.z2)
-        if magnitude > 1:
-            # Basit asallık testi (büyük sayılar için verimsiz)
-            is_prime = True
-            sqrt_mag = int(magnitude**0.5) + 1
-            for j in range(2, sqrt_mag):
-                if magnitude % j == 0:
-                    is_prime = False
-                    break
-
-            if is_prime:
-                print(f"Keçeci Prime bulundu - adım {i}: büyüklük = {magnitude:.2f}")
-
-        # 5. Özel durum: Belirli değerlere ulaşıldığında resetleme
-        if abs(current.z1) < 1e-10 and abs(current.z2) < 1e-10:
-            current = start  # Başa dön
-
-    return sequence
-
-
-def kececi_bicomplex_advanced(
-    start: BicomplexNumber,
-    add_val: BicomplexNumber,
-    iterations: int,
-    include_intermediate: bool = True,
-    mod_real: float = 50.0,
-    mod_imag: float = 50.0,
-    feedback_interval: int = 10,
-) -> list:
-    """
-    Gelişmiş Keçeci algoritması - daha karmaşık matematiksel işlemler içerir.
-
-    Bu algoritma standart Keçeci algoritmasını daha gelişmiş matematiksel
-    işlemlerle genişletir: doğrusal olmayan dönüşümler, modüler aritmetik,
-    çapraz çarpımlar ve dinamik feedback mekanizmaları.
-
-    Parametreler:
-    ------------
-    start : BicomplexNumber
-        Algoritmanın başlangıç değeri
-    add_val : BicomplexNumber
-        Her iterasyonda eklenen değer
-    iterations : int
-        İterasyon sayısı
-    include_intermediate : bool, varsayılan=True
-        Ara adımları (çapraz çarpımları) dizie ekleme
-    mod_real : float, varsayılan=50.0
-        Gerçel kısımlar için mod değeri
-    mod_imag : float, varsayılan=50.0
-        Sanal kısımlar için mod değeri
-    feedback_interval : int, varsayılan=10
-        Feedback perturbasyonlarının uygulanma aralığı
-
-    Döndürür:
-    --------
-    list[BicomplexNumber]
-        Üretilen gelişmiş Keçeci bikompleks dizisi
-
-    Özellikler:
-    ----------
-    1. Temel toplama işlemi
-    2. Doğrusal olmayan dönüşümler (karekök)
-    3. Modüler aritmetik
-    4. Çapraz çarpım ara değerleri
-    5. Dinamik feedback perturbasyonları
-    """
-    sequence = [start]
-    current = start
-
-    for i in range(iterations):
-        # 1. Temel toplama
-        current = current + add_val
-
-        # 2. Doğrusal olmayan dönüşümler (Keçeci algoritmasının özelliği)
-        # Karekök alma işlemleri - negatif değerler için güvenli hale getirildi
-        try:
-            z1_real_sqrt = math.sqrt(abs(current.z1.real)) * (
-                1 if current.z1.real >= 0 else 1j
-            )
-            z1_imag_sqrt = math.sqrt(abs(current.z1.imag)) * (
-                1 if current.z1.imag >= 0 else 1j
-            )
-            z2_real_sqrt = math.sqrt(abs(current.z2.real)) * (
-                1 if current.z2.real >= 0 else 1j
-            )
-            z2_imag_sqrt = math.sqrt(abs(current.z2.imag)) * (
-                1 if current.z2.imag >= 0 else 1j
-            )
-
-            current = BicomplexNumber(
-                complex(
-                    (
-                        z1_real_sqrt.real
-                        if isinstance(z1_real_sqrt, complex)
-                        else z1_real_sqrt
-                    ),
-                    (
-                        z1_imag_sqrt.real
-                        if isinstance(z1_imag_sqrt, complex)
-                        else z1_imag_sqrt
-                    ),
-                ),
-                complex(
-                    (
-                        z2_real_sqrt.real
-                        if isinstance(z2_real_sqrt, complex)
-                        else z2_real_sqrt
-                    ),
-                    (
-                        z2_imag_sqrt.real
-                        if isinstance(z2_imag_sqrt, complex)
-                        else z2_imag_sqrt
-                    ),
-                ),
-            )
-        except (ValueError, TypeError):
-            # Karekök hatası durumunda alternatif yaklaşım
-            current = BicomplexNumber(
-                complex(np.sqrt(abs(current.z1.real)), np.sqrt(abs(current.z1.imag))),
-                complex(np.sqrt(abs(current.z2.real)), np.sqrt(abs(current.z2.imag))),
-            )
-
-        # 3. Modüler aritmetik
-        current = BicomplexNumber(
-            complex(current.z1.real % mod_real, current.z1.imag % mod_imag),
-            complex(current.z2.real % mod_real, current.z2.imag % mod_imag),
-        )
-
-        # 4. Ara adımlar (çapraz çarpımlar)
-        if include_intermediate:
-            # Çapraz çarpım ara değerleri
-            cross_product = BicomplexNumber(
-                complex(current.z1.real * current.z2.imag, 0),
-                complex(0, current.z1.imag * current.z2.real),
-            )
-            sequence.append(cross_product)
-
-        sequence.append(current)
-
-        # 5. Dinamik sistem davranışı için feedback
-        if feedback_interval > 0 and i % feedback_interval == 0 and i > 0:
-            # Periyodik perturbasyon ekle (kaotik davranışı artırmak için)
-            perturbation = BicomplexNumber(
-                complex(0.1 * math.sin(i), 0.1 * math.cos(i)),
-                complex(0.05 * math.sin(i * 0.5), 0.05 * math.cos(i * 0.5)),
-            )
-            current = current + perturbation
-
-    return sequence
-
-
-def _has_bicomplex_format(s: str) -> bool:
-    """Checks if string has bicomplex format (comma-separated)."""
-    return "," in s and s.count(",") in [1, 3]  # 2 or 4 components
 
 
 @dataclass
@@ -5923,276 +6530,12 @@ class NeutrosophicBicomplexNumber:
 
 
 @dataclass
-class SedenionNumber:
-    """
-    Sedenion (16-dimensional hypercomplex number) implementation.
-
-    Sedenions are 16-dimensional numbers that extend octonions via the
-    Cayley-Dickson construction. They are non-commutative, non-associative,
-    and not even alternative.
-
-    Components: e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15
-    where e0 is the real part.
-    """
-
-    coeffs: List[float] = field(default_factory=lambda: [0.0] * 16)
-
-    def __post_init__(self):
-        """Validate and ensure coefficients are correct length."""
-        if len(self.coeffs) != 16:
-            raise ValueError(
-                f"Sedenion must have exactly 16 components, got {len(self.coeffs)}"
-            )
-        # Ensure all are floats
-        self.coeffs = [float(c) for c in self.coeffs]
-
-    @classmethod
-    def from_scalar(cls, value: float) -> "SedenionNumber":
-        """Generate a sedenion from a scalar (real number)."""
-        coeffs = [0.0] * 16
-        coeffs[0] = float(value)
-        return cls(coeffs)
-
-    @classmethod
-    def from_list(cls, values: List[float]) -> "SedenionNumber":
-        """Generate a sedenion from a list of up to 16 values."""
-        if len(values) > 16:
-            raise ValueError(f"List too long ({len(values)}), maximum 16 elements")
-        coeffs = list(values) + [0.0] * (16 - len(values))
-        return cls(coeffs)
-
-    @classmethod
-    def basis_element(cls, index: int) -> "SedenionNumber":
-        """Generate a basis sedenion (1 at position index, 0 elsewhere)."""
-        if not 0 <= index < 16:
-            raise ValueError(f"Index must be between 0 and 15, got {index}")
-        coeffs = [0.0] * 16
-        coeffs[index] = 1.0
-        return cls(coeffs)
-
-    @property
-    def real(self) -> float:
-        """Get the real part (first component)."""
-        return self.coeffs[0]
-
-    @real.setter
-    def real(self, value: float):
-        """Set the real part."""
-        self.coeffs[0] = float(value)
-
-    @property
-    def imag(self) -> List[float]:
-        """Get the imaginary parts (all except real)."""
-        return self.coeffs[1:]
-
-    def __getitem__(self, index: int) -> float:
-        """Get component by index."""
-        if not 0 <= index < 16:
-            raise IndexError(f"Index {index} out of range for sedenion")
-        return self.coeffs[index]
-
-    def __setitem__(self, index: int, value: float):
-        """Set component by index."""
-        if not 0 <= index < 16:
-            raise IndexError(f"Index {index} out of range for sedenion")
-        self.coeffs[index] = float(value)
-
-    def __len__(self) -> int:
-        """Return number of components (always 16)."""
-        return 16
-
-    def __iter__(self):
-        """Iterate over components."""
-        return iter(self.coeffs)
-
-    def __add__(self, other: Union["SedenionNumber", float, int]) -> "SedenionNumber":
-        """Add two sedenions or sedenion and scalar."""
-        if isinstance(other, SedenionNumber):
-            new_coeffs = [a + b for a, b in zip(self.coeffs, other.coeffs)]
-            return SedenionNumber(new_coeffs)
-        elif isinstance(other, (int, float)):
-            new_coeffs = self.coeffs.copy()
-            new_coeffs[0] += float(other)
-            return SedenionNumber(new_coeffs)
-        return NotImplemented
-
-    def __radd__(self, other: Union[float, int]) -> "SedenionNumber":
-        """Right addition: scalar + sedenion."""
-        return self.__add__(other)
-
-    def __sub__(self, other: Union["SedenionNumber", float, int]) -> "SedenionNumber":
-        """Subtract two sedenions or sedenion and scalar."""
-        if isinstance(other, SedenionNumber):
-            new_coeffs = [a - b for a, b in zip(self.coeffs, other.coeffs)]
-            return SedenionNumber(new_coeffs)
-        elif isinstance(other, (int, float)):
-            new_coeffs = self.coeffs.copy()
-            new_coeffs[0] -= float(other)
-            return SedenionNumber(new_coeffs)
-        return NotImplemented
-
-    def __rsub__(self, other: Union[float, int]) -> "SedenionNumber":
-        """Right subtraction: scalar - sedenion."""
-        if isinstance(other, (int, float)):
-            new_coeffs = [-c for c in self.coeffs]
-            new_coeffs[0] += float(other)
-            return SedenionNumber(new_coeffs)
-        return NotImplemented
-
-    def __mul__(self, other: Union["SedenionNumber", float, int]) -> "SedenionNumber":
-        """Multiply sedenion by scalar or another sedenion (simplified)."""
-        if isinstance(other, (int, float)):
-            # Scalar multiplication
-            new_coeffs = [c * float(other) for c in self.coeffs]
-            return SedenionNumber(new_coeffs)
-        elif isinstance(other, SedenionNumber):
-            # NOTE: This is NOT the true sedenion multiplication!
-            # True sedenion multiplication requires a 16x16 multiplication table.
-            # This is a simplified element-wise multiplication for demonstration.
-            # For real applications, implement proper sedenion multiplication.
-            new_coeffs = [a * b for a, b in zip(self.coeffs, other.coeffs)]
-            return SedenionNumber(new_coeffs)
-        return NotImplemented
-
-    def __rmul__(self, other: Union[float, int]) -> "SedenionNumber":
-        """Right multiplication: scalar * sedenion."""
-        return self.__mul__(other)
-
-    def __truediv__(self, scalar: Union[float, int]) -> "SedenionNumber":
-        """Divide sedenion by scalar."""
-        if isinstance(scalar, (int, float)):
-            if scalar == 0:
-                raise ZeroDivisionError("Cannot divide sedenion by zero")
-            new_coeffs = [c / float(scalar) for c in self.coeffs]
-            return SedenionNumber(new_coeffs)
-        return NotImplemented
-
-    def __floordiv__(self, scalar: Union[float, int]) -> "SedenionNumber":
-        """Floor divide sedenion by scalar."""
-        if isinstance(scalar, (int, float)):
-            if scalar == 0:
-                raise ZeroDivisionError("Cannot divide sedenion by zero")
-            new_coeffs = [c // float(scalar) for c in self.coeffs]
-            return SedenionNumber(new_coeffs)
-        return NotImplemented
-
-    def __mod__(self, divisor: Union[float, int]) -> "SedenionNumber":
-        """Modulo operation on sedenion components."""
-        if isinstance(divisor, (int, float)):
-            if divisor == 0:
-                raise ZeroDivisionError("Cannot take modulo by zero")
-            new_coeffs = [c % float(divisor) for c in self.coeffs]
-            return SedenionNumber(new_coeffs)
-        return NotImplemented
-
-    def __neg__(self) -> "SedenionNumber":
-        """Negate the sedenion."""
-        return SedenionNumber([-c for c in self.coeffs])
-
-    def __pos__(self) -> "SedenionNumber":
-        """Unary plus."""
-        return self
-
-    def __abs__(self) -> float:
-        """Absolute value (magnitude)."""
-        return self.magnitude()
-
-    def __eq__(self, other: object) -> bool:
-        """Check equality with another sedenion."""
-        if not isinstance(other, SedenionNumber):
-            return False
-        return all(
-            math.isclose(a, b, abs_tol=1e-12) for a, b in zip(self.coeffs, other.coeffs)
-        )
-
-    def __ne__(self, other: object) -> bool:
-        """Check inequality."""
-        return not self.__eq__(other)
-
-    def __hash__(self) -> int:
-        """Hash based on rounded components to avoid floating-point issues."""
-        return hash(tuple(round(c, 10) for c in self.coeffs))
-
-    def magnitude(self) -> float:
-        """
-        Calculate Euclidean norm (magnitude) of the sedenion.
-
-        Returns:
-            float: sqrt(Σ_i coeff_i²)
-        """
-        return float(np.linalg.norm(self.coeffs))
-
-    def norm(self) -> float:
-        """Alias for magnitude."""
-        return self.magnitude()
-
-    def conjugate(self) -> "SedenionNumber":
-        """Return the conjugate (negate all imaginary parts)."""
-        new_coeffs = self.coeffs.copy()
-        for i in range(1, 16):
-            new_coeffs[i] = -new_coeffs[i]
-        return SedenionNumber(new_coeffs)
-
-    def dot(self, other: "SedenionNumber") -> float:
-        """Dot product with another sedenion."""
-        if not isinstance(other, SedenionNumber):
-            raise TypeError("Dot product requires another SedenionNumber")
-        return sum(a * b for a, b in zip(self.coeffs, other.coeffs))
-
-    def normalize(self) -> "SedenionNumber":
-        """Return a normalized (unit) version."""
-        mag = self.magnitude()
-        if mag == 0:
-            raise ZeroDivisionError("Cannot normalize zero sedenion")
-        return SedenionNumber([c / mag for c in self.coeffs])
-
-    def to_list(self) -> List[float]:
-        """Convert to Python list."""
-        return self.coeffs.copy()
-
-    def to_tuple(self) -> Tuple[float, ...]:
-        """Convert to tuple."""
-        return tuple(self.coeffs)
-
-    def to_numpy(self) -> np.ndarray:
-        """Convert to numpy array."""
-        return np.array(self.coeffs, dtype=np.float64)
-
-    def copy(self) -> "SedenionNumber":
-        """Generate a copy."""
-        return SedenionNumber(self.coeffs.copy())
-
-    def __str__(self) -> str:
-        """Human-readable string representation."""
-        # Show only non-zero components for clarity
-        non_zero = [(i, c) for i, c in enumerate(self.coeffs) if abs(c) > 1e-10]
-        if not non_zero:
-            return "Sedenion(0)"
-
-        parts = []
-        for i, c in non_zero:
-            if i == 0:
-                parts.append(f"{c:.6f}")
-            else:
-                sign = "+" if c >= 0 else "-"
-                parts.append(f"{sign} {abs(c):.6f}e{i}")
-
-        return f"Sedenion({' '.join(parts)})"
-
-    def __repr__(self) -> str:
-        """Detailed representation."""
-        return f"SedenionNumber({self.coeffs})"
-
-
-@dataclass
 class CliffordNumber:
     def __init__(self, basis_dict: Dict[str, float]):
         """CliffordNumber constructor."""
         # Sadece sıfır olmayan değerleri sakla
-        self.basis = {
-            k: float(v) for k, v in basis_dict.items() if abs(float(v)) > 1e-10
-        }
-
+        self.basis = {k: float(v) for k, v in basis_dict.items() if abs(float(v)) > 1e-10}
+    
     @property
     def dimension(self) -> int:
         """Vector space dimension'ını otomatik hesaplar."""
@@ -6215,7 +6558,7 @@ class CliffordNumber:
             return CliffordNumber(new_basis)
         elif isinstance(other, (int, float)):
             new_basis = self.basis.copy()
-            new_basis[""] = new_basis.get("", 0.0) + other
+            new_basis[''] = new_basis.get('', 0.0) + other
             return CliffordNumber(new_basis)
         return NotImplemented
 
@@ -6229,7 +6572,7 @@ class CliffordNumber:
             return CliffordNumber(new_basis)
         elif isinstance(other, (int, float)):
             new_basis = self.basis.copy()
-            new_basis[""] = new_basis.get("", 0.0) - other
+            new_basis[''] = new_basis.get('', 0.0) - other
             return CliffordNumber(new_basis)
         return NotImplemented
 
@@ -6239,29 +6582,27 @@ class CliffordNumber:
         elif isinstance(other, CliffordNumber):
             # Basit Clifford çarpımı (e_i^2 = +1 varsayımıyla)
             new_basis = {}
-
+            
             for k1, v1 in self.basis.items():
                 for k2, v2 in other.basis.items():
                     # Skaler çarpım
-                    if k1 == "":
+                    if k1 == '':
                         product_key = k2
                         sign = 1.0
-                    elif k2 == "":
+                    elif k2 == '':
                         product_key = k1
                         sign = 1.0
                     else:
                         # Vektör çarpımı: e_i * e_j
                         combined = sorted(k1 + k2)
-                        product_key = "".join(combined)
-
+                        product_key = ''.join(combined)
+                        
                         # Basitleştirilmiş: e_i^2 = +1, anti-commutative
                         sign = 1.0
                         # Burada gerçek Clifford cebir kuralları uygulanmalı
-
-                    new_basis[product_key] = (
-                        new_basis.get(product_key, 0.0) + sign * v1 * v2
-                    )
-
+                    
+                    new_basis[product_key] = new_basis.get(product_key, 0.0) + sign * v1 * v2
+            
             return CliffordNumber(new_basis)
         return NotImplemented
 
@@ -6274,23 +6615,21 @@ class CliffordNumber:
 
     def __str__(self):
         parts = []
-        if "" in self.basis and abs(self.basis[""]) > 1e-10:
+        if '' in self.basis and abs(self.basis['']) > 1e-10:
             parts.append(f"{self.basis['']:.2f}")
-
-        sorted_keys = sorted(
-            [k for k in self.basis if k != ""], key=lambda x: (len(x), x)
-        )
+        
+        sorted_keys = sorted([k for k in self.basis if k != ''], key=lambda x: (len(x), x))
         for k in sorted_keys:
             v = self.basis[k]
             if abs(v) > 1e-10:
-                sign = "+" if v > 0 and parts else ""
+                sign = '+' if v > 0 and parts else ''
                 parts.append(f"{sign}{v:.2f}e{k}")
-
+        
         result = "".join(parts).replace("+-", "-")
         return result if result else "0.0"
 
     @classmethod
-    def parse(cls, s) -> "CliffordNumber":
+    def parse(cls, s) -> 'CliffordNumber':
         """Class method olarak parse metodu"""
         return _parse_clifford(s)
 
@@ -6307,33 +6646,26 @@ class DualNumber:
     def __init__(self, real, dual):
         self.real = float(real)
         self.dual = float(dual)
-
     def __add__(self, other):
         if isinstance(other, DualNumber):
             return DualNumber(self.real + other.real, self.dual + other.dual)
         elif isinstance(other, (int, float)):
             return DualNumber(self.real + other, self.dual)
         raise TypeError
-
     def __sub__(self, other):
         if isinstance(other, DualNumber):
             return DualNumber(self.real - other.real, self.dual - other.dual)
         elif isinstance(other, (int, float)):
             return DualNumber(self.real - other, self.dual)
         raise TypeError
-
     def __mul__(self, other):
         if isinstance(other, DualNumber):
-            return DualNumber(
-                self.real * other.real, self.real * other.dual + self.dual * other.real
-            )
+            return DualNumber(self.real * other.real, self.real * other.dual + self.dual * other.real)
         elif isinstance(other, (int, float)):
             return DualNumber(self.real * other, self.dual * other)
         raise TypeError
-
     def __rmul__(self, other):
         return self.__mul__(other)
-
     def __truediv__(self, other):
         if isinstance(other, (int, float)):
             if other == 0:
@@ -6342,48 +6674,38 @@ class DualNumber:
         elif isinstance(other, DualNumber):
             if other.real == 0:
                 raise ZeroDivisionError
-            return DualNumber(
-                self.real / other.real,
-                (self.dual * other.real - self.real * other.dual) / (other.real**2),
-            )
+            return DualNumber(self.real / other.real, (self.dual * other.real - self.real * other.dual) / (other.real ** 2))
         raise TypeError
-
     def __floordiv__(self, other):
         if isinstance(other, (int, float)):
             if other == 0:
                 raise ZeroDivisionError
             return DualNumber(self.real // other, self.dual // other)
         raise TypeError
-
     def __eq__(self, other):
         if isinstance(other, DualNumber):
             return self.real == other.real and self.dual == other.dual
         elif isinstance(other, (int, float)):
             return self.real == other and self.dual == 0
         return False
-
     def __str__(self):
         return f"{self.real} + {self.dual}ε"
-
     def __repr__(self):
-        return self.__str__()  # __repr__ eklenmiş
-
+        return self.__str__() # __repr__ eklenmiş
     def __int__(self):
-        return int(self.real)  # int() dönüşümü eklenmiş
-
+        return int(self.real) # int() dönüşümü eklenmiş
     def __radd__(self, other):
-        return self.__add__(other)  # commutative
-
+       return self.__add__(other)  # commutative
     def __rsub__(self, other):
-        if isinstance(other, (int, float)):
-            return DualNumber(other - self.real, -self.dual)
-        return NotImplemented
+       if isinstance(other, (int, float)):
+           return DualNumber(other - self.real, -self.dual)
+       return NotImplemented
 
     def __neg__(self):
-        return DualNumber(-self.real, -self.dual)
+       return DualNumber(-self.real, -self.dual)
 
     def __hash__(self):
-        return hash((self.real, self.dual))
+       return hash((self.real, self.dual))
 
 
 @dataclass
@@ -6454,9 +6776,8 @@ def _extract_numeric_part(s: Any) -> str:
         s = str(s)
     s = s.strip()
     # match optional sign, digits, optional decimal, optional exponent
-    m = re.search(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", s)
+    m = re.search(r'[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?', s)
     return m.group(0) if m else "0"
-
 
 def convert_to_float(value: Any) -> float:
     """
@@ -6479,7 +6800,7 @@ def convert_to_float(value: Any) -> float:
 
     # quaternion-like
     try:
-        # if isinstance(value, quaternion):
+        #if isinstance(value, quaternion):
         #    return float(value.w)
         if quaternion is not None and isinstance(value, quaternion):
             comps = [value.w, value.x, value.y, value.z]
@@ -6490,21 +6811,21 @@ def convert_to_float(value: Any) -> float:
         pass
 
     # Generic attributes
-    if hasattr(value, "real"):
+    if hasattr(value, 'real'):
         try:
-            return float(getattr(value, "real"))
+            return float(getattr(value, 'real'))
         except Exception:
             pass
 
-    if hasattr(value, "w"):
+    if hasattr(value, 'w'):
         try:
-            return float(getattr(value, "w"))
+            return float(getattr(value, 'w'))
         except Exception:
             pass
 
-    if hasattr(value, "coeffs"):
+    if hasattr(value, 'coeffs'):
         try:
-            coeffs = getattr(value, "coeffs")
+            coeffs = getattr(value, 'coeffs')
             if isinstance(coeffs, np.ndarray):
                 if coeffs.size > 0:
                     return float(coeffs.flatten()[0])
@@ -6516,27 +6837,26 @@ def convert_to_float(value: Any) -> float:
         except Exception:
             pass
 
-    if hasattr(value, "sequence"):
+    if hasattr(value, 'sequence'):
         try:
-            seq = getattr(value, "sequence")
+            seq = getattr(value, 'sequence')
             if seq and len(seq) > 0:
                 return float(seq[0])
         except Exception:
             pass
 
     # TernaryNumber: digits -> decimal
-    if hasattr(value, "digits"):
+    if hasattr(value, 'digits'):
         try:
             digits = list(value.digits)
             dec = 0
             for i, d in enumerate(reversed(digits)):
-                dec += int(d) * (3**i)
+                dec += int(d) * (3 ** i)
             return float(dec)
         except Exception:
             pass
 
     raise TypeError(f"Cannot convert {type(value).__name__} to float.")
-
 
 def safe_add(added_value, ask_unit, direction):
     """
@@ -6567,17 +6887,13 @@ def safe_add(added_value, ask_unit, direction):
     """
     try:
         # Scale the unit: ask_unit * (+1 or -1)
-        if not hasattr(ask_unit, "__mul__"):
-            raise TypeError(
-                f"Type '{type(ask_unit).__name__}' does not support scalar multiplication (missing __mul__)."
-            )
+        if not hasattr(ask_unit, '__mul__'):
+            raise TypeError(f"Type '{type(ask_unit).__name__}' does not support scalar multiplication (missing __mul__).")
         scaled_unit = ask_unit * direction
 
         # Add to the current value
-        if not hasattr(added_value, "__add__"):
-            raise TypeError(
-                f"Type '{type(added_value).__name__}' does not support addition (missing __add__)."
-            )
+        if not hasattr(added_value, '__add__'):
+            raise TypeError(f"Type '{type(added_value).__name__}' does not support addition (missing __add__).")
         result = added_value + scaled_unit
 
         return result
@@ -7296,128 +7612,104 @@ def _parse_hyperreal(s: Any) -> Tuple[float, float, List[float]]:
     # 14. Varsayılan
     warnings.warn(f"Could not parse hyperreal: '{s}'", RuntimeWarning, stacklevel=2)
     return 0.0, 0.0, [0.0]
+"""
+# ValueError: not enough values to unpack (expected 3, got 2): Type=9, Start='0.0,0.001', Add='0.0,0.001'
+def _parse_hyperreal(s) -> Tuple[float, float]:
+    #Parses hyperreal string into (finite, infinitesimal) tuple.
+    # Eğer zaten tuple ise doğrudan döndür
+    if isinstance(s, (tuple, list)) and len(s) >= 2:
+        return float(s[0]), float(s[1])
+    
+    # Sayısal tipse sadece finite değeri olarak işle
+    if isinstance(s, (float, int, complex)):
+        return float(s), 0.0
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
+    s_clean = s.strip().replace(" ", "")
+    
+    # VİRGÜL formatı: finite,infinitesimal
+    if ',' in s_clean:
+        parts = s_clean.split(',')
+        if len(parts) >= 2:
+            try:
+                return float(parts[0]), float(parts[1])
+            except ValueError:
+                pass
+        elif len(parts) == 1:
+            try:
+                return float(parts[0]), 0.0
+            except ValueError:
+                pass
 
-
-# Yardımcı fonksiyon
-def _parse_engineering_notation(s: str) -> float:
-    """Parse engineering notation (1.5k, 2.3m, etc.)"""
-    import re
-
-    s = s.strip().lower()
-
-    # Mühendislik çarpanları
-    multipliers = {
-        "k": 1e3,
-        "m": 1e-3,
-        "meg": 1e6,
-        "g": 1e9,
-        "t": 1e12,
-        "μ": 1e-6,
-        "u": 1e-6,
-        "n": 1e-9,
-        "p": 1e-12,
-        "f": 1e-15,
-        "a": 1e-18,
-        "mil": 1000,  # thousand
-    }
-
-    # Regex pattern
-    pattern = r"^([+-]?\d*\.?\d+)\s*([a-zμ]+)?$"
-    match = re.match(pattern, s)
-
-    if match:
+    # Eski 'a+be' formatını destekle
+    if 'e' in s_clean:
         try:
-            value = float(match.group(1))
-            unit = match.group(2) or ""
-
-            if unit in multipliers:
-                return value * multipliers[unit]
-            elif unit == "":
-                return value
-
-            # Özel birimler
-            if unit.startswith("e"):
-                # 1.5e-3 gibi
-                return float(s)
-        except (ValueError, KeyError):
+            parts = s_clean.split('e')
+            finite = float(parts[0]) if parts[0] not in ['', '+', '-'] else 0.0
+            infinitesimal = float(parts[1]) if len(parts) > 1 and parts[1] not in ['', '+', '-'] else 1.0
+            return finite, infinitesimal
+        except ValueError:
             pass
-
-    # Standart float dönüşümü
-    return float(s)
-
-
-# Yardımcı fonksiyonlar
-def parse_to_neutrosophic(s: Any) -> "NeutrosophicNumber":
-    """Parse to NeutrosophicNumber object directly"""
-    from typing import TYPE_CHECKING
-
-    if TYPE_CHECKING:
-        from .kececinumbers import NeutrosophicNumber
-
-    t, i, f = _parse_neutrosophic(s)
-    return NeutrosophicNumber(t, i, f)
-
-
-def parse_to_hyperreal(s: Any) -> "HyperrealNumber":
-    """Parse to Hyperreal object directly"""
-    from typing import TYPE_CHECKING
-
-    if TYPE_CHECKING:
-        from .kececinumbers import HyperrealNumber
-
-    finite, infinitesimal, seq = _parse_hyperreal(s)
-    return HyperrealNumber(sequence=seq)
-
+    
+    # Sadece sayısal değer
+    try:
+        return float(s_clean), 0.0
+    except ValueError:
+        return 0.0, 0.0  # Default
+"""
 
 def _parse_quaternion_from_csv(s) -> quaternion:
     """Virgülle ayrılmış string'i veya sayıyı quaternion'a dönüştürür.
-
+    
     Args:
         s: Dönüştürülecek değer. Şu formatları destekler:
             - quaternion nesnesi (doğrudan döndürülür)
             - float, int, complex sayılar (skaler quaternion)
             - String ("w,x,y,z" veya "scalar" formatında)
             - Diğer tipler (string'e dönüştürülerek işlenir)
-
+    
     Returns:
         quaternion: Dönüştürülmüş kuaterniyon
-
+    
     Raises:
         ValueError: Geçersiz format veya sayısal olmayan bileşenler durumunda
     """
     # Eğer zaten quaternion ise doğrudan döndür
     if isinstance(s, quaternion):
         return s
-
+    
     # Sayısal tipse skaler quaternion olarak işle
     if isinstance(s, (float, int)):
         return quaternion(float(s), 0, 0, 0)
-
+    
     # Complex sayı için özel işlem
     if isinstance(s, complex):
         # Complex sayının sadece gerçek kısmını al
         return quaternion(float(s.real), 0, 0, 0)
-
+    
     # String işlemleri için önce string'e dönüştür
     if not isinstance(s, str):
         s = str(s)
-
+    
     s = s.strip()
-
+    
     # Boş string kontrolü
     if not s:
         raise ValueError(f"Boş string quaternion'a dönüştürülemez")
-
+    
     # String'i virgülle ayır
-    parts_str = s.split(",")
-
+    parts_str = s.split(',')
+    
     # Tüm parçaları float'a dönüştürmeyi dene
     parts_float = []
     for p in parts_str:
         p = p.strip()
         if not p:
             raise ValueError(f"Boş bileşen bulundu: '{s}'")
-
+        
         try:
             # Önce normal float olarak dene
             parts_float.append(float(p))
@@ -7425,27 +7717,22 @@ def _parse_quaternion_from_csv(s) -> quaternion:
             # Float olarak parse edilemezse complex olarak dene
             try:
                 # 'i' karakterini 'j' ile değiştir (complex fonksiyonu 'j' bekler)
-                complex_str = p.replace("i", "j").replace("I", "J")
+                complex_str = p.replace('i', 'j').replace('I', 'J')
                 # Eğer 'j' yoksa ve sayı değilse hata ver
-                if "j" not in complex_str.lower():
+                if 'j' not in complex_str.lower():
                     raise ValueError(f"Geçersiz sayı formatı: '{p}'")
-
+                
                 c = complex(complex_str)
                 parts_float.append(float(c.real))
             except ValueError:
-                raise ValueError(
-                    f"quaternion bileşeni sayı olmalı: '{p}' (string: '{s}')"
-                )
+                raise ValueError(f"quaternion bileşeni sayı olmalı: '{p}' (string: '{s}')")
 
     if len(parts_float) == 4:
         return quaternion(*parts_float)
     elif len(parts_float) == 1:  # Sadece skaler değer
         return quaternion(parts_float[0], 0, 0, 0)
     else:
-        raise ValueError(
-            f"Geçersiz quaternion formatı. 1 veya 4 bileşen bekleniyor, {len(parts_float)} alındı: '{s}'"
-        )
-
+        raise ValueError(f"Geçersiz quaternion formatı. 1 veya 4 bileşen bekleniyor, {len(parts_float)} alındı: '{s}'")
 
 def _has_comma_format(s: Any) -> bool:
     """
@@ -7457,8 +7744,7 @@ def _has_comma_format(s: Any) -> bool:
     if not isinstance(s, str):
         s = str(s)
     # Consider comma-format only when there's at least one digit and a comma
-    return "," in s and bool(re.search(r"\d", s))
-
+    return ',' in s and bool(re.search(r'\d', s))
 
 def _is_complex_like(s: Any) -> bool:
     """
@@ -7471,115 +7757,15 @@ def _is_complex_like(s: Any) -> bool:
         s = str(s)
     s = s.lower()
     # quick checks
-    if "j" in s or "i" in s:
+    if 'j' in s or 'i' in s:
         return True
     # pattern like "a+bi" or "a-bi"
-    if re.search(r"[+-]\d", s) and ("+" in s or "-" in s):
+    if re.search(r'[+-]\d', s) and ('+' in s or '-' in s):
         # avoid classifying comma-separated lists as complex
-        if "," in s:
+        if ',' in s:
             return False
         return True
     return False
-
-
-def _safe_float_convert(value: Any) -> float:
-    """
-    Güvenli float dönüşümü.
-
-    Args:
-        value: Dönüştürülecek değer
-
-    Returns:
-        Float değeri veya 0.0
-    """
-    if isinstance(value, (float, int)):
-        return float(value)
-    elif isinstance(value, complex):
-        return float(value.real)  # veya abs(value) seçeneği
-    elif isinstance(value, str):
-        try:
-            return float(value)
-        except ValueError:
-            # Özel semboller
-            value_upper = value.upper().strip()
-            if value_upper in ["", "NAN", "NULL", "NONE"]:
-                return 0.0
-            elif value_upper == "INF" or value_upper == "INFINITY":
-                return float("inf")
-            elif value_upper == "-INF" or value_upper == "-INFINITY":
-                return float("-inf")
-            # '+' veya '-' işaretleri
-            elif value == "+":
-                return 1.0
-            elif value == "-":
-                return -1.0
-            else:
-                try:
-                    # Karmaşık sayı string'i olabilir
-                    if "j" in value or "J" in value:
-                        c = complex(value)
-                        return float(c.real)
-                except ValueError:
-                    pass
-                return 0.0
-    else:
-        try:
-            return float(value)
-        except (ValueError, TypeError):
-            return 0.0
-
-
-def _parse_complex_like_string(s: str) -> List[float]:
-    """
-    Karmaşık sayı benzeri string'i float listesine çevirir.
-    Örnek: "1+2i-3j+4k" -> [1.0, 2.0, -3.0, 4.0, ...]
-    """
-    if not s:
-        return [0.0]
-
-    # Normalize et
-    s = s.replace(" ", "").replace("J", "j").replace("I", "j").upper()
-
-    # Tüm imajiner birimleri normalize et
-    units = [
-        "J",
-        "I",
-        "K",
-        "E",
-        "F",
-        "G",
-        "H",
-        "L",
-        "M",
-        "N",
-        "O",
-        "P",
-        "Q",
-        "R",
-        "S",
-        "T",
-    ]
-
-    # İlk bileşen (reel kısım)
-    result = [0.0] * (len(units) + 1)
-
-    # Reel kısmı bul
-    pattern = r"^([+-]?\d*\.?\d*)(?![" + "".join(units) + "])"
-    match = re.match(pattern, s)
-    if match and match.group(1):
-        result[0] = _safe_float_convert(match.group(1))
-
-    # Her bir imajiner birim için
-    for i, unit in enumerate(units, 1):
-        pattern = r"([+-]?\d*\.?\d*)" + re.escape(unit)
-        matches = re.findall(pattern, s)
-        if matches:
-            # Son eşleşmeyi al (tekrarlanmışsa)
-            last_match = matches[-1]
-            result[i] = _safe_float_convert(last_match)
-
-    return result
-
 
 def _parse_neutrosophic_bicomplex(s: Any) -> NeutrosophicBicomplexNumber:
     """
@@ -7668,534 +7854,163 @@ def _parse_neutrosophic_bicomplex(s: Any) -> NeutrosophicBicomplexNumber:
         raise ValueError(f"Invalid NeutrosophicBicomplex format: '{s}'") from e
 
 
-def _parse_octonion(s: Any) -> OctonionNumber:
-    """
-    String'i veya sayıyı OctonionNumber'a dönüştürür.
-
-    Supports:
-    - OctonionNumber instance
-    - Numeric types (float, int, complex)
-    - Comma-separated string: "1,2,3,4,5,6,7,8"
-    - Symbolic string: "1 + 2i + 3j + 4k + 5e + 6f + 7g + 8h"
+def _parse_octonion(s) -> OctonionNumber:
+    """String'i veya sayıyı OctonionNumber'a dönüştürür.
+    w,x,y,z,e,f,g,h:e0,e1,e2,e3,e4,e5,e6,e7
     """
     # Eğer zaten OctonionNumber ise doğrudan döndür
     if isinstance(s, OctonionNumber):
         return s
-
-    # List/tuple ise
-    if isinstance(s, (list, tuple)):
-        if len(s) == 8:
-            try:
-                return OctonionNumber(*[_safe_float_convert(v) for v in s])
-            except (ValueError, TypeError) as e:
-                raise ValueError(f"Invalid octonion component values: {s}") from e
-        elif len(s) == 1:
-            scalar = _safe_float_convert(s[0])
-            return OctonionNumber(scalar, 0, 0, 0, 0, 0, 0, 0)
-        else:
-            # Eksik veya fazla bileşen
-            if len(s) < 8:
-                values = [_safe_float_convert(v) for v in s] + [0.0] * (8 - len(s))
-                return OctonionNumber(*values)
-            else:
-                values = [_safe_float_convert(v) for v in s[:8]]
-                return OctonionNumber(*values)
-
-    # Sayısal tipse skaler olarak işle
-    if isinstance(s, (float, int)):
+    
+    # Eğer sayısal tipse (float, int, complex) skaler olarak işle
+    if isinstance(s, (float, int, complex)):
         scalar = float(s)
         return OctonionNumber(scalar, 0, 0, 0, 0, 0, 0, 0)
-    elif isinstance(s, complex):
-        return OctonionNumber(s.real, s.imag, 0, 0, 0, 0, 0, 0)
-
+    
     # String işlemleri için önce string'e dönüştür
     if not isinstance(s, str):
-        try:
-            s = str(s)
-        except Exception as e:
-            raise ValueError(f"Cannot convert to string: {s}") from e
-
+        s = str(s)
+    
     s_clean = s.strip()
-    if not s_clean:
-        return OctonionNumber(0, 0, 0, 0, 0, 0, 0, 0)
-
-    # Virgülle ayrılmış format
-    if "," in s_clean:
+    
+    # Eğer virgül içermiyorsa, skaler olarak kabul et
+    if ',' not in s_clean:
         try:
-            parts = [_safe_float_convert(p.strip()) for p in s_clean.split(",")]
-            if len(parts) == 8:
-                return OctonionNumber(*parts)
-            elif len(parts) < 8:
-                parts = parts + [0.0] * (8 - len(parts))
-                return OctonionNumber(*parts)
-            else:
-                return OctonionNumber(*parts[:8])
-        except ValueError as e:
-            raise ValueError(f"Invalid octonion format: '{s}'") from e
-
-    # Sembolik format (1 + 2i + 3j + ...)
-    # Octonion birimleri: 1, i, j, k, e, f, g, h
-    units = ["I", "J", "K", "E", "F", "G", "H"]
-
-    # Normalize et
-    s_norm = s_clean.replace(" ", "").upper()
-
-    # Reel kısmı bul
-    real_part = 0.0
-    unit_values = {unit: 0.0 for unit in units}
-
-    # Regex pattern: sayı + birim (opsiyonel)
-    # Önce reel kısmı bul
-    real_match = re.match(r"^([+-]?\d*\.?\d*)(?![IJKEFGH])", s_norm)
-    if real_match and real_match.group(1) and real_match.group(1) not in ["", "+", "-"]:
-        real_part = _safe_float_convert(real_match.group(1))
-
-    # Her birim için değerleri bul
-    for unit in units:
-        pattern = r"([+-]?\d*\.?\d*)" + re.escape(unit)
-        matches = re.findall(pattern, s_norm)
-        if matches:
-            last_match = matches[-1]
-            if last_match in ["", "+"]:
-                unit_values[unit] = 1.0
-            elif last_match == "-":
-                unit_values[unit] = -1.0
-            else:
-                unit_values[unit] = _safe_float_convert(last_match)
-
-    # Octonion oluştur
-    return OctonionNumber(
-        real_part,
-        unit_values.get("I", 0.0),
-        unit_values.get("J", 0.0),
-        unit_values.get("K", 0.0),
-        unit_values.get("E", 0.0),
-        unit_values.get("F", 0.0),
-        unit_values.get("G", 0.0),
-        unit_values.get("H", 0.0),
-    )
+            scalar = float(s_clean)
+            return OctonionNumber(scalar, 0, 0, 0, 0, 0, 0, 0)
+        except ValueError:
+            raise ValueError(f"Invalid octonion format: '{s}'")
+    
+    # Virgülle ayrılmışsa
+    try:
+        parts = [float(p.strip()) for p in s_clean.split(',')]
+        if len(parts) == 8:
+            return OctonionNumber(*parts)  # 8 parametre olarak gönder
+        else:
+            # Eksik veya fazla bileşen için default
+            scalar = parts[0] if parts else 0.0
+            return OctonionNumber(scalar, 0, 0, 0, 0, 0, 0, 0)
+    except ValueError as e:
+        raise ValueError(f"Invalid octonion format: '{s}'") from e
 
 
-def _parse_sedenion(s: Any) -> SedenionNumber:
-    """
-    String'i veya sayıyı SedenionNumber'a dönüştürür.
-
-    Supports:
-    - SedenionNumber instance
-    - Numeric types
-    - Comma-separated string (16 values)
-    - List/tuple of 16 values
-    """
+def _parse_sedenion(s) -> SedenionNumber:
+    """String'i veya sayıyı SedenionNumber'a dönüştürür."""
     # Eğer zaten SedenionNumber ise doğrudan döndür
     if isinstance(s, SedenionNumber):
         return s
-
-    # List/tuple ise
-    if isinstance(s, (list, tuple)):
-        if len(s) == 16:
-            try:
-                values = [_safe_float_convert(v) for v in s]
-                return SedenionNumber(values)
-            except (ValueError, TypeError) as e:
-                raise ValueError(f"Invalid sedenion component values: {s}") from e
-        elif len(s) == 1:
-            scalar = _safe_float_convert(s[0])
-            return SedenionNumber([scalar] + [0.0] * 15)
-        else:
-            # Eksik veya fazla bileşen
-            if len(s) < 16:
-                values = [_safe_float_convert(v) for v in s] + [0.0] * (16 - len(s))
-                return SedenionNumber(values)
-            else:
-                values = [_safe_float_convert(v) for v in s[:16]]
-                return SedenionNumber(values)
-
-    # Sayısal tipse skaler olarak işle
-    if isinstance(s, (float, int)):
-        scalar = float(s)
-        return SedenionNumber([scalar] + [0.0] * 15)
-    elif isinstance(s, complex):
-        return SedenionNumber([s.real, s.imag] + [0.0] * 14)
-
-    # String işlemleri
+    
+    # Eğer sayısal tipse (float, int, complex) skaler olarak işle
+    if isinstance(s, (float, int, complex)):
+        scalar_val = float(s)
+        return SedenionNumber([scalar_val] + [0.0] * 15)
+    
+    # String işlemleri için önce string'e dönüştür
     if not isinstance(s, str):
-        try:
-            s = str(s)
-        except Exception as e:
-            raise ValueError(f"Cannot convert to string: {s}") from e
-
+        s = str(s)
+    
     s = s.strip()
-    if not s:
-        return SedenionNumber([0.0] * 16)
+    parts = [p.strip() for p in s.split(',')]
 
-    # Köşeli parantezleri kaldır
-    if s.startswith("[") and s.endswith("]"):
-        s = s[1:-1].strip()
+    if len(parts) == 16:
+        try:
+            return SedenionNumber(list(map(float, parts)))
+        except ValueError as e:
+            raise ValueError(f"Geçersiz sedenion bileşen değeri: '{s}' -> {e}") from e
+    elif len(parts) == 1: # Sadece skaler değer girildiğinde
+        try:
+            scalar_val = float(parts[0])
+            return SedenionNumber([scalar_val] + [0.0] * 15)
+        except ValueError as e:
+            raise ValueError(f"Geçersiz skaler sedenion değeri: '{s}' -> {e}") from e
 
-    # Virgülle ayrılmışsa
-    if "," in s:
-        parts = [p.strip() for p in s.split(",")]
+    raise ValueError(f"Sedenion için 16 bileşen veya tek skaler bileşen gerekir. Verilen: '{s}' ({len(parts)} bileşen)")
 
-        if len(parts) == 16:
-            try:
-                values = [_safe_float_convert(p) for p in parts]
-                return SedenionNumber(values)
-            except ValueError as e:
-                raise ValueError(f"Invalid sedenion component values: '{s}'") from e
-        elif len(parts) == 1:
-            try:
-                scalar = _safe_float_convert(parts[0])
-                return SedenionNumber([scalar] + [0.0] * 15)
-            except ValueError as e:
-                raise ValueError(f"Invalid scalar sedenion value: '{s}'") from e
-        else:
-            # Eksik veya fazla
-            if len(parts) < 16:
-                values = [_safe_float_convert(p) for p in parts] + [0.0] * (
-                    16 - len(parts)
-                )
-                return SedenionNumber(values)
-            else:
-                values = [_safe_float_convert(p) for p in parts[:16]]
-                return SedenionNumber(values)
-
-    # Sadece sayı
-    try:
-        scalar = _safe_float_convert(s)
-        return SedenionNumber([scalar] + [0.0] * 15)
-    except ValueError as e:
-        raise ValueError(f"Invalid sedenion format: '{s}'") from e
-
-
-def _parse_pathion(s: Any) -> PathionNumber:
-    """
-    String'i veya sayıyı PathionNumber'a dönüştürür.
-
-    Supports:
-    - PathionNumber instance
-    - Numeric types
-    - Comma-separated string (32 values)
-    - List/tuple of 32 values
-    """
-    # Eğer zaten PathionNumber ise doğrudan döndür
+def _parse_pathion(s) -> PathionNumber:
+    """String'i veya sayıyı PathionNumber'a dönüştürür."""
     if isinstance(s, PathionNumber):
         return s
-
-    # Iterable ise (list, tuple, etc.)
-    if hasattr(s, "__iter__") and not isinstance(s, str):
-        try:
-            values = list(s)
-            if len(values) == 32:
-                return PathionNumber([_safe_float_convert(v) for v in values])
-            elif len(values) == 1:
-                scalar = _safe_float_convert(values[0])
-                return PathionNumber([scalar] + [0.0] * 31)
-            else:
-                if len(values) < 32:
-                    values = [_safe_float_convert(v) for v in values] + [0.0] * (
-                        32 - len(values)
-                    )
-                else:
-                    values = [_safe_float_convert(v) for v in values[:32]]
-                return PathionNumber(values)
-        except (ValueError, TypeError) as e:
-            raise ValueError(f"Invalid pathion component values: {s}") from e
-
-    # Sayısal tipse skaler olarak işle
-    if isinstance(s, (float, int)):
-        scalar = float(s)
-        return PathionNumber([scalar] + [0.0] * 31)
-    elif isinstance(s, complex):
-        return PathionNumber([s.real, s.imag] + [0.0] * 30)
-
-    # String işlemleri
+    
+    if isinstance(s, (float, int, complex)):
+        return PathionNumber(float(s), *[0.0] * 31)
+    
+    if hasattr(s, '__iter__') and not isinstance(s, str):
+        return PathionNumber(s)
+    
+    # String işlemleri için önce string'e dönüştür
     if not isinstance(s, str):
-        try:
-            s = str(s)
-        except Exception as e:
-            raise ValueError(f"Cannot convert to string: {s}") from e
-
+        s = str(s)
+    
     s = s.strip()
-    if not s:
-        return PathionNumber([0.0] * 32)
+    # Köşeli parantezleri kaldır (eğer varsa)
+    s = s.strip('[]')
+    parts = [p.strip() for p in s.split(',')]
 
-    # Köşeli parantezleri kaldır
-    if s.startswith("[") and s.endswith("]"):
-        s = s[1:-1].strip()
+    if len(parts) == 32:  # Pathion 32 bileşenli olmalı
+        try:
+            return PathionNumber(*map(float, parts))  # 32 parametre
+        except ValueError as e:
+            raise ValueError(f"Geçersiz pathion bileşen değeri: '{s}' -> {e}") from e
+    elif len(parts) == 1:  # Sadece skaler değer girildiğinde
+        try:
+            scalar_val = float(parts[0])
+            return PathionNumber(scalar_val, *[0.0] * 31)  # 32 parametre
+        except ValueError as e:
+            raise ValueError(f"Geçersiz skaler pathion değeri: '{s}' -> {e}") from e
 
-    # Virgülle ayrılmışsa
-    if "," in s:
-        parts = [p.strip() for p in s.split(",")]
+    raise ValueError(f"Pathion için 32 bileşen veya tek skaler bileşen gerekir. Verilen: '{s}' ({len(parts)} bileşen)")
 
-        if len(parts) == 32:
-            try:
-                values = [_safe_float_convert(p) for p in parts]
-                return PathionNumber(values)
-            except ValueError as e:
-                raise ValueError(f"Invalid pathion component values: '{s}'") from e
-        elif len(parts) == 1:
-            try:
-                scalar = _safe_float_convert(parts[0])
-                return PathionNumber([scalar] + [0.0] * 31)
-            except ValueError as e:
-                raise ValueError(f"Invalid scalar pathion value: '{s}'") from e
-        else:
-            # Eksik veya fazla
-            if len(parts) < 32:
-                values = [_safe_float_convert(p) for p in parts] + [0.0] * (
-                    32 - len(parts)
-                )
-                return PathionNumber(values)
-            else:
-                values = [_safe_float_convert(p) for p in parts[:32]]
-                return PathionNumber(values)
-
-    # Sadece sayı
-    try:
-        scalar = _safe_float_convert(s)
-        return PathionNumber([scalar] + [0.0] * 31)
-    except ValueError as e:
-        raise ValueError(f"Invalid pathion format: '{s}'") from e
-
-
-def _parse_chingon(s: Any) -> "ChingonNumber":
-    """
-    String'i veya sayıyı ChingonNumber'a dönüştürür.
-
-    ChingonNumber: 64 bileşenli sayı sistemi
-
-    Desteklenen formatlar:
-    1. ChingonNumber instance: doğrudan döndür
-    2. Sayısal tipler (float, int, complex): skaler olarak işlenir
-    3. List/tuple/iterable: 64 bileşenli dizi
-    4. String formatları:
-       - Virgülle ayrılmış: "1.0,2.0,3.0,..."
-       - Köşeli parantez: "[1.0,2.0,3.0,...]"
-       - Sembolik: "1 + 2e1 + 3e2 + ..." (e0-e63 birimleri)
-       - Kısmi bileşen: "1,2,3" (kalanlar 0 olur)
-
-    Args:
-        s: Dönüştürülecek girdi
-
-    Returns:
-        ChingonNumber instance
-    """
-    from .kececinumbers import ChingonNumber
-
-    # 1. Eğer zaten ChingonNumber ise doğrudan döndür
+def _parse_chingon(s) -> ChingonNumber:
+    """String'i veya sayıyı ChingonNumber'a dönüştürür."""
     if isinstance(s, ChingonNumber):
         return s
-
-    # 2. Sayısal tipler için skaler dönüşüm
-    if isinstance(s, (float, int)):
-        try:
-            scalar = float(s)
-            return ChingonNumber.from_scalar(scalar)
-        except Exception as e:
-            raise ValueError(f"Cannot convert scalar {s} to ChingonNumber: {e}") from e
-
-    elif isinstance(s, complex):
-        try:
-            # Karmaşık sayı: real -> ilk bileşen, imag -> ikinci bileşen
-            components = [float(s.real), float(s.imag)] + [0.0] * 62
-            return ChingonNumber(components)
-        except Exception as e:
-            raise ValueError(f"Cannot convert complex {s} to ChingonNumber: {e}") from e
-
-    # 3. Iterable tipler için
-    if hasattr(s, "__iter__") and not isinstance(s, str):
-        try:
-            # Iterable'ı listeye çevir
-            values = list(s)
-
-            # Özel durum: tek elemanlı iterable
-            if len(values) == 1:
-                try:
-                    scalar = float(values[0])
-                    return ChingonNumber.from_scalar(scalar)
-                except (ValueError, TypeError):
-                    pass
-
-            # 64 bileşene tamamla veya kes
-            if len(values) != 64:
-                if len(values) < 64:
-                    values = values + [0.0] * (64 - len(values))
-                else:
-                    values = values[:64]
-
-            # Float'a çevir
-            float_values = []
-            for v in values:
-                try:
-                    float_values.append(float(v))
-                except (ValueError, TypeError):
-                    float_values.append(0.0)
-
-            # Doğrudan liste ile ChingonNumber oluştur
-            return ChingonNumber(float_values)
-
-        except Exception as e:
-            raise ValueError(
-                f"Cannot convert iterable {type(s).__name__} to ChingonNumber: {e}"
-            ) from e
-
-    # 4. String işlemleri
+    
+    if isinstance(s, (float, int, complex)):
+        return ChingonNumber(float(s), *[0.0] * 63)
+    
+    if hasattr(s, '__iter__') and not isinstance(s, str):
+        return ChingonNumber(s)
+    
+    # String işlemleri için önce string'e dönüştür
     if not isinstance(s, str):
-        try:
-            s = str(s)
-        except Exception as e:
-            raise ValueError(f"Cannot convert {type(s).__name__} to string: {e}") from e
-
+        s = str(s)
+    
     s = s.strip()
-    if not s:
-        # Boş string için sıfır ChingonNumber
-        return ChingonNumber()
+    # Köşeli parantezleri kaldır (eğer varsa)
+    s = s.strip('[]')
+    parts = [p.strip() for p in s.split(',')]
 
-    # Özel durumlar
-    s_upper = s.upper()
-    if s_upper in ["NAN", "NULL", "NONE", ""]:
-        return ChingonNumber()
-    elif s_upper in ["INF", "INFINITY"]:
-        values = [float("inf")] + [0.0] * 63
-        return ChingonNumber(values)
-    elif s_upper in ["-INF", "-INFINITY"]:
-        values = [float("-inf")] + [0.0] * 63
-        return ChingonNumber(values)
-
-    # 5. Köşeli parantezleri kaldır
-    s_clean = s.strip()
-    if s_clean.startswith("[") and s_clean.endswith("]"):
-        s_clean = s_clean[1:-1].strip()
-    elif s_clean.startswith("(") and s_clean.endswith(")"):
-        s_clean = s_clean[1:-1].strip()
-
-    # 6. Virgülle ayrılmış format
-    if "," in s_clean:
+    if len(parts) == 64:  # Pathion 32 bileşenli olmalı
         try:
-            parts = [p.strip() for p in s_clean.split(",")]
-
-            if len(parts) == 64:
-                # Tam 64 bileşen
-                try:
-                    values = [float(p) for p in parts]
-                    return ChingonNumber(values)
-                except ValueError as e:
-                    raise ValueError(
-                        f"Invalid Chingon component value in: '{s}'"
-                    ) from e
-
-            elif len(parts) == 1:
-                # Sadece skaler değer
-                try:
-                    scalar_val = float(parts[0])
-                    return ChingonNumber.from_scalar(scalar_val)
-                except ValueError as e:
-                    raise ValueError(f"Invalid scalar Chingon value: '{s}'") from e
-
-            else:
-                # Kısmi bileşenler
-                values = []
-                for p in parts:
-                    try:
-                        values.append(float(p))
-                    except ValueError:
-                        values.append(0.0)
-
-                # 64 bileşene tamamla
-                if len(values) < 64:
-                    values = values + [0.0] * (64 - len(values))
-                else:
-                    values = values[:64]
-
-                return ChingonNumber(values)
-
-        except Exception as e:
-            raise ValueError(f"Error parsing Chingon string: '{s}'") from e
-
-    # 7. Sembolik format
-    if any(f"e{i}" in s_clean.lower() for i in range(64)):
+            return ChingonNumber(*map(float, parts))  # 64 parametre
+        except ValueError as e:
+            raise ValueError(f"Geçersiz chingon bileşen değeri: '{s}' -> {e}") from e
+    elif len(parts) == 1:  # Sadece skaler değer girildiğinde
         try:
-            # Normalize et
-            s_norm = s_clean.replace(" ", "").lower()
+            scalar_val = float(parts[0])
+            return ChingonNumber(scalar_val, *[0.0] * 63)  # 64 parametre
+        except ValueError as e:
+            raise ValueError(f"Geçersiz skaler Chingon değeri: '{s}' -> {e}") from e
 
-            # Varsayılan değerler
-            values = [0.0] * 64
-
-            # e0 (skaler/reel kısım) için
-            real_match = re.search(r"^([+-]?\d*\.?\d*)(?=e|$)", s_norm)
-            if (
-                real_match
-                and real_match.group(1)
-                and real_match.group(1) not in ["", "+", "-"]
-            ):
-                try:
-                    values[0] = float(real_match.group(1))
-                except ValueError:
-                    pass
-
-            # Her e birimi için
-            for i in range(64):
-                unit = f"e{i}"
-                pattern = r"([+-]?\d*\.?\d*)" + re.escape(unit)
-                match = re.search(pattern, s_norm)
-                if match:
-                    coeff_str = match.group(1)
-                    if coeff_str in ["", "+"]:
-                        values[i] = 1.0
-                    elif coeff_str == "-":
-                        values[i] = -1.0
-                    else:
-                        try:
-                            values[i] = float(coeff_str)
-                        except ValueError:
-                            values[i] = 0.0
-
-            return ChingonNumber(values)
-
-        except Exception as e:
-            # Sembolik parsing başarısız olursa, normal sayı olarak dene
-            pass
-
-    # 8. Sadece sayı
-    try:
-        scalar_val = float(s_clean)
-        return ChingonNumber.from_scalar(scalar_val)
-    except ValueError:
-        pass
-
-    # 9. Bilimsel gösterim
-    if "e" in s_clean.lower() and not s_clean.lower().startswith("e"):
-        try:
-            if re.match(r"^[+-]?\d*\.?\d+[eE][+-]?\d+$", s_clean):
-                scalar_val = float(s_clean)
-                return ChingonNumber.from_scalar(scalar_val)
-        except ValueError:
-            pass
-
-    # 10. Hiçbir format uymuyorsa hata ver
-    raise ValueError(
-        f"Invalid Chingon format: '{s}'. "
-        f"Expected: comma-separated 64 values, scalar, or symbolic form (e0-e63)."
-    )
-
+    raise ValueError(f"Chingon için 64 bileşen veya tek skaler bileşen gerekir. Verilen: '{s}' ({len(parts)} bileşen)")
 
 def _parse_routon(s: Any) -> RoutonNumber:
     """
     Parse input into a RoutonNumber (128-dimensional hypercomplex number).
-
+    
     Supports:
       - RoutonNumber instance (returned as-is)
       - Numeric scalars (int, float) -> real part, others zero
       - Complex numbers -> real and imag in first two components
       - Lists/tuples of numbers (up to 128)
       - Strings: comma-separated list or single number
-
+    
     Args:
         s: Input to parse
-
+    
     Returns:
         RoutonNumber instance
-
+    
     Raises:
         ValueError: If parsing fails
     """
@@ -8203,20 +8018,20 @@ def _parse_routon(s: Any) -> RoutonNumber:
         # If already RoutonNumber, return as-is
         if isinstance(s, RoutonNumber):
             return s
-
+        
         # Handle numeric types
         if isinstance(s, (int, float)):
             return RoutonNumber.from_scalar(float(s))
-
+        
         # Handle complex numbers
         if isinstance(s, complex):
             coeffs = [0.0] * 128
             coeffs[0] = s.real
             coeffs[1] = s.imag
             return RoutonNumber(coeffs)
-
+        
         # Handle iterables (non-string)
-        if hasattr(s, "__iter__") and not isinstance(s, str):
+        if hasattr(s, '__iter__') and not isinstance(s, str):
             # Convert to list and ensure it's exactly 128 elements
             coeffs = list(s)
             if len(coeffs) < 128:
@@ -8224,32 +8039,32 @@ def _parse_routon(s: Any) -> RoutonNumber:
             elif len(coeffs) > 128:
                 coeffs = coeffs[:128]
             return RoutonNumber(coeffs)
-
+        
         # Convert to string for parsing
         if not isinstance(s, str):
             s = str(s)
-
+        
         s = s.strip()
-
+        
         # Remove brackets if present
-        s = s.strip("[]{}()")
-
+        s = s.strip('[]{}()')
+        
         # Check if empty
         if not s:
             return RoutonNumber.from_scalar(0.0)
-
+        
         # Try to parse as comma-separated list
-        if "," in s:
-            parts = [p.strip() for p in s.split(",")]
+        if ',' in s:
+            parts = [p.strip() for p in s.split(',')]
             parts = [p for p in parts if p]  # Filter empty
-
+            
             if not parts:
                 return RoutonNumber.from_scalar(0.0)
-
+            
             try:
                 # Parse all parts as floats
                 float_parts = [float(p) for p in parts]
-
+                
                 # Ensure exactly 128 components
                 if len(float_parts) == 128:
                     return RoutonNumber(float_parts)
@@ -8258,24 +8073,18 @@ def _parse_routon(s: Any) -> RoutonNumber:
                     return RoutonNumber(padded)
                 else:  # len(float_parts) > 128
                     import warnings
-
-                    warnings.warn(
-                        f"Routon input has {len(float_parts)} components, truncating to 128",
-                        RuntimeWarning,
-                    )
+                    warnings.warn(f"Routon input has {len(float_parts)} components, truncating to 128", RuntimeWarning)
                     return RoutonNumber(float_parts[:128])
-
+            
             except ValueError as e:
-                raise ValueError(
-                    f"Invalid numeric value in Routon string: '{s}' -> {e}"
-                )
-
+                raise ValueError(f"Invalid numeric value in Routon string: '{s}' -> {e}")
+        
         # Try to parse as single number
         try:
             return RoutonNumber.from_scalar(float(s))
         except ValueError:
             pass
-
+        
         # Try to parse as complex number string
         try:
             c = complex(s)
@@ -8285,52 +8094,49 @@ def _parse_routon(s: Any) -> RoutonNumber:
             return RoutonNumber(coeffs)
         except ValueError:
             pass
-
+        
         # Try to extract any numeric content
         try:
             # Use regex to find first number
             import re
-
-            match = re.search(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", s)
+            match = re.search(r'[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?', s)
             if match:
                 scalar_val = float(match.group())
                 return RoutonNumber.from_scalar(scalar_val)
         except Exception:
             pass
-
+        
         # If all else fails
         raise ValueError(f"Cannot parse Routon from input: {repr(s)}")
-
+    
     except Exception as e:
         # Log the error if logger is available
-        if "logger" in globals():
+        if 'logger' in globals():
             logger.warning(f"Routon parsing failed for {repr(s)}: {e}")
         else:
             import warnings
-
             warnings.warn(f"Routon parsing failed for {repr(s)}: {e}", RuntimeWarning)
-
+        
         # Return zero Routon as fallback
         return RoutonNumber.from_scalar(0.0)
-
 
 def _parse_voudon(s: Any) -> VoudonNumber:
     """
     Parse input into a VoudonNumber (256-dimensional hypercomplex number).
-
+    
     Supports:
       - VoudonNumber instance (returned as-is)
       - Numeric scalars (int, float) -> real part, others zero
       - Complex numbers -> real and imag in first two components
       - Lists/tuples of numbers (up to 256)
       - Strings: comma-separated list or single number
-
+    
     Args:
         s: Input to parse
-
+    
     Returns:
         VoudonNumber instance
-
+    
     Raises:
         ValueError: If parsing fails
     """
@@ -8338,79 +8144,74 @@ def _parse_voudon(s: Any) -> VoudonNumber:
         # If already VoudonNumber, return as-is
         if isinstance(s, VoudonNumber):
             return s
-
+        
         # Handle numeric types
         if isinstance(s, (int, float)):
             return VoudonNumber.from_scalar(float(s))
-
+        
         # Handle complex numbers
         if isinstance(s, complex):
             coeffs = [0.0] * 256
             coeffs[0] = s.real
             coeffs[1] = s.imag
             return VoudonNumber(coeffs)
-
+        
         # Handle iterables (non-string)
-        if hasattr(s, "__iter__") and not isinstance(s, str):
+        if hasattr(s, '__iter__') and not isinstance(s, str):
             return VoudonNumber.from_iterable(s)
-
+        
         # Convert to string for parsing
         if not isinstance(s, str):
             s = str(s)
-
+        
         s = s.strip()
-
+        
         # Remove brackets if present
-        s = s.strip("[]{}()")
-
+        s = s.strip('[]{}()')
+        
         # Check if empty
         if not s:
             return VoudonNumber.from_scalar(0.0)
-
+        
         # Try to parse as comma-separated list
-        if "," in s:
-            parts = [p.strip() for p in s.split(",")]
-
+        if ',' in s:
+            parts = [p.strip() for p in s.split(',')]
+            
             # Filter out empty parts
             parts = [p for p in parts if p]
-
+            
             if not parts:
                 return VoudonNumber.from_scalar(0.0)
-
+            
             try:
                 # Parse all parts as floats
                 float_parts = [float(p) for p in parts]
-
+                
                 # If we have exactly 256 components
                 if len(float_parts) == 256:
                     return VoudonNumber(float_parts)
-
+                
                 # If we have fewer than 256, pad with zeros
                 elif len(float_parts) < 256:
                     padded = float_parts + [0.0] * (256 - len(float_parts))
                     return VoudonNumber(padded)
-
+                
                 # If we have more than 256, truncate
                 else:
-                    warnings.warn(
-                        f"Voudon input has {len(float_parts)} components, "
-                        f"truncating to first 256",
-                        RuntimeWarning,
-                    )
+                    warnings.warn(f"Voudon input has {len(float_parts)} components, "
+                                f"truncating to first 256", RuntimeWarning)
                     return VoudonNumber(float_parts[:256])
-
+            
             except ValueError as e:
-                raise ValueError(
-                    f"Invalid numeric value in Voudon string: '{s}' -> {e}"
-                )
-
+                raise ValueError(f"Invalid numeric value in Voudon string: '{s}' -> {e}")
+        
         # Try to parse as single number
         try:
             scalar_val = float(s)
             return VoudonNumber.from_scalar(scalar_val)
         except ValueError:
             pass
-
+        
         # Try to parse as complex number string
         try:
             c = complex(s)
@@ -8420,434 +8221,138 @@ def _parse_voudon(s: Any) -> VoudonNumber:
             return VoudonNumber(coeffs)
         except ValueError:
             pass
-
+        
         # Try to extract any numeric content
         try:
             # Use regex to find first number
             import re
-
-            match = re.search(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", s)
+            match = re.search(r'[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?', s)
             if match:
                 scalar_val = float(match.group())
                 return VoudonNumber.from_scalar(scalar_val)
         except Exception:
             pass
-
+        
         # If all else fails
         raise ValueError(f"Cannot parse Voudon from input: {repr(s)}")
-
+    
     except Exception as e:
         # Log the error if logger is available
-        if "logger" in globals():
+        if 'logger' in globals():
             logger.warning(f"Voudon parsing failed for {repr(s)}: {e}")
         else:
             warnings.warn(f"Voudon parsing failed for {repr(s)}: {e}", RuntimeWarning)
-
+        
         # Return zero Voudon as fallback
         return VoudonNumber.from_scalar(0.0)
 
 
-def _safe_float(value: Any) -> float:
-    """
-    Güvenli float dönüşümü.
-
-    Args:
-        value: Dönüştürülecek değer
-
-    Returns:
-        Float değeri
-    """
-    if isinstance(value, (float, int)):
-        return float(value)
-    elif isinstance(value, complex):
-        return float(value.real)
-    elif isinstance(value, str):
-        try:
-            return float(value)
-        except ValueError:
-            value_upper = value.upper().strip()
-            if value_upper in ["", "NAN", "NULL", "NONE"]:
-                return 0.0
-            elif value_upper in ["INF", "INFINITY"]:
-                return float("inf")
-            elif value_upper in ["-INF", "-INFINITY"]:
-                return float("-inf")
-            elif value == "+":
-                return 1.0
-            elif value == "-":
-                return -1.0
-            return 0.0
-    else:
-        try:
-            return float(value)
-        except (ValueError, TypeError):
-            return 0.0
-
-
-def _parse_clifford(s: Any) -> CliffordNumber:
-    """
-    Algebraik string'i CliffordNumber'a dönüştürür.
-
-    Desteklenen formatlar:
-    - "1.0 + 2.0e1 - 3.5e12"
-    - "e1 + 2e2"
-    - "3.14" (skaler)
-    - "1,2,3,4" (virgülle ayrılmış, basis sırasına göre)
-
-    Args:
-        s: Girdi (string, sayı, veya CliffordNumber)
-
-    Returns:
-        CliffordNumber instance
-
-    Raises:
-        ValueError: Geçersiz format
-    """
-    # 1. Eğer zaten CliffordNumber ise doğrudan döndür
+def _parse_clifford(s) -> CliffordNumber:
+    """Algebraik string'i CliffordNumber'a dönüştürür (ör: '1.0+2.0e1')."""
     if isinstance(s, CliffordNumber):
         return s
-
-    # 2. Sayısal tipler için skaler dönüşüm
-    if isinstance(s, (float, int)):
-        try:
-            scalar = float(s)
-            return CliffordNumber({"": scalar})  # Skaler kısım için boş string key
-        except Exception as e:
-            raise ValueError(f"Cannot convert scalar {s} to CliffordNumber: {e}") from e
-
-    elif isinstance(s, complex):
-        try:
-            # Karmaşık sayı: real -> skaler, imag -> e1
-            return CliffordNumber({"": float(s.real), "1": float(s.imag)})
-        except Exception as e:
-            raise ValueError(
-                f"Cannot convert complex {s} to CliffordNumber: {e}"
-            ) from e
-
-    # 3. String işlemleri
+    
+    if isinstance(s, (float, int, complex)):
+        return CliffordNumber({'': float(s)})
+    
     if not isinstance(s, str):
-        try:
-            s = str(s)
-        except Exception as e:
-            raise ValueError(f"Cannot convert to string: {s}") from e
-
-    s = s.strip()
-    if not s:
-        return CliffordNumber({})
-
-    # 4. Virgülle ayrılmış format (basit alternatif)
-    if "," in s and "e" not in s.lower():
-        try:
-            parts = [p.strip() for p in s.split(",")]
-            basis_dict = {}
-            for i, part in enumerate(parts):
-                if part:
-                    try:
-                        value = float(part)
-                        if i == 0:
-                            basis_dict[""] = value  # Skaler kısım
-                        else:
-                            basis_dict[str(i)] = value  # Basis kısımları
-                    except ValueError:
-                        pass
-            return CliffordNumber(basis_dict)
-        except Exception:
-            pass  # Diğer formatları dene
-
-    # 5. Algebraik format parsing
-    s_clean = s.replace(" ", "").replace("^", "").upper()
-
-    # Basis dictionary
+        s = str(s)
+    
+    s = s.strip().replace(' ', '').replace('^', '')  # ^ işaretini kaldır
     basis_dict = {}
-
-    # Pattern 1: ±coefficient e basis (ör: +1.23e12, -2.5e1)
-    # Bu pattern bilimsel gösterim ile karışabilir, dikkatli ol
-    pattern1 = r"([+-]?)(\d*\.?\d+)(?:E(\d+))"
-
-    # Pattern 2: ±coefficient (skaler) (ör: +1.23, -2.5)
-    pattern2 = r"([+-]?)(\d*\.?\d+)(?![E\d])"
-
-    # Pattern 3: ±e basis (coefficient yok, 1 kabul et) (ör: +e1, -e12)
-    pattern3 = r"([+-]?)E(\d+)"
-
-    # Önce tüm eşleşmeleri bul
-    matches1 = re.findall(pattern1, s_clean)
-    matches2 = re.findall(pattern2, s_clean)
-    matches3 = re.findall(pattern3, s_clean)
-
-    # 1. Pattern işleme: coefficient e basis
-    for sign_str, coeff_str, basis_key in matches1:
-        if basis_key:  # Basis key boş değilse
-            sign = -1.0 if sign_str == "-" else 1.0
-            try:
-                coeff = float(coeff_str) if coeff_str else 1.0
-                value = sign * coeff
-
-                # Basis key'i sırala (ör: '12' yerine '12' ama '21' değil)
-                sorted_basis = "".join(sorted(basis_key))
-                basis_dict[sorted_basis] = basis_dict.get(sorted_basis, 0.0) + value
-            except (ValueError, TypeError):
-                pass
-
-    # 2. Pattern işleme: skaler kısımlar
-    for sign_str, coeff_str in matches2:
-        # Bu pattern'in başka bir pattern'in parçası olmadığından emin ol
-        context = re.search(r"[+-]?" + re.escape(coeff_str) + r"(?![E\d])", s_clean)
-        if context:
-            sign = -1.0 if sign_str == "-" else 1.0
-            try:
-                coeff = float(coeff_str) if coeff_str else 1.0
-                value = sign * coeff
-                basis_dict[""] = basis_dict.get("", 0.0) + value
-            except (ValueError, TypeError):
-                pass
-
-    # 3. Pattern işleme: e basis (coefficient yok)
-    for sign_str, basis_key in matches3:
-        if basis_key:
-            sign = -1.0 if sign_str == "-" else 1.0
-            value = sign * 1.0
-
-            # Basis key'i sırala
-            sorted_basis = "".join(sorted(basis_key))
-            basis_dict[sorted_basis] = basis_dict.get(sorted_basis, 0.0) + value
-
-    # 6. Alternatif parsing: daha basit regex
-    if not basis_dict:
-        # Daha basit pattern: terimleri ayır
-        # Terimler: ±(coefficient)(e basis)?
-        terms = re.findall(r"([+-]?\d*\.?\d*)(?:E(\d+))?", s_clean)
-
-        for coeff_str, basis_key in terms:
-            if coeff_str or basis_key:
-                # İşareti belirle
-                if coeff_str.startswith(("+", "-")):
-                    sign_str = coeff_str[0]
-                    coeff_str = coeff_str[1:]
-                else:
-                    sign_str = "+"
-
-                sign = -1.0 if sign_str == "-" else 1.0
-
-                # Coefficient
-                if coeff_str:
-                    try:
-                        coeff = float(coeff_str)
-                    except ValueError:
-                        coeff = 1.0 if coeff_str != "" else 1.0
-                else:
-                    coeff = 1.0
-
-                value = sign * coeff
-
-                # Basis key
-                if basis_key:
-                    sorted_basis = "".join(sorted(basis_key))
-                    basis_dict[sorted_basis] = basis_dict.get(sorted_basis, 0.0) + value
-                else:
-                    # Skaler kısım
-                    basis_dict[""] = basis_dict.get("", 0.0) + value
-
-    # 7. Eğer hala boşsa, string'i direkt sayı olarak dene
-    if not basis_dict:
-        try:
-            scalar = float(s)
-            return CliffordNumber({"": scalar})
-        except ValueError:
-            # Boş CliffordNumber döndür
-            return CliffordNumber({})
+    
+    # Daha iyi regex pattern: +-1.23e12 formatını yakala
+    pattern = r'([+-]?)(\d*\.?\d+)(?:e(\d+))?|([+-]?)(?:e(\d+))'
+    matches = re.findall(pattern, s)
+    
+    for match in matches:
+        sign_str, coeff_str, basis1, sign_str2, basis2 = match
+        
+        # Hangi grup match oldu?
+        if coeff_str or basis1:
+            sign = -1.0 if sign_str == '-' else 1.0
+            coeff = float(coeff_str) if coeff_str else 1.0
+            basis_key = basis1 if basis1 else ''
+        else:
+            sign = -1.0 if sign_str2 == '-' else 1.0
+            coeff = 1.0
+            basis_key = basis2
+        
+        value = sign * coeff
+        basis_dict[basis_key] = basis_dict.get(basis_key, 0.0) + value
+    
+    # Ayrıca +e1, -e2 gibi ifadeleri yakala
+    pattern2 = r'([+-])e(\d+)'
+    matches2 = re.findall(pattern2, s)
+    
+    for sign_str, basis_key in matches2:
+        sign = -1.0 if sign_str == '-' else 1.0
+        basis_dict[basis_key] = basis_dict.get(basis_key, 0.0) + sign
 
     return CliffordNumber(basis_dict)
 
 
-def _parse_dual(s: Any) -> DualNumber:
-    """
-    String'i veya sayıyı DualNumber'a dönüştürür.
-
-    Dual number format: a + bε, where ε² = 0
-
-    Desteklenen formatlar:
-    - "1.5,2.3" (virgülle ayrılmış)
-    - "1.5 + 2.3ε" (sembolik)
-    - "3.14" (skaler)
-    - DualNumber instance
-
-    Args:
-        s: Girdi
-
-    Returns:
-        DualNumber instance
-    """
-    # 1. Eğer zaten DualNumber ise doğrudan döndür
+def _parse_dual(s) -> DualNumber:
+    """String'i veya sayıyı DualNumber'a dönüştürür."""
+    # Eğer zaten DualNumber ise doğrudan döndür
     if isinstance(s, DualNumber):
         return s
-
-    # 2. Sayısal tipler
-    if isinstance(s, (float, int)):
-        return DualNumber(_safe_float(s), 0.0)
-    elif isinstance(s, complex):
-        return DualNumber(_safe_float(s.real), _safe_float(s.imag))
-
-    # 3. List/tuple
-    if isinstance(s, (list, tuple)):
-        if len(s) >= 2:
-            return DualNumber(_safe_float(s[0]), _safe_float(s[1]))
-        elif len(s) == 1:
-            return DualNumber(_safe_float(s[0]), 0.0)
-        else:
-            return DualNumber(0.0, 0.0)
-
-    # 4. String işlemleri
+    
+    # Eğer sayısal tipse (float, int, complex) real kısım olarak işle
+    if isinstance(s, (float, int, complex)):
+        return DualNumber(float(s), 0.0)
+    
+    # String işlemleri için önce string'e dönüştür
     if not isinstance(s, str):
-        try:
-            s = str(s)
-        except Exception:
-            return DualNumber(0.0, 0.0)
-
+        s = str(s)
+    
     s = s.strip()
-    if not s:
-        return DualNumber(0.0, 0.0)
-
-    # 5. Virgülle ayrılmış format
-    if "," in s:
-        parts = [p.strip() for p in s.split(",")]
-        if len(parts) >= 2:
-            try:
-                return DualNumber(_safe_float(parts[0]), _safe_float(parts[1]))
-            except (ValueError, TypeError):
-                pass
-        elif len(parts) == 1:
-            try:
-                return DualNumber(_safe_float(parts[0]), 0.0)
-            except (ValueError, TypeError):
-                pass
-
-    # 6. Sembolik format: a + bε
-    # ε sembolü için farklı olasılıklar: ε, e, E, epsilon
-    s_lower = s.lower().replace(" ", "")
-
-    # Pattern: (±?number)(±?number)epsilon
-    patterns = [
-        r"([+-]?\d*\.?\d*)(?:([+-]?\d*\.?\d*)[εe]|epsilon)",
-        r"([+-]?\d*\.?\d*)[εe]",
-        r"([+-]?\d*\.?\d*)epsilon",
-    ]
-
-    for pattern in patterns:
-        match = re.match(pattern, s_lower)
-        if match:
-            groups = match.groups()
-            if len(groups) >= 1:
-                real_part = groups[0]
-                dual_part = groups[1] if len(groups) > 1 else "0"
-
-                real = _safe_float(real_part)
-                dual = _safe_float(dual_part)
-                return DualNumber(real, dual)
-
-    # 7. Sadece sayı
-    try:
-        scalar = _safe_float(s)
-        return DualNumber(scalar, 0.0)
-    except (ValueError, TypeError):
-        return DualNumber(0.0, 0.0)
-
-
-def _parse_splitcomplex(s: Any) -> SplitcomplexNumber:
-    """
-    String'i veya sayıyı SplitcomplexNumber'a dönüştürür.
-
-    Split-complex format: a + bj, where j² = 1
-
-    Desteklenen formatlar:
-    - "1.5,2.3" (virgülle ayrılmış)
-    - "1.5 + 2.3j" (sembolik)
-    - "3.14" (skaler)
-    - SplitcomplexNumber instance
-
-    Args:
-        s: Girdi
-
-    Returns:
-        SplitcomplexNumber instance
-    """
-    # 1. Eğer zaten SplitcomplexNumber ise doğrudan döndür
-    if isinstance(s, SplitcomplexNumber):
-        return s
-
-    # 2. Sayısal tipler
-    if isinstance(s, (float, int)):
-        return SplitcomplexNumber(_safe_float(s), 0.0)
-    elif isinstance(s, complex):
-        # Complex ile aynı formatta ama farklı algebra
-        return SplitcomplexNumber(_safe_float(s.real), _safe_float(s.imag))
-
-    # 3. List/tuple
-    if isinstance(s, (list, tuple)):
-        if len(s) >= 2:
-            return SplitcomplexNumber(_safe_float(s[0]), _safe_float(s[1]))
-        elif len(s) == 1:
-            return SplitcomplexNumber(_safe_float(s[0]), 0.0)
-        else:
-            return SplitcomplexNumber(0.0, 0.0)
-
-    # 4. String işlemleri
-    if not isinstance(s, str):
+    parts = [p.strip() for p in s.split(',')]
+    
+    # Sadece ilk iki bileşeni al
+    if len(parts) >= 2:
         try:
-            s = str(s)
-        except Exception:
-            return SplitcomplexNumber(0.0, 0.0)
-
-    s = s.strip()
-    if not s:
-        return SplitcomplexNumber(0.0, 0.0)
-
-    # 5. Virgülle ayrılmış format
-    if "," in s:
-        parts = [p.strip() for p in s.split(",")]
-        if len(parts) >= 2:
-            try:
-                return SplitcomplexNumber(_safe_float(parts[0]), _safe_float(parts[1]))
-            except (ValueError, TypeError):
-                pass
-        elif len(parts) == 1:
-            try:
-                return SplitcomplexNumber(_safe_float(parts[0]), 0.0)
-            except (ValueError, TypeError):
-                pass
-
-    # 6. Sembolik format: a + bj
-    # j sembolü için: j, J, split-j
-    s_lower = s.lower().replace(" ", "")
-
-    # Karmaşık sayı formatını kontrol et (j ile)
-    if "j" in s_lower:
-        # Karmaşık sayı parsing'i
+            return DualNumber(float(parts[0]), float(parts[1]))
+        except ValueError:
+            pass
+    elif len(parts) == 1: # Sadece real kısım verilmiş
         try:
-            # j'yi standart karmaşık j'ye çevir
-            s_complex = s_lower.replace("j", "j")
-            # Python complex() ile parse et
-            c = complex(s_complex)
-            return SplitcomplexNumber(c.real, c.imag)
-        except (ValueError, TypeError):
+            return DualNumber(float(parts[0]), 0.0)
+        except ValueError:
             pass
 
-    # 7. Özel split-complex format: a + bj veya a + b*j
-    pattern = r"([+-]?\d*\.?\d*)(?:([+-]?\d*\.?\d*)[Jj]|\*[Jj])"
-    match = re.match(pattern, s_lower)
-    if match:
-        groups = match.groups()
-        if groups[0]:
-            real = _safe_float(groups[0])
-            imag = _safe_float(groups[1]) if groups[1] else 0.0
-            return SplitcomplexNumber(real, imag)
+    raise ValueError(f"Geçersiz Dual sayı formatı: '{s}' (Real, Dual veya sadece Real bekleniyor)")
 
-    # 8. Sadece sayı
-    try:
-        scalar = _safe_float(s)
-        return SplitcomplexNumber(scalar, 0.0)
-    except (ValueError, TypeError):
-        return SplitcomplexNumber(0.0, 0.0)
+
+def _parse_splitcomplex(s) -> SplitcomplexNumber:
+    """String'i veya sayıyı SplitcomplexNumber'a dönüştürür."""
+    # Eğer zaten SplitcomplexNumber ise doğrudan döndür
+    if isinstance(s, SplitcomplexNumber):
+        return s
+    
+    # Eğer sayısal tipse (float, int, complex) real kısım olarak işle
+    if isinstance(s, (float, int, complex)):
+        return SplitcomplexNumber(float(s), 0.0)
+    
+    # String işlemleri için önce string'e dönüştür
+    if not isinstance(s, str):
+        s = str(s)
+    
+    s = s.strip()
+    parts = [p.strip() for p in s.split(',')]
+
+    if len(parts) == 2:
+        try:
+            return SplitcomplexNumber(float(parts[0]), float(parts[1]))
+        except ValueError:
+            pass
+    elif len(parts) == 1: # Sadece real kısım verilmiş
+        try:
+            return SplitcomplexNumber(float(parts[0]), 0.0)
+        except ValueError:
+            pass
+
+    raise ValueError(f"Geçersiz Split-Complex sayı formatı: '{s}' (Real, Split veya sadece Real bekleniyor)")
 
 
 def generate_octonion(w, x, y, z, e, f, g, h):
@@ -8866,30 +8371,29 @@ def _parse_quaternion(s: str) -> quaternion:
         return quaternion(val, val, val, val)
     except ValueError:
         pass
-
-    s_temp = re.sub(r"([+-])([ijk])", r"\g<1>1\g<2>", s_clean)
-    if s_temp.startswith(("i", "j", "k")):
-        s_temp = "1" + s_temp
-
-    pattern = re.compile(r"([+-]?\d*\.?\d*)([ijk])?")
+    
+    s_temp = re.sub(r'([+-])([ijk])', r'\g<1>1\g<2>', s_clean)
+    if s_temp.startswith(('i', 'j', 'k')):
+        s_temp = '1' + s_temp
+    
+    pattern = re.compile(r'([+-]?\d*\.?\d*)([ijk])?')
     matches = pattern.findall(s_temp)
-
-    parts = {"w": 0.0, "x": 0.0, "y": 0.0, "z": 0.0}
+    
+    parts = {'w': 0.0, 'x': 0.0, 'y': 0.0, 'z': 0.0}
     for value_str, component in matches:
         if not value_str:
             continue
         value = float(value_str)
-        if component == "i":
-            parts["x"] += value
-        elif component == "j":
-            parts["y"] += value
-        elif component == "k":
-            parts["z"] += value
+        if component == 'i':
+            parts['x'] += value
+        elif component == 'j':
+            parts['y'] += value
+        elif component == 'k':
+            parts['z'] += value
         else:
-            parts["w"] += value
-
-    return quaternion(parts["w"], parts["x"], parts["y"], parts["z"])
-
+            parts['w'] += value
+            
+    return quaternion(parts['w'], parts['x'], parts['y'], parts['z'])
 
 def _parse_superreal(s) -> SuperrealNumber:
     """String'i veya sayıyı SuperrealNumber'a dönüştürür."""
@@ -8902,7 +8406,7 @@ def _parse_superreal(s) -> SuperrealNumber:
     if isinstance(s, complex):
         return SuperrealNumber(s.real, s.imag)
 
-    if hasattr(s, "__iter__") and not isinstance(s, str):
+    if hasattr(s, '__iter__') and not isinstance(s, str):
         if len(s) == 2:
             return SuperrealNumber(float(s[0]), float(s[1]))
         else:
@@ -8912,8 +8416,8 @@ def _parse_superreal(s) -> SuperrealNumber:
     if not isinstance(s, str):
         s = str(s)
 
-    s = s.strip().strip("()[]")
-    parts = [p.strip() for p in s.split(",")]
+    s = s.strip().strip('()[]')
+    parts = [p.strip() for p in s.split(',')]
 
     if len(parts) == 2:
         try:
@@ -8921,20 +8425,15 @@ def _parse_superreal(s) -> SuperrealNumber:
             split = float(parts[1])
             return SuperrealNumber(real, split)
         except ValueError as e:
-            raise ValueError(
-                f"Geçersiz SuperrealNumber bileşen değeri: '{s}' -> {e}"
-            ) from e
+            raise ValueError(f"Geçersiz SuperrealNumber bileşen değeri: '{s}' -> {e}") from e
     elif len(parts) == 1:
         try:
             real = float(parts[0])
             return SuperrealNumber(real, 0.0)
         except ValueError as e:
-            raise ValueError(
-                f"Geçersiz SuperrealNumber skaler değeri: '{s}' -> {e}"
-            ) from e
+            raise ValueError(f"Geçersiz SuperrealNumber skaler değeri: '{s}' -> {e}") from e
     else:
         raise ValueError("SuperrealNumber için 1 veya 2 bileşen gereklidir.")
-
 
 def _parse_ternary(s) -> TernaryNumber:
     """String'i veya sayıyı TernaryNumber'a dönüştürür."""
@@ -8946,20 +8445,19 @@ def _parse_ternary(s) -> TernaryNumber:
         # Burada basitçe skaler bir değer olarak işleniyor
         return TernaryNumber.from_decimal(int(s))
 
-    if hasattr(s, "__iter__") and not isinstance(s, str):
+    if hasattr(s, '__iter__') and not isinstance(s, str):
         return TernaryNumber(list(s))
 
     # String işlemleri
     if not isinstance(s, str):
         s = str(s)
 
-    s = s.strip().strip("()[]")
+    s = s.strip().strip('()[]')
     # Üçlü sayı sistemindeki geçersiz karakterleri kontrol et
-    if not all(c in "012" for c in s):
+    if not all(c in '012' for c in s):
         raise ValueError(f"Geçersiz üçlü sayı formatı: '{s}'")
 
     return TernaryNumber.from_ternary_string(s)
-
 
 def get_random_type(
     num_iterations: int = 10,
@@ -9051,863 +8549,319 @@ def get_random_type(
         add_value_raw=add_value_str,
     )
 
-
-def _parse_fraction(s: Union[str, float, int]) -> float:
-    """
-    Parse fraction strings like '1353/2791' or mixed numbers like '1 1/2'
-    """
-    if isinstance(s, (int, float)):
-        return float(s)
-
-    s_str = str(s).strip()
-
-    # Empty string
-    if not s_str:
-        return 0.0
-
-    # Already a float string
-    try:
-        return float(s_str)
-    except ValueError:
-        pass
-
-    # Check for mixed numbers like "1 1/2"
-    if " " in s_str and "/" in s_str:
-        try:
-            whole_part, frac_part = s_str.split(" ", 1)
-            whole = float(whole_part) if whole_part else 0.0
-            num, den = frac_part.split("/")
-            fraction = float(num) / float(den) if float(den) != 0 else 0.0
-            return whole + fraction
-        except (ValueError, ZeroDivisionError):
-            pass
-
-    # Check for simple fractions like "1353/2791"
-    if "/" in s_str:
-        try:
-            num, den = s_str.split("/")
-            # Handle both integer and float numerator/denominator
-            numerator = float(num) if "." in num else int(num)
-            denominator = float(den) if "." in den else int(den)
-            if denominator == 0:
-                logger.warning(f"Division by zero in fraction: {s_str}")
-                return float("inf") if numerator >= 0 else float("-inf")
-            return numerator / denominator
-        except (ValueError, ZeroDivisionError):
-            pass
-
-    # Try using Fraction class for more robust parsing
-    try:
-        return float(Fraction(s_str))
-    except (ValueError, ZeroDivisionError):
-        logger.warning(f"Could not parse as fraction: {s_str}")
-
-    # Last resort
-    try:
-        return float(s_str)
-    except ValueError:
-        logger.error(f"Failed to parse numeric value: {s_str}")
-        raise ValueError(f"Invalid numeric format: {s_str}")
-
-
-def get_with_params(
-    kececi_type_choice: int,
-    iterations: int = 10,
-    start_value_raw: Union[str, float, int] = "0",
-    add_value_raw: Union[str, float, int] = "1.0",
-    operation: str = "add",
-    include_intermediate_steps: bool = False,
-    custom_parser: Optional[Callable] = None,
-) -> List[Any]:
-    """
-    Unified entry point for generating Keçeci numbers based on specified parameters.
-
-    Args:
-        kececi_type_choice: Type of number to generate (1-22)
-        iterations: Number of iterations to generate
-        start_value_raw: Starting value (string, float, or int)
-        add_value_raw: Value to add/multiply each iteration (string, float, or int)
-        operation: Operation to perform ('add', 'multiply', 'subtract', 'divide', 'mod', 'power')
-        include_intermediate_steps: Whether to include intermediate calculation steps
-        custom_parser: Optional custom parser function
-
-    Returns:
-        List of generated Keçeci numbers
-
-    Raises:
-        ValueError: Invalid type choice or operation
-        TypeError: Invalid input types
-    """
-    # Log the start of generation
-    logger.info(
-        "Generating Keçeci Sequence: Type %s, Steps %s", kececi_type_choice, iterations
-    )
-    logger.debug(
-        "Start: %r, Operation: %r with value: %r, Include intermediate: %s",
-        start_value_raw,
-        operation,
-        add_value_raw,
-        include_intermediate_steps,
-    )
-
-    # Basic input sanitation and type conversion
-    if start_value_raw is None:
-        start_value_raw = "0"
-    if add_value_raw is None:
-        if operation == "add":
-            add_value_raw = "1"
-        elif operation == "multiply":
-            add_value_raw = "2"
-        else:
-            add_value_raw = "1"
-
-    # Convert to strings if they're not already (but keep as is for parser)
-    start_value_str = (
-        str(start_value_raw)
-        if not isinstance(start_value_raw, str)
-        else start_value_raw
-    )
-    add_value_str = (
-        str(add_value_raw) if not isinstance(add_value_raw, str) else add_value_raw
-    )
-
-    # Validate operation
-    valid_operations = ["add", "multiply", "subtract", "divide", "mod", "power"]
-    if operation not in valid_operations:
-        raise ValueError(
-            f"Invalid operation: {operation}. Must be one of {valid_operations}"
-        )
-
-    # Validate iterations
-    if iterations < 1:
-        logger.warning(f"Invalid iterations value: {iterations}, using default 10")
-        iterations = 10
-
-    try:
-        # Import parsers (lazy import to avoid circular imports)
-        # Note: Use try-except for optional imports
-        try:
-            from .kececinumbers import (
-                _parse_complex,
-                _parse_neutrosophic,
-                _parse_hyperreal,
-                _parse_quaternion,
-                _parse_octonion,
-                _parse_sedenion,
-                _parse_clifford,
-                _parse_dual,
-                _parse_splitcomplex,
-                _parse_pathion,
-                _parse_chingon,
-                _parse_bicomplex,
-                _parse_neutrosophic_complex,
-                _parse_neutrosophic_bicomplex,
-                _parse_routon,
-                _parse_voudon,
-                _parse_super_real,
-                _parse_ternary,
-            )
-
-            parsers_available = True
-        except ImportError:
-            logger.warning("Some parsers not available, using fallback parsers")
-            parsers_available = False
-            # Define fallback parsers
-            _parse_complex = lambda s: complex(_parse_fraction(s), 0)
-            # _parse_neutrosophic = lambda s: _parse_fraction(s) # Incompatible return value type (got "float", expected "tuple[float, float, float]")  [return-value]
-            # Neutrosophic tuple
-            _parse_neutrosophic = lambda s: (_parse_fraction(s), 0.0, 0.0)
-            """
-            _parse_hyperreal = lambda s: _parse_fraction(s)
-            _parse_quaternion = lambda s: _parse_fraction(s)
-            _parse_octonion = lambda s: _parse_fraction(s)
-            _parse_sedenion = lambda s: _parse_fraction(s)
-            _parse_clifford = lambda s: _parse_fraction(s)
-            _parse_dual = lambda s: _parse_fraction(s)
-            _parse_splitcomplex = lambda s: _parse_fraction(s)
-            _parse_pathion = lambda s: _parse_fraction(s)
-            _parse_chingon = lambda s: _parse_fraction(s)
-            _parse_bicomplex = lambda s: complex(_parse_fraction(s), 0)
-            _parse_neutrosophic_complex = lambda s: complex(_parse_fraction(s), 0)
-            _parse_neutrosophic_bicomplex = lambda s: complex(_parse_fraction(s), 0)
-            _parse_routon = lambda s: _parse_fraction(s)
-            _parse_voudon = lambda s: _parse_fraction(s)
-            _parse_super_real = lambda s: _parse_fraction(s)
-            _parse_ternary = lambda s: _parse_fraction(s)
-            """
-            # Complex döndürenler
-            _parse_bicomplex = lambda s: BicomplexNumber(_parse_fraction(s), 0.0)
-            _parse_neutrosophic_bicomplex = lambda s: NeutrosophicBicomplexNumber(
-                _parse_fraction(s), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-            )
-            # Float döndürenler (ChingonNumber, hyperreal vb.)
-            _parse_quaternion = lambda s: quaternion(_parse_fraction(s))
-            _parse_octonion = lambda s: OctonionNumber(_parse_fraction(s))
-            _parse_pathion = lambda s: PathionNumber(_parse_fraction(s))
-            # List[float] bekleyenler → [float] olarak sar
-            _parse_sedenion = lambda s: SedenionNumber([_parse_fraction(s)])
-            _parse_chingon = lambda s: ChingonNumber([_parse_fraction(s)])
-            _parse_routon = lambda s: RoutonNumber([_parse_fraction(s)])
-            _parse_voudon = lambda s: VoudonNumber([_parse_fraction(s)])
-            _parse_ternary = lambda s: TernaryNumber([_parse_fraction(s)])
-            # Dict bekleyen
-            _parse_clifford = lambda s: CliffordNumber({"e0": _parse_fraction(s)})
-            # Dual/Splitcomplex → varsayılan argümanlar ekle
-            _parse_dual = lambda s: DualNumber(_parse_fraction(s), 0.0)
-            _parse_splitcomplex = lambda s: SplitcomplexNumber(_parse_fraction(s), 0.0)
-            # List[float] bekleyenler → [float] olarak sar
-            _parse_hyperreal = lambda s: HyperrealNumber([_parse_fraction(s)])  # type: ignore[no-redef, assignment, return-value]
-            # Superreal → doğru tip
-            _parse_super_real = lambda s: SuperrealNumber(_parse_fraction(s))  # type: ignore[no-redef, assignment, return-value]
-            # Complex'ler → tam argümanlar
-            _parse_neutrosophic_complex = lambda s: NeutrosophicComplexNumber(_parse_fraction(s))  # type: ignore[no-redef, assignment, return-value]
-            # _parse_hyperreal: Callable[[Any], HyperrealNumber]
-            # _parse_super_real: Callable[[Any], SuperrealNumber]
-            # _parse_neutrosophic_complex: Callable[[Any], NeutrosophicComplexNumber]
-
-        # Map type choices to parsers and their operations
-        type_to_parser = {
-            1: {"parser": _parse_fraction, "name": "Positive Real"},
-            2: {"parser": lambda s: -_parse_fraction(s), "name": "Negative Real"},
-            3: {"parser": _parse_complex, "name": "Complex"},
-            4: {"parser": _parse_fraction, "name": "Float"},
-            5: {
-                "parser": _parse_fraction,
-                "name": "Rational",
-            },  # Fixed: use _parse_fraction for fractions
-            6: {"parser": _parse_quaternion, "name": "Quaternion"},
-            7: {"parser": _parse_neutrosophic, "name": "Neutrosophic"},
-            8: {"parser": _parse_neutrosophic_complex, "name": "Neutrosophic Complex"},
-            9: {"parser": _parse_hyperreal, "name": "Hyperreal"},
-            10: {"parser": _parse_bicomplex, "name": "Bicomplex"},
-            11: {
-                "parser": _parse_neutrosophic_bicomplex,
-                "name": "Neutrosophic Bicomplex",
-            },
-            12: {"parser": _parse_octonion, "name": "Octonion"},
-            13: {"parser": _parse_sedenion, "name": "Sedenion"},
-            14: {"parser": _parse_clifford, "name": "Clifford"},
-            15: {"parser": _parse_dual, "name": "Dual"},
-            16: {"parser": _parse_splitcomplex, "name": "Split-Complex"},
-            17: {"parser": _parse_pathion, "name": "Pathion"},
-            18: {"parser": _parse_chingon, "name": "Chingon"},
-            19: {"parser": _parse_routon, "name": "Routon"},
-            20: {"parser": _parse_voudon, "name": "Voudon"},
-            21: {"parser": _parse_super_real, "name": "Super Real"},
-            22: {"parser": _parse_ternary, "name": "Ternary"},
-        }
-
-        # Add custom parser if provided
-        if custom_parser is not None:
-            logger.debug("Using custom parser provided by user")
-            parser_func = cast(Callable[[Any], Any], custom_parser)
-            type_name = "Custom"
-        else:
-            if kececi_type_choice not in type_to_parser:
-                raise ValueError(
-                    f"Invalid type choice: {kececi_type_choice}. Must be 1-22"
-                )
-
-            type_info = type_to_parser[kececi_type_choice]
-            parser_func = cast(Callable[[Any], Any], type_info["parser"])
-            type_name = cast(str, type_info["name"])
-
-        logger.info(f"Generating {type_name} numbers (type {kececi_type_choice})")
-
-        # Parse start and add values
-        try:
-            # Use the original values (not converted strings) for parsing
-            start_value = parser_func(start_value_raw)
-            add_value = parser_func(add_value_raw)
-
-            # Log parsed values
-            logger.debug(
-                f"Parsed start value: {repr(start_value)} (type: {type(start_value)})"
-            )
-            logger.debug(
-                f"Parsed operation value: {repr(add_value)} (type: {type(add_value)})"
-            )
-
-        except Exception as e:
-            # More detailed error information
-            logger.error(
-                f"Parsing failed. Start type: {type(start_value_raw)}, Start value: {repr(start_value_raw)}"
-            )
-            logger.error(
-                f"Parsing failed. Add type: {type(add_value_raw)}, Add value: {repr(add_value_raw)}"
-            )
-            raise ValueError(
-                f"Failed to parse values. Start: '{start_value_raw}', Add: '{add_value_raw}'. Error: {str(e)}"
-            )
-
-        # Generate the sequence based on operation
-        # You need to implement _generate_sequence function
-        result = _generate_sequence(
-            start_value=start_value,
-            add_value=add_value,
-            iterations=iterations,
-            operation=operation,
-            include_intermediate_steps=include_intermediate_steps,
-        )
-
-        if not result:
-            logger.warning("Sequence generation failed or returned empty")
-            return []
-
-        # Log generation results
-        logger.info(f"Generated {len(result)} numbers for type {type_name}")
-
-        # Preview first and last few elements
-        preview_size = min(3, len(result))
-        if preview_size > 0:
-            preview_start = [
-                str(x)[:50] + "..." if len(str(x)) > 50 else str(x)
-                for x in result[:preview_size]
-            ]
-            logger.debug(f"First {preview_size}: {preview_start}")
-
-            if len(result) > preview_size * 2:
-                preview_end = [
-                    str(x)[:50] + "..." if len(str(x)) > 50 else str(x)
-                    for x in result[-preview_size:]
-                ]
-                logger.debug(f"Last {preview_size}: {preview_end}")
-
-        # Optional: Keçeci Prime Number check (if applicable)
-        try:
-            kpn = _find_kececi_prime_number(result)
-            if kpn is not None:
-                logger.info(f"Keçeci Prime Number (KPN) found: {kpn}")
-            else:
-                logger.debug("No Keçeci Prime Number found in the sequence.")
-        except Exception as e:
-            logger.debug(f"KPN check skipped or failed: {e}")
-
-        return result
-
-    except Exception as e:
-        logger.exception(f"ERROR during sequence generation: {e}")
-        raise  # Re-raise the exception for caller handling
-
-
-def _generate_sequence(
-    start_value: Any,
-    add_value: Any,
-    iterations: int,
-    operation: str,
-    include_intermediate_steps: bool = False,
-) -> List[Any]:
-    """
-    Generate a sequence based on the operation.
-
-    Args:
-        start_value: Starting value
-        add_value: Value to use in operation
-        iterations: Number of iterations
-        operation: Operation to perform
-        include_intermediate_steps: Whether to include intermediate steps
-
-    Returns:
-        List of generated values. If include_intermediate_steps=True,
-        returns a list of dictionaries with step information.
-    """
-    from typing import Dict, Union
-
-    if include_intermediate_steps:
-        # Detaylı log için dictionary listesi
-        detailed_result: List[Dict[str, Any]] = []
-
-        # Başlangıç değerini ekle
-        detailed_result.append(
-            {
-                "step": 0,
-                "operation": "start",
-                "value": start_value,
-                "description": f"Start: {start_value}",
-            }
-        )
-
-        current = start_value
-
-        for i in range(1, iterations):
-            try:
-                previous = current
-
-                # İşlemi gerçekleştir
-                if operation == "add":
-                    current = current + add_value
-                    op_symbol = "+"
-                elif operation == "multiply":
-                    current = current * add_value
-                    op_symbol = "×"
-                elif operation == "subtract":
-                    current = current - add_value
-                    op_symbol = "-"
-                elif operation == "divide":
-                    current = _safe_divide(current, add_value)
-                    op_symbol = "/"
-                elif operation == "mod":
-                    current = _safe_mod(current, add_value)
-                    op_symbol = "%"
-                elif operation == "power":
-                    current = _safe_power(current, add_value)
-                    op_symbol = "^"
-                else:
-                    raise ValueError(f"Unsupported operation: {operation}")
-
-                # Detaylı log ekle
-                detailed_result.append(
-                    {
-                        "step": i,
-                        "operation": operation,
-                        "previous": previous,
-                        "value": current,
-                        "description": f"Step {i}: {previous} {op_symbol} {add_value} = {current}",
-                    }
-                )
-
-            except Exception as e:
-                logger.warning(f"Error at iteration {i}: {e}")
-
-                # Hata durumunda default değer
-                try:
-                    if hasattr(type(current), "__call__"):
-                        default_val = type(current)()
-                    elif isinstance(current, (int, float)):
-                        default_val = 0
-                    elif isinstance(current, complex):
-                        default_val = complex(0, 0)
-                    else:
-                        default_val = 0
-
-                    detailed_result.append(
-                        {
-                            "step": i,
-                            "operation": operation,
-                            "error": str(e),
-                            "value": default_val,
-                            "description": f"Step {i}: ERROR - {e}",
-                        }
-                    )
-
-                    current = default_val
-                except Exception as e2:
-                    logger.error(f"Cannot continue after error at iteration {i}: {e2}")
-                    break
-
-        return detailed_result  # Dictionary listesi döndür
-
-    else:
-        # Basit liste (sadece değerler)
-        simple_result: List[Any] = [start_value]
-        current = start_value
-
-        for i in range(1, iterations):
-            try:
-                # İşlemi gerçekleştir
-                if operation == "add":
-                    current = current + add_value
-                elif operation == "multiply":
-                    current = current * add_value
-                elif operation == "subtract":
-                    current = current - add_value
-                elif operation == "divide":
-                    current = _safe_divide(current, add_value)
-                elif operation == "mod":
-                    current = _safe_mod(current, add_value)
-                elif operation == "power":
-                    current = _safe_power(current, add_value)
-                else:
-                    raise ValueError(f"Unsupported operation: {operation}")
-
-                simple_result.append(current)
-
-            except Exception as e:
-                logger.warning(f"Error at iteration {i}: {e}")
-
-                # Hata durumunda default değer
-                try:
-                    if hasattr(type(current), "__call__"):
-                        default_val = type(current)()
-                    elif isinstance(current, (int, float)):
-                        default_val = 0
-                    elif isinstance(current, complex):
-                        default_val = complex(0, 0)
-                    else:
-                        default_val = 0
-
-                    simple_result.append(default_val)
-                    current = default_val
-                except Exception as e2:
-                    logger.error(f"Cannot continue after error at iteration {i}: {e2}")
-                    break
-
-        return simple_result  # Basit liste döndür
-
-
-# Daha basit ve güvenli versiyon (alternatif)
-def generate_sequence_safe(
-    start_value: Any,
-    add_value: Any,
-    iterations: int,
-    operation: str,
-    include_intermediate_steps: bool = False,
-) -> Union[List[Any], List[Dict[str, Any]]]:
-    """
-    Safer version with separate return types.
-    """
-    if include_intermediate_steps:
-        return _generate_detailed_sequence(
-            start_value, add_value, iterations, operation
-        )
-    else:
-        return _generate_simple_sequence(start_value, add_value, iterations, operation)
-
-
-def _generate_detailed_sequence(
-    start_value: Any, add_value: Any, iterations: int, operation: str
-) -> List[Dict[str, Any]]:
-    """Generate detailed sequence with step information."""
-    result: List[Dict[str, Any]] = []
-
-    result.append(
-        {
-            "step": 0,
-            "operation": "start",
-            "value": start_value,
-            "description": f"Start: {start_value}",
-        }
-    )
-
-    current = start_value
-
-    for i in range(1, iterations):
-        try:
-            previous = current
-
-            if operation == "add":
-                current = current + add_value
-                op_symbol = "+"
-            elif operation == "multiply":
-                current = current * add_value
-                op_symbol = "×"
-            elif operation == "subtract":
-                current = current - add_value
-                op_symbol = "-"
-            elif operation == "divide":
-                current = _safe_divide(current, add_value)
-                op_symbol = "/"
-            elif operation == "mod":
-                current = _safe_mod(current, add_value)
-                op_symbol = "%"
-            elif operation == "power":
-                current = _safe_power(current, add_value)
-                op_symbol = "^"
-            else:
-                raise ValueError(f"Unsupported operation: {operation}")
-
-            result.append(
-                {
-                    "step": i,
-                    "operation": operation,
-                    "previous": previous,
-                    "value": current,
-                    "description": f"Step {i}: {previous} {op_symbol} {add_value} = {current}",
-                }
-            )
-
-        except Exception as e:
-            logger.warning(f"Error at iteration {i}: {e}")
-
-            # Generate appropriate default value
-            default_val = _generate_default_value(current)
-
-            result.append(
-                {
-                    "step": i,
-                    "operation": operation,
-                    "error": str(e),
-                    "value": default_val,
-                    "description": f"Step {i}: ERROR - {e}",
-                }
-            )
-
-            current = default_val
-
-    return result
-
-
-def _generate_simple_sequence(
-    start_value: Any, add_value: Any, iterations: int, operation: str
-) -> List[Any]:
-    """Generate simple sequence of values."""
-    result: List[Any] = [start_value]
-    current = start_value
-
-    for i in range(1, iterations):
-        try:
-            if operation == "add":
-                current = current + add_value
-            elif operation == "multiply":
-                current = current * add_value
-            elif operation == "subtract":
-                current = current - add_value
-            elif operation == "divide":
-                current = _safe_divide(current, add_value)
-            elif operation == "mod":
-                current = _safe_mod(current, add_value)
-            elif operation == "power":
-                current = _safe_power(current, add_value)
-            else:
-                raise ValueError(f"Unsupported operation: {operation}")
-
-            result.append(current)
-
-        except Exception as e:
-            logger.warning(f"Error at iteration {i}: {e}")
-
-            # Generate appropriate default value
-            default_val = _generate_default_value(current)
-            result.append(default_val)
-            current = default_val
-
-    return result
-
-
-def _generate_default_value(current_value: Any) -> Any:
-    """Generate appropriate default value based on current value type."""
-    try:
-        if hasattr(type(current_value), "__call__"):
-            return type(current_value)()
-        elif isinstance(current_value, (int, float)):
-            return 0
-        elif isinstance(current_value, complex):
-            return complex(0, 0)
-        elif isinstance(current_value, str):
-            return ""
-        elif isinstance(current_value, (list, tuple)):
-            return type(current_value)()
-        else:
-            # Try to get real part if exists
-            try:
-                if hasattr(current_value, "real"):
-                    return type(current_value)(0)
-            except:
-                pass
-
-            return 0
-    except Exception:
-        return 0
-
-
-# Grafik çizimi için yardımcı fonksiyon
-def extract_values_for_plotting(sequence: List[Any]) -> List[float]:
-    """
-    Extract numeric values from sequence for plotting.
-
-    Args:
-        sequence: Sequence generated by _generate_sequence
-
-    Returns:
-        List of float values suitable for plotting
-    """
-    values: List[float] = []
-
-    for item in sequence:
-        try:
-            if isinstance(item, dict):
-                # Dictionary'den 'value' anahtarını al
-                value = item.get("value", 0)
-            else:
-                value = item
-
-            # Float'a çevirmeye çalış
-            if isinstance(value, (int, float, complex)):
-                if isinstance(value, complex):
-                    # Complex için magnitude
-                    values.append(abs(value))
-                else:
-                    values.append(float(value))
-            elif hasattr(value, "real"):
-                # real attribute'u olan nesneler için
-                values.append(float(value.real))
-            else:
-                # String veya diğer tipler için
-                try:
-                    values.append(float(str(value)))
-                except (ValueError, TypeError):
-                    values.append(0.0)
-
-        except Exception as e:
-            logger.debug(f"Error extracting value for plotting: {e}")
-            values.append(0.0)
-
-    return values
-
-
-def _safe_divide(a: Any, b: Any) -> Any:
-    """Safe division with zero handling."""
-    try:
-        # Check if b is effectively zero
-        if hasattr(b, "__abs__"):
-            if abs(b) < 1e-12:  # Near zero threshold
-                # Return infinity or handle based on type
-                if hasattr(a, "__mul__"):
-                    try:
-                        return a * float("inf")
-                    except:
-                        pass
-                return (
-                    type(a)(float("inf"))
-                    if hasattr(type(a), "__call__")
-                    else float("inf")
-                )
-
-        return a / b
-    except ZeroDivisionError:
-        return type(a)(float("inf")) if hasattr(type(a), "__call__") else float("inf")
-    except Exception as e:
-        logger.warning(f"Division error: {e}")
-        return a  # Return original value on error
-
-
-def _safe_mod(a: Any, b: Any) -> Any:
-    """Safe modulo operation."""
-    try:
-        # Check if b is effectively zero
-        if hasattr(b, "__abs__") and abs(b) < 1e-12:
-            logger.warning("Modulo by near-zero value")
-            return a  # Return original
-
-        return a % b
-    except Exception as e:
-        logger.warning(f"Modulo error: {e}")
-        return a  # Return original value on error
-
-
-def _safe_power(a: Any, b: Any) -> Any:
-    """Safe power operation."""
-    try:
-        # For complex cases or special number types
-        if hasattr(a, "__pow__"):
-            return a**b
-        else:
-            # Fallback for basic types
-            return math.pow(float(a), float(b))
-    except Exception as e:
-        logger.warning(f"Power operation error: {e}")
-        return a  # Return original value on error
-
-
-def _find_kececi_prime_number(sequence: List[Any]) -> Optional[Any]:
-    """
-    Find a Keçeci Prime Number in the sequence.
-    This is a placeholder implementation - customize based on your definition.
-
-    Args:
-        sequence: List of generated numbers
-
-    Returns:
-        The first Keçeci Prime Number found, or None
-    """
-    if not sequence:
+def find_kececi_prime_number(kececi_numbers_list: List[Any]) -> Optional[int]:
+    """Finds the Keçeci Prime Number from a generated sequence."""
+    if not kececi_numbers_list:
         return None
 
-    # Placeholder: Look for numbers with special properties
-    # This should be customized based on your specific definition of KPN
-    for num in sequence:
-        try:
-            # Example: Check if magnitude is prime (for complex-like numbers)
-            if hasattr(num, "magnitude"):
-                mag = float(num.magnitude())
-                if mag > 1 and all(mag % i != 0 for i in range(2, int(mag**0.5) + 1)):
-                    return num
-
-            # Example: Check real part for floats
-            elif isinstance(num, (int, float)):
-                if num > 1 and all(num % i != 0 for i in range(2, int(num**0.5) + 1)):
-                    return num
-
-            # Add more checks for other number types...
-
-        except Exception:
-            continue
-
-    return None
-
-
-def get_random_types_batch(
-    num_types: int = 5,
-    iterations_per_type: int = 5,
-    start_value_raw: Union[str, float, int] = "0",
-    add_value_raw: Union[str, float, int] = "1.0",
-    seed: Optional[int] = None,
-) -> dict:
-    """
-    Generate multiple random types in one batch.
-
-    Args:
-        num_types: Number of different types to generate
-        iterations_per_type: Iterations per type
-        start_value_raw: Starting value
-        add_value_raw: Value to add
-        seed: Random seed
-
-    Returns:
-        Dictionary with type names as keys and lists as values
-    """
-    if seed is not None:
-        random.seed(seed)
-
-    type_names_list = [
-        "Positive Real",
-        "Negative Real",
-        "Complex",
-        "Float",
-        "Rational",
-        "Quaternion",
-        "Neutrosophic",
-        "Neutrosophic Complex",
-        "Hyperreal",
-        "Bicomplex",
-        "Neutrosophic Bicomplex",
-        "Octonion",
-        "Sedenion",
-        "Clifford",
-        "Dual",
-        "Split-Complex",
-        "Pathion",
-        "Chingon",
-        "Routon",
-        "Voudon",
-        "Super Real",
-        "Ternary",
+    integer_prime_reps = [
+        rep for num in kececi_numbers_list
+        if is_prime(num) and (rep := _get_integer_representation(num)) is not None
     ]
 
-    # Select random types without replacement
-    available_types = list(range(1, len(type_names_list) + 1))
-    selected_types = random.sample(
-        available_types, min(num_types, len(available_types))
-    )
+    if not integer_prime_reps:
+        return None
 
-    results = {}
+    counts = collections.Counter(integer_prime_reps)
+    repeating_primes = [(freq, prime) for prime, freq in counts.items() if freq > 1]
+    if not repeating_primes:
+        return None
+    
+    _, best_prime = max(repeating_primes)
+    return best_prime
 
-    for type_choice in selected_types:
-        type_name = type_names_list[type_choice - 1]
+def print_detailed_report(sequence: List[Any], params: Dict[str, Any], show_all: bool = False) -> None:
+    """Generates and logs a detailed report of the sequence results.
+
+    Args:
+        sequence: generated sequence (list)
+        params: dict of parameters used to generate the sequence
+        show_all: if True, include full sequence in the log; otherwise only preview
+    """
+    if not sequence:
+        logger.info("--- REPORT ---\nSequence could not be generated.")
+        return
+
+    logger.info("\n" + "="*50)
+    logger.info("--- DETAILED SEQUENCE REPORT ---")
+    logger.info("="*50)
+
+    logger.info("[Parameters Used]")
+    logger.info("  - Keçeci Type:   %s (%s)", params.get('type_name', 'N/A'), params.get('type_choice'))
+    logger.info("  - Start Value:   %r", params.get('start_val'))
+    logger.info("  - Increment:     %r", params.get('add_val'))
+    logger.info("  - Keçeci Steps:  %s", params.get('steps'))
+
+    logger.info("[Sequence Summary]")
+    logger.info("  - Total Numbers Generated: %d", len(sequence))
+
+    kpn = find_kececi_prime_number(sequence)
+    logger.info("  - Keçeci Prime Number (KPN): %s", kpn if kpn is not None else "Not found")
+
+    preview_count = min(len(sequence), 40)
+    logger.info("  --- First %d Numbers ---", preview_count)
+    for i in range(preview_count):
+        logger.info("    %d: %s", i, sequence[i])
+
+    if len(sequence) > preview_count:
+        logger.info("  --- Last %d Numbers ---", preview_count)
+        for i in range(len(sequence) - preview_count, len(sequence)):
+            logger.info("    %d: %s", i, sequence[i])
+
+    if show_all:
+        logger.info("--- FULL SEQUENCE ---")
+        for i, num in enumerate(sequence):
+            logger.info("%d: %s", i, num)
+        logger.info("="*50)
+
+def _is_divisible(value: Any, divisor: int, kececi_type: int) -> bool:
+    """
+    Robust divisibility check across Keçeci types.
+
+    Returns True if value is divisible by divisor according to the semantics
+    of the given kececi_type, otherwise False.
+    """
+    TOLERANCE = 1e-12
+
+    if divisor == 0:
+        return False
+
+    def _float_mod_zero(x: Any, divisor: int, tol: float = 1e-12) -> bool:
+        """
+        Module-level helper: returns True if float(x) % divisor ≈ 0 within tol.
+        Safe against exceptions (returns False on error).
+        """
         try:
-            numbers = get_with_params(
-                kececi_type_choice=type_choice,
-                iterations=iterations_per_type,
-                start_value_raw=str(start_value_raw),
-                add_value_raw=str(add_value_raw),
-            )
-            results[type_name] = numbers
-        except Exception as e:
-            logger.error(f"Failed to generate type {type_name}: {e}")
-            results[type_name] = []
+            return math.isclose(float(x) % divisor, 0.0, abs_tol=tol)
+        except Exception:
+            return False
 
-    return results
+    def _int_mod_zero(x: int) -> bool:
+        try:
+            return int(round(x)) % divisor == 0
+        except Exception:
+            return False
 
+    def _fraction_mod_zero(fr: Fraction) -> bool:
+        # fr = n/d  -> divisible by divisor iff n % (d*divisor) == 0
+        try:
+            return fr.numerator % (fr.denominator * divisor) == 0
+        except Exception:
+            return False
+
+    def _complex_mod_zero(c: complex) -> bool:
+        return _float_mod_zero(c.real) and _float_mod_zero(c.imag)
+
+    def _iterable_mod_zero(iterable) -> bool:
+        try:
+            for c in iterable:
+                if isinstance(c, Fraction):
+                    if not _fraction_mod_zero(c):
+                        return False
+                elif isinstance(c, complex):
+                    if not _complex_mod_zero(c):
+                        return False
+                elif isinstance(c, (int, np.integer)):
+                    if not _int_mod_zero(c):
+                        return False
+                else:
+                    if not _float_mod_zero(c):
+                        return False
+            return True
+        except Exception:
+            return False
+
+    try:
+        # DualNumber: check .real
+        if kececi_type == TYPE_DUAL:
+            if hasattr(value, 'real'):
+                return _float_mod_zero(getattr(value, 'real'))
+            # fallback: element-wise if iterable
+            if hasattr(value, 'coeffs') or hasattr(value, '__iter__'):
+                return _iterable_mod_zero(getattr(value, 'coeffs', value))
+            return False
+
+        # Positive/Negative Real: only accept near-integers
+        if kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL]:
+            if isinstance(value, (int, np.integer)):
+                return _int_mod_zero(value)
+            if isinstance(value, Fraction):
+                return _fraction_mod_zero(value)
+            try:
+                val = float(value)
+                if is_near_integer(val):
+                    return _int_mod_zero(val)
+            except Exception:
+                pass
+            return False
+
+        # Float
+        if kececi_type == TYPE_FLOAT:
+            try:
+                return _float_mod_zero(float(value))
+            except Exception:
+                return False
+
+        # Rational (Fraction)
+        if kececi_type == TYPE_RATIONAL:
+            if isinstance(value, Fraction):
+                return _fraction_mod_zero(value)
+            # try to coerce
+            try:
+                fr = Fraction(value)
+                return _fraction_mod_zero(fr)
+            except Exception:
+                return False
+
+        # Complex
+        if kececi_type == TYPE_COMPLEX:
+            try:
+                c = value if isinstance(value, complex) else _parse_complex(value)
+                return _complex_mod_zero(c)
+            except Exception:
+                return False
+
+        # quaternion-like (numpy quaternion or object with w,x,y,z)
+        # quaternion branch within _is_divisible:
+        if kececi_type == TYPE_QUATERNION:
+            try:
+                if quaternion is not None and isinstance(value, quaternion):
+                    comps = [value.w, value.x, value.y, value.z]
+                    return all(_float_mod_zero(c, divisor) for c in comps)
+                if hasattr(value, 'w') and hasattr(value, 'x'):
+                    components = [getattr(value, a) for a in ('w', 'x', 'y', 'z')]
+                    return all(_float_mod_zero(c, divisor) for c in components)
+                # fallback: iterable
+                if hasattr(value, 'coeffs') or hasattr(value, '__iter__'):
+                    return _iterable_mod_zero(getattr(value, 'coeffs', value))
+            except Exception:
+                return False
+            return False
+
+        # Neutrosophic (t,i,f) or objects with a,b attributes
+        if kececi_type == TYPE_NEUTROSOPHIC:
+            try:
+                if hasattr(value, 't') and hasattr(value, 'i'):
+                    return _float_mod_zero(value.t) and _float_mod_zero(value.i)
+                if hasattr(value, 'a') and hasattr(value, 'b'):
+                    return _float_mod_zero(value.a) and _float_mod_zero(value.b)
+            except Exception:
+                return False
+            return False
+
+        # Neutrosophic Complex
+        if kececi_type == TYPE_NEUTROSOPHIC_COMPLEX:
+            try:
+                comps = []
+                if hasattr(value, 'real') and hasattr(value, 'imag'):
+                    comps.append(value.real)
+                    comps.append(value.imag)
+                if hasattr(value, 'indeterminacy'):
+                    comps.append(value.indeterminacy)
+                return all(_float_mod_zero(c, divisor) for c in comps) if comps else False
+            except Exception:
+                return False
+
+        # Hyperreal: check all sequence components
+        if kececi_type == TYPE_HYPERREAL:
+            if hasattr(value, 'sequence') and isinstance(value.sequence, (list, tuple)):
+                return all(_float_mod_zero(x) for x in value.sequence)
+            return False
+
+        # Bicomplex
+        if kececi_type == TYPE_BICOMPLEX:
+            try:
+                if hasattr(value, 'z1') and hasattr(value, 'z2'):
+                    return _complex_mod_zero(value.z1) and _complex_mod_zero(value.z2)
+            except Exception:
+                return False
+            return False
+
+        # Neutrosophic Bicomplex
+        if kececi_type == TYPE_NEUTROSOPHIC_BICOMPLEX:
+            try:
+                comps = [getattr(value, attr) for attr in ['a','b','c','d','e','f','g','h'] if hasattr(value, attr)]
+                return all(_float_mod_zero(c, divisor) for c in comps) if comps else False
+            except Exception:
+                return False
+
+        # Octonion / Sedenion / Pathion / Chingon / Routon / Voudon / generic hypercomplex with coeffs
+        if kececi_type in [TYPE_OCTONION, TYPE_SEDENION, TYPE_PATHION, TYPE_CHINGON, TYPE_ROUTON, TYPE_VOUDON]:
+            try:
+                if hasattr(value, 'coeffs'):
+                    coeffs = getattr(value, 'coeffs')
+                    return _iterable_mod_zero(coeffs)
+                # fallback: attributes like w,x,y,z,... or iterable
+                if hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
+                    return _iterable_mod_zero(value)
+                # single scalar fallback
+                return _float_mod_zero(value)
+            except Exception:
+                return False
+
+        # Clifford
+        if kececi_type == TYPE_CLIFFORD:
+            try:
+                if hasattr(value, 'basis') and isinstance(value.basis, dict):
+                    return all(_float_mod_zero(v) for v in value.basis.values())
+                return False
+            except Exception:
+                return False
+
+        # Split-complex
+        if kececi_type == TYPE_SPLIT_COMPLEX:
+            try:
+                if hasattr(value, 'real') and hasattr(value, 'split'):
+                    return _float_mod_zero(value.real) and _float_mod_zero(value.split)
+            except Exception:
+                return False
+            return False
+
+        # Superreal
+        if kececi_type == TYPE_SUPERREAL:
+            try:
+                if hasattr(value, 'real') and hasattr(value, 'split'):
+                    return _float_mod_zero(value.real) and _float_mod_zero(value.split)
+            except Exception:
+                return False
+            return False
+
+        # Ternary
+        if kececi_type == TYPE_TERNARY:
+            try:
+                if hasattr(value, 'to_decimal'):
+                    dec = value.to_decimal()
+                    return _int_mod_zero(dec)
+                if hasattr(value, 'digits'):
+                    dec = 0
+                    for i, d in enumerate(reversed(list(value.digits))):
+                        dec += int(d) * (3 ** i)
+                    return _int_mod_zero(dec)
+                # if iterable digits
+                if hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
+                    parts = list(value)
+                    dec = 0
+                    for i, d in enumerate(reversed(parts)):
+                        dec += int(d) * (3 ** i)
+                    return _int_mod_zero(dec)
+            except Exception:
+                return False
+            return False
+
+        # Fallback: try coeffs -> iterable -> numeric coercion
+        if hasattr(value, 'coeffs'):
+            return _iterable_mod_zero(getattr(value, 'coeffs'))
+        if hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
+            return _iterable_mod_zero(value)
+
+        # Last resort: numeric conversion
+        try:
+            return _float_mod_zero(float(value))
+        except Exception:
+            return False
+
+    except (TypeError, AttributeError, ValueError, ZeroDivisionError):
+        return False
 
 def _get_integer_representation(n_input: Any) -> Optional[int]:
     """
@@ -9947,7 +8901,7 @@ def _get_integer_representation(n_input: Any) -> Optional[int]:
         # numpy-quaternion or other quaternion types where 'w' is scalar part
         try:
             # `quaternion` type from numpy-quaternion has attribute 'w'
-            # if isinstance(n_input, quaternion):
+            #if isinstance(n_input, quaternion):
             #    w = getattr(n_input, 'w', None)
             #    if w is not None and is_near_integer(w):
             #        return abs(int(round(float(w)))
@@ -9960,8 +8914,8 @@ def _get_integer_representation(n_input: Any) -> Optional[int]:
             pass
 
         # If object exposes 'coeffs' (list/np.array), use first component
-        if hasattr(n_input, "coeffs"):
-            coeffs = getattr(n_input, "coeffs")
+        if hasattr(n_input, 'coeffs'):
+            coeffs = getattr(n_input, 'coeffs')
             # numpy array
             if isinstance(coeffs, np.ndarray):
                 if coeffs.size > 0 and is_near_integer(coeffs.flatten()[0]):
@@ -9979,16 +8933,16 @@ def _get_integer_representation(n_input: Any) -> Optional[int]:
                 pass
 
         # Some classes expose 'coefficients' name instead
-        if hasattr(n_input, "coefficients"):
+        if hasattr(n_input, 'coefficients'):
             try:
-                c0 = list(getattr(n_input, "coefficients"))[0]
+                c0 = list(getattr(n_input, 'coefficients'))[0]
                 if is_near_integer(c0):
                     return abs(int(round(float(c0))))
             except Exception:
                 pass
 
         # Try common scalar attributes in order of likelihood
-        for attr in ("w", "real", "t", "a", "value"):
+        for attr in ('w', 'real', 't', 'a', 'value'):
             if hasattr(n_input, attr):
                 val = getattr(n_input, attr)
                 # If this is complex-like, use real part
@@ -10003,8 +8957,8 @@ def _get_integer_representation(n_input: Any) -> Optional[int]:
                         pass
 
         # CliffordNumber: check basis dict scalar part ''
-        if hasattr(n_input, "basis") and isinstance(getattr(n_input, "basis"), dict):
-            scalar = n_input.basis.get("", 0)
+        if hasattr(n_input, 'basis') and isinstance(getattr(n_input, 'basis'), dict):
+            scalar = n_input.basis.get('', 0)
             try:
                 if is_near_integer(scalar):
                     return abs(int(round(float(scalar))))
@@ -10012,32 +8966,28 @@ def _get_integer_representation(n_input: Any) -> Optional[int]:
                 pass
 
         # DualNumber / Superreal / others: if they expose .real attribute (and it's numeric)
-        if hasattr(n_input, "real") and not isinstance(
-            n_input, (complex, float, int, np.floating, np.integer)
-        ):
+        if hasattr(n_input, 'real') and not isinstance(n_input, (complex, float, int, np.floating, np.integer)):
             try:
-                real_val = getattr(n_input, "real")
+                real_val = getattr(n_input, 'real')
                 if is_near_integer(real_val):
                     return abs(int(round(float(real_val))))
             except Exception:
                 pass
 
         # TernaryNumber: convert digits to decimal
-        if hasattr(n_input, "digits"):
+        if hasattr(n_input, 'digits'):
             try:
                 digits = list(n_input.digits)
                 decimal_value = 0
                 for i, d in enumerate(reversed(digits)):
-                    decimal_value += int(d) * (3**i)
+                    decimal_value += int(d) * (3 ** i)
                 return abs(int(decimal_value))
             except Exception:
                 pass
 
         # HyperrealNumber: use finite part (sequence[0]) if present
-        if hasattr(n_input, "sequence") and isinstance(
-            getattr(n_input, "sequence"), (list, tuple)
-        ):
-            seq = getattr(n_input, "sequence")
+        if hasattr(n_input, 'sequence') and isinstance(getattr(n_input, 'sequence'), (list, tuple)):
+            seq = getattr(n_input, 'sequence')
             if seq:
                 try:
                     if is_near_integer(seq[0]):
@@ -10060,499 +9010,6 @@ def _get_integer_representation(n_input: Any) -> Optional[int]:
         return None
 
 
-def find_kececi_prime_number(kececi_numbers_list: List[Any]) -> Optional[int]:
-    """Finds the Keçeci Prime Number from a generated sequence."""
-    if not kececi_numbers_list:
-        return None
-
-    integer_prime_reps = [
-        rep
-        for num in kececi_numbers_list
-        if is_prime(num) and (rep := _get_integer_representation(num)) is not None
-    ]
-
-    if not integer_prime_reps:
-        return None
-
-    counts = collections.Counter(integer_prime_reps)
-    repeating_primes = [(freq, prime) for prime, freq in counts.items() if freq > 1]
-    if not repeating_primes:
-        return None
-
-    _, best_prime = max(repeating_primes)
-    return best_prime
-
-
-def print_detailed_report(
-    sequence: List[Any], params: Dict[str, Any], show_all: bool = False
-) -> None:
-    """Generates and logs a detailed report of the sequence results.
-
-    Args:
-        sequence: generated sequence (list)
-        params: dict of parameters used to generate the sequence
-        show_all: if True, include full sequence in the log; otherwise only preview
-    """
-    if not sequence:
-        logger.info("--- REPORT ---\nSequence could not be generated.")
-        return
-
-    logger.info("\n" + "=" * 50)
-    logger.info("--- DETAILED SEQUENCE REPORT ---")
-    logger.info("=" * 50)
-
-    logger.info("[Parameters Used]")
-    logger.info(
-        "  - Keçeci Type:   %s (%s)",
-        params.get("type_name", "N/A"),
-        params.get("type_choice"),
-    )
-    logger.info("  - Start Value:   %r", params.get("start_val"))
-    logger.info("  - Increment:     %r", params.get("add_val"))
-    logger.info("  - Keçeci Steps:  %s", params.get("steps"))
-
-    logger.info("[Sequence Summary]")
-    logger.info("  - Total Numbers Generated: %d", len(sequence))
-
-    kpn = find_kececi_prime_number(sequence)
-    logger.info(
-        "  - Keçeci Prime Number (KPN): %s", kpn if kpn is not None else "Not found"
-    )
-
-    preview_count = min(len(sequence), 40)
-    logger.info("  --- First %d Numbers ---", preview_count)
-    for i in range(preview_count):
-        logger.info("    %d: %s", i, sequence[i])
-
-    if len(sequence) > preview_count:
-        logger.info("  --- Last %d Numbers ---", preview_count)
-        for i in range(len(sequence) - preview_count, len(sequence)):
-            logger.info("    %d: %s", i, sequence[i])
-
-    if show_all:
-        logger.info("--- FULL SEQUENCE ---")
-        for i, num in enumerate(sequence):
-            logger.info("%d: %s", i, num)
-        logger.info("=" * 50)
-
-
-def _is_divisible(value: Any, divisor: int, kececi_type: int) -> bool:
-    """
-    Robust divisibility check across Keçeci types.
-
-    Returns True if value is divisible by divisor according to the semantics
-    of the given kececi_type, otherwise False.
-
-    Args:
-        value: The value to check for divisibility
-        divisor: The divisor (must be non-zero)
-        kececi_type: Type identifier (1-22)
-
-    Returns:
-        bool: True if divisible, False otherwise
-    """
-    TOLERANCE = 1e-12
-
-    if divisor == 0:
-        warnings.warn("Divisor cannot be zero", RuntimeWarning)
-        return False
-
-    def _float_mod_zero(x: Any, divisor_arg: int, tol: float = TOLERANCE) -> bool:
-        """
-        Returns True if float(x) % divisor ≈ 0 within tolerance.
-        Safe against exceptions (returns False on error).
-        """
-        try:
-            # Convert to float
-            float_val = float(x)
-            # Calculate remainder
-            remainder = float_val % divisor_arg
-            # Check if remainder is close to 0 or close to divisor (due to floating point)
-            return math.isclose(remainder, 0.0, abs_tol=tol) or math.isclose(
-                remainder, float(divisor_arg), abs_tol=tol
-            )
-        except Exception:
-            return False
-
-    def _int_mod_zero(x: Union[int, float], divisor_arg: int) -> bool:
-        """Check if integer is divisible by divisor."""
-        try:
-            # Convert numpy integer to Python int
-            if hasattr(x, "item"):  # numpy scalar
-                x = x.item()
-            # Round to nearest integer
-            int_val = int(round(float(x)))
-            return int_val % divisor_arg == 0
-        except Exception:
-            return False
-
-    def _fraction_mod_zero(fr: Fraction, divisor_arg: int) -> bool:
-        """Check if fraction is divisible by divisor."""
-        try:
-            # fr = n/d, divisible by divisor iff n % (d * divisor) == 0
-            return fr.numerator % (fr.denominator * divisor_arg) == 0
-        except Exception:
-            return False
-
-    def _complex_mod_zero(c: complex, divisor_arg: int) -> bool:
-        """Check if complex number is divisible by divisor."""
-        # Both real and imaginary parts must be divisible
-        return _float_mod_zero(c.real, divisor_arg) and _float_mod_zero(
-            c.imag, divisor_arg
-        )
-
-    def _iterable_mod_zero(iterable: Any, divisor_arg: int) -> bool:
-        """Check if all elements in iterable are divisible."""
-        try:
-            for item in iterable:
-                # Handle different types
-                if isinstance(item, Fraction):
-                    if not _fraction_mod_zero(item, divisor_arg):
-                        return False
-                elif isinstance(item, complex):
-                    if not _complex_mod_zero(item, divisor_arg):
-                        return False
-                elif isinstance(item, (int, np.integer)):
-                    # Convert numpy integer to int for _int_mod_zero
-                    if hasattr(item, "item"):  # numpy scalar
-                        item = item.item()
-                    if not _int_mod_zero(int(item), divisor_arg):
-                        return False
-                else:
-                    # Try float conversion
-                    if not _float_mod_zero(item, divisor_arg):
-                        return False
-            return True
-        except Exception:
-            return False
-
-    def is_near_integer(x: float, tol: float = TOLERANCE) -> bool:
-        """Check if float is close to an integer."""
-        return math.isclose(x, round(x), abs_tol=tol)
-
-    # Helper for complex parsing (placeholder - implement as needed)
-    def _parse_complex(s: Any) -> complex:
-        """Parse complex number from various formats."""
-        if isinstance(s, complex):
-            return s
-        elif isinstance(s, (int, float)):
-            return complex(s, 0)
-        elif isinstance(s, str):
-            try:
-                return complex(s.replace("i", "j").replace("I", "j"))
-            except ValueError:
-                return complex(0, 0)
-        else:
-            try:
-                return complex(s)
-            except:
-                return complex(0, 0)
-
-    try:
-        # ===== DUAL NUMBER =====
-        if kececi_type == TYPE_DUAL:
-            if hasattr(value, "real") and hasattr(value, "dual"):
-                return _float_mod_zero(value.real, divisor) and _float_mod_zero(
-                    value.dual, divisor
-                )
-            # Fallback: element-wise if iterable
-            if hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):
-                return _iterable_mod_zero(value, divisor)
-            return False
-
-        # ===== POSITIVE/NEGATIVE REAL =====
-        if kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL]:
-            # Only accept near-integers
-            if isinstance(value, (int, np.integer)):
-                # Convert numpy integer to int
-                if hasattr(value, "item"):  # numpy scalar
-                    value = value.item()
-                return _int_mod_zero(int(value), divisor)
-            if isinstance(value, Fraction):
-                return _fraction_mod_zero(value, divisor)
-            try:
-                val = float(value)
-                if is_near_integer(val):
-                    return _int_mod_zero(val, divisor)
-            except Exception:
-                pass
-            return False
-
-        # ===== FLOAT =====
-        if kececi_type == TYPE_FLOAT:
-            try:
-                return _float_mod_zero(float(value), divisor)
-            except Exception:
-                return False
-
-        # ===== RATIONAL (FRACTION) =====
-        if kececi_type == TYPE_RATIONAL:
-            if isinstance(value, Fraction):
-                return _fraction_mod_zero(value, divisor)
-            # Try to coerce to Fraction
-            try:
-                fr = Fraction(str(value))
-                return _fraction_mod_zero(fr, divisor)
-            except Exception:
-                return False
-
-        # ===== COMPLEX =====
-        if kececi_type == TYPE_COMPLEX:
-            try:
-                if isinstance(value, complex):
-                    c = value
-                else:
-                    c = _parse_complex(value)
-                return _complex_mod_zero(c, divisor)
-            except Exception:
-                return False
-
-        # ===== QUATERNION =====
-        if kececi_type == TYPE_QUATERNION:
-            try:
-                # Try numpy quaternion
-                try:
-                    from .kececinumbers import quaternion
-
-                    if isinstance(value, quaternion):
-                        comps = [value.w, value.x, value.y, value.z]
-                        return all(_float_mod_zero(c, divisor) for c in comps)
-                except ImportError:
-                    pass
-
-                # Check for quaternion attributes
-                if hasattr(value, "w") and hasattr(value, "x"):
-                    components = [
-                        getattr(value, attr, 0.0) for attr in ("w", "x", "y", "z")
-                    ]
-                    return all(_float_mod_zero(c, divisor) for c in components)
-
-                # Fallback: iterable
-                if hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):
-                    return _iterable_mod_zero(value, divisor)
-
-            except Exception:
-                return False
-            return False
-
-        # ===== NEUTROSOPHIC =====
-        if kececi_type == TYPE_NEUTROSOPHIC:
-            try:
-                # Check for t,i,f attributes
-                if hasattr(value, "t") and hasattr(value, "i") and hasattr(value, "f"):
-                    return (
-                        _float_mod_zero(value.t, divisor)
-                        and _float_mod_zero(value.i, divisor)
-                        and _float_mod_zero(value.f, divisor)
-                    )
-                # Alternative attribute names
-                if hasattr(value, "a") and hasattr(value, "b"):
-                    return _float_mod_zero(value.a, divisor) and _float_mod_zero(
-                        value.b, divisor
-                    )
-            except Exception:
-                return False
-            return False
-
-        # ===== NEUTROSOPHIC COMPLEX =====
-        if kececi_type == TYPE_NEUTROSOPHIC_COMPLEX:
-            try:
-                comps = []
-                if hasattr(value, "real"):
-                    comps.append(value.real)
-                if hasattr(value, "imag"):
-                    comps.append(value.imag)
-                if hasattr(value, "indeterminacy"):
-                    comps.append(value.indeterminacy)
-
-                return (
-                    all(_float_mod_zero(c, divisor) for c in comps) if comps else False
-                )
-            except Exception:
-                return False
-
-        # ===== HYPERREAL =====
-        if kececi_type == TYPE_HYPERREAL:
-            if hasattr(value, "sequence") and isinstance(
-                getattr(value, "sequence"), (list, tuple)
-            ):
-                return all(_float_mod_zero(x, divisor) for x in value.sequence)
-            elif hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):
-                return _iterable_mod_zero(value, divisor)
-            return False
-
-        # ===== BICOMPLEX =====
-        if kececi_type == TYPE_BICOMPLEX:
-            try:
-                if hasattr(value, "z1") and hasattr(value, "z2"):
-                    return _complex_mod_zero(value.z1, divisor) and _complex_mod_zero(
-                        value.z2, divisor
-                    )
-            except Exception:
-                return False
-            return False
-
-        # ===== NEUTROSOPHIC BICOMPLEX =====
-        if kececi_type == TYPE_NEUTROSOPHIC_BICOMPLEX:
-            try:
-                # Try common attribute names
-                attrs_to_check = ["a", "b", "c", "d", "e", "f", "g", "h"]
-                comps = [
-                    getattr(value, attr)
-                    for attr in attrs_to_check
-                    if hasattr(value, attr)
-                ]
-                return (
-                    all(_float_mod_zero(c, divisor) for c in comps) if comps else False
-                )
-            except Exception:
-                return False
-
-        # ===== HYPERCOMPLEX TYPES (Octonion, Sedenion, etc.) =====
-        hypercomplex_types = [
-            TYPE_OCTONION,
-            TYPE_SEDENION,
-            TYPE_PATHION,
-            TYPE_CHINGON,
-            TYPE_ROUTON,
-            TYPE_VOUDON,
-        ]
-
-        if kececi_type in hypercomplex_types:
-            try:
-                # Check for coeffs attribute
-                if hasattr(value, "coeffs"):
-                    coeffs = getattr(value, "coeffs")
-                    if hasattr(coeffs, "__iter__"):
-                        return _iterable_mod_zero(coeffs, divisor)
-
-                # Fallback: check if iterable
-                if hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):
-                    return _iterable_mod_zero(value, divisor)
-
-                # Single scalar fallback
-                return _float_mod_zero(value, divisor)
-
-            except Exception:
-                return False
-
-        # ===== CLIFFORD =====
-        if kececi_type == TYPE_CLIFFORD:
-            try:
-                # Check for basis dictionary
-                if hasattr(value, "basis_dict") and isinstance(
-                    getattr(value, "basis_dict"), dict
-                ):
-                    return all(
-                        _float_mod_zero(v, divisor) for v in value.basis_dict.values()
-                    )
-                elif hasattr(value, "basis") and isinstance(
-                    getattr(value, "basis"), dict
-                ):
-                    return all(
-                        _float_mod_zero(v, divisor) for v in value.basis.values()
-                    )
-            except Exception:
-                return False
-            return False
-
-        # ===== SPLIT-COMPLEX =====
-        if kececi_type == TYPE_SPLIT_COMPLEX:
-            try:
-                if hasattr(value, "real") and hasattr(value, "imag"):
-                    return _float_mod_zero(value.real, divisor) and _float_mod_zero(
-                        value.imag, divisor
-                    )
-                elif hasattr(value, "real") and hasattr(value, "split"):
-                    return _float_mod_zero(value.real, divisor) and _float_mod_zero(
-                        value.split, divisor
-                    )
-            except Exception:
-                return False
-            return False
-
-        # ===== SUPERREAL =====
-        if kececi_type == TYPE_SUPERREAL:
-            try:
-                if hasattr(value, "real") and hasattr(value, "super"):
-                    return _float_mod_zero(value.real, divisor) and _float_mod_zero(
-                        value.super, divisor
-                    )
-                elif hasattr(value, "real") and hasattr(value, "split"):
-                    return _float_mod_zero(value.real, divisor) and _float_mod_zero(
-                        value.split, divisor
-                    )
-            except Exception:
-                return False
-            return False
-
-        # ===== TERNARY =====
-        if kececi_type == TYPE_TERNARY:
-            try:
-                # Convert ternary to decimal for divisibility check
-                decimal_value = 0
-
-                # Check for conversion method
-                if hasattr(value, "to_decimal"):
-                    decimal_value = value.to_decimal()
-                # Check for digits attribute
-                elif hasattr(value, "digits"):
-                    digits = list(value.digits)
-                    for i, digit in enumerate(reversed(digits)):
-                        decimal_value += int(digit) * (3**i)
-                # Check if iterable
-                elif hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):
-                    digits = list(value)
-                    for i, digit in enumerate(reversed(digits)):
-                        decimal_value += int(digit) * (3**i)
-                else:
-                    # Try to convert directly
-                    decimal_value = int(str(value))
-
-                return _int_mod_zero(decimal_value, divisor)
-
-            except Exception:
-                return False
-
-        # ===== FALLBACK STRATEGIES =====
-        # Try common patterns before final numeric conversion
-
-        # 1. Check for coeffs attribute
-        if hasattr(value, "coeffs"):
-            coeffs = getattr(value, "coeffs")
-            if hasattr(coeffs, "__iter__"):
-                return _iterable_mod_zero(coeffs, divisor)
-
-        # 2. Check if iterable
-        if hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):
-            return _iterable_mod_zero(value, divisor)
-
-        # 3. Check for real/imag attributes (common for many number types)
-        if hasattr(value, "real") and hasattr(value, "imag"):
-            return _float_mod_zero(value.real, divisor) and _float_mod_zero(
-                value.imag, divisor
-            )
-
-        # 4. Check for scalar attributes
-        scalar_attrs = ["value", "scalar", "magnitude", "norm"]
-        for attr in scalar_attrs:
-            if hasattr(value, attr):
-                try:
-                    return _float_mod_zero(getattr(value, attr), divisor)
-                except Exception:
-                    continue
-
-        # ===== FINAL ATTEMPT: NUMERIC CONVERSION =====
-        try:
-            return _float_mod_zero(float(value), divisor)
-        except Exception:
-            return False
-
-    except (TypeError, AttributeError, ValueError, ZeroDivisionError) as e:
-        warnings.warn(f"Error in divisibility check: {e}", RuntimeWarning)
-        return False
-
-
 def is_prime(n_input: Any) -> bool:
     """
     Checks if a given number (or its principal component) is prime
@@ -10564,7 +9021,7 @@ def is_prime(n_input: Any) -> bool:
     # Adım 2: Tamsayı geçerli değilse False döndür
     if value_to_check is None:
         return False
-
+    
     # Adım 3: Asallık testini sympy'ye bırak
     # sympy.isprime, 2'den küçük sayılar (1, 0, negatifler) için zaten False döndürür.
     return sympy.isprime(value_to_check)
@@ -10590,32 +9047,6 @@ def is_near_integer(x, tol=1e-12):
     except:
         return False
 
-
-def _float_mod_zero(x: Any, divisor: int, tol: float = 1e-12) -> bool:
-    """
-    Check if float value is divisible by divisor within tolerance.
-
-    Args:
-        x: Value to check
-        divisor: Divisor
-        tol: Tolerance
-
-    Returns:
-        True if divisible, False otherwise
-    """
-    try:
-        # Convert to float
-        float_val = float(x)
-        # Calculate remainder
-        remainder = float_val % divisor
-        # Check if remainder is close to 0 or close to divisor
-        return math.isclose(remainder, 0.0, abs_tol=tol) or math.isclose(
-            remainder, float(divisor), abs_tol=tol
-        )
-    except Exception:
-        return False
-
-
 def is_prime_like(value: Any, kececi_type: int) -> bool:
     """
     Heuristic to check whether `value` should be treated as a "prime candidate"
@@ -10625,232 +9056,97 @@ def is_prime_like(value: Any, kececi_type: int) -> bool:
     - Prefer using _get_integer_representation when possible.
     - For quaternion/hypercomplex types require that component(s) are near-integers.
     - For ternary convert to decimal first.
-
-    Args:
-        value: Value to check
-        kececi_type: Type identifier
-
-    Returns:
-        True if prime-like, False otherwise
     """
     try:
         # First, try a general integer extraction
         n = _get_integer_representation(value)
         if n is not None:
-            # Check if it's a positive integer > 1
-            if n <= 1:
-                return False
             return sympy.isprime(int(n))
 
-        # Handle quaternion specifically: require all components near-integer then test scalar
+        # Handle quaternion specifically: require all components near-integer then test skalar
         if kececi_type == TYPE_QUATERNION:
             try:
-                comps = []
-
-                # Try numpy quaternion
-                try:
-                    from .kececinumbers import quaternion
-
-                    if isinstance(value, quaternion):
-                        comps = [value.w, value.x, value.y, value.z]
-                except ImportError:
-                    pass
-
-                # If not numpy quaternion, try common attribute patterns
-                if not comps:
-                    if hasattr(value, "w") and hasattr(value, "x"):
-                        comps = [
-                            getattr(value, attr, 0.0) for attr in ("w", "x", "y", "z")
-                        ]
-                    elif hasattr(value, "coeffs"):
-                        coeffs = getattr(value, "coeffs")
-                        if hasattr(coeffs, "__iter__"):
-                            comps = list(coeffs)[:4]  # Take first 4 for quaternion
-
-                if not comps:
+                #if isinstance(value, quaternion):
+                    #comps = [value.w, value.x, value.y, value.z]
+                if quaternion is not None and isinstance(value, quaternion):
+                    comps = [value.w, value.x, value.y, value.z]
+                    return all(_float_mod_zero(c, divisor) for c in comps)
+                elif hasattr(value, 'w') and hasattr(value, 'x'):
+                    comps = [getattr(value, a) for a in ('w','x','y','z')]
+                elif hasattr(value, 'coeffs'):
+                    comps = list(getattr(value, 'coeffs'))
+                else:
                     return False
-
-                # Check all components are near-integer
-                if not all(is_near_integer(float(c)) for c in comps):
+                if not all(is_near_integer(c) for c in comps):
                     return False
-
-                # Test the first (scalar) component for primality
-                first_comp = float(comps[0])
-                if not is_near_integer(first_comp):
-                    return False
-
-                int_val = int(round(first_comp))
-                if int_val <= 1:
-                    return False
-
-                return sympy.isprime(int_val)
-
+                return sympy.isprime(int(round(float(comps[0]))))
             except Exception:
                 return False
 
         # Hypercomplex families: check coeffs exist and are integer-like, test first (scalar) component
-        hypercomplex_types = [
-            TYPE_OCTONION,
-            TYPE_SEDENION,
-            TYPE_PATHION,
-            TYPE_CHINGON,
-            TYPE_ROUTON,
-            TYPE_VOUDON,
-        ]
-
-        if kececi_type in hypercomplex_types:
+        if kececi_type in [TYPE_OCTONION, TYPE_SEDENION, TYPE_PATHION, TYPE_CHINGON, TYPE_ROUTON, TYPE_VOUDON]:
             try:
-                coeffs = []
-
-                if hasattr(value, "coeffs"):
-                    coeffs_attr = getattr(value, "coeffs")
-                    if hasattr(coeffs_attr, "__iter__"):
-                        coeffs = list(coeffs_attr)
-                elif hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):
+                if hasattr(value, 'coeffs'):
+                    coeffs = list(getattr(value, 'coeffs'))
+                elif hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
                     coeffs = list(value)
-
+                else:
+                    return False
                 if not coeffs:
                     return False
-
-                # Check all coefficients are near-integer
-                if not all(is_near_integer(float(c)) for c in coeffs):
+                if not all(is_near_integer(c) for c in coeffs):
                     return False
-
-                # Test the first (scalar) component for primality
-                first_coeff = float(coeffs[0])
-                if not is_near_integer(first_coeff):
-                    return False
-
-                int_val = int(round(first_coeff))
-                if int_val <= 1:
-                    return False
-
-                return sympy.isprime(int_val)
-
+                return sympy.isprime(int(round(float(coeffs[0]))))
             except Exception:
                 return False
 
-        # Ternary number system (base-3)
+        # Ternary
         if kececi_type == TYPE_TERNARY:
             try:
-                decimal_value = 0
-
-                # Check for conversion method
-                if hasattr(value, "to_decimal"):
-                    decimal_value = int(value.to_decimal())
-
-                # Check for digits attribute
-                elif hasattr(value, "digits"):
-                    digits = list(value.digits)
-                    # Reverse the digits for correct positional value
-                    for i, digit in enumerate(reversed(digits)):
-                        try:
-                            digit_int = int(digit)
-                            if digit_int not in [0, 1, 2]:
-                                return False  # Invalid ternary digit
-                            decimal_value += digit_int * (3**i)
-                        except (ValueError, TypeError):
-                            return False
-
-                # Check if iterable of digits
-                elif hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):
-                    digits = list(value)
-                    # Reverse the digits for correct positional value
-                    for i, digit in enumerate(reversed(digits)):
-                        try:
-                            digit_int = int(digit)
-                            if digit_int not in [0, 1, 2]:
-                                return False  # Invalid ternary digit
-                            decimal_value += digit_int * (3**i)
-                        except (ValueError, TypeError):
-                            return False
-
+                if hasattr(value, 'to_decimal'):
+                    dec = value.to_decimal()
+                elif hasattr(value, 'digits'):
+                    dec = 0
+                    for i, d in enumerate(reversed(list(value.digits))):
+                        dec += int(d) * (3 ** i)
+                elif hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
+                    parts = list(value)
+                    dec = 0
+                    for i, d in enumerate(reversed(parts)):
+                        dec += int(d) * (3 ** i)
                 else:
-                    # Try to convert directly from string representation
-                    try:
-                        # Check if it looks like ternary (only digits 0,1,2)
-                        str_val = str(value)
-                        if all(c in "012" for c in str_val):
-                            # Convert from base-3
-                            for i, digit_char in enumerate(reversed(str_val)):
-                                digit_int = int(digit_char)
-                                decimal_value += digit_int * (3**i)
-                        else:
-                            # Try regular integer conversion
-                            decimal_value = int(str_val)
-                    except:
-                        return False
-
-                # Check primality of decimal representation
-                if decimal_value <= 1:
                     return False
-
-                return sympy.isprime(decimal_value)
-
+                return sympy.isprime(int(dec))
             except Exception:
                 return False
 
-        # Clifford algebra: check scalar basis part
+        # Clifford: scalar basis part
         if kececi_type == TYPE_CLIFFORD:
             try:
-                scalar = 0
-
-                # Try basis dictionary
-                if hasattr(value, "basis_dict") and isinstance(
-                    getattr(value, "basis_dict"), dict
-                ):
-                    scalar = value.basis_dict.get("", 0)
-                elif hasattr(value, "basis") and isinstance(
-                    getattr(value, "basis"), dict
-                ):
-                    scalar = value.basis.get("", 0)
-
-                # Check if scalar is near-integer
-                if not is_near_integer(float(scalar)):
-                    return False
-
-                int_val = int(round(float(scalar)))
-                if int_val <= 1:
-                    return False
-
-                return sympy.isprime(int_val)
-
+                if hasattr(value, 'basis') and isinstance(value.basis, dict):
+                    scalar = value.basis.get('', 0)
+                    if is_near_integer(scalar):
+                        return sympy.isprime(int(round(float(scalar))))
+                return False
             except Exception:
                 return False
 
-        # Superreal numbers
+        # Superreal: require integer-like real (and optional split)
         if kececi_type == TYPE_SUPERREAL:
             try:
-                real_part = 0
-
-                # Try to get real part
-                if hasattr(value, "real"):
-                    real_part = getattr(value, "real")
-                elif hasattr(value, "value"):
-                    real_part = getattr(value, "value")
-
-                # Check if real part is near-integer
-                if not is_near_integer(float(real_part)):
-                    return False
-
-                int_val = int(round(float(real_part)))
-                if int_val <= 1:
-                    return False
-
-                return sympy.isprime(int_val)
-
+                if hasattr(value, 'real'):
+                    real = getattr(value, 'real')
+                    if is_near_integer(real):
+                        return sympy.isprime(int(round(float(real))))
+                return False
             except Exception:
                 return False
-
-        # Additional number types could be added here...
 
         # Fallback conservative behavior: not prime-like
         return False
 
-    except Exception as e:
-        warnings.warn(f"Error in is_prime_like: {e}", RuntimeWarning)
+    except Exception:
         return False
-
 
 def generate_kececi_vectorial(q0_str, c_str, u_str, iterations):
     """
@@ -10860,13 +9156,13 @@ def generate_kececi_vectorial(q0_str, c_str, u_str, iterations):
     """
     try:
         # Girdi metinlerini kuaterniyon nesnelerine dönüştür
-        w, x, y, z = map(float, q0_str.split(","))
+        w, x, y, z = map(float, q0_str.split(','))
         q0 = quaternion(w, x, y, z)
-
-        cw, cx, cy, cz = map(float, c_str.split(","))
+        
+        cw, cx, cy, cz = map(float, c_str.split(','))
         c = quaternion(cw, cx, cy, cz)
 
-        uw, ux, uy, uz = map(float, u_str.split(","))
+        uw, ux, uy, uz = map(float, u_str.split(','))
         u = quaternion(uw, ux, uy, uz)
 
     except (ValueError, IndexError):
@@ -10897,12 +9193,11 @@ def generate_kececi_vectorial(q0_str, c_str, u_str, iterations):
             else:
                 next_q = processing_val
                 break
-
+        
         trajectory.append(next_q)
         current_q = next_q
-
+        
     return trajectory, prime_events
-
 
 def analyze_all_types(iterations=120, additional_params=None):
     """
@@ -10921,41 +9216,23 @@ def analyze_all_types(iterations=120, additional_params=None):
 
     # Default parameter sets (keçeçi testleri için örnekler)
     param_sets = [
-        ("2.0", "3.0"),
-        ("1+1j", "0.5+0.5j"),
-        ("1.0,0.0,0.0,0.0", "0.1,0.0,0.0,0.0"),
-        ("0.8,0.1,0.1", "0.0,0.05,0.0"),
-        ("1.0", "0.1"),
-        ("102", "1"),
+        ('2.0', '3.0'),
+        ('1+1j', '0.5+0.5j'),
+        ('1.0,0.0,0.0,0.0', '0.1,0.0,0.0,0.0'),
+        ('0.8,0.1,0.1', '0.0,0.05,0.0'),
+        ('1.0', '0.1'),
+        ('102', '1'),
     ]
 
     if additional_params:
         param_sets.extend(additional_params)
 
     type_names = {
-        1: "Positive Real",
-        2: "Negative Real",
-        3: "Complex",
-        4: "Float",
-        5: "Rational",
-        6: "Quaternion",
-        7: "Neutrosophic",
-        8: "Neutro-Complex",
-        9: "Hyperreal",
-        10: "Bicomplex",
-        11: "Neutro-Bicomplex",
-        12: "Octonion",
-        13: "Sedenion",
-        14: "Clifford",
-        15: "Dual",
-        16: "Split-Complex",
-        17: "Pathion",
-        18: "Chingon",
-        19: "Routon",
-        20: "Voudon",
-        21: "Super Real",
-        22: "Ternary",
-        23: "HyperComplex",
+        1: "Positive Real", 2: "Negative Real", 3: "Complex", 4: "Float", 5: "Rational",
+        6: "Quaternion", 7: "Neutrosophic", 8: "Neutro-Complex", 9: "Hyperreal", 10: "Bicomplex",
+        11: "Neutro-Bicomplex", 12: "Octonion", 13: "Sedenion", 14: "Clifford", 15: "Dual",
+        16: "Split-Complex", 17: "Pathion", 18: "Chingon", 19: "Routon", 20: "Voudon",
+        21: "Super Real", 22: "Ternary",
     }
 
     # Iterate all defined types (inclusive)
@@ -10975,7 +9252,7 @@ def analyze_all_types(iterations=120, additional_params=None):
                     iterations=iterations,
                     start_value_raw=start,
                     add_value_raw=add,
-                    include_intermediate_steps=include_intermediate,
+                    include_intermediate_steps=include_intermediate
                 )
 
                 if not sequence or len(sequence) < 20:
@@ -10986,53 +9263,41 @@ def analyze_all_types(iterations=120, additional_params=None):
 
                 # Lazy import heavy helper functions (they exist in-module)
                 try:
-                    zzeros, zeta_score = _find_kececi_zeta_zeros(
-                        sequence, tolerance=0.5
-                    )
+                    zzeros, zeta_score = _find_kececi_zeta_zeros(sequence, tolerance=0.5)
                 except Exception as zz_err:
                     zzeros, zeta_score = [], 0.0
-                    print(
-                        f"  Warning: _find_kececi_zeta_zeros failed for {name} with params {start},{add}: {zz_err}"
-                    )
+                    print(f"  Warning: _find_kececi_zeta_zeros failed for {name} with params {start},{add}: {zz_err}")
 
                 try:
                     gue_score, gue_p = _compute_gue_similarity(sequence)
                 except Exception as gue_err:
                     gue_score, gue_p = 0.0, 0.0
-                    print(
-                        f"  Warning: _compute_gue_similarity failed for {name} with params {start},{add}: {gue_err}"
-                    )
+                    print(f"  Warning: _compute_gue_similarity failed for {name} with params {start},{add}: {gue_err}")
 
-                if zeta_score > best_zeta_score or (
-                    zeta_score == best_zeta_score and gue_score > best_gue_score
-                ):
+                if zeta_score > best_zeta_score or (zeta_score == best_zeta_score and gue_score > best_gue_score):
                     best_zeta_score = zeta_score
                     best_gue_score = gue_score
                     best_params = (start, add)
 
             except Exception as e:
-                print(
-                    f"  Error analyzing params ({start}, {add}) for type {kececi_type}: {e}"
-                )
+                print(f"  Error analyzing params ({start}, {add}) for type {kececi_type}: {e}")
                 continue
 
         if best_params:
-            results.append(
-                {
-                    "type": kececi_type,
-                    "name": name,
-                    "start": best_params[0],
-                    "add": best_params[1],
-                    "zeta_score": best_zeta_score,
-                    "gue_score": best_gue_score,
-                }
-            )
+            results.append({
+                'type': kececi_type,
+                'name': name,
+                'start': best_params[0],
+                'add': best_params[1],
+                'zeta_score': best_zeta_score,
+                'gue_score': best_gue_score
+            })
         else:
             print(f"  No successful parameter set found for {name}.")
 
     # Sort and display results
-    sorted_by_zeta = sorted(results, key=lambda x: x["zeta_score"], reverse=True)
-    sorted_by_gue = sorted(results, key=lambda x: x["gue_score"], reverse=True)
+    sorted_by_zeta = sorted(results, key=lambda x: x['zeta_score'], reverse=True)
+    sorted_by_gue = sorted(results, key=lambda x: x['gue_score'], reverse=True)
 
     # Plot comparison if there are results (lazy-plot)
     try:
@@ -11043,7 +9308,6 @@ def analyze_all_types(iterations=120, additional_params=None):
 
     return sorted_by_zeta, sorted_by_gue
 
-
 def _load_zeta_zeros(filename="zeta.txt"):
     """
     Loads Riemann zeta zeros from a text file.
@@ -11052,7 +9316,7 @@ def _load_zeta_zeros(filename="zeta.txt"):
     Returns: numpy.ndarray of zeros, or empty array if file not found / invalid.
     """
     try:
-        with open(filename, "r", encoding="utf-8") as file:
+        with open(filename, 'r', encoding='utf-8') as file:
             lines = file.readlines()
         zeta_zeros = []
         for line in lines:
@@ -11083,27 +9347,25 @@ def _compute_gue_similarity(sequence, tolerance=0.5):
     Returns:
         tuple: (similarity_score, p_value)
     """
-    from .kececinumbers import _get_integer_representation
+    from . import _get_integer_representation
 
-    values = [
-        val for z in sequence if (val := _get_integer_representation(z)) is not None
-    ]
+    values = [val for z in sequence if (val := _get_integer_representation(z)) is not None]
     if len(values) < 10:
         return 0.0, 0.0
 
     values = np.array(values) - np.mean(values)
     N = len(values)
-    powers = np.abs(fft(values)) ** 2
+    powers = np.abs(fft(values))**2
     freqs = fftfreq(N)
 
-    mask = freqs > 0
+    mask = (freqs > 0)
     freqs_pos = freqs[mask]
     powers_pos = powers[mask]
 
     if len(powers_pos) == 0:
         return 0.0, 0.0
 
-    peaks, _ = find_peaks(powers_pos, height=np.max(powers_pos) * 1e-7)
+    peaks, _ = find_peaks(powers_pos, height=np.max(powers_pos)*1e-7)
     strong_freqs = freqs_pos[peaks]
 
     if len(strong_freqs) < 2:
@@ -11137,7 +9399,6 @@ def _compute_gue_similarity(sequence, tolerance=0.5):
 
     return similarity_score, ks_p
 
-
 def _plot_comparison(zeta_results, gue_results):
     """
     Generates bar charts comparing the performance of Keçeci types in matching Riemann zeta zeros and GUE statistics.
@@ -11147,36 +9408,36 @@ def _plot_comparison(zeta_results, gue_results):
     """
     # Riemann Zeta Matching Plot
     plt.figure(figsize=(14, 7))
-    types = [r["name"] for r in zeta_results]
-    scores = [r["zeta_score"] for r in zeta_results]
-    colors = ["skyblue"] * len(scores)
+    types = [r['name'] for r in zeta_results]
+    scores = [r['zeta_score'] for r in zeta_results]
+    colors = ['skyblue'] * len(scores)
     if scores:
-        colors[0] = "red"
-    bars = plt.bar(types, scores, color=colors, edgecolor="black", alpha=0.8)
-    plt.xticks(rotation=45, ha="right")
+        colors[0] = 'red'
+    bars = plt.bar(types, scores, color=colors, edgecolor='black', alpha=0.8)
+    plt.xticks(rotation=45, ha='right')
     plt.ylabel("Riemann Zeta Matching Score")
     plt.title("Keçeci Types vs Riemann Zeta Zeros")
     plt.grid(True, alpha=0.3)
     if bars:
-        bars[0].set_edgecolor("darkred")
+        bars[0].set_edgecolor('darkred')
         bars[0].set_linewidth(1.5)
     plt.tight_layout()
     plt.show()
 
     # GUE Similarity Plot
     plt.figure(figsize=(14, 7))
-    types = [r["name"] for r in gue_results]
-    scores = [r["gue_score"] for r in gue_results]
-    colors = ["skyblue"] * len(scores)
+    types = [r['name'] for r in gue_results]
+    scores = [r['gue_score'] for r in gue_results]
+    colors = ['skyblue'] * len(scores)
     if scores:
-        colors[0] = "red"
-    bars = plt.bar(types, scores, color=colors, edgecolor="black", alpha=0.8)
-    plt.xticks(rotation=45, ha="right")
+        colors[0] = 'red'
+    bars = plt.bar(types, scores, color=colors, edgecolor='black', alpha=0.8)
+    plt.xticks(rotation=45, ha='right')
     plt.ylabel("GUE Similarity Score")
     plt.title("Keçeci Types vs GUE Statistics")
     plt.grid(True, alpha=0.3)
     if bars:
-        bars[0].set_edgecolor("darkred")
+        bars[0].set_edgecolor('darkred')
         bars[0].set_linewidth(1.5)
     plt.tight_layout()
     plt.show()
@@ -11192,27 +9453,25 @@ def _find_kececi_zeta_zeros(sequence, tolerance=0.5):
     Returns:
         tuple: (list of Keçeci zeta zeros, matching score)
     """
-    from .kececinumbers import _get_integer_representation
+    from . import _get_integer_representation
 
-    values = [
-        val for z in sequence if (val := _get_integer_representation(z)) is not None
-    ]
+    values = [val for z in sequence if (val := _get_integer_representation(z)) is not None]
     if len(values) < 10:
         return [], 0.0
 
     values = np.array(values) - np.mean(values)
     N = len(values)
-    powers = np.abs(fft(values)) ** 2
+    powers = np.abs(fft(values))**2
     freqs = fftfreq(N)
 
-    mask = freqs > 0
+    mask = (freqs > 0)
     freqs_pos = freqs[mask]
     powers_pos = powers[mask]
 
     if len(powers_pos) == 0:
         return [], 0.0
 
-    peaks, _ = find_peaks(powers_pos, height=np.max(powers_pos) * 1e-7)
+    peaks, _ = find_peaks(powers_pos, height=np.max(powers_pos)*1e-7)
     strong_freqs = freqs_pos[peaks]
 
     if len(strong_freqs) < 2:
@@ -11225,12 +9484,8 @@ def _find_kececi_zeta_zeros(sequence, tolerance=0.5):
 
     # Find candidate zeros by analyzing the Keçeci Zeta Function
     t_vals = np.linspace(0, 650, 10000)
-    zeta_vals = np.array(
-        [sum((scaled_freqs + 1e-10) ** (-(0.5 + 1j * t))) for t in t_vals]
-    )
-    minima, _ = find_peaks(
-        -np.abs(zeta_vals), height=-0.5 * np.max(np.abs(zeta_vals)), distance=5
-    )
+    zeta_vals = np.array([sum((scaled_freqs + 1e-10)**(- (0.5 + 1j * t))) for t in t_vals])
+    minima, _ = find_peaks(-np.abs(zeta_vals), height=-0.5*np.max(np.abs(zeta_vals)), distance=5)
     kececi_zeta_zeros = t_vals[minima]
 
     # Load Riemann zeta zeros for comparison
@@ -11239,14 +9494,8 @@ def _find_kececi_zeta_zeros(sequence, tolerance=0.5):
         return kececi_zeta_zeros, 0.0
 
     # Calculate matching score
-    close_matches = [
-        kz for kz in kececi_zeta_zeros if min(abs(kz - zeta_zeros_imag)) < tolerance
-    ]
-    score = (
-        len(close_matches) / len(kececi_zeta_zeros)
-        if kececi_zeta_zeros.size > 0
-        else 0.0
-    )
+    close_matches = [kz for kz in kececi_zeta_zeros if min(abs(kz - zeta_zeros_imag)) < tolerance]
+    score = len(close_matches) / len(kececi_zeta_zeros) if kececi_zeta_zeros.size > 0 else 0.0
 
     return kececi_zeta_zeros, score
 
@@ -11297,7 +9546,7 @@ def _gue_pair_correlation(s):
     Returns:
         numpy.ndarray or float: The GUE pair correlation value(s) at s.
     """
-    return 1 - np.sinc(s) ** 2
+    return 1 - np.sinc(s)**2
 
 
 def analyze_pair_correlation(sequence, title="Pair Correlation of Keçeci Zeta Zeros"):
@@ -11312,20 +9561,18 @@ def analyze_pair_correlation(sequence, title="Pair Correlation of Keçeci Zeta Z
     from . import _get_integer_representation
 
     # Extract integer representations and remove DC component
-    values = [
-        val for z in sequence if (val := _get_integer_representation(z)) is not None
-    ]
+    values = [val for z in sequence if (val := _get_integer_representation(z)) is not None]
     if len(values) < 10:
         print("Insufficient data.")
         return
 
     values = np.array(values) - np.mean(values)
     N = len(values)
-    powers = np.abs(fft(values)) ** 2
+    powers = np.abs(fft(values))**2
     freqs = fftfreq(N)
 
     # Filter positive frequencies
-    mask = freqs > 0
+    mask = (freqs > 0)
     freqs_pos = freqs[mask]
     powers_pos = powers[mask]
 
@@ -11334,7 +9581,7 @@ def analyze_pair_correlation(sequence, title="Pair Correlation of Keçeci Zeta Z
         return
 
     # Find spectral peaks
-    peaks, _ = find_peaks(powers_pos, height=np.max(powers_pos) * 1e-7)
+    peaks, _ = find_peaks(powers_pos, height=np.max(powers_pos)*1e-7)
     strong_freqs = freqs_pos[peaks]
 
     if len(strong_freqs) < 2:
@@ -11348,12 +9595,8 @@ def analyze_pair_correlation(sequence, title="Pair Correlation of Keçeci Zeta Z
 
     # Estimate Keçeci Zeta zeros by finding minima of |ζ_Kececi(0.5 + it)|
     t_vals = np.linspace(0, 650, 10000)
-    zeta_vals = np.array(
-        [sum((scaled_freqs + 1e-10) ** (-(0.5 + 1j * t))) for t in t_vals]
-    )
-    minima, _ = find_peaks(
-        -np.abs(zeta_vals), height=-0.5 * np.max(np.abs(zeta_vals)), distance=5
-    )
+    zeta_vals = np.array([sum((scaled_freqs + 1e-10)**(- (0.5 + 1j * t))) for t in t_vals])
+    minima, _ = find_peaks(-np.abs(zeta_vals), height=-0.5*np.max(np.abs(zeta_vals)), distance=5)
     kececi_zeta_zeros = t_vals[minima]
 
     if len(kececi_zeta_zeros) < 2:
@@ -11366,8 +9609,8 @@ def analyze_pair_correlation(sequence, title="Pair Correlation of Keçeci Zeta Z
 
     # Plot results
     plt.figure(figsize=(12, 6))
-    plt.plot(bin_centers, hist, "o-", label="Keçeci Zeta Zeros", linewidth=2)
-    plt.plot(bin_centers, gue_corr, "r-", label="GUE (Theoretical)", linewidth=2)
+    plt.plot(bin_centers, hist, 'o-', label="Keçeci Zeta Zeros", linewidth=2)
+    plt.plot(bin_centers, gue_corr, 'r-', label="GUE (Theoretical)", linewidth=2)
     plt.title(title)
     plt.xlabel("Normalized Spacing (s)")
     plt.ylabel("Pair Correlation Density")
@@ -11380,68 +9623,222 @@ def analyze_pair_correlation(sequence, title="Pair Correlation of Keçeci Zeta Z
     ks_stat, ks_p = ks_2samp(hist, gue_corr)
     print(f"Pair Correlation KS Test: Statistic={ks_stat:.4f}, p-value={ks_p:.4f}")
 
-
-class ValueProcessor:
-    """Farklı tiplerdeki değerler için işlemleri yönetir"""
-
-    @staticmethod
-    def add(value1, value2):
-        """İki değeri toplar"""
-        if isinstance(value1, (tuple, list)) and isinstance(value2, (tuple, list)):
-            # Element-wise addition
-            if len(value1) != len(value2):
-                # Uzunluklar farklıysa, kısa olanı sıfırlarla genişlet
-                max_len = max(len(value1), len(value2))
-                v1 = list(value1) + [0] * (max_len - len(value1))
-                v2 = list(value2) + [0] * (max_len - len(value2))
-                return tuple(a + b for a, b in zip(v1, v2))
-            return tuple(a + b for a, b in zip(value1, value2))
-        elif isinstance(value1, (tuple, list)):
-            # Skaler toplama
-            try:
-                scalar = float(value2)
-                return tuple(a + scalar for a in value1)
-            except (ValueError, TypeError):
-                return value1
-        elif isinstance(value2, (tuple, list)):
-            # Skaler toplama
-            try:
-                scalar = float(value1)
-                return tuple(scalar + b for b in value2)
-            except (ValueError, TypeError):
-                return value2
-        else:
-            # Normal toplama
-            return value1 + value2
-
-    @staticmethod
-    def divide(value, divisor, integer_division=False):
-        """Değeri böler"""
-        if isinstance(value, (tuple, list)):
-            # Element-wise division
-            if integer_division:
-                return tuple(a // divisor for a in value)
-            else:
-                return tuple(a / divisor for a in value)
-        else:
-            # Normal division
-            if integer_division:
-                return value // divisor
-            else:
-                return value / divisor
-
-    @staticmethod
-    def multiply_add(value, multiplier, constant):
-        """value * multiplier + constant işlemi"""
-        if isinstance(value, (tuple, list)):
-            return tuple(a * multiplier + constant for a in value)
-        else:
-            return value * multiplier + constant
-
-
 # ==============================================================================
 # --- CORE GENERATOR ---
 # ==============================================================================
+def _parse_kececi_values(
+    kececi_type: int,
+    start_input_raw: str,
+    add_input_raw: str
+) -> Tuple[Any, Any]:
+    """
+    Parse values for a specific Keçeci number type.
+    Returns (start_value, add_value)
+    """
+    try:
+        # Import parsers
+        from .kececinumbers import _parse_fraction
+        
+        # For basic types (1, 2, 4, 5) use _parse_fraction
+        if kececi_type in [1, 2, 4, 5]:
+            start_val = _parse_fraction(start_input_raw)
+            add_val = _parse_fraction(add_input_raw)
+            
+            if kececi_type == 1:  # Positive Real
+                return abs(start_val), abs(add_val)
+            elif kececi_type == 2:  # Negative Real
+                return -abs(start_val), -abs(add_val)
+            else:  # Type 4 (Float), 5 (Rational)
+                return start_val, add_val
+        
+        # For complex type (3)
+        elif kececi_type == 3:
+            from .kececinumbers import _parse_complex
+            return _parse_complex(start_input_raw), _parse_complex(add_input_raw)
+        
+        # For other types, try to import specific parsers
+        else:
+            # Try to import all parsers
+            try:
+                from .kececinumbers import (
+                    _parse_bicomplex,
+                    _parse_chingon,
+                    _parse_clifford,
+                    _parse_complex,
+                    _parse_complex_like_string,
+                    _parse_dual,
+                    _parse_engineering_notation,
+                    _parse_fraction,
+                    _parse_hyperreal,
+                    _parse_neutrosophic,
+                    _parse_neutrosophic_bicomplex,
+                    _parse_neutrosophic_complex,
+                    _parse_octonion,
+                    _parse_pathion,
+                    _parse_quaternion,
+                    _parse_quaternion_from_csv,
+                    _parse_real,
+                    _parse_routon,
+                    _parse_sedenion,
+                    _parse_splitcomplex,
+                    _parse_super_real,
+                    _parse_superreal,
+                    _parse_ternary,
+                    _parse_to_hypercomplex,
+                    _parse_universal,
+                    _parse_voudon,
+                    _generate_simple_ask_sequence,
+                    _parse_with_fallback_simple,
+                    _parse_kececi_values,
+                    parse_to_hyperreal,
+                    parse_to_neutrosophic,
+                )
+                
+                # Map type to parser
+                parser_map = {
+                    6: _parse_quaternion,
+                    7: _parse_neutrosophic,
+                    8: _parse_neutrosophic_complex,
+                    9: _parse_hyperreal,
+                    10: _parse_bicomplex,
+                    11: _parse_neutrosophic_bicomplex,
+                    12: _parse_octonion,
+                    13: _parse_sedenion,
+                    14: _parse_clifford,
+                    15: _parse_dual,
+                    16: _parse_splitcomplex,
+                    17: _parse_pathion,
+                    18: _parse_chingon,
+                    19: _parse_routon,
+                    20: _parse_voudon,
+                    21: _parse_super_real,
+                    22: _parse_ternary,
+                }
+                
+                parser = parser_map.get(kececi_type)
+                if parser:
+                    return parser(start_input_raw), parser(add_input_raw)
+                else:
+                    raise ValueError(f"No parser for type {kececi_type}")
+                    
+            except ImportError:
+                # Fallback to simple parsing
+                logger.warning(f"Parsers not available for type {kececi_type}, using fallback")
+                return _parse_with_fallback_simple(kececi_type, start_input_raw, add_input_raw)
+                
+    except Exception as e:
+        logger.error(f"Error parsing values for type {kececi_type}: {e}")
+        # Fallback to simple parsing
+        return _parse_with_fallback_simple(kececi_type, start_input_raw, add_input_raw)
+
+
+def _parse_with_fallback_simple(
+    kececi_type: int,
+    start_input_raw: str,
+    add_input_raw: str
+) -> Tuple[Any, Any]:
+    """
+    Simple fallback parser when main parsers fail.
+    """
+    def parse_simple(val: str) -> float:
+        """Parse a string to float, handling common formats."""
+        if not val:
+            return 0.0
+        
+        val_str = str(val).strip()
+        
+        # Handle complex notation
+        val_str = val_str.replace('i', 'j').replace('J', 'j')
+        
+        # Try to parse as complex first
+        try:
+            c = complex(val_str)
+            return float(c.real)
+        except:
+            pass
+        
+        # Try as float
+        try:
+            return float(val_str)
+        except:
+            # Try fraction format
+            if '/' in val_str:
+                try:
+                    num, den = val_str.split('/')
+                    return float(num) / float(den)
+                except:
+                    pass
+            
+            # Try mixed number format
+            if ' ' in val_str and '/' in val_str:
+                try:
+                    whole, frac = val_str.split(' ', 1)
+                    num, den = frac.split('/')
+                    return float(whole) + (float(num) / float(den))
+                except:
+                    pass
+        
+        return 0.0  # Default
+    
+    # Parse base values
+    start_base = parse_simple(start_input_raw)
+    add_base = parse_simple(add_input_raw)
+    
+    # Map to appropriate type
+    if kececi_type == 1:  # Positive Real
+        return abs(start_base), abs(add_base)
+    elif kececi_type == 2:  # Negative Real
+        return -abs(start_base), -abs(add_base)
+    elif kececi_type == 3:  # Complex
+        return complex(start_base, 0), complex(add_base, 0)
+    elif kececi_type == 4:  # Float
+        return start_base, add_base
+    elif kececi_type == 5:  # Rational
+        try:
+            from fractions import Fraction
+            return Fraction(start_base).limit_denominator(), Fraction(add_base).limit_denominator()
+        except:
+            return start_base, add_base
+    elif kececi_type == 6:  # Quaternion (fallback to 4D tuple)
+        return (start_base, 0.0, 0.0, 0.0), (add_base, 0.0, 0.0, 0.0)
+    elif kececi_type == 7:  # Neutrosophic (T, I, F)
+        return (start_base, 0.0, 0.0), (add_base, 0.0, 0.0)
+    elif kececi_type == 8:  # Neutrosophic Complex (fallback to complex)
+        return complex(start_base, 0), complex(add_base, 0)
+    elif kececi_type == 9:  # Hyperreal (finite, infinitesimal)
+        return [start_base, 0.0], [add_base, 0.0]
+    elif kececi_type == 10:  # Bicomplex (fallback to complex)
+        return complex(start_base, 0), complex(add_base, 0)
+    elif kececi_type == 11:  # Neutrosophic Bicomplex (fallback to complex)
+        return complex(start_base, 0), complex(add_base, 0)
+    elif kececi_type == 12:  # Octonion (8D)
+        return [start_base] + [0.0]*7, [add_base] + [0.0]*7
+    elif kececi_type == 13:  # Sedenion (16D)
+        return [start_base] + [0.0]*15, [add_base] + [0.0]*15
+    elif kececi_type == 14:  # Clifford (simple dict)
+        return {"e0": start_base}, {"e0": add_base}
+    elif kececi_type == 15:  # Dual (real, dual)
+        return (start_base, 0.0), (add_base, 0.0)
+    elif kececi_type == 16:  # Split-complex
+        return (start_base, 0.0), (add_base, 0.0)
+    elif kececi_type == 17:  # Pathion (32D)
+        return [start_base] + [0.0]*31, [add_base] + [0.0]*31
+    elif kececi_type == 18:  # Chingon (64D)
+        return [start_base] + [0.0]*63, [add_base] + [0.0]*63
+    elif kececi_type == 19:  # Routon (128D)
+        return [start_base] + [0.0]*127, [add_base] + [0.0]*127
+    elif kececi_type == 20:  # Voudon (256D)
+        return [start_base] + [0.0]*255, [add_base] + [0.0]*255
+    elif kececi_type == 21:  # Superreal (real, superreal)
+        return (start_base, 0.0), (add_base, 0.0)
+    elif kececi_type == 22:  # Ternary (3D)
+        return [start_base, 0.0, 0.0], [add_base, 0.0, 0.0]
+    else:
+        # Default fallback
+        return start_base, add_base
+
+
+# unified_generator fonksiyonunu da basitleştirilmiş haliyle güncelleyelim:
 def unified_generator(
     kececi_type: int,
     start_input_raw: str,
@@ -11465,6 +9862,13 @@ def unified_generator(
     Raises:
         ValueError: Invalid type or parsing error
     """
+    # Önce Fraction'ı import et
+    try:
+        from fractions import Fraction
+    except ImportError:
+        Fraction = None
+        logger.warning("Fraction module not available")
+
     # Type validation
     if not (TYPE_POSITIVE_REAL <= kececi_type <= TYPE_TERNARY):
         raise ValueError(f"Invalid Keçeci Number Type: {kececi_type}")
@@ -11671,29 +10075,36 @@ def unified_generator(
     # Alias for backward compatibility
     _safe_divide = safe_divide
 
-    # --- Type-specific parsing with defensive error reporting ---
+    # Type validation
+    if not (TYPE_POSITIVE_REAL <= kececi_type <= TYPE_TERNARY):
+        raise ValueError(f"Invalid Keçeci Number Type: {kececi_type}")
+
+    # Sanitize raw inputs
+    if start_input_raw is None or str(start_input_raw).strip() == "":
+        start_input_raw = "0"
+    if add_input_raw is None or str(add_input_raw).strip() == "":
+        add_input_raw = "1"
+
+    # Initialize variables with proper types
+    current_value: Optional[Any] = None
+    add_value_typed: Optional[Any] = None
+    ask_unit: Optional[Any] = None
+    use_integer_division = False
+
+    # --- Type-specific parsing ---
     try:
         if kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL]:
-            try:
-                # For real types, parse as float first then convert to appropriate type
-                start_float = float(start_input_raw)
-                add_float = float(add_input_raw)
+            # For real types, parse as float first then convert to appropriate type
+            start_float = float(start_input_raw)
+            add_float = float(add_input_raw)
 
-                if kececi_type == TYPE_POSITIVE_REAL:
-                    current_value = abs(start_float)
-                    add_value_typed = abs(add_float)
-                else:  # TYPE_NEGATIVE_REAL
-                    current_value = -abs(start_float)
-                    add_value_typed = -abs(add_float)
+            if kececi_type == TYPE_POSITIVE_REAL:
+                current_value = abs(start_float)
+                add_value_typed = abs(add_float)
+            else:  # TYPE_NEGATIVE_REAL
+                current_value = -abs(start_float)
+                add_value_typed = -abs(add_float)
 
-            except Exception as e:
-                logger.error(
-                    "Failed to parse real inputs: start=%r add=%r -> %s",
-                    start_input_raw,
-                    add_input_raw,
-                    e,
-                )
-                raise
             ask_unit = 1 if kececi_type == TYPE_POSITIVE_REAL else -1
             use_integer_division = True
 
@@ -11703,6 +10114,7 @@ def unified_generator(
             ask_unit = 1.0
 
         elif kececi_type == TYPE_RATIONAL:
+            from fractions import Fraction
             current_value = Fraction(start_input_raw)
             add_value_typed = Fraction(add_input_raw)
             ask_unit = Fraction(1)
@@ -11710,10 +10122,9 @@ def unified_generator(
         elif kececi_type == TYPE_COMPLEX:
             # Import parser locally to avoid circular imports
             from .kececinumbers import _parse_complex
-
             current_value = _parse_complex(start_input_raw)
             add_value_typed = _parse_complex(add_input_raw)
-            ask_unit = complex(1, 1)
+            ask_unit = complex(1, 0)  # Düzeltildi: (1, 1) yerine (1, 0)
 
         elif kececi_type == TYPE_QUATERNION:
             from .kececinumbers import _parse_quaternion
@@ -11744,32 +10155,105 @@ def unified_generator(
             add_value_typed = NeutrosophicNumber(t_inc, i_inc, f_inc)
             ask_unit = NeutrosophicNumber(1, 1, 1)
 
-        elif kececi_type == TYPE_NEUTROSOPHIC_COMPLEX:
-            from .kececinumbers import _parse_complex, _parse_neutrosophic_complex
-            from .kececinumbers import NeutrosophicComplexNumber
 
-            # Use dedicated parser if available
-            try:
-                current_value = _parse_neutrosophic_complex(start_input_raw)
-                add_value_typed = _parse_neutrosophic_complex(add_input_raw)
-            except (ImportError, AttributeError):
-                # Fallback to complex parsing
-                s_complex = _parse_complex(start_input_raw)
-                current_value = NeutrosophicComplexNumber(
-                    s_complex.real, s_complex.imag, 0.0
-                )
-                a_complex = _parse_complex(add_input_raw)
-                add_value_typed = NeutrosophicComplexNumber(
-                    a_complex.real, a_complex.imag, 0.0
-                )
+        elif kececi_type == TYPE_NEUTROSOPHIC_COMPLEX:  
+            """Hem toplama HEM grafik uyumlu Neutrosophic Complex"""
+            from .kececinumbers import (
+                _parse_complex, 
+                _parse_neutrosophic_complex, 
+                NeutrosophicComplexNumber
+            )
 
-            ask_unit = NeutrosophicComplexNumber(1, 1, 1)
+            # unified_generator parser'ı - DEĞİŞTİRMEYİN
+            class PlotNeutroComplex:
+                def __init__(self, real=0.0, imag=0.0, indeterminacy=0.0):
+                    self.real = float(real)
+                    self.imag = float(imag)
+                    self.indeterminacy = float(indeterminacy)
+                
+                def __add__(self, other):
+                    if isinstance(other, PlotNeutroComplex):
+                        return PlotNeutroComplex(
+                            self.real + other.real,
+                            self.imag + other.imag,
+                            self.indeterminacy + other.indeterminacy
+                        )
+                    return NotImplemented
+
+                
+                def __repr__(self):
+                    return f"PlotNeutro({self.real:.3f}+{self.imag:.3f}j,I={self.indeterminacy:.3f})"
+
+            # Güvenli parsing
+            def safe_parse_neutro(raw_input):
+                try:
+                    neutro = _parse_neutrosophic_complex(raw_input)
+                    return PlotNeutroComplex(
+                        neutro.real, neutro.imag, getattr(neutro, 'indeterminacy', 0.0)
+                    )
+                except:
+                    # Fallback complex
+                    c = _parse_complex(raw_input)
+                    return PlotNeutroComplex(c.real, c.imag, 0.0)
+
+            current_value = safe_parse_neutro(start_input_raw)
+            add_value_typed = safe_parse_neutro(add_input_raw)
+            ask_unit = PlotNeutroComplex(1, 1, 1)
+
+
+            """
+            elif kececi_type == TYPE_NEUTROSOPHIC_COMPLEX: #parse hatası
+                from .kececinumbers import _parse_complex, _parse_neutrosophic_complex, NeutrosophicComplexNumber
+                #print("DEBUG: Neutro-Complex tuple parsing")
+                
+                # Kümülatif tuple yapısından veri çıkar
+                real_parts, imag_parts, indeter_parts = [], [], []
+                
+                for step, tup in enumerate(sequence): # NameError: name 'sequence' is not defined
+                    num_neutros = len(tup) // 3  # Her neutro-complex 3 eleman
+                    for i in range(num_neutros):
+                        idx = i * 3
+                        if idx + 2 < len(tup):
+                            real_parts.append(tup[idx])
+                            imag_parts.append(tup[idx + 1])
+                            indeter_parts.append(tup[idx + 2])
+                
+                # İlk elemanı al plotting için
+                if real_parts:
+                    first_elem = type('NeutroMock', (), {'real': real_parts[0], 
+                                                       'imag': imag_parts[0], 
+                                                       'indeterminacy': indeter_parts[0]})()
+            """
+
+            """
+            elif kececi_type == TYPE_NEUTROSOPHIC_COMPLEX:  
+                # plotting not imlemented for tuple
+                from .kececinumbers import _parse_complex, _parse_neutrosophic_complex, NeutrosophicComplexNumber
+
+                # Use dedicated parser if available
+                try:
+                    current_value = _parse_neutrosophic_complex(start_input_raw)
+                    add_value_typed = _parse_neutrosophic_complex(add_input_raw)
+                except (ImportError, AttributeError):
+                    # Fallback to complex parsing
+                    s_complex = _parse_complex(start_input_raw)
+                    current_value = NeutrosophicComplexNumber(
+                        s_complex.real, s_complex.imag, 0.0
+                    )
+                    a_complex = _parse_complex(add_input_raw)
+                    add_value_typed = NeutrosophicComplexNumber(
+                        a_complex.real, a_complex.imag, 0.0
+                    )
+
+                ask_unit = NeutrosophicComplexNumber(1, 1, 1)
+            """
+
 
         elif kececi_type == TYPE_HYPERREAL:
             from .kececinumbers import _parse_hyperreal
             from .kececinumbers import HyperrealNumber
 
-            finite, infinitesimal, _ = _parse_hyperreal(start_input_raw)
+            finite, infinitesimal, _ = _parse_hyperreal(start_input_raw) # ValueError: not enough values to unpack (expected 3, got 2)
             current_value = HyperrealNumber([finite, infinitesimal])
 
             finite_inc, infinitesimal_inc, _ = _parse_hyperreal(add_input_raw)
@@ -11898,24 +10382,37 @@ def unified_generator(
         return []
 
     from .kececinumbers import (
-        _parse_complex,
-        _parse_neutrosophic,
-        _parse_hyperreal,
-        _parse_quaternion,
-        _parse_octonion,
-        _parse_sedenion,
-        _parse_clifford,
-        _parse_dual,
-        _parse_splitcomplex,
-        _parse_pathion,
-        _parse_chingon,
         _parse_bicomplex,
-        _parse_neutrosophic_complex,
+        _parse_chingon,
+        _parse_clifford,
+        _parse_complex,
+        _parse_complex_like_string,
+        _parse_dual,
+        _parse_engineering_notation,
+        _parse_fraction,
+        _parse_hyperreal,
+        _parse_neutrosophic,
         _parse_neutrosophic_bicomplex,
+        _parse_neutrosophic_complex,
+        _parse_octonion,
+        _parse_pathion,
+        _parse_quaternion,
+        _parse_quaternion_from_csv,
+        _parse_real,
         _parse_routon,
-        _parse_voudon,
+        _parse_sedenion,
+        _parse_splitcomplex,
         _parse_super_real,
+        _parse_superreal,
         _parse_ternary,
+        _parse_to_hypercomplex,
+        _parse_universal,
+        _parse_voudon,
+        _generate_simple_ask_sequence,
+        _parse_with_fallback_simple,
+        _parse_kececi_values,
+        parse_to_hyperreal,
+        parse_to_neutrosophic,
     )
 
     # Helper function for fraction formatting
@@ -12069,244 +10566,4761 @@ def unified_generator(
         raise ValueError(f"Invalid input values: {e}") from e
     """
 
-    # Main generation loop
-    clean_trajectory: List[Any] = [start_value]
-    full_log: Optional[List[Any]] = (
-        [start_value] if include_intermediate_steps else None
-    )
-    last_divisor_used: Optional[int] = None
+    # Main generation loop - ASK kuralını doğru uygulama
+    clean_trajectory = [current_value]
+    # full_log = [current_value]
+    # full_log sadece include_intermediate_steps True ise tutulacak (bellek kullanımını azaltmak için)
+    full_log = [current_value] if include_intermediate_steps else None
+    last_divisor_used = None
     ask_counter = 0  # 0: +ask_unit, 1: -ask_unit
-    use_integer_division = False  # Default to float division
-    ask_unit = None  # Default no ask_unit
 
-    for step in range(1, iterations):
-        # 1. Add current value with add_value (type-safe)
-        current_value = clean_trajectory[-1]
+    for step in range(iterations):
+        # 1. Add
         try:
-            added_value = safe_add(current_value, add_value)
+            added_value = current_value + add_value_typed
         except Exception as e:
-            logger.exception(f"Addition failed at step {step}: {e}")
-            logger.debug(
-                f"current_value type: {type(current_value)}, value: {current_value}"
-            )
-            logger.debug(f"add_value type: {type(add_value)}, value: {add_value}")
-            added_value = current_value
+            logger.exception("Addition failed at step %s: %s", step, e)
+            # cannot continue if addition is invalid for type
+            break
 
         next_q = added_value
         divided_successfully = False
-        modified_value: Optional[Any] = None
+        modified_value = None
 
         # Choose which divisor to try first
-        primary_divisor = (
-            3 if last_divisor_used == 2 or last_divisor_used is None else 2
-        )
+        primary_divisor = 3 if last_divisor_used == 2 or last_divisor_used is None else 2
         alternative_divisor = 2 if primary_divisor == 3 else 3
 
-        # 2. Try divisions defensively (type-safe)
+        # 2. Try divisions defensively
         for divisor in (primary_divisor, alternative_divisor):
             try:
-                # Note: kececi_type is int, not str
                 if _is_divisible(added_value, divisor, kececi_type):
                     try:
-                        # Use type-safe division
-                        next_q = safe_divide(added_value, divisor, use_integer_division)
+                        next_q = _safe_divide(added_value, divisor, use_integer_division)
                         last_divisor_used = divisor
                         divided_successfully = True
-                        break
-                    except Exception as e:
-                        logger.debug(
-                            f"Safe division failed for {added_value!r} by {divisor}: {e}"
-                        )
-
-                        # Special handling for tuples/lists
-                        if isinstance(added_value, (tuple, list)):
-                            try:
-                                next_q = safe_divide(
-                                    added_value, divisor, use_integer_division
-                                )
-                                last_divisor_used = divisor
-                                divided_successfully = True
-                                break
-                            except Exception as e2:
-                                logger.debug(f"Element-wise division failed: {e2}")
-
-                                # Alternative: divide only first component
-                                try:
-                                    if len(added_value) > 0:
-                                        if use_integer_division:
-                                            first = added_value[0] // divisor
-                                        else:
-                                            first = added_value[0] / divisor
-                                        # Generate new tuple/list with divided first element
-                                        if isinstance(added_value, tuple):
-                                            next_q = (first,) + added_value[1:]
-                                        else:
-                                            next_q = [first] + added_value[1:]
-                                        last_divisor_used = divisor
-                                        divided_successfully = True
-                                        break
-                                except Exception as e3:
-                                    logger.debug(
-                                        f"First component division failed: {e3}"
-                                    )
-                else:
-                    logger.debug(f"Not divisible: {added_value!r} by {divisor}")
-
+                    except Exception:
+                        # if safe divide failed, try simple numeric fallback
+                        try:
+                            next_q = added_value / divisor
+                            last_divisor_used = divisor
+                            divided_successfully = True
+                        except Exception:
+                            logger.debug("Fallback division failed for %r by %s", added_value, divisor)
+                    break
             except Exception as e:
-                logger.debug(
-                    f"Divisibility check failed for {added_value!r} by {divisor}: {e}"
-                )
+                logger.debug("Divisibility check failed for %r by %s: %s", added_value, divisor, e)
                 continue
 
-        # 3. If division failed, check prime-like and apply modification
-        if not divided_successfully:
-            # First check prime-like
+        # 3. If division not successful and value looks prime-like, try ask_unit modification
+        if not divided_successfully and is_prime_like(added_value, kececi_type):
+            direction = 1 if ask_counter == 0 else -1
             try:
-                # Note: kececi_type is int, not str
-                if is_prime_like(added_value, kececi_type):
-                    logger.debug(
-                        f"Prime-like number detected at step {step}: {added_value!r}"
-                    )
-                    # If prime-like, modify with ask_unit
-                    if ask_unit is not None:
-                        try:
-                            direction = 1 if ask_counter == 0 else -1
-                            modified_value = safe_add(added_value, ask_unit * direction)
-                            ask_counter = 1 - ask_counter  # Toggle counter
-
-                            # Try division again with modified value
-                            for divisor in (primary_divisor, alternative_divisor):
-                                try:
-                                    if _is_divisible(
-                                        modified_value, divisor, kececi_type
-                                    ):
-                                        try:
-                                            next_q = safe_divide(
-                                                modified_value,
-                                                divisor,
-                                                use_integer_division,
-                                            )
-                                            last_divisor_used = divisor
-                                            divided_successfully = True
-                                            logger.debug(
-                                                "Division successful after prime-like modification"
-                                            )
-                                            break
-                                        except Exception as e2:
-                                            logger.debug(
-                                                f"Division on modified_value failed: {e2}"
-                                            )
-                                except Exception as e:
-                                    logger.debug(
-                                        f"Divisibility check on modified_value failed: {e}"
-                                    )
-                                    continue
-                        except Exception as e:
-                            logger.debug(f"safe_add failed for prime-like number: {e}")
-                            modified_value = None
+                modified_value = safe_add(added_value, ask_unit, direction)
             except Exception as e:
-                logger.debug(f"Prime-like check failed: {e}")
-
-            # If still not divided, apply Collatz-like modification
-            if not divided_successfully:
+                logger.debug("safe_add failed for %r with ask_unit=%r direction=%s: %s", added_value, ask_unit, direction, e)
+                # try native operation if possible
                 try:
-                    if ask_counter == 0:
-                        # +ask_unit (3*x + 1)
-                        modified_value = safe_mul_add(added_value, 3, 1)
-                        ask_counter = 1
-                    else:
-                        # -ask_unit (3*x - 1)
-                        modified_value = safe_mul_add(added_value, 3, -1)
-                        ask_counter = 0
+                    modified_value = added_value + (ask_unit * direction)
+                except Exception as e2:
+                    logger.debug("native ask alteration also failed: %s", e2)
+                    modified_value = None
 
-                    next_q = modified_value
-                    logger.debug(
-                        f"Applied Collatz-like modification: {added_value!r} -> {next_q!r}"
-                    )
+            # Toggle ask counter only if modification occurred
+            if modified_value is not None:
+                ask_counter = 1 - ask_counter
+                # try divisions again with modified value
+                for divisor in (primary_divisor, alternative_divisor):
+                    try:
+                        if _is_divisible(modified_value, divisor, kececi_type):
+                            try:
+                                next_q = _safe_divide(modified_value, divisor, use_integer_division)
+                                last_divisor_used = divisor
+                                divided_successfully = True
+                            except Exception:
+                                try:
+                                    next_q = modified_value / divisor
+                                    last_divisor_used = divisor
+                                    divided_successfully = True
+                                except Exception:
+                                    logger.debug("Division on modified_value failed for %r by %s", modified_value, divisor)
+                            break
+                    except Exception as e:
+                        logger.debug("Divisibility check on modified_value failed: %s", e)
+                        continue
 
-                except Exception as e:
-                    logger.exception(f"Collatz modification failed at step {step}: {e}")
-                    next_q = added_value
-
-        # 4. Update trajectory
-        clean_trajectory.append(next_q)
-
-        # 5. Store result with detailed logging if requested
+        # 4. Logging and book-keeping
+        #full_log.append(added_value)
         if include_intermediate_steps:
-            if full_log is None:
-                full_log = []
+            full_log.append(added_value)
+        #if modified_value is not None:
+        if modified_value is not None and include_intermediate_steps:
+            full_log.append(modified_value)
+        #if not full_log or next_q != full_log[-1]:
+        # Ve next_q eklenmeden önce veya sonra:
+        if include_intermediate_steps:
+            # next_q muhtemelen full_log son elemanı değilse yine ekle
+            if not full_log or next_q != full_log[-1]:
+                full_log.append(next_q)
 
-            # Detailed log entry
-            log_entry: Dict[str, Any] = {
-                "step": step,
-                "added": added_value,
-                "divided_by": last_divisor_used if divided_successfully else None,
-                "modified": modified_value if not divided_successfully else None,
-                "result": next_q,
-            }
-            full_log.append(log_entry)
+        clean_trajectory.append(next_q)
+        current_value = next_q
 
-            # Also add intermediate values
-            if added_value != next_q:
-                full_log.append(added_value)
-            if (
-                modified_value is not None
-                and modified_value != added_value
-                and modified_value != next_q
-            ):
-                full_log.append(modified_value)
-
-        # 6. Prime-like check for current value
-        try:
-            # Note: kececi_type is int, not str
-            if is_prime_like(next_q, kececi_type):
-                logger.debug(f"Prime-like number found at step {step}: {next_q!r}")
-        except Exception as e:
-            logger.debug(f"Prime-like check failed for current value: {e}")
-
-    # 7. Format and return the sequence
-    if include_intermediate_steps:
-        result_sequence = full_log if full_log is not None else clean_trajectory
-    else:
-        result_sequence = clean_trajectory
-
-    # Format fractions if present - SADECE SAYISAL DEĞERLERİ FORMATLA
-    formatted_sequence: List[Any] = []
-    for item in result_sequence:
-        try:
-            if isinstance(item, dict):
-                # Log entry dict ise, içindeki sayısal değerleri formatla
-                formatted_item: Dict[str, Any] = {}
-                for key, value in item.items():
-                    if isinstance(value, Fraction):
-                        formatted_item[key] = format_fraction_local(value)
-                    elif isinstance(value, (int, float, complex)):
-                        # Sayısal değerleri olduğu gibi bırak
-                        formatted_item[key] = value
-                    else:
-                        # String veya diğer tipleri olduğu gibi bırak
-                        formatted_item[key] = value
-                formatted_sequence.append(formatted_item)
-            elif isinstance(item, Fraction):
-                formatted_sequence.append(format_fraction_local(item))
-            elif isinstance(item, (int, float, complex)):
-                # Sayısal değerleri olduğu gibi bırak
-                formatted_sequence.append(item)
-            else:
-                # String veya diğer tipler için plotting hatası olmaması için
-                # Sayısal değere çevirmeye çalış
-                try:
-                    numeric_value = float(item)
-                    formatted_sequence.append(numeric_value)
-                except (ValueError, TypeError):
-                    # Çevrilemezse olduğu gibi bırak (ama plotting çalışmayabilir)
-                    formatted_sequence.append(item)
-        except Exception as e:
-            logger.debug(f"Error formatting item {item!r}: {e}")
-            formatted_sequence.append(item)
-
+    # Sonuç formatlarken:
+    #formatted_sequence = [format_fraction(x) if isinstance(x, Fraction) else x for x in (full_log if include_intermediate_steps else clean_trajectory)]
+    formatted_sequence = [format_fraction(x) if isinstance(x, Fraction) else x
+                          for x in (full_log if include_intermediate_steps else clean_trajectory)]
     return formatted_sequence
 
+
+def _parse_quaternion_fixed(s: str):
+    """
+    Fixed quaternion parser that handles single numbers correctly.
+    """
+    from .kececinumbers import quaternion, _parse_fraction
+    
+    s_str = str(s).strip()
+    
+    # Handle empty string
+    if not s_str:
+        return quaternion(0, 0, 0, 0)
+    
+    # Handle comma-separated format: "w,x,y,z" or "w, x, y, z"
+    if ',' in s_str:
+        parts = [p.strip() for p in s_str.split(',')]
+        if len(parts) == 4:
+            try:
+                w = _parse_fraction(parts[0])
+                x = _parse_fraction(parts[1])
+                y = _parse_fraction(parts[2])
+                z = _parse_fraction(parts[3])
+                return quaternion(w, x, y, z)
+            except:
+                pass
+    
+    # Handle single number - only w component, others 0
+    try:
+        w = _parse_fraction(s_str)
+        return quaternion(w, 0, 0, 0)
+    except:
+        # Try as float
+        try:
+            w = float(s_str)
+            return quaternion(w, 0, 0, 0)
+        except:
+            return quaternion(0, 0, 0, 0)
+
+
+def _parse_neutrosophic_fixed(s: str):
+    """Fixed neutrosophic parser."""
+    from .kececinumbers import _parse_neutrosophic
+    from .kececinumbers import NeutrosophicNumber
+    
+    try:
+        return _parse_neutrosophic(s)
+    except:
+        # Fallback
+        from .kececinumbers import _parse_fraction
+        try:
+            val = _parse_fraction(s)
+            return NeutrosophicNumber(val, 0.0, 0.0)
+        except:
+            return NeutrosophicNumber(0.0, 0.0, 0.0)
+
+
+def _parse_octonion_fixed(s: str):
+    """Fixed octonion parser."""
+    from .kececinumbers import _parse_octonion
+    from .kececinumbers import OctonionNumber
+    
+    try:
+        return _parse_octonion(s)
+    except:
+        # Fallback
+        from .kececinumbers import _parse_fraction
+        try:
+            val = _parse_fraction(s)
+            return OctonionNumber(val, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        except:
+            return OctonionNumber(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+
+
+# Similar fixed parsers for other types...
+def _parse_sedenion_fixed(s: str):
+    from .kececinumbers import _parse_sedenion, SedenionNumber, _parse_fraction
+    try:
+        return _parse_sedenion(s)
+    except:
+        try:
+            val = _parse_fraction(s)
+            components = [val] + [0.0] * 15
+            return SedenionNumber(components)
+        except:
+            return SedenionNumber([0.0] * 16)
+
+
+def _parse_ternary_fixed(s: str):
+    from .kececinumbers import _parse_ternary, TernaryNumber
+    try:
+        return _parse_ternary(s)
+    except:
+        try:
+            # Convert decimal to ternary
+            from .kececinumbers import _parse_fraction
+            val = int(_parse_fraction(s))
+            # Convert to ternary digits
+            if val == 0:
+                digits = [0]
+            else:
+                digits = []
+                while val > 0:
+                    digits.append(val % 3)
+                    val //= 3
+                digits.reverse()
+            return TernaryNumber(digits)
+        except:
+            return TernaryNumber([0])
+
+
+def _generate_proper_ask_sequence(
+    start_value: Any,
+    add_value: Any,
+    iterations: int,
+    include_intermediate_steps: bool = False,
+    number_type: int = 1
+) -> List[Any]:
+    """
+    Proper ASK sequence that extracts values for plotting.
+    """
+    result = []
+    current = start_value
+    ask_counter = 0
+    
+    # Helper to extract plot value
+    def extract_plot_value(val):
+        """Extract a plottable value from any Keçeci number type."""
+        try:
+            # For quaternions, use w component or norm
+            if hasattr(val, 'w') and hasattr(val, 'x') and hasattr(val, 'y') and hasattr(val, 'z'):
+                return float(val.w)  # Use real part
+            # For octonions
+            elif hasattr(val, '__len__') and len(val) >= 8:
+                return float(val[0]) if val else 0.0
+            # For sedenions
+            elif hasattr(val, '__len__') and len(val) >= 16:
+                return float(val[0]) if val else 0.0
+            # For complex
+            elif isinstance(val, complex):
+                return float(val.real)
+            # For tuples (neutrosophic, etc.)
+            elif isinstance(val, tuple) and len(val) >= 1:
+                return float(val[0])
+            # For lists
+            elif isinstance(val, list) and val:
+                return float(val[0])
+            # For custom objects with real attribute
+            elif hasattr(val, 'real'):
+                return float(val.real)
+            # For custom objects with value attribute
+            elif hasattr(val, 'value'):
+                return float(val.value)
+            # For everything else, try to convert to float
+            else:
+                return float(val)
+        except:
+            return 0.0
+    
+    if include_intermediate_steps:
+        plot_val = extract_plot_value(current)
+        result.append({
+            "step": 0,
+            "value": current,
+            "plot_value": plot_val,
+            "operation": "start",
+            "description": f"Start: {current}"
+        })
+    else:
+        result.append(extract_plot_value(current))
+    
+    for i in range(1, iterations):
+        try:
+            # 1. ADD
+            added = current + add_value
+            
+            next_val = added
+            divided = False
+            
+            # 2. Check division by 2 or 3
+            for divisor in [2, 3]:
+                try:
+                    # For quaternions, check norm for divisibility
+                    if number_type == 6:  # Quaternion
+                        if hasattr(added, 'norm'):
+                            norm = added.norm()
+                            if norm % divisor == 0:
+                                next_val = added / divisor
+                                divided = True
+                                break
+                        else:
+                            # Try division anyway
+                            next_val = added / divisor
+                            divided = True
+                            break
+                    else:
+                        # For other types, try division
+                        next_val = added / divisor
+                        divided = True
+                        break
+                except Exception as e:
+                    logger.debug(f"Division by {divisor} failed: {e}")
+                    continue
+            
+            # 3. Keçeci unit adjustment
+            if not divided:
+                # Check if prime-like
+                is_prime_like = False
+                try:
+                    if number_type == 6:  # Quaternion
+                        if hasattr(added, 'norm'):
+                            norm = added.norm()
+                            is_prime_like = _is_prime_int(int(norm))
+                    else:
+                        # Try to extract a numeric value
+                        val = extract_plot_value(added)
+                        is_prime_like = _is_prime_int(int(abs(val)))
+                except:
+                    is_prime_like = False
+                
+                if is_prime_like:
+                    # Get appropriate unit
+                    unit = _get_proper_unit(number_type, current)
+                    
+                    if ask_counter == 0:
+                        adjusted = added + unit
+                    else:
+                        adjusted = added - unit
+                    
+                    ask_counter = 1 - ask_counter
+                    
+                    # Try division on adjusted value
+                    for divisor in [2, 3]:
+                        try:
+                            next_val = adjusted / divisor
+                            break
+                        except:
+                            continue
+                    else:
+                        next_val = adjusted
+            
+            current = next_val
+            
+            if include_intermediate_steps:
+                plot_val = extract_plot_value(current)
+                result.append({
+                    "step": i,
+                    "value": current,
+                    "plot_value": plot_val,
+                    "operation": "step",
+                    "description": f"Step {i}: {current}"
+                })
+            else:
+                result.append(extract_plot_value(current))
+                
+        except Exception as e:
+            logger.error(f"Error at iteration {i}: {e}")
+            default_val = _get_proper_default(number_type)
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": default_val,
+                    "plot_value": extract_plot_value(default_val),
+                    "operation": "error",
+                    "description": f"ERROR: {e}"
+                })
+            else:
+                result.append(extract_plot_value(default_val))
+            current = default_val
+    
+    return result
+
+
+def _is_prime_int(n: int) -> bool:
+    """Check if integer is prime."""
+    if n < 2:
+        return False
+    if n == 2 or n == 3:
+        return True
+    if n % 2 == 0 or n % 3 == 0:
+        return False
+    
+    i = 5
+    while i * i <= n:
+        if n % i == 0 or n % (i + 2) == 0:
+            return False
+        i += 6
+    
+    return True
+
+
+def _get_proper_unit(number_type: int, sample=None):
+    """Get proper unit for number type."""
+    if number_type == 1:  # Positive Real
+        return 1.0
+    elif number_type == 2:  # Negative Real
+        return -1.0
+    elif number_type == 3:  # Complex
+        return complex(1, 0)
+    elif number_type == 4:  # Float
+        return 1.0
+    elif number_type == 5:  # Rational
+        try:
+            from fractions import Fraction
+            return Fraction(1, 1)
+        except:
+            return 1.0
+    elif number_type == 6:  # Quaternion
+        from .kececinumbers import quaternion
+        return quaternion(1, 0, 0, 0)
+    elif number_type == 7:  # Neutrosophic
+        from .kececinumbers import NeutrosophicNumber
+        return NeutrosophicNumber(1.0, 0.0, 0.0)
+    elif number_type == 12:  # Octonion
+        from .kececinumbers import OctonionNumber
+        return OctonionNumber(1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+    elif number_type == 13:  # Sedenion
+        from .kececinumbers import SedenionNumber
+        return SedenionNumber([1.0] + [0.0] * 15)
+    elif number_type == 22:  # Ternary
+        from .kececinumbers import TernaryNumber
+        return TernaryNumber([1])
+    else:
+        return 1.0
+
+
+def _get_proper_default(number_type: int):
+    """Get proper default for number type."""
+    if number_type == 1:  # Positive Real
+        return 0.0
+    elif number_type == 2:  # Negative Real
+        return 0.0
+    elif number_type == 3:  # Complex
+        return complex(0, 0)
+    elif number_type == 4:  # Float
+        return 0.0
+    elif number_type == 5:  # Rational
+        try:
+            from fractions import Fraction
+            return Fraction(0, 1)
+        except:
+            return 0.0
+    elif number_type == 6:  # Quaternion
+        from .kececinumbers import quaternion
+        return quaternion(0, 0, 0, 0)
+    elif number_type == 7:  # Neutrosophic
+        from .kececinumbers import NeutrosophicNumber
+        return NeutrosophicNumber(0.0, 0.0, 0.0)
+    elif number_type == 12:  # Octonion
+        from .kececinumbers import OctonionNumber
+        return OctonionNumber(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+    elif number_type == 13:  # Sedenion
+        from .kececinumbers import SedenionNumber
+        return SedenionNumber([0.0] * 16)
+    elif number_type == 22:  # Ternary
+        from .kececinumbers import TernaryNumber
+        return TernaryNumber([0])
+    else:
+        return 0.0
+
+
+def _generate_fallback_sequence(
+    kececi_type: int,
+    start_input_raw: str,
+    add_input_raw: str,
+    iterations: int,
+    include_intermediate_steps: bool = False,
+    operation: str = "ask"
+) -> List[Any]:
+    """
+    Fallback sequence generator when main generator fails.
+    """
+    # Simple float parser
+    def parse_float(val):
+        try:
+            return float(val)
+        except:
+            return 0.0
+    
+    start_val = parse_float(start_input_raw)
+    add_val = parse_float(add_input_raw)
+    
+    result = []
+    current = start_val
+    
+    if include_intermediate_steps:
+        result.append({
+            "step": 0,
+            "value": current,
+            "operation": "start",
+            "description": f"Start: {current}"
+        })
+    else:
+        result.append(current)
+    
+    for i in range(1, iterations):
+        try:
+            if operation == "ask":
+                # Simple ASK for floats
+                added = current + add_val
+                next_val = added
+                
+                # Check division
+                for divisor in [2, 3]:
+                    if added % divisor == 0:
+                        next_val = added / divisor
+                        break
+                
+                # Prime check and unit adjustment
+                if next_val == added:  # Not divided
+                    if _is_prime_int(int(abs(added))):
+                        unit = 1.0
+                        # Simple unit adjustment
+                        adjusted = added + unit if i % 2 == 0 else added - unit
+                        # Try division again
+                        for divisor in [2, 3]:
+                            if adjusted % divisor == 0:
+                                next_val = adjusted / divisor
+                                break
+                        else:
+                            next_val = adjusted
+                
+                current = next_val
+            else:
+                # Simple operations
+                if operation == "add":
+                    current = current + add_val
+                elif operation == "subtract":
+                    current = current - add_val
+                elif operation == "multiply":
+                    current = current * add_val
+                elif operation == "divide":
+                    current = current / add_val if add_val != 0 else float('inf')
+                elif operation == "mod":
+                    current = current % add_val if add_val != 0 else current
+                elif operation == "power":
+                    current = current ** add_val
+                else:
+                    current = current + add_val
+            
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": current,
+                    "operation": operation if operation != "ask" else "step",
+                    "description": f"Step {i}: {current}"
+                })
+            else:
+                result.append(current)
+                
+        except Exception as e:
+            logger.error(f"Error at iteration {i} in fallback: {e}")
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": 0.0,
+                    "operation": "error",
+                    "description": f"ERROR: {e}"
+                })
+            else:
+                result.append(0.0)
+            current = 0.0
+    
+    return result
+
+
+def _unified_generator_fallback(
+    kececi_type: int,
+    start_input_raw: str,
+    add_input_raw: str,
+    iterations: int,
+    include_intermediate_steps: bool = False,
+    operation: str = "ask"
+) -> List[Any]:
+    """
+    Fallback generator when imports fail.
+    """
+    # Simple parser
+    def parse_simple(val: str) -> float:
+        if not val:
+            return 0.0
+        val_str = str(val).strip()
+        
+        # Try complex
+        val_str = val_str.replace('i', 'j').replace('J', 'j')
+        try:
+            c = complex(val_str)
+            return float(c.real)
+        except:
+            pass
+        
+        # Try float
+        try:
+            return float(val_str)
+        except:
+            # Try fraction
+            if '/' in val_str:
+                try:
+                    num, den = val_str.split('/')
+                    return float(num) / float(den)
+                except:
+                    pass
+            
+            # Try mixed number
+            if ' ' in val_str and '/' in val_str:
+                try:
+                    whole, frac = val_str.split(' ', 1)
+                    num, den = frac.split('/')
+                    return float(whole) + (float(num) / float(den))
+                except:
+                    pass
+        
+        return 0.0
+    
+    # Parse values
+    start_base = parse_simple(start_input_raw)
+    add_base = parse_simple(add_input_raw)
+    
+    # Adjust based on type
+    if kececi_type == 1:  # Positive Real
+        start_value = abs(start_base)
+        add_value = abs(add_base)
+    elif kececi_type == 2:  # Negative Real
+        start_value = -abs(start_base)
+        add_value = -abs(add_base)
+    elif kececi_type == 3:  # Complex
+        start_value = complex(start_base, 0)
+        add_value = complex(add_base, 0)
+    elif kececi_type in [4, 5]:  # Float, Rational
+        start_value = start_base
+        add_value = add_base
+    else:
+        # For other types, use float as fallback
+        start_value = start_base
+        add_value = add_base
+    
+    # Generate simple sequence
+    return _generate_simple_sequence_direct(
+        start_value=start_value,
+        add_value=add_value,
+        iterations=iterations,
+        include_intermediate_steps=include_intermediate_steps,
+        number_type=kececi_type
+    )
+
+
+def _generate_ask_sequence_direct(
+    start_value: Any,
+    add_value: Any,
+    iterations: int,
+    include_intermediate_steps: bool = False,
+    number_type: int = 1
+) -> List[Any]:
+    """
+    Direct ASK sequence generation.
+    """
+    result = []
+    current = start_value
+    ask_counter = 0
+    
+    if include_intermediate_steps:
+        result.append({
+            "step": 0,
+            "value": current,
+            "operation": "start",
+            "description": f"Start: {current}"
+        })
+    else:
+        result.append(current)
+    
+    for i in range(1, iterations):
+        try:
+            # 1. ADD
+            added = current + add_value
+            
+            next_val = added
+            divided = False
+            
+            # 2. Check division by 2 or 3
+            for divisor in [2, 3]:
+                try:
+                    # Try to check divisibility
+                    if _check_divisible_simple(added, divisor):
+                        # Try to divide
+                        next_val = _divide_simple(added, divisor)
+                        divided = True
+                        logger.debug(f"Step {i}: Divided {added} by {divisor} = {next_val}")
+                        break
+                except Exception as e:
+                    logger.debug(f"Division failed: {e}")
+                    continue
+            
+            # 3. Keçeci unit adjustment
+            if not divided and _check_prime_like_simple(added):
+                unit = _get_unit_for_type_simple(number_type)
+                
+                if ask_counter == 0:
+                    adjusted = added + unit
+                    logger.debug(f"Step {i}: Added unit {unit} to {added} = {adjusted}")
+                else:
+                    adjusted = added - unit
+                    logger.debug(f"Step {i}: Subtracted unit {unit} from {added} = {adjusted}")
+                
+                ask_counter = 1 - ask_counter
+                
+                # Try division on adjusted value
+                for divisor in [2, 3]:
+                    try:
+                        if _check_divisible_simple(adjusted, divisor):
+                            next_val = _divide_simple(adjusted, divisor)
+                            logger.debug(f"Step {i}: Divided adjusted {adjusted} by {divisor} = {next_val}")
+                            break
+                    except Exception:
+                        continue
+                else:
+                    next_val = adjusted
+            
+            current = next_val
+            
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": current,
+                    "operation": "step",
+                    "description": f"Step {i}: {current}"
+                })
+            else:
+                result.append(current)
+                
+        except Exception as e:
+            logger.error(f"Error at iteration {i}: {e}")
+            default_val = _get_default_for_type_simple(number_type)
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": default_val,
+                    "operation": "error",
+                    "description": f"ERROR: {e}"
+                })
+            else:
+                result.append(default_val)
+            current = default_val
+    
+    return result
+
+
+def _generate_operation_sequence_direct(
+    start_value: Any,
+    add_value: Any,
+    iterations: int,
+    operation: str,
+    include_intermediate_steps: bool = False,
+    number_type: int = 1
+) -> List[Any]:
+    """
+    Direct operation sequence generation.
+    """
+    result = []
+    current = start_value
+    
+    if include_intermediate_steps:
+        result.append({
+            "step": 0,
+            "value": current,
+            "operation": "start",
+            "description": f"Start: {current}"
+        })
+    else:
+        result.append(current)
+    
+    for i in range(1, iterations):
+        try:
+            if operation == "add":
+                current = current + add_value
+            elif operation == "subtract":
+                current = current - add_value
+            elif operation == "multiply":
+                current = current * add_value
+            elif operation == "divide":
+                current = _divide_simple(current, add_value)
+            elif operation == "mod":
+                try:
+                    current = current % add_value
+                except:
+                    current = current  # Mod not supported
+            elif operation == "power":
+                try:
+                    current = current ** add_value
+                except:
+                    current = current  # Power not supported
+            else:
+                current = current + add_value  # Default to add
+            
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": current,
+                    "operation": operation,
+                    "description": f"Step {i}: {current}"
+                })
+            else:
+                result.append(current)
+                
+        except Exception as e:
+            logger.error(f"Error at iteration {i}, operation {operation}: {e}")
+            default_val = _get_default_for_type_simple(number_type)
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": default_val,
+                    "operation": "error",
+                    "description": f"ERROR: {e}"
+                })
+            else:
+                result.append(default_val)
+            current = default_val
+    
+    return result
+
+
+def _check_divisible_simple(value: Any, divisor: float) -> bool:
+    """
+    Simple divisibility check.
+    """
+    try:
+        if isinstance(value, (int, float)):
+            return abs(value % divisor) < 1e-12
+        elif isinstance(value, complex):
+            return abs(value.real % divisor) < 1e-12 and abs(value.imag % divisor) < 1e-12
+        else:
+            # For other types, assume divisible
+            return True
+    except:
+        return True
+
+
+def _divide_simple(value: Any, divisor: float) -> Any:
+    """
+    Simple division.
+    """
+    try:
+        return value / divisor
+    except:
+        # Try alternatives
+        if isinstance(value, (tuple, list)):
+            return type(value)([x / divisor for x in value])
+        else:
+            raise
+
+
+def _check_prime_like_simple(value: Any) -> bool:
+    """
+    Simple prime-like check.
+    """
+    try:
+        # Get a numeric value
+        if isinstance(value, (int, float)):
+            val = abs(value)
+        elif isinstance(value, complex):
+            val = abs(value)
+        elif hasattr(value, '__abs__'):
+            val = abs(value)
+        else:
+            return False
+        
+        # Simple prime check
+        if val < 2:
+            return False
+        for i in range(2, int(val**0.5) + 1):
+            if val % i == 0:
+                return False
+        return True
+    except:
+        return False
+
+
+def _get_unit_for_type_simple(number_type: int) -> Any:
+    """
+    Get unit for number type.
+    """
+    if number_type in [1, 4, 5]:
+        return 1.0
+    elif number_type == 2:
+        return -1.0
+    elif number_type == 3:
+        return complex(1, 0)
+    elif number_type == 6:  # Quaternion
+        try:
+            from .kececinumbers import quaternion
+            return quaternion(1, 0, 0, 0)
+        except:
+            return (1.0, 0.0, 0.0, 0.0)
+    elif number_type == 7:  # Neutrosophic
+        return (1.0, 0.0, 0.0)
+    else:
+        return 1.0
+
+
+def _get_default_for_type_simple(number_type: int) -> Any:
+    """
+    Get default value for number type.
+    """
+    if number_type in [1, 2, 4, 5]:
+        return 0.0
+    elif number_type == 3:
+        return complex(0, 0)
+    elif number_type == 6:  # Quaternion
+        try:
+            from .kececinumbers import quaternion
+            return quaternion(0, 0, 0, 0)
+        except:
+            return (0.0, 0.0, 0.0, 0.0)
+    elif number_type == 7:  # Neutrosophic
+        return (0.0, 0.0, 0.0)
+    else:
+        return 0.0
+
+
+def _generate_simple_sequence_direct(
+    start_value: Any,
+    add_value: Any,
+    iterations: int,
+    include_intermediate_steps: bool = False,
+    number_type: int = 1
+) -> List[Any]:
+    """
+    Simple sequence generation (just addition).
+    """
+    result = []
+    current = start_value
+    
+    if include_intermediate_steps:
+        result.append({
+            "step": 0,
+            "value": current,
+            "operation": "start",
+            "description": f"Start: {current}"
+        })
+    else:
+        result.append(current)
+    
+    for i in range(1, iterations):
+        try:
+            current = current + add_value
+            
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": current,
+                    "operation": "add",
+                    "description": f"Step {i}: {current}"
+                })
+            else:
+                result.append(current)
+                
+        except Exception as e:
+            logger.error(f"Error at iteration {i}: {e}")
+            default_val = _get_default_for_type_simple(number_type)
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": default_val,
+                    "operation": "error",
+                    "description": f"ERROR: {e}"
+                })
+            else:
+                result.append(default_val)
+            current = default_val
+    
+    return result
+
+
+def _generate_ternary_ask_sequence(
+    start_value: 'TernaryNumber',
+    add_value: 'TernaryNumber',
+    iterations: int,
+    include_intermediate_steps: bool = False
+) -> List[Any]:
+    """
+    ASK algorithm specifically for TernaryNumber.
+    """
+    result = []
+    current = start_value
+    ask_counter = 0  # 0: +unit, 1: -unit
+    
+    if include_intermediate_steps:
+        result.append({
+            "step": 0,
+            "value": current,
+            "operation": "start",
+            "description": f"Start: {current}"
+        })
+    else:
+        result.append(current)
+    
+    for i in range(1, iterations):
+        try:
+            # STEP 1: ADDITION
+            added = current + add_value
+            
+            next_val = added
+            divided = False
+            
+            # STEP 2: CHECK DIVISIBILITY by 2 or 3
+            # Convert to decimal for divisibility checks
+            added_decimal = added.to_decimal()
+            
+            for divisor in [2, 3]:
+                try:
+                    if added_decimal % divisor == 0:
+                        # Divide in decimal, convert back to ternary
+                        divided_decimal = added_decimal // divisor
+                        divided_val = TernaryNumber.from_decimal(divided_decimal)
+                        next_val = divided_val
+                        divided = True
+                        break
+                except Exception:
+                    continue
+            
+            # STEP 3: KECEÇI UNIT ADJUSTMENT if not divided and prime-like
+            if not divided:
+                # Check if prime-like (check decimal value)
+                if _is_prime_decimal(added_decimal):
+                    # Ternary unit is 1 in ternary = [1]
+                    unit = TernaryNumber.from_decimal(1)
+                    
+                    # Apply unit based on ask_counter
+                    if ask_counter == 0:
+                        adjusted = added + unit
+                    else:
+                        adjusted = added - unit
+                    
+                    # Toggle ask counter
+                    ask_counter = 1 - ask_counter
+                    
+                    # Try division again on adjusted value
+                    adjusted_decimal = adjusted.to_decimal()
+                    for divisor in [2, 3]:
+                        try:
+                            if adjusted_decimal % divisor == 0:
+                                final_decimal = adjusted_decimal // divisor
+                                next_val = TernaryNumber.from_decimal(final_decimal)
+                                break
+                        except Exception:
+                            continue
+                    else:
+                        # No division successful after adjustment
+                        next_val = adjusted
+            
+            current = next_val
+            
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": current,
+                    "operation": "step",
+                    "description": f"Step {i}: {current}"
+                })
+            else:
+                result.append(current)
+                
+        except Exception as e:
+            logger.error(f"Error at iteration {i} for Ternary: {e}")
+            default_val = TernaryNumber.from_decimal(0)
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": default_val,
+                    "operation": "error",
+                    "description": f"ERROR: {e}"
+                })
+            else:
+                result.append(default_val)
+            current = default_val
+    
+    return result
+
+
+def _generate_ternary_operation_sequence(
+    start_value: 'TernaryNumber',
+    add_value: 'TernaryNumber',
+    iterations: int,
+    operation: str,
+    include_intermediate_steps: bool = False
+) -> List[Any]:
+    """
+    Standard operations for TernaryNumber.
+    """
+    result = []
+    current = start_value
+    
+    if include_intermediate_steps:
+        result.append({
+            "step": 0,
+            "value": current,
+            "operation": "start",
+            "description": f"Start: {current}"
+        })
+    else:
+        result.append(current)
+    
+    for i in range(1, iterations):
+        try:
+            if operation == "add":
+                current = current + add_value
+            elif operation == "subtract":
+                current = current - add_value
+            elif operation == "multiply":
+                # Convert add_value to scalar if it's a single digit ternary
+                if isinstance(add_value, TernaryNumber):
+                    add_decimal = add_value.to_decimal()
+                    current = current * add_decimal
+                else:
+                    current = current * add_value
+            elif operation == "divide":
+                if isinstance(add_value, TernaryNumber):
+                    add_decimal = add_value.to_decimal()
+                    if add_decimal == 0:
+                        raise ZeroDivisionError("Division by zero")
+                    current_decimal = current.to_decimal()
+                    result_decimal = current_decimal // add_decimal
+                    current = TernaryNumber.from_decimal(result_decimal)
+                else:
+                    if add_value == 0:
+                        raise ZeroDivisionError("Division by zero")
+                    current_decimal = current.to_decimal()
+                    result_decimal = current_decimal // add_value
+                    current = TernaryNumber.from_decimal(result_decimal)
+            elif operation == "mod":
+                # Mod operation for Ternary (convert to decimal)
+                current_decimal = current.to_decimal()
+                if isinstance(add_value, TernaryNumber):
+                    add_decimal = add_value.to_decimal()
+                else:
+                    add_decimal = add_value
+                if add_decimal == 0:
+                    raise ZeroDivisionError("Modulo by zero")
+                result_decimal = current_decimal % add_decimal
+                current = TernaryNumber.from_decimal(result_decimal)
+            elif operation == "power":
+                # Power operation (convert to decimal)
+                current_decimal = current.to_decimal()
+                if isinstance(add_value, TernaryNumber):
+                    add_decimal = add_value.to_decimal()
+                else:
+                    add_decimal = add_value
+                result_decimal = current_decimal ** add_decimal
+                current = TernaryNumber.from_decimal(result_decimal)
+            else:
+                current = current + add_value  # Default to addition
+            
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": current,
+                    "operation": operation,
+                    "description": f"Step {i}: {current}"
+                })
+            else:
+                result.append(current)
+                
+        except Exception as e:
+            logger.error(f"Error at iteration {i} for Ternary, operation {operation}: {e}")
+            default_val = TernaryNumber.from_decimal(0)
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": default_val,
+                    "operation": "error",
+                    "description": f"ERROR: {e}"
+                })
+            else:
+                result.append(default_val)
+            current = default_val
+    
+    return result
+
+
+def _generate_ask_sequence_proper(
+    start_value: Any,
+    add_value: Any,
+    iterations: int,
+    include_intermediate_steps: bool = False,
+    number_type: int = 1
+) -> List[Any]:
+    """
+    Proper ASK algorithm that handles different number types correctly.
+    """
+    # Get type-specific handler
+    handler = _get_type_handler(number_type)
+    
+    result = []
+    current = start_value
+    ask_counter = 0
+    
+    if include_intermediate_steps:
+        result.append({
+            "step": 0,
+            "value": current,
+            "operation": "start",
+            "description": f"Start: {current}"
+        })
+    else:
+        result.append(current)
+    
+    for i in range(1, iterations):
+        try:
+            # Use handler for all operations
+            added = handler["add"](current, add_value)
+            next_val = added
+            divided = False
+            
+            # Check divisibility
+            for divisor in [2, 3]:
+                if handler["is_divisible"](added, divisor):
+                    next_val = handler["divide"](added, divisor)
+                    divided = True
+                    break
+            
+            # Keçeci unit adjustment
+            if not divided and handler["is_prime_like"](added):
+                unit = handler["get_unit"]()
+                
+                if ask_counter == 0:
+                    adjusted = handler["add"](added, unit)
+                else:
+                    adjusted = handler["subtract"](added, unit)
+                
+                ask_counter = 1 - ask_counter
+                
+                # Try division on adjusted value
+                for divisor in [2, 3]:
+                    if handler["is_divisible"](adjusted, divisor):
+                        next_val = handler["divide"](adjusted, divisor)
+                        break
+                else:
+                    next_val = adjusted
+            
+            current = next_val
+            
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": current,
+                    "operation": "step",
+                    "description": f"Step {i}: {current}"
+                })
+            else:
+                result.append(current)
+                
+        except Exception as e:
+            logger.error(f"Error at iteration {i} for type {number_type}: {e}")
+            default_val = handler["get_default"]()
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": default_val,
+                    "operation": "error",
+                    "description": f"ERROR: {e}"
+                })
+            else:
+                result.append(default_val)
+            current = default_val
+    
+    return result
+
+
+def _get_type_handler(number_type: int) -> Dict[str, Callable]:
+    """
+    Get proper handler for each number type.
+    """
+    # For simple numeric types (1-5)
+    if number_type in [1, 2, 4, 5]:
+        from .kececinumbers import _safe_divide, _safe_mod, _safe_power
+        
+        def numeric_add(a, b):
+            return a + b
+        
+        def numeric_subtract(a, b):
+            return a - b
+        
+        def numeric_divide(a, b):
+            return _safe_divide(a, b)
+        
+        def numeric_is_divisible(a, divisor):
+            try:
+                if hasattr(a, '__mod__'):
+                    remainder = a % divisor
+                    return abs(remainder) < 1e-12
+                return True
+            except:
+                return False
+        
+        def numeric_is_prime_like(a):
+            try:
+                val = abs(float(a))
+                if val < 2:
+                    return False
+                for i in range(2, int(val**0.5) + 1):
+                    if val % i == 0:
+                        return False
+                return True
+            except:
+                return False
+        
+        def numeric_get_unit():
+            return 1.0 if number_type != 2 else -1.0
+        
+        def numeric_get_default():
+            return 0.0
+        
+        return {
+            "add": numeric_add,
+            "subtract": numeric_subtract,
+            "divide": numeric_divide,
+            "is_divisible": numeric_is_divisible,
+            "is_prime_like": numeric_is_prime_like,
+            "get_unit": numeric_get_unit,
+            "get_default": numeric_get_default,
+        }
+    
+    # For Complex (3)
+    elif number_type == 3:
+        def complex_add(a, b):
+            return a + b
+        
+        def complex_subtract(a, b):
+            return a - b
+        
+        def complex_divide(a, b):
+            try:
+                return a / b
+            except ZeroDivisionError:
+                return complex(float('inf'), 0)
+        
+        def complex_is_divisible(a, divisor):
+            # Check both real and imaginary parts
+            try:
+                return abs(a.real % divisor) < 1e-12 and abs(a.imag % divisor) < 1e-12
+            except:
+                return False
+        
+        def complex_is_prime_like(a):
+            # Check magnitude
+            try:
+                mag = abs(a)
+                if mag < 2:
+                    return False
+                for i in range(2, int(mag**0.5) + 1):
+                    if mag % i == 0:
+                        return False
+                return True
+            except:
+                return False
+        
+        def complex_get_unit():
+            return complex(1, 0)
+        
+        def complex_get_default():
+            return complex(0, 0)
+        
+        return {
+            "add": complex_add,
+            "subtract": complex_subtract,
+            "divide": complex_divide,
+            "is_divisible": complex_is_divisible,
+            "is_prime_like": complex_is_prime_like,
+            "get_unit": complex_get_unit,
+            "get_default": complex_get_default,
+        }
+    
+    # For Quaternion (6)
+    elif number_type == 6:
+        try:
+            from .kececinumbers import quaternion
+            
+            def quaternion_add(a, b):
+                return a + b
+            
+            def quaternion_subtract(a, b):
+                return a - b
+            
+            def quaternion_divide(a, b):
+                try:
+                    # Quaternion division might need special handling
+                    if hasattr(a, '__truediv__'):
+                        return a / b
+                    else:
+                        # Convert to list and divide components
+                        if hasattr(a, 'a') and hasattr(a, 'b') and hasattr(a, 'c') and hasattr(a, 'd'):
+                            return type(a)(a.a/b, a.b/b, a.c/b, a.d/b)
+                        else:
+                            return a / b
+                except:
+                    return a
+            
+            def quaternion_is_divisible(a, divisor):
+                # Check all components
+                try:
+                    if hasattr(a, 'a') and hasattr(a, 'b') and hasattr(a, 'c') and hasattr(a, 'd'):
+                        comps = [a.a, a.b, a.c, a.d]
+                    elif isinstance(a, (tuple, list)) and len(a) >= 4:
+                        comps = a[:4]
+                    else:
+                        comps = [a]
+                    
+                    for comp in comps:
+                        if abs(comp % divisor) > 1e-12:
+                            return False
+                    return True
+                except:
+                    return True
+            
+            def quaternion_is_prime_like(a):
+                # Check norm
+                try:
+                    if hasattr(a, 'norm'):
+                        norm = a.norm()
+                    elif hasattr(a, '__abs__'):
+                        norm = abs(a)
+                    else:
+                        norm = 0
+                    
+                    return _is_prime_decimal(norm)
+                except:
+                    return False
+            
+            def quaternion_get_unit():
+                return quaternion(1, 0, 0, 0)
+            
+            def quaternion_get_default():
+                return quaternion(0, 0, 0, 0)
+            
+            return {
+                "add": quaternion_add,
+                "subtract": quaternion_subtract,
+                "divide": quaternion_divide,
+                "is_divisible": quaternion_is_divisible,
+                "is_prime_like": quaternion_is_prime_like,
+                "get_unit": quaternion_get_unit,
+                "get_default": quaternion_get_default,
+            }
+        except:
+            # Fallback
+            return _get_generic_handler()
+    
+    # For other special types (7-21)
+    elif 7 <= number_type <= 21:
+        return _get_generic_handler()
+    
+    else:
+        return _get_generic_handler()
+
+
+def _get_generic_handler() -> Dict[str, Callable]:
+    """
+    Generic handler for number types without special implementation.
+    """
+    def generic_add(a, b):
+        try:
+            return a + b
+        except:
+            return a
+    
+    def generic_subtract(a, b):
+        try:
+            return a - b
+        except:
+            return a
+    
+    def generic_divide(a, b):
+        try:
+            return a / b
+        except:
+            return a
+    
+    def generic_is_divisible(a, divisor):
+        return True  # Assume divisible
+    
+    def generic_is_prime_like(a):
+        return False  # Assume not prime-like
+    
+    def generic_get_unit():
+        return 1.0
+    
+    def generic_get_default():
+        return 0.0
+    
+    return {
+        "add": generic_add,
+        "subtract": generic_subtract,
+        "divide": generic_divide,
+        "is_divisible": generic_is_divisible,
+        "is_prime_like": generic_is_prime_like,
+        "get_unit": generic_get_unit,
+        "get_default": generic_get_default,
+    }
+
+
+def _is_prime_decimal(n: int) -> bool:
+    """
+    Check if an integer is prime.
+    """
+    if n < 2:
+        return False
+    if n == 2 or n == 3:
+        return True
+    if n % 2 == 0 or n % 3 == 0:
+        return False
+    
+    i = 5
+    while i * i <= n:
+        if n % i == 0 or n % (i + 2) == 0:
+            return False
+        i += 6
+    
+    return True
+
+
+def _get_parser_for_type(kececi_type: int) -> Callable[[str], Any]:
+    """
+    Get parser function for Keçeci type.
+    """
+    parser_map = {
+        1: lambda s: abs(float(s)),  # Positive Real
+        2: lambda s: -abs(float(s)),  # Negative Real
+        3: lambda s: complex(s),  # Complex
+        4: lambda s: float(s),  # Float
+        5: lambda s: float(s),  # Rational
+        6: lambda s: _parse_quaternion(s),  # Quaternion
+        7: lambda s: _parse_neutrosophic(s),  # Neutrosophic
+        8: lambda s: _parse_neutrosophic_complex(s),  # Neutrosophic Complex
+        9: lambda s: _parse_hyperreal(s),  # Hyperreal
+        10: lambda s: _parse_bicomplex(s),  # Bicomplex
+        11: lambda s: _parse_neutrosophic_bicomplex(s),  # Neutrosophic Bicomplex
+        12: lambda s: _parse_octonion(s),  # Octonion
+        13: lambda s: _parse_sedenion(s),  # Sedenion
+        14: lambda s: _parse_clifford(s),  # Clifford
+        15: lambda s: _parse_dual(s),  # Dual
+        16: lambda s: _parse_splitcomplex(s),  # Split-Complex
+        17: lambda s: _parse_pathion(s),  # Pathion
+        18: lambda s: _parse_chingon(s),  # Chingon
+        19: lambda s: _parse_routon(s),  # Routon
+        20: lambda s: _parse_voudon(s),  # Voudon
+        21: lambda s: _parse_superreal(s),  # Superreal
+        22: lambda s: _parse_ternary(s),  # Ternary
+    }
+    
+    return parser_map.get(kececi_type, lambda s: float(s))
+
+
+def _generate_ask_sequence_fixed(
+    start_value: Any,
+    add_value: Any,
+    iterations: int,
+    include_intermediate_steps: bool = False,
+    number_type: int = 1
+) -> List[Any]:
+    """
+    Fixed ASK algorithm that actually works for all number types.
+    """
+    # Get type-specific operations
+    type_ops = _get_type_specific_operations(number_type)
+    
+    result = []
+    current = start_value
+    ask_counter = 0  # 0: +unit, 1: -unit
+    
+    if include_intermediate_steps:
+        result.append({
+            "step": 0,
+            "value": current,
+            "operation": "start",
+            "description": f"Start: {current}"
+        })
+    else:
+        result.append(current)
+    
+    for i in range(1, iterations):
+        step_values = []
+        
+        try:
+            # STEP 1: ADDITION
+            added = type_ops["add"](current, add_value)
+            step_values.append(("add", added))
+            logger.debug(f"Step {i}.1: ADD {current} + {add_value} = {added}")
+            
+            next_val = added
+            divided = False
+            
+            # STEP 2: CHECK DIVISIBILITY by 2 or 3
+            for divisor in [2, 3]:
+                try:
+                    # Check if divisible
+                    if type_ops["is_divisible"](added, divisor):
+                        # Try to divide
+                        divided_val = type_ops["divide"](added, divisor)
+                        step_values.append((f"divide by {divisor}", divided_val))
+                        logger.debug(f"Step {i}.2: DIVIDE {added} / {divisor} = {divided_val}")
+                        
+                        next_val = divided_val
+                        divided = True
+                        break
+                except Exception as e:
+                    logger.debug(f"Division by {divisor} failed: {e}")
+                    continue
+            
+            # STEP 3: KECEÇI UNIT ADJUSTMENT if not divided and looks prime-like
+            if not divided:
+                # Check if value looks prime-like
+                if type_ops["is_prime_like"](added):
+                    # Get Keçeci unit for this type
+                    unit = type_ops["get_unit"]()
+                    
+                    # Apply unit based on ask_counter
+                    if ask_counter == 0:
+                        adjusted = type_ops["add"](added, unit)
+                        op_desc = f"+unit({unit})"
+                    else:
+                        adjusted = type_ops["subtract"](added, unit)
+                        op_desc = f"-unit({unit})"
+                    
+                    step_values.append(("keçeci unit", adjusted))
+                    logger.debug(f"Step {i}.3: KECEÇI UNIT {added} {op_desc} = {adjusted}")
+                    
+                    # Toggle ask counter
+                    ask_counter = 1 - ask_counter
+                    
+                    # Try division again on adjusted value
+                    for divisor in [2, 3]:
+                        try:
+                            if type_ops["is_divisible"](adjusted, divisor):
+                                final_val = type_ops["divide"](adjusted, divisor)
+                                step_values.append((f"divide adjusted by {divisor}", final_val))
+                                logger.debug(f"Step {i}.4: DIVIDE ADJUSTED {adjusted} / {divisor} = {final_val}")
+                                
+                                next_val = final_val
+                                break
+                        except Exception as e:
+                            logger.debug(f"Division on adjusted failed: {e}")
+                            continue
+                    else:
+                        # No division successful after adjustment
+                        next_val = adjusted
+                else:
+                    # Not prime-like, keep as is
+                    logger.debug(f"Step {i}.3: Not prime-like, keeping {added}")
+            
+            # Update current value
+            current = next_val
+            
+            # Build result
+            if include_intermediate_steps:
+                # Add all intermediate steps
+                for j, (op, val) in enumerate(step_values):
+                    result.append({
+                        "step": i,
+                        "substep": j,
+                        "value": val,
+                        "operation": op,
+                        "description": f"Step {i}.{j}: {op} → {val}"
+                    })
+                # Add final value
+                result.append({
+                    "step": i,
+                    "substep": len(step_values),
+                    "value": current,
+                    "operation": "final",
+                    "description": f"Step {i} final: {current}"
+                })
+            else:
+                result.append(current)
+                
+        except Exception as e:
+            logger.error(f"Error at iteration {i} for type {number_type}: {e}")
+            default_val = type_ops["get_default"]()
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": default_val,
+                    "operation": "error",
+                    "description": f"ERROR: {e}"
+                })
+            else:
+                result.append(default_val)
+            current = default_val
+    
+    return result
+
+
+def _get_type_specific_operations(number_type: int) -> Dict[str, Callable]:
+    """
+    Get type-specific operations with proper handling for each number type.
+    """
+    # Common operations
+    def common_add(a, b):
+        return a + b
+    
+    def common_subtract(a, b):
+        return a - b
+    
+    def common_multiply(a, b):
+        return a * b
+    
+    def common_divide(a, b):
+        try:
+            return a / b
+        except ZeroDivisionError:
+            # Handle division by zero
+            if hasattr(a, '__class__'):
+                try:
+                    return a.__class__(float('inf'))
+                except:
+                    return float('inf')
+            return float('inf')
+    
+    def common_mod(a, b):
+        try:
+            return a % b
+        except:
+            return a  # Return original if mod not supported
+    
+    # Type-specific implementations
+    if number_type in [1, 2, 4, 5]:  # Real types
+        def is_divisible_real(a, divisor):
+            try:
+                remainder = a % divisor
+                return abs(remainder) < 1e-12
+            except:
+                # For floats, check if result is close to integer
+                result = a / divisor
+                return abs(result - round(result)) < 1e-12
+        
+        def is_prime_like_real(a):
+            try:
+                val = abs(a)
+                if val < 2:
+                    return False
+                if val == 2 or val == 3:
+                    return True
+                if val % 2 == 0 or val % 3 == 0:
+                    return False
+                
+                i = 5
+                while i * i <= val:
+                    if val % i == 0 or val % (i + 2) == 0:
+                        return False
+                    i += 6
+                return True
+            except:
+                return False
+        
+        def get_unit_real():
+            return 1.0 if number_type != 2 else -1.0
+        
+        def get_default_real():
+            return 0.0
+        
+        return {
+            "add": common_add,
+            "subtract": common_subtract,
+            "multiply": common_multiply,
+            "divide": common_divide,
+            "mod": common_mod,
+            "is_divisible": is_divisible_real,
+            "is_prime_like": is_prime_like_real,
+            "get_unit": get_unit_real,
+            "get_default": get_default_real,
+        }
+    
+    elif number_type == 3:  # Complex
+        def is_divisible_complex(a, divisor):
+            # For complex, check if both real and imag parts are divisible
+            try:
+                real_rem = a.real % divisor
+                imag_rem = a.imag % divisor
+                return abs(real_rem) < 1e-12 and abs(imag_rem) < 1e-12
+            except:
+                return False
+        
+        def is_prime_like_complex(a):
+            # Check magnitude
+            try:
+                mag = abs(a)
+                return is_prime_like_complex.__closure__[0].cell_contents(mag) if number_type == 1 else False
+            except:
+                return False
+        
+        def get_unit_complex():
+            return complex(1, 0)
+        
+        def get_default_complex():
+            return complex(0, 0)
+        
+        return {
+            "add": common_add,
+            "subtract": common_subtract,
+            "multiply": common_multiply,
+            "divide": common_divide,
+            "mod": lambda a, b: a,  # Mod not typically defined for complex
+            "is_divisible": is_divisible_complex,
+            "is_prime_like": is_prime_like_complex,
+            "get_unit": get_unit_complex,
+            "get_default": get_default_complex,
+        }
+    
+    elif number_type == 6:  # Quaternion
+        try:
+            from .kececinumbers import quaternion
+            
+            def is_divisible_quaternion(q, divisor):
+                # For quaternion, check if all components are divisible
+                try:
+                    # q is typically (w, x, y, z) or has .a, .b, .c, .d attributes
+                    if hasattr(q, 'a') and hasattr(q, 'b') and hasattr(q, 'c') and hasattr(q, 'd'):
+                        comps = [q.a, q.b, q.c, q.d]
+                    elif isinstance(q, (tuple, list)) and len(q) >= 4:
+                        comps = [q[0], q[1], q[2], q[3]]
+                    else:
+                        # Try to extract components
+                        comps = [getattr(q, 'w', 0), getattr(q, 'x', 0), 
+                                getattr(q, 'y', 0), getattr(q, 'z', 0)]
+                    
+                    for comp in comps:
+                        if abs(comp % divisor) > 1e-12:
+                            return False
+                    return True
+                except:
+                    return False
+            
+            def is_prime_like_quaternion(q):
+                # Check norm
+                try:
+                    if hasattr(q, 'norm'):
+                        norm = q.norm()
+                    elif hasattr(q, '__abs__'):
+                        norm = abs(q)
+                    else:
+                        # Calculate norm manually
+                        if hasattr(q, 'a') and hasattr(q, 'b') and hasattr(q, 'c') and hasattr(q, 'd'):
+                            norm = (q.a**2 + q.b**2 + q.c**2 + q.d**2)**0.5
+                        else:
+                            norm = 0
+                    
+                    # Simple prime check on norm
+                    if norm < 2:
+                        return False
+                    for i in range(2, int(norm**0.5) + 1):
+                        if norm % i == 0:
+                            return False
+                    return True
+                except:
+                    return False
+            
+            def get_unit_quaternion():
+                return quaternion(1, 0, 0, 0)
+            
+            def get_default_quaternion():
+                return quaternion(0, 0, 0, 0)
+            
+            return {
+                "add": common_add,
+                "subtract": common_subtract,
+                "multiply": common_multiply,
+                "divide": common_divide,
+                "mod": lambda a, b: a,
+                "is_divisible": is_divisible_quaternion,
+                "is_prime_like": is_prime_like_quaternion,
+                "get_unit": get_unit_quaternion,
+                "get_default": get_default_quaternion,
+            }
+            
+        except ImportError:
+            # Fallback for quaternion
+            logger.warning("Quaternion class not available, using tuple representation")
+            return _get_array_type_operations(4, "Quaternion")
+    
+    elif number_type == 7:  # Neutrosophic
+        def is_divisible_neutro(n, divisor):
+            # n is (T, I, F) tuple
+            try:
+                t, i, f = n
+                return (abs(t % divisor) < 1e-12 and 
+                        abs(i % divisor) < 1e-12 and 
+                        abs(f % divisor) < 1e-12)
+            except:
+                return False
+        
+        def is_prime_like_neutro(n):
+            # Check truth component
+            try:
+                t, i, f = n
+                # Simple prime check on truth component
+                if t < 2:
+                    return False
+                for j in range(2, int(t**0.5) + 1):
+                    if t % j == 0:
+                        return False
+                return True
+            except:
+                return False
+        
+        def get_unit_neutro():
+            return (1.0, 0.0, 0.0)
+        
+        def get_default_neutro():
+            return (0.0, 0.0, 0.0)
+        
+        return {
+            "add": lambda a, b: (a[0] + b[0], a[1] + b[1], a[2] + b[2]),
+            "subtract": lambda a, b: (a[0] - b[0], a[1] - b[1], a[2] - b[2]),
+            "multiply": lambda a, b: (a[0] * b[0], a[1] * b[1], a[2] * b[2]),
+            "divide": lambda a, b: (a[0] / b[0], a[1] / b[1], a[2] / b[2]),
+            "mod": lambda a, b: a,
+            "is_divisible": is_divisible_neutro,
+            "is_prime_like": is_prime_like_neutro,
+            "get_unit": get_unit_neutro,
+            "get_default": get_default_neutro,
+        }
+    
+    elif number_type in [12, 13, 17, 18, 19, 20, 22]:  # Array-based types
+        sizes = {
+            12: 8,   # Octonion
+            13: 16,  # Sedenion
+            17: 32,  # Pathion
+            18: 64,  # Chingon
+            19: 128, # Routon
+            20: 256, # Voudon
+            22: 3,   # Ternary
+        }
+        size = sizes.get(number_type, 1)
+        return _get_array_type_operations(size, f"Type {number_type}")
+    
+    else:
+        # Default for other types
+        return {
+            "add": common_add,
+            "subtract": common_subtract,
+            "multiply": common_multiply,
+            "divide": common_divide,
+            "mod": lambda a, b: a,
+            "is_divisible": lambda a, b: True,
+            "is_prime_like": lambda a: False,
+            "get_unit": lambda: 1.0,
+            "get_default": lambda: 0.0,
+        }
+
+
+def _get_array_type_operations(size: int, type_name: str) -> Dict[str, Callable]:
+    """
+    Get operations for array-based number types.
+    """
+    def array_add(a, b):
+        if isinstance(b, (int, float)):
+            return [x + b for x in a]
+        else:
+            # Element-wise addition
+            return [a[i] + b[i] for i in range(min(len(a), len(b)))]
+    
+    def array_subtract(a, b):
+        if isinstance(b, (int, float)):
+            return [x - b for x in a]
+        else:
+            return [a[i] - b[i] for i in range(min(len(a), len(b)))]
+    
+    def array_multiply(a, b):
+        if isinstance(b, (int, float)):
+            return [x * b for x in a]
+        else:
+            return [a[i] * b[i] for i in range(min(len(a), len(b)))]
+    
+    def array_divide(a, b):
+        if isinstance(b, (int, float)):
+            return [x / b for x in a]
+        else:
+            return [a[i] / b[i] for i in range(min(len(a), len(b)))]
+    
+    def array_is_divisible(a, divisor):
+        # Check first component
+        try:
+            return abs(a[0] % divisor) < 1e-12
+        except:
+            return True
+    
+    def array_is_prime_like(a):
+        # Check first component
+        try:
+            val = abs(a[0])
+            if val < 2:
+                return False
+            for i in range(2, int(val**0.5) + 1):
+                if val % i == 0:
+                    return False
+            return True
+        except:
+            return False
+    
+    def array_get_unit():
+        unit = [0.0] * size
+        unit[0] = 1.0
+        return unit
+    
+    def array_get_default():
+        return [0.0] * size
+    
+    return {
+        "add": array_add,
+        "subtract": array_subtract,
+        "multiply": array_multiply,
+        "divide": array_divide,
+        "mod": lambda a, b: a,
+        "is_divisible": array_is_divisible,
+        "is_prime_like": array_is_prime_like,
+        "get_unit": array_get_unit,
+        "get_default": array_get_default,
+    }
+
+
+def _get_parser_for_type_simple(kececi_type: int) -> Callable[[str], Any]:
+    """
+    Get parser function for Keçeci type.
+    Uses existing parsers from kececinumbers module.
+    """
+    # Map type to parser
+    if kececi_type == 1:  # Positive Real
+        return _parse_fraction
+    elif kececi_type == 2:  # Negative Real
+        return lambda s: -_parse_fraction(s)
+    elif kececi_type == 3:  # Complex
+        return _parse_complex
+    elif kececi_type == 4:  # Float
+        return _parse_fraction
+    elif kececi_type == 5:  # Rational
+        # Try to return as Fraction
+        try:
+            from fractions import Fraction
+            return lambda s: Fraction(_parse_fraction(s)).limit_denominator()
+        except:
+            return _parse_fraction
+    elif kececi_type == 6:  # Quaternion
+        return _parse_quaternion
+    elif kececi_type == 7:  # Neutrosophic
+        return _parse_neutrosophic
+    elif kececi_type == 8:  # Neutrosophic Complex
+        return _parse_neutrosophic_complex
+    elif kececi_type == 9:  # Hyperreal
+        return _parse_hyperreal
+    elif kececi_type == 10:  # Bicomplex
+        return _parse_bicomplex
+    elif kececi_type == 11:  # Neutrosophic Bicomplex
+        return _parse_neutrosophic_bicomplex
+    elif kececi_type == 12:  # Octonion
+        return _parse_octonion
+    elif kececi_type == 13:  # Sedenion
+        return _parse_sedenion
+    elif kececi_type == 14:  # Clifford
+        return _parse_clifford
+    elif kececi_type == 15:  # Dual
+        return _parse_dual
+    elif kececi_type == 16:  # Split-Complex
+        return _parse_splitcomplex
+    elif kececi_type == 17:  # Pathion
+        return _parse_pathion
+    elif kececi_type == 18:  # Chingon
+        return _parse_chingon
+    elif kececi_type == 19:  # Routon
+        return _parse_routon
+    elif kececi_type == 20:  # Voudon
+        return _parse_voudon
+    elif kececi_type == 21:  # Superreal
+        return _parse_superreal
+    elif kececi_type == 22:  # Ternary
+        return _parse_ternary
+    else:
+        raise ValueError(f"Unsupported type: {kececi_type}")
+
+
+def _generate_sequence_original(
+    start_value: Any,
+    add_value: Any,
+    iterations: int,
+    include_intermediate_steps: bool = False,
+    number_type: int = 1
+) -> List[Any]:
+    """
+    Original ASK algorithm from version 0.8.6.
+    """
+    # Get operations for this type
+    ops = _get_type_operations(number_type)
+    
+    result = []
+    current = start_value
+    ask_counter = 0  # 0: +unit, 1: -unit
+    
+    if include_intermediate_steps:
+        result.append({
+            "step": 0,
+            "value": current,
+            "operation": "start",
+            "description": f"Start: {current}"
+        })
+    else:
+        result.append(current)
+    
+    for i in range(1, iterations):
+        try:
+            # 1. ADDITION
+            added = ops["add"](current, add_value)
+            
+            next_val = added
+            divided = False
+            
+            # 2. CHECK DIVISIBILITY by 2 or 3
+            for divisor in [2, 3]:
+                try:
+                    if ops["is_divisible"](added, divisor):
+                        divided_val = ops["divide"](added, divisor)
+                        next_val = divided_val
+                        divided = True
+                        break
+                except Exception:
+                    continue
+            
+            # 3. KECEÇI UNIT adjustment if not divided and prime-like
+            if not divided and ops["is_prime_like"](added):
+                unit = ops["get_unit"](current)
+                direction = 1 if ask_counter == 0 else -1
+                
+                try:
+                    if direction > 0:
+                        adjusted = ops["add"](added, unit)
+                    else:
+                        adjusted = ops["subtract"](added, unit)
+                    
+                    # Toggle ask counter
+                    ask_counter = 1 - ask_counter
+                    
+                    # Try division again on adjusted value
+                    for divisor in [2, 3]:
+                        try:
+                            if ops["is_divisible"](adjusted, divisor):
+                                final_val = ops["divide"](adjusted, divisor)
+                                next_val = final_val
+                                break
+                        except Exception:
+                            continue
+                    else:
+                        # No division successful, use adjusted value
+                        next_val = adjusted
+                except Exception:
+                    # If unit adjustment fails, keep original
+                    pass
+            
+            # Update current value
+            current = next_val
+            
+            # Add to result
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": current,
+                    "operation": "step",
+                    "description": f"Step {i}: {current}"
+                })
+            else:
+                result.append(current)
+                
+        except Exception as e:
+            logger.error(f"Error at iteration {i} for type {number_type}: {e}")
+            default_val = ops["get_default"]()
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": default_val,
+                    "operation": "error",
+                    "description": f"ERROR: {e}"
+                })
+            else:
+                result.append(default_val)
+            current = default_val
+    
+    return result
+
+
+def _generate_sequence_with_operation(
+    start_value: Any,
+    add_value: Any,
+    iterations: int,
+    operation: str,
+    include_intermediate_steps: bool = False,
+    number_type: int = 1
+) -> List[Any]:
+    """
+    Generate sequence using standard mathematical operations.
+    """
+    ops = _get_type_operations(number_type)
+    
+    result = []
+    current = start_value
+    
+    if include_intermediate_steps:
+        result.append({
+            "step": 0,
+            "value": current,
+            "operation": "start",
+            "description": f"Start: {current}"
+        })
+    else:
+        result.append(current)
+    
+    for i in range(1, iterations):
+        try:
+            # Apply operation
+            if operation == "add":
+                current = ops["add"](current, add_value)
+            elif operation == "subtract":
+                current = ops["subtract"](current, add_value)
+            elif operation == "multiply":
+                current = ops["multiply"](current, add_value)
+            elif operation == "divide":
+                current = ops["divide"](current, add_value)
+            elif operation == "mod":
+                current = ops["mod"](current, add_value)
+            elif operation == "power":
+                current = ops["power"](current, add_value)
+            else:
+                # Default to addition
+                current = ops["add"](current, add_value)
+            
+            # Add to result
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": current,
+                    "operation": operation,
+                    "description": f"Step {i}: {current}"
+                })
+            else:
+                result.append(current)
+                
+        except Exception as e:
+            logger.error(f"Error at iteration {i} for type {number_type}, operation {operation}: {e}")
+            default_val = ops["get_default"]()
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": default_val,
+                    "operation": "error",
+                    "description": f"ERROR: {e}"
+                })
+            else:
+                result.append(default_val)
+            current = default_val
+    
+    return result
+
+
+def _get_type_operations(number_type: int) -> Dict[str, Callable]:
+    """
+    Get appropriate operations for a number type.
+    Uses existing functions from kececinumbers module.
+    """
+    # Helper functions that use existing module functions
+    def type_add(a, b):
+        try:
+            return a + b
+        except Exception:
+            # Try safe_add if available
+            try:
+                return safe_add(a, b)
+            except:
+                # Fallback for complex types
+                if isinstance(a, (list, tuple)) and isinstance(b, (int, float)):
+                    return type(a)([x + b for x in a])
+                raise
+    
+    def type_subtract(a, b):
+        try:
+            return a - b
+        except Exception:
+            if isinstance(a, (list, tuple)) and isinstance(b, (int, float)):
+                return type(a)([x - b for x in a])
+            raise
+    
+    def type_multiply(a, b):
+        try:
+            return a * b
+        except Exception:
+            if isinstance(a, (list, tuple)) and isinstance(b, (int, float)):
+                return type(a)([x * b for x in a])
+            raise
+    
+    def type_divide(a, b):
+        try:
+            return _safe_divide(a, b)
+        except Exception:
+            # Fallback
+            try:
+                return a / b
+            except Exception:
+                if isinstance(a, (list, tuple)) and isinstance(b, (int, float)):
+                    return type(a)([x / b for x in a])
+                raise
+    
+    def type_mod(a, b):
+        try:
+            return _safe_mod(a, b)
+        except Exception:
+            # Fallback
+            try:
+                return a % b
+            except Exception:
+                return a  # Return original if mod not supported
+    
+    def type_power(a, b):
+        try:
+            return _safe_power(a, b)
+        except Exception:
+            # Fallback
+            try:
+                return a ** b
+            except Exception:
+                # Handle simple cases
+                if isinstance(b, (int, float)) and b == 2:
+                    return type_multiply(a, a)
+                elif b == 1:
+                    return a
+                elif b == 0:
+                    try:
+                        return type(a)(1)
+                    except:
+                        return 1
+                else:
+                    return a
+    
+    def type_is_divisible(a, divisor):
+        try:
+            return _is_divisible(a, divisor, number_type)
+        except Exception:
+            # Simple check for numeric types
+            if isinstance(a, (int, float)):
+                return abs(a % divisor) < 1e-10
+            elif isinstance(a, complex):
+                return abs(a.real % divisor) < 1e-10 and abs(a.imag % divisor) < 1e-10
+            else:
+                # Assume divisible for complex types
+                return True
+    
+    def type_is_prime_like(a):
+        try:
+            return is_prime_like(a, number_type)
+        except Exception:
+            # Simple check
+            try:
+                # Get magnitude for complex types
+                if hasattr(a, '__abs__'):
+                    mag = abs(a)
+                elif isinstance(a, (list, tuple)):
+                    # Use first component
+                    mag = abs(a[0]) if a else 0
+                else:
+                    mag = abs(float(str(a)))
+                
+                return is_prime(mag) if hasattr(is_prime, '__call__') else False
+            except:
+                return False
+    
+    def type_get_unit(sample=None):
+        # Get appropriate unit for this type
+        if number_type in [1, 4, 5]:
+            return 1.0
+        elif number_type == 2:
+            return -1.0
+        elif number_type == 3:
+            return complex(1, 0)
+        elif number_type == 6:  # Quaternion
+            try:
+                from .kececinumbers import quaternion
+                return quaternion(1, 0, 0, 0)
+            except:
+                return (1.0, 0.0, 0.0, 0.0)
+        elif number_type == 7:  # Neutrosophic
+            try:
+                from .kececinumbers import neutrosophic_one
+                return neutrosophic_one()
+            except:
+                return (1.0, 0.0, 0.0)
+        elif number_type == 8:  # Neutrosophic Complex
+            try:
+                from .kececinumbers import NeutrosophicComplexNumber
+                return NeutrosophicComplexNumber(1, 0, 0)
+            except:
+                return complex(1, 0)
+        elif number_type == 9:  # Hyperreal
+            try:
+                from .kececinumbers import HyperrealNumber
+                return HyperrealNumber([1.0, 0.0])
+            except:
+                return [1.0, 0.0]
+        elif number_type == 10:  # Bicomplex
+            try:
+                from .kececinumbers import BicomplexNumber
+                return BicomplexNumber(complex(1, 0), complex(0, 0))
+            except:
+                return complex(1, 0)
+        elif number_type == 12:  # Octonion
+            try:
+                from .kececinumbers import OctonionNumber
+                return OctonionNumber(1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+            except:
+                return [1.0] + [0.0]*7
+        elif number_type == 13:  # Sedenion
+            try:
+                from .kececinumbers import SedenionNumber
+                return SedenionNumber([1.0] + [0.0]*15)
+            except:
+                return [1.0] + [0.0]*15
+        elif number_type in [17, 18, 19, 20, 22]:  # Array-based types
+            sizes = {
+                17: 32,  # Pathion
+                18: 64,  # Chingon
+                19: 128, # Routon
+                20: 256, # Voudon
+                22: 3,   # Ternary
+            }
+            size = sizes.get(number_type, 1)
+            return [1.0] + [0.0]*(size-1)
+        else:
+            return 1.0
+    
+    def type_get_default():
+        # Get default value for this type
+        try:
+            return _get_default_value(number_type)
+        except Exception:
+            # Fallback defaults
+            if number_type in [1, 2, 4, 5]:
+                return 0.0
+            elif number_type == 3:
+                return complex(0, 0)
+            elif number_type == 6:
+                try:
+                    from .kececinumbers import quaternion
+                    return quaternion(0, 0, 0, 0)
+                except:
+                    return (0.0, 0.0, 0.0, 0.0)
+            elif number_type == 7:
+                try:
+                    from .kececinumbers import neutrosophic_zero
+                    return neutrosophic_zero()
+                except:
+                    return (0.0, 0.0, 0.0)
+            elif number_type == 12:
+                try:
+                    from .kececinumbers import OctonionNumber
+                    return OctonionNumber(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+                except:
+                    return [0.0]*8
+            elif number_type == 13:
+                try:
+                    from .kececinumbers import SedenionNumber
+                    return SedenionNumber([0.0]*16)
+                except:
+                    return [0.0]*16
+            elif number_type in [17, 18, 19, 20, 22]:
+                sizes = {
+                    17: 32, 18: 64, 19: 128, 20: 256, 22: 3
+                }
+                size = sizes.get(number_type, 1)
+                return [0.0]*size
+            else:
+                return 0.0
+    
+    return {
+        "add": type_add,
+        "subtract": type_subtract,
+        "multiply": type_multiply,
+        "divide": type_divide,
+        "mod": type_mod,
+        "power": type_power,
+        "is_divisible": type_is_divisible,
+        "is_prime_like": type_is_prime_like,
+        "get_unit": type_get_unit,
+        "get_default": type_get_default,
+    }
+
+
+def _parse_special_type(
+    kececi_type: int,
+    start_input_raw: str,
+    add_input_raw: str
+) -> Tuple[Any, Any]:
+    """
+    Parse values for special Keçeci number types (6-22).
+    """
+    try:
+        # First try to use the specific parser
+        parser_func = _get_parser_for_type(kececi_type)
+        if parser_func:
+            return parser_func(start_input_raw), parser_func(add_input_raw)
+    except Exception as e:
+        logger.debug(f"Specific parser failed for type {kececi_type}: {e}")
+    
+    # Fallback to generic parsing
+    return _parse_with_generic_fallback(kececi_type, start_input_raw, add_input_raw)
+
+
+def _get_parser_for_type(kececi_type: int) -> Optional[Callable]:
+    """
+    Get parser function for a specific Keçeci type.
+    """
+    try:
+        from .kececinumbers import (
+            _parse_bicomplex,
+            _parse_chingon,
+            _parse_clifford,
+            _parse_complex,
+            _parse_complex_like_string,
+            _parse_dual,
+            _parse_engineering_notation,
+            _parse_fraction,
+            _parse_hyperreal,
+            _parse_neutrosophic,
+            _parse_neutrosophic_bicomplex,
+            _parse_neutrosophic_complex,
+            _parse_octonion,
+            _parse_pathion,
+            _parse_quaternion,
+            _parse_quaternion_from_csv,
+            _parse_real,
+            _parse_routon,
+            _parse_sedenion,
+            _parse_splitcomplex,
+            _parse_super_real,
+            _parse_superreal,
+            _parse_ternary,
+            _parse_to_hypercomplex,
+            _parse_universal,
+            _parse_voudon,
+            _generate_simple_ask_sequence,
+            _parse_with_fallback_simple,
+            _parse_kececi_values,
+            parse_to_hyperreal,
+            parse_to_neutrosophic,
+        )
+        
+        parser_map = {
+            6: _parse_quaternion,
+            7: _parse_neutrosophic,
+            8: _parse_neutrosophic_complex,
+            9: _parse_hyperreal,
+            10: _parse_bicomplex,
+            11: _parse_neutrosophic_bicomplex,
+            12: _parse_octonion,
+            13: _parse_sedenion,
+            14: _parse_clifford,
+            15: _parse_dual,
+            16: _parse_splitcomplex,
+            17: _parse_pathion,
+            18: _parse_chingon,
+            19: _parse_routon,
+            20: _parse_voudon,
+            21: _parse_super_real,
+            22: _parse_ternary,
+        }
+        
+        return parser_map.get(kececi_type)
+    except ImportError:
+        return None
+
+
+def _parse_with_generic_fallback(
+    kececi_type: int,
+    start_input_raw: str,
+    add_input_raw: str
+) -> Tuple[Any, Any]:
+    """
+    Generic fallback parser for special types.
+    Returns appropriate data structures for each type.
+    """
+    # Parse base value
+    from .kececinumbers import _parse_fraction
+    base_start = _parse_fraction(start_input_raw)
+    base_add = _parse_fraction(add_input_raw)
+    
+    # Create appropriate structures for each type
+    if kececi_type == 6:  # Quaternion (4D)
+        quat_start = (base_start, 0.0, 0.0, 0.0)
+        quat_add = (base_add, 0.0, 0.0, 0.0)
+        
+        # Try to create actual Quaternion object if available
+        try:
+            from .kececinumbers import QuaternionNumber
+            return QuaternionNumber(*quat_start), QuaternionNumber(*quat_add)
+        except:
+            return quat_start, quat_add
+    
+    elif kececi_type == 7:  # Neutrosophic (T, I, F)
+        neutro_start = (base_start, 0.0, 0.0)
+        neutro_add = (base_add, 0.0, 0.0)
+        
+        try:
+            from .kececinumbers import NeutrosophicNumber
+            return NeutrosophicNumber(*neutro_start), NeutrosophicNumber(*neutro_add)
+        except:
+            return neutro_start, neutro_add
+    
+    elif kececi_type == 8:  # Neutrosophic Complex
+        # Similar to complex but with neutrosophic components
+        nc_start = complex(base_start, 0)
+        nc_add = complex(base_add, 0)
+        
+        try:
+            from .kececinumbers import NeutrosophicComplexNumber
+            return NeutrosophicComplexNumber(base_start, 0, 0), NeutrosophicComplexNumber(base_add, 0, 0)
+        except:
+            return nc_start, nc_add
+    
+    elif kececi_type == 9:  # Hyperreal
+        hyper_start = [base_start, 0.0]  # [finite, infinitesimal]
+        hyper_add = [base_add, 0.0]
+        
+        try:
+            from .kececinumbers import HyperrealNumber
+            return HyperrealNumber(hyper_start), HyperrealNumber(hyper_add)
+        except:
+            return hyper_start, hyper_add
+    
+    elif kececi_type == 10:  # Bicomplex
+        bicomp_start = complex(base_start, 0)
+        bicomp_add = complex(base_add, 0)
+        
+        try:
+            from .kececinumbers import BicomplexNumber
+            return BicomplexNumber(bicomp_start), BicomplexNumber(bicomp_add)
+        except:
+            return bicomp_start, bicomp_add
+    
+    elif kececi_type == 11:  # Neutrosophic Bicomplex
+        # Complex fallback
+        nb_start = complex(base_start, 0)
+        nb_add = complex(base_add, 0)
+        return nb_start, nb_add
+    
+    elif kececi_type == 12:  # Octonion (8D)
+        octo_start = [base_start] + [0.0] * 7
+        octo_add = [base_add] + [0.0] * 7
+        
+        try:
+            from .kececinumbers import OctonionNumber
+            return OctonionNumber(*octo_start), OctonionNumber(*octo_add)
+        except:
+            return octo_start, octo_add
+    
+    elif kececi_type == 13:  # Sedenion (16D)
+        sed_start = [base_start] + [0.0] * 15
+        sed_add = [base_add] + [0.0] * 15
+        
+        try:
+            from .kececinumbers import SedenionNumber
+            return SedenionNumber(sed_start), SedenionNumber(sed_add)
+        except:
+            return sed_start, sed_add
+    
+    elif kececi_type == 14:  # Clifford Algebra
+        cliff_start = {"e0": base_start}
+        cliff_add = {"e0": base_add}
+        
+        try:
+            from .kececinumbers import CliffordNumber
+            return CliffordNumber(cliff_start), CliffordNumber(cliff_add)
+        except:
+            return cliff_start, cliff_add
+    
+    elif kececi_type == 15:  # Dual Numbers
+        dual_start = (base_start, 0.0)  # (real, dual)
+        dual_add = (base_add, 0.0)
+        
+        try:
+            from .kececinumbers import DualNumber
+            return DualNumber(*dual_start), DualNumber(*dual_add)
+        except:
+            return dual_start, dual_add
+    
+    elif kececi_type == 16:  # Split-Complex
+        split_start = (base_start, 0.0)
+        split_add = (base_add, 0.0)
+        
+        try:
+            from .kececinumbers import SplitcomplexNumber
+            return SplitcomplexNumber(*split_start), SplitcomplexNumber(*split_add)
+        except:
+            return split_start, split_add
+    
+    elif kececi_type == 17:  # Pathion (32D)
+        path_start = [base_start] + [0.0] * 31
+        path_add = [base_add] + [0.0] * 31
+        
+        try:
+            from .kececinumbers import PathionNumber
+            return PathionNumber(path_start), PathionNumber(path_add)
+        except:
+            return path_start, path_add
+    
+    elif kececi_type == 18:  # Chingon (64D)
+        ching_start = [base_start] + [0.0] * 63
+        ching_add = [base_add] + [0.0] * 63
+        
+        try:
+            from .kececinumbers import ChingonNumber
+            return ChingonNumber(ching_start), ChingonNumber(ching_add)
+        except:
+            return ching_start, ching_add
+    
+    elif kececi_type == 19:  # Routon (128D)
+        rout_start = [base_start] + [0.0] * 127
+        rout_add = [base_add] + [0.0] * 127
+        
+        try:
+            from .kececinumbers import RoutonNumber
+            return RoutonNumber(rout_start), RoutonNumber(rout_add)
+        except:
+            return rout_start, rout_add
+    
+    elif kececi_type == 20:  # Voudon (256D)
+        voud_start = [base_start] + [0.0] * 255
+        voud_add = [base_add] + [0.0] * 255
+        
+        try:
+            from .kececinumbers import VoudonNumber
+            return VoudonNumber(voud_start), VoudonNumber(voud_add)
+        except:
+            return voud_start, voud_add
+    
+    elif kececi_type == 21:  # Superreal
+        super_start = (base_start, 0.0)
+        super_add = (base_add, 0.0)
+        
+        try:
+            from .kececinumbers import SuperrealNumber
+            return SuperrealNumber(*super_start), SuperrealNumber(*super_add)
+        except:
+            return super_start, super_add
+    
+    elif kececi_type == 22:  # Ternary (3D)
+        ternary_start = [base_start, 0.0, 0.0]
+        ternary_add = [base_add, 0.0, 0.0]
+        
+        try:
+            from .kececinumbers import TernaryNumber
+            return TernaryNumber(ternary_start), TernaryNumber(ternary_add)
+        except:
+            return ternary_start, ternary_add
+    
+    else:
+        # Default fallback
+        return base_start, base_add
+
+
+def _generate_ask_for_type(
+    start_value: Any,
+    add_value: Any,
+    iterations: int,
+    include_intermediate_steps: bool,
+    number_type: int
+) -> List[Any]:
+    """
+    Generate ASK sequence for a specific number type.
+    """
+    # Get appropriate operations for this type
+    operations = _get_operations_for_type(number_type)
+    
+    result = []
+    current = start_value
+    ask_counter = 0
+    
+    if include_intermediate_steps:
+        result.append({
+            "step": 0,
+            "value": current,
+            "operation": "start",
+            "type": _get_type_name(number_type),
+            "description": f"Start: {current}"
+        })
+    else:
+        result.append(current)
+    
+    for i in range(1, iterations):
+        try:
+            # 1. ADD
+            added = operations["add"](current, add_value)
+            
+            # 2. Check division
+            next_val = added
+            divided = False
+            
+            for divisor in [2, 3]:
+                try:
+                    if operations["is_divisible"](added, divisor):
+                        next_val = operations["divide"](added, divisor)
+                        divided = True
+                        break
+                except:
+                    continue
+            
+            # 3. Keçeci unit adjustment
+            if not divided and operations["is_prime_like"](added):
+                unit = operations["get_unit"](current)
+                
+                if ask_counter == 0:
+                    adjusted = operations["add"](added, unit)
+                else:
+                    adjusted = operations["subtract"](added, unit)
+                
+                ask_counter = 1 - ask_counter
+                
+                # Try division on adjusted value
+                for divisor in [2, 3]:
+                    try:
+                        if operations["is_divisible"](adjusted, divisor):
+                            next_val = operations["divide"](adjusted, divisor)
+                            break
+                    except:
+                        continue
+                else:
+                    next_val = adjusted
+            
+            current = next_val
+            
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": current,
+                    "operation": "step",
+                    "type": _get_type_name(number_type),
+                    "description": f"Step {i}: {current}"
+                })
+            else:
+                result.append(current)
+                
+        except Exception as e:
+            logger.error(f"Error at iteration {i} for type {number_type}: {e}")
+            default_val = operations["get_default"]()
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": default_val,
+                    "operation": "error",
+                    "type": _get_type_name(number_type),
+                    "description": f"ERROR: {e}"
+                })
+            else:
+                result.append(default_val)
+            current = default_val
+    
+    return result
+
+
+def _get_operations_for_type(number_type: int) -> Dict[str, Callable]:
+    """
+    Get appropriate operations for a number type.
+    """
+    # Basic operations that work for most types
+    def basic_add(a, b):
+        try:
+            return a + b
+        except:
+            # Fallback for tuples/lists
+            if isinstance(a, (tuple, list)) and isinstance(b, (int, float)):
+                if isinstance(a, tuple):
+                    return tuple(x + b for x in a)
+                return [x + b for x in a]
+            raise
+    
+    def basic_subtract(a, b):
+        try:
+            return a - b
+        except:
+            if isinstance(a, (tuple, list)) and isinstance(b, (int, float)):
+                if isinstance(a, tuple):
+                    return tuple(x - b for x in a)
+                return [x - b for x in a]
+            raise
+    
+    def basic_divide(a, divisor):
+        try:
+            return a / divisor
+        except:
+            if isinstance(a, (tuple, list)):
+                if isinstance(a, tuple):
+                    return tuple(x / divisor for x in a)
+                return [x / divisor for x in a]
+            raise
+    
+    def basic_is_divisible(a, divisor):
+        try:
+            # For numeric types
+            if hasattr(a, '__mod__'):
+                remainder = a % divisor
+                if hasattr(remainder, '__abs__'):
+                    return abs(remainder) < 1e-10
+                return abs(remainder) < 1e-10
+            return True
+        except:
+            return True
+    
+    def basic_is_prime_like(a):
+        try:
+            # Try to get a numeric value
+            if isinstance(a, (int, float, complex)):
+                val = abs(a)
+            elif isinstance(a, (tuple, list)):
+                # Use first component
+                val = abs(a[0]) if a else 0
+            else:
+                val = abs(float(str(a)))
+            
+            # Simple prime check
+            if val < 2:
+                return False
+            for i in range(2, int(val**0.5) + 1):
+                if val % i == 0:
+                    return False
+            return True
+        except:
+            return False
+    
+    def basic_get_unit(sample=None):
+        if number_type in [1, 4, 5]:
+            return 1.0
+        elif number_type == 2:
+            return -1.0
+        elif number_type == 3:
+            return complex(1, 0)
+        elif number_type == 6:
+            return (1.0, 0.0, 0.0, 0.0)
+        elif number_type == 7:
+            return (1.0, 0.0, 0.0)
+        elif number_type in [12, 13, 17, 18, 19, 20, 22]:
+            # Array types
+            sizes = {
+                12: 8, 13: 16, 17: 32, 18: 64, 19: 128, 20: 256, 22: 3
+            }
+            size = sizes.get(number_type, 1)
+            unit = [0.0] * size
+            unit[0] = 1.0
+            return unit
+        else:
+            return 1.0
+    
+    def basic_get_default():
+        if number_type in [1, 2, 4, 5]:
+            return 0.0
+        elif number_type == 3:
+            return complex(0, 0)
+        elif number_type == 6:
+            return (0.0, 0.0, 0.0, 0.0)
+        elif number_type == 7:
+            return (0.0, 0.0, 0.0)
+        elif number_type in [12, 13, 17, 18, 19, 20, 22]:
+            sizes = {
+                12: 8, 13: 16, 17: 32, 18: 64, 19: 128, 20: 256, 22: 3
+            }
+            size = sizes.get(number_type, 1)
+            return [0.0] * size
+        else:
+            return 0.0
+    
+    return {
+        "add": basic_add,
+        "subtract": basic_subtract,
+        "divide": basic_divide,
+        "is_divisible": basic_is_divisible,
+        "is_prime_like": basic_is_prime_like,
+        "get_unit": basic_get_unit,
+        "get_default": basic_get_default,
+    }
+
+
+def _get_type_name(number_type: int) -> str:
+    """Get name for number type."""
+    names = {
+        1: "Positive Real",
+        2: "Negative Real",
+        3: "Complex",
+        4: "Float",
+        5: "Rational",
+        6: "Quaternion",
+        7: "Neutrosophic",
+        8: "Neutrosophic Complex",
+        9: "Hyperreal",
+        10: "Bicomplex",
+        11: "Neutrosophic Bicomplex",
+        12: "Octonion",
+        13: "Sedenion",
+        14: "Clifford",
+        15: "Dual",
+        16: "Split-Complex",
+        17: "Pathion",
+        18: "Chingon",
+        19: "Routon",
+        20: "Voudon",
+        21: "Superreal",
+        22: "Ternary",
+    }
+    return names.get(number_type, f"Type {number_type}")
+
+
+def _generate_simple_ask_sequence(
+    start_value: Any,
+    add_value: Any,
+    iterations: int,
+    include_intermediate_steps: bool = False,
+    number_type: int = 1
+) -> List[Any]:
+    """
+    Simple ASK algorithm implementation.
+    """
+    result = []
+    current = start_value
+    
+    if include_intermediate_steps:
+        result.append({
+            "step": 0,
+            "value": current,
+            "operation": "start",
+            "description": f"Start: {current}"
+        })
+    else:
+        result.append(current)
+    
+    ask_counter = 0  # 0: add unit, 1: subtract unit
+    
+    for i in range(1, iterations):
+        try:
+            # 1. ADD
+            added = _simple_add(current, add_value)
+            
+            # 2. Check division by 2 or 3
+            next_val = added
+            divided = False
+            
+            for divisor in [2, 3]:
+                try:
+                    if _simple_is_divisible(added, divisor):
+                        next_val = _simple_divide(added, divisor)
+                        divided = True
+                        logger.debug(f"Divided by {divisor}: {added} -> {next_val}")
+                        break
+                except Exception as e:
+                    logger.debug(f"Division by {divisor} failed: {e}")
+                    continue
+            
+            # 3. If not divided, check if prime-like and apply Keçeci unit
+            if not divided:
+                if _simple_is_prime_like(added):
+                    # Get appropriate unit
+                    unit = _get_simple_unit(number_type, current)
+                    
+                    # Apply unit based on ask_counter
+                    if ask_counter == 0:
+                        adjusted = _simple_add(added, unit)
+                        logger.debug(f"Added unit {unit}: {added} -> {adjusted}")
+                    else:
+                        adjusted = _simple_subtract(added, unit)
+                        logger.debug(f"Subtracted unit {unit}: {added} -> {adjusted}")
+                    
+                    # Toggle ask_counter
+                    ask_counter = 1 - ask_counter
+                    
+                    # Try division again on adjusted value
+                    for divisor in [2, 3]:
+                        try:
+                            if _simple_is_divisible(adjusted, divisor):
+                                next_val = _simple_divide(adjusted, divisor)
+                                logger.debug(f"Divided adjusted by {divisor}: {adjusted} -> {next_val}")
+                                break
+                        except:
+                            continue
+                    else:
+                        # No division successful, use adjusted
+                        next_val = adjusted
+            
+            # Update current value
+            current = next_val
+            
+            # Add to result
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": current,
+                    "operation": "step",
+                    "description": f"Step {i}: {current}"
+                })
+            else:
+                result.append(current)
+                
+        except Exception as e:
+            logger.error(f"Error at iteration {i}: {e}")
+            default_val = _get_simple_default(number_type)
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": default_val,
+                    "operation": "error",
+                    "description": f"ERROR: {e}"
+                })
+            else:
+                result.append(default_val)
+            current = default_val
+    
+    return result
+
+
+def _simple_add(a: Any, b: Any) -> Any:
+    """Simple addition."""
+    try:
+        return a + b
+    except Exception:
+        # For lists/tuples
+        if isinstance(a, (list, tuple)) and isinstance(b, (int, float)):
+            if isinstance(a, tuple):
+                return tuple(x + b for x in a)
+            else:
+                return [x + b for x in a]
+        elif isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
+            # Element-wise addition
+            size = max(len(a), len(b))
+            result = []
+            for i in range(size):
+                val_a = a[i] if i < len(a) else 0
+                val_b = b[i] if i < len(b) else 0
+                result.append(val_a + val_b)
+            if isinstance(a, tuple):
+                return tuple(result)
+            else:
+                return result
+        else:
+            raise
+
+
+def _simple_subtract(a: Any, b: Any) -> Any:
+    """Simple subtraction."""
+    try:
+        return a - b
+    except Exception:
+        # Similar to _simple_add but for subtraction
+        if isinstance(a, (list, tuple)) and isinstance(b, (int, float)):
+            if isinstance(a, tuple):
+                return tuple(x - b for x in a)
+            else:
+                return [x - b for x in a]
+        elif isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
+            size = max(len(a), len(b))
+            result = []
+            for i in range(size):
+                val_a = a[i] if i < len(a) else 0
+                val_b = b[i] if i < len(b) else 0
+                result.append(val_a - val_b)
+            if isinstance(a, tuple):
+                return tuple(result)
+            else:
+                return result
+        else:
+            raise
+
+
+def _simple_divide(a: Any, divisor: float) -> Any:
+    """Simple division."""
+    try:
+        return a / divisor
+    except Exception:
+        if isinstance(a, (list, tuple)):
+            if isinstance(a, tuple):
+                return tuple(x / divisor for x in a)
+            else:
+                return [x / divisor for x in a]
+        else:
+            raise
+
+
+def _simple_is_divisible(a: Any, divisor: float) -> bool:
+    """Simple divisibility check."""
+    try:
+        if isinstance(a, (int, float)):
+            return abs(a % divisor) < 1e-10
+        elif isinstance(a, complex):
+            return abs(a.real % divisor) < 1e-10 and abs(a.imag % divisor) < 1e-10
+        elif isinstance(a, (list, tuple)):
+            # Check first element
+            if a:
+                return _simple_is_divisible(a[0], divisor)
+            return True
+        else:
+            return True  # Assume divisible for unknown types
+    except:
+        return False
+
+
+def _simple_is_prime_like(a: Any) -> bool:
+    """Simple prime-like check."""
+    try:
+        # Convert to float for checking
+        if isinstance(a, (int, float)):
+            val = abs(a)
+        elif isinstance(a, complex):
+            val = abs(a)
+        elif isinstance(a, (list, tuple)):
+            # Use first non-zero element
+            for x in a:
+                if abs(x) > 1e-10:
+                    val = abs(x)
+                    break
+            else:
+                return False
+        else:
+            # Try to get magnitude
+            try:
+                val = abs(a)
+            except:
+                return False
+        
+        # Simple prime check
+        if val < 2:
+            return False
+        if val == 2 or val == 3:
+            return True
+        if val % 2 == 0 or val % 3 == 0:
+            return False
+        
+        i = 5
+        while i * i <= val:
+            if val % i == 0 or val % (i + 2) == 0:
+                return False
+            i += 6
+        return True
+    except:
+        return False
+
+
+def _get_simple_unit(number_type: int, sample_value: Any = None) -> Any:
+    """Get simple unit for number type."""
+    if number_type in [1, 4, 5]:
+        return 1.0
+    elif number_type == 2:
+        return -1.0
+    elif number_type == 3:
+        return complex(1, 0)
+    elif number_type == 6:  # Quaternion
+        return (1.0, 0.0, 0.0, 0.0)
+    elif number_type == 7:  # Neutrosophic
+        return (1.0, 0.0, 0.0)
+    elif number_type in [12, 13, 17, 18, 19, 20, 22]:  # Array types
+        if sample_value and hasattr(sample_value, '__len__'):
+            size = len(sample_value)
+            unit = [0.0] * size
+            unit[0] = 1.0
+            if isinstance(sample_value, tuple):
+                return tuple(unit)
+            return unit
+        return 1.0
+    else:
+        return 1.0
+
+
+def _get_simple_default(number_type: int) -> Any:
+    """Get default value for number type."""
+    if number_type in [1, 2, 4, 5]:
+        return 0.0
+    elif number_type == 3:
+        return complex(0, 0)
+    elif number_type == 6:
+        return (0.0, 0.0, 0.0, 0.0)
+    elif number_type == 7:
+        return (0.0, 0.0, 0.0)
+    elif number_type in [12, 13, 17, 18, 19, 20, 22]:
+        # Return appropriate sized zero array
+        sizes = {
+            12: 8,   # Octonion
+            13: 16,  # Sedenion
+            17: 32,  # Pathion
+            18: 64,  # Chingon
+            19: 128, # Routon
+            20: 256, # Voudon
+            22: 3,   # Ternary
+        }
+        size = sizes.get(number_type, 1)
+        return [0.0] * size
+    else:
+        return 0.0
+
+
+def _generate_ask_sequence_complete(
+    start_value: Any,
+    add_value: Any,
+    iterations: int,
+    include_intermediate_steps: bool = False,
+    number_type: int = 1
+) -> List[Any]:
+    """
+    Complete ASK algorithm implementation for all number types.
+    Steps: Add, check division by 2/3, apply Keçeci unit if prime-like.
+    """
+    # Get appropriate ask_unit for the number type
+    ask_unit = _get_ask_unit_for_type(number_type, start_value)
+    
+    result = []
+    current = start_value
+    ask_counter = 0  # 0: +ask_unit, 1: -ask_unit
+    
+    if include_intermediate_steps:
+        result.append({
+            "step": 0,
+            "value": current,
+            "operation": "start",
+            "description": f"Start: {current}"
+        })
+    
+    # Main ASK loop
+    for i in range(1, iterations):
+        step_log = [] if include_intermediate_steps else None
+        
+        try:
+            # 1. ADDITION
+            added = _safe_add(current, add_value, number_type)
+            if include_intermediate_steps:
+                step_log.append({
+                    "operation": "add",
+                    "value": added,
+                    "description": f"Add {add_value}: {current} + {add_value} = {added}"
+                })
+            
+            next_val = added
+            divided = False
+            
+            # 2. CHECK DIVISIBILITY by 2 or 3
+            for divisor in [2, 3]:
+                try:
+                    if _is_divisible_ask(added, divisor, number_type):
+                        divided_val = _safe_divide_ask(added, divisor, number_type)
+                        if include_intermediate_steps:
+                            step_log.append({
+                                "operation": f"divide by {divisor}",
+                                "value": divided_val,
+                                "description": f"Divide by {divisor}: {added} / {divisor} = {divided_val}"
+                            })
+                        next_val = divided_val
+                        divided = True
+                        break
+                except Exception as e:
+                    logger.debug(f"Division by {divisor} failed: {e}")
+                    continue
+            
+            # 3. KECEÇI UNIT adjustment if not divided and prime-like
+            if not divided and _is_prime_like_ask(added, number_type):
+                direction = 1 if ask_counter == 0 else -1
+                try:
+                    # Apply Keçeci unit
+                    if direction > 0:
+                        adjusted = _safe_add(added, ask_unit, number_type)
+                        op_desc = f"+{ask_unit}"
+                    else:
+                        adjusted = _safe_subtract(added, ask_unit, number_type)
+                        op_desc = f"-{ask_unit}"
+                    
+                    if include_intermediate_steps:
+                        step_log.append({
+                            "operation": "keçeci unit",
+                            "value": adjusted,
+                            "description": f"Apply Keçeci unit {op_desc}: {added} {op_desc} = {adjusted}"
+                        })
+                    
+                    # Toggle ask counter
+                    ask_counter = 1 - ask_counter
+                    
+                    # Try division again on adjusted value
+                    for divisor in [2, 3]:
+                        try:
+                            if _is_divisible_ask(adjusted, divisor, number_type):
+                                final_val = _safe_divide_ask(adjusted, divisor, number_type)
+                                if include_intermediate_steps:
+                                    step_log.append({
+                                        "operation": f"divide by {divisor}",
+                                        "value": final_val,
+                                        "description": f"Divide adjusted by {divisor}: {adjusted} / {divisor} = {final_val}"
+                                    })
+                                next_val = final_val
+                                break
+                        except Exception as e:
+                            logger.debug(f"Division on adjusted value failed: {e}")
+                            continue
+                    else:
+                        # No division successful, use adjusted value
+                        next_val = adjusted
+                except Exception as e:
+                    logger.debug(f"Keçeci unit adjustment failed: {e}")
+                    # Keep original added value
+            
+            # Update current value
+            current = next_val
+            
+            # Add to result
+            if include_intermediate_steps:
+                # Add all intermediate steps
+                for step in step_log:
+                    result.append({
+                        "step": i,
+                        "value": step["value"],
+                        "operation": step["operation"],
+                        "description": step["description"]
+                    })
+                # Add final value for this iteration
+                result.append({
+                    "step": i,
+                    "value": current,
+                    "operation": "final",
+                    "description": f"Iteration {i} final: {current}"
+                })
+            else:
+                result.append(current)
+                
+        except Exception as e:
+            logger.error(f"Error at iteration {i}: {e}")
+            default_val = _get_default_value_for_type(current, number_type)
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": default_val,
+                    "operation": "error",
+                    "description": f"ERROR: {e}"
+                })
+            else:
+                result.append(default_val)
+            current = default_val
+    
+    return result
+
+
+def _get_ask_unit_for_type(number_type: int, sample_value: Any = None) -> Any:
+    """
+    Get appropriate Keçeci unit for a number type.
+    """
+    if number_type in [1, 4, 5]:  # Positive Real, Float, Rational
+        return 1.0
+    elif number_type == 2:  # Negative Real
+        return -1.0
+    elif number_type == 3:  # Complex
+        return complex(1, 0)
+    elif number_type == 6:  # Quaternion
+        try:
+            from .kececinumbers import quaternion
+            return quaternion(1, 0, 0, 0)
+        except:
+            return 1.0
+    elif number_type == 7:  # Neutrosophic
+        try:
+            from .kececinumbers import NeutrosophicNumber
+            return NeutrosophicNumber(1, 0, 0)
+        except:
+            return (1.0, 0.0, 0.0)
+    elif number_type == 8:  # Neutrosophic Complex
+        try:
+            from .kececinumbers import NeutrosophicComplexNumber
+            return NeutrosophicComplexNumber(1, 0, 0)
+        except:
+            return complex(1, 0)
+    elif number_type in [12, 13, 17, 18, 19, 20, 22]:  # Array-based types
+        # Create unit vector with 1 in first position
+        if sample_value and hasattr(sample_value, '__len__'):
+            size = len(sample_value)
+            unit = [0.0] * size
+            unit[0] = 1.0
+            try:
+                return type(sample_value)(unit)
+            except:
+                return unit
+        else:
+            return 1.0
+    else:
+        # Default unit
+        try:
+            if sample_value:
+                return type(sample_value)(1)
+        except:
+            return 1.0
+
+
+def _safe_add(a: Any, b: Any, number_type: int) -> Any:
+    """Safe addition for all types."""
+    try:
+        return a + b
+    except Exception:
+        # Try alternative methods
+        if hasattr(a, 'add'):
+            return a.add(b)
+        elif hasattr(a, '__add__'):
+            return a.__add__(b)
+        else:
+            # For array types
+            if isinstance(a, (list, tuple)) and isinstance(b, (int, float)):
+                return type(a)([x + b for x in a])
+            elif isinstance(b, (list, tuple)) and isinstance(a, (int, float)):
+                return type(b)([a + x for x in b])
+            elif isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
+                # Element-wise addition
+                size = max(len(a), len(b))
+                result = []
+                for i in range(size):
+                    val_a = a[i] if i < len(a) else 0
+                    val_b = b[i] if i < len(b) else 0
+                    result.append(val_a + val_b)
+                return type(a)(result)
+            else:
+                raise
+
+
+def _safe_subtract(a: Any, b: Any, number_type: int) -> Any:
+    """Safe subtraction for all types."""
+    try:
+        return a - b
+    except Exception:
+        if hasattr(a, 'subtract'):
+            return a.subtract(b)
+        elif hasattr(a, '__sub__'):
+            return a.__sub__(b)
+        else:
+            # Similar logic to _safe_add but for subtraction
+            if isinstance(a, (list, tuple)) and isinstance(b, (int, float)):
+                return type(a)([x - b for x in a])
+            elif isinstance(b, (list, tuple)) and isinstance(a, (int, float)):
+                return type(b)([a - x for x in b])
+            elif isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
+                size = max(len(a), len(b))
+                result = []
+                for i in range(size):
+                    val_a = a[i] if i < len(a) else 0
+                    val_b = b[i] if i < len(b) else 0
+                    result.append(val_a - val_b)
+                return type(a)(result)
+            else:
+                raise
+
+
+def _safe_divide_ask(a: Any, divisor: int, number_type: int) -> Any:
+    """Safe division for ASK algorithm."""
+    try:
+        return a / divisor
+    except Exception:
+        # Try alternative division methods
+        if hasattr(a, '__truediv__'):
+            return a.__truediv__(divisor)
+        elif hasattr(a, 'divide'):
+            return a.divide(divisor)
+        else:
+            # For array types
+            if isinstance(a, (list, tuple)):
+                return type(a)([x / divisor for x in a])
+            else:
+                # Try to convert to float
+                try:
+                    return type(a)(float(a) / divisor)
+                except:
+                    raise
+
+
+def _is_divisible_ask(value: Any, divisor: int, number_type: int) -> bool:
+    """
+    Check divisibility for ASK algorithm.
+    """
+    try:
+        if isinstance(value, (int, float)):
+            # Check remainder is close to zero
+            remainder = value % divisor
+            return abs(remainder) < 1e-10
+        elif isinstance(value, complex):
+            # Check both real and imaginary parts
+            real_rem = value.real % divisor
+            imag_rem = value.imag % divisor
+            return abs(real_rem) < 1e-10 and abs(imag_rem) < 1e-10
+        elif isinstance(value, (list, tuple)):
+            # For array types, check first element as representative
+            if value:
+                return _is_divisible_ask(value[0], divisor, number_type)
+            else:
+                return True
+        elif isinstance(value, tuple) and len(value) == 3:  # Neutrosophic
+            # Check all components
+            return all(_is_divisible_ask(v, divisor, number_type) for v in value)
+        else:
+            # For other types, assume divisible
+            return True
+    except Exception:
+        # If check fails, assume not divisible
+        return False
+
+
+def _is_prime_like_ask(value: Any, number_type: int) -> bool:
+    """
+    Check if value is prime-like for ASK algorithm.
+    """
+    try:
+        if isinstance(value, (int, float)):
+            v = abs(value)
+            # Simple prime check
+            if v < 2:
+                return False
+            if v == 2 or v == 3:
+                return True
+            if v % 2 == 0 or v % 3 == 0:
+                return False
+            
+            # Check up to sqrt(v)
+            i = 5
+            while i * i <= v:
+                if v % i == 0 or v % (i + 2) == 0:
+                    return False
+                i += 6
+            return True
+        elif isinstance(value, complex):
+            # Check magnitude
+            mag = abs(value)
+            return _is_prime_like_ask(mag, number_type)
+        elif isinstance(value, (list, tuple)):
+            # For array types, check first non-zero element
+            for v in value:
+                if abs(v) > 1e-10:
+                    return _is_prime_like_ask(v, number_type)
+            return False
+        elif isinstance(value, tuple) and len(value) == 3:  # Neutrosophic
+            # Check truth component
+            return _is_prime_like_ask(value[0], number_type)
+        else:
+            # For other types, use string representation
+            try:
+                s = str(value)
+                # Extract numbers from string
+                import re
+                numbers = re.findall(r'\d+\.?\d*', s)
+                if numbers:
+                    return _is_prime_like_ask(float(numbers[0]), number_type)
+                return False
+            except:
+                return False
+    except Exception:
+        return False
+
+"""
+# Ayrıca, get_with_params fonksiyonunuzu da güncelleyin:
+def get_with_params(
+    kececi_type_choice: int,
+    iterations: int = 10,
+    start_value_raw: Union[str, float, int] = "0",
+    add_value_raw: Union[str, float, int] = "1.0",
+    operation: str = "ask",  # Default ASK algoritması
+    include_intermediate_steps: bool = False,
+    custom_parser: Optional[Callable] = None,
+) -> List[Any]:
+
+    #Unified entry point for generating Keçeci numbers.
+    #Default operation: "ask" (ASK algoritması)
+
+    logger.info("Generating Keçeci Sequence: Type %s, Steps %s", kececi_type_choice, iterations)
+    logger.debug("Start: %r, Operation: %r with value: %r", 
+                 start_value_raw, operation, add_value_raw)
+    
+    # Basic input sanitation
+    if start_value_raw is None:
+        start_value_raw = "0"
+    if add_value_raw is None:
+        add_value_raw = "1"
+    
+    # Convert to strings
+    start_str = str(start_value_raw) if not isinstance(start_value_raw, str) else start_value_raw
+    add_str = str(add_value_raw) if not isinstance(add_value_raw, str) else add_value_raw
+    
+    try:
+        # unified_generator'ı operation parametresi ile çağır
+        generated_sequence = unified_generator(
+            kececi_type=kececi_type_choice,
+            start_input_raw=start_str,
+            add_input_raw=add_str,
+            iterations=iterations,
+            include_intermediate_steps=include_intermediate_steps,
+            operation=operation  # Operation parametresini ekle
+        )
+        
+        if not generated_sequence:
+            logger.warning("Sequence generation failed or returned empty for type %s with start=%r add=%r", 
+                          kececi_type_choice, start_value_raw, add_value_raw)
+            return []
+
+        logger.info("Generated %d numbers for type %s", len(generated_sequence), kececi_type_choice)
+        
+        # Preview
+        preview_size = min(5, len(generated_sequence))
+        if preview_size > 0:
+            preview_start = [str(x) for x in generated_sequence[:preview_size]]
+            logger.debug("First %d: %s", preview_size, preview_start)
+            
+            if len(generated_sequence) > preview_size * 2:
+                preview_end = [str(x) for x in generated_sequence[-preview_size:]]
+                logger.debug("Last %d: %s", preview_size, preview_end)
+
+        # Keçeci Prime Number check
+        try:
+            kpn = find_kececi_prime_number(generated_sequence)
+            if kpn is not None:
+                logger.info("Keçeci Prime Number (KPN) found: %s", kpn)
+            else:
+                logger.debug("No Keçeci Prime Number found in the sequence.")
+        except Exception as e:
+            logger.debug(f"KPN check skipped or failed: {e}")
+
+        return generated_sequence
+        
+    except Exception as e:
+        logger.exception("ERROR during sequence generation: %s", e)
+        raise
+"""
+"""
+# Sorunsuz çalışıyor
+def get_with_params(
+    kececi_type_choice: int,
+    iterations: int,
+    start_value_raw: str,
+    add_value_raw: str,
+    include_intermediate_steps: bool = False
+) -> List[Any]:
+
+    #Common entry point: validates inputs early, logs info instead of printing.
+
+    from fractions import Fraction
+    logger.info("Generating Keçeci Sequence: Type %s, Steps %s", kececi_type_choice, iterations)
+    logger.debug("Start: %r, Addition: %r, Include intermediate: %s", start_value_raw, add_value_raw, include_intermediate_steps)
+
+    # Basic input sanitation
+    if start_value_raw is None:
+        start_value_raw = "0"
+    if add_value_raw is None:
+        # choose a conservative default for increment
+        add_value_raw = "1"
+
+    try:
+        generated_sequence = unified_generator(
+            kececi_type=kececi_type_choice,
+            start_input_raw=start_value_raw,
+            add_input_raw=add_value_raw,
+            iterations=iterations,
+            include_intermediate_steps=include_intermediate_steps
+        )
+
+        if not generated_sequence:
+            logger.warning("Sequence generation failed or returned empty for type %s with start=%r add=%r", kececi_type_choice, start_value_raw, add_value_raw)
+            return []
+
+        logger.info("Generated %d numbers for type %s", len(generated_sequence), kececi_type_choice)
+        # preview
+        preview_start = [str(x) for x in generated_sequence[:5]]
+        preview_end = [str(x) for x in generated_sequence[-5:]] if len(generated_sequence) > 5 else []
+
+        logger.debug("First 5: %s", preview_start)
+        if preview_end:
+            logger.debug("Last 5: %s", preview_end)
+
+        # Keçeci Prime Number check
+        kpn = find_kececi_prime_number(generated_sequence)
+        if kpn is not None:
+            logger.info("Keçeci Prime Number (KPN) found: %s", kpn)
+        else:
+            logger.info("No Keçeci Prime Number found in the sequence.")
+
+        return generated_sequence
+
+    except Exception as e:
+        logger.exception("ERROR during sequence generation: %s", e)
+        return []
+"""
+
+def get_with_params(
+    kececi_type_choice: int,
+    iterations: int,
+    start_value_raw: str,
+    add_value_raw: str,
+    include_intermediate_steps: bool = False
+) -> List[Any]:
+
+    #Common entry point: validates inputs early, logs info instead of printing.
+
+    logger.info("Generating Keçeci Sequence: Type %s, Steps %s", kececi_type_choice, iterations)
+    logger.debug("Start: %r, Addition: %r, Include intermediate: %s", 
+                 start_value_raw, add_value_raw, include_intermediate_steps)
+
+    # Basic input sanitation
+    if start_value_raw is None:
+        start_value_raw = "0"
+    if add_value_raw is None:
+        add_value_raw = "1"
+
+    try:
+        generated_sequence = unified_generator(
+            kececi_type=kececi_type_choice,
+            start_input_raw=start_value_raw,
+            add_input_raw=add_value_raw,
+            iterations=iterations,
+            include_intermediate_steps=include_intermediate_steps
+        )
+
+        if not generated_sequence:
+            logger.warning("Sequence generation failed or returned empty for type %s with start=%r add=%r", 
+                          kececi_type_choice, start_value_raw, add_value_raw)
+            return []
+
+        logger.info("Generated %d numbers for type %s", len(generated_sequence), kececi_type_choice)
+        
+        # Preview
+        preview_start = [str(x) for x in generated_sequence[:5]]
+        preview_end = [str(x) for x in generated_sequence[-5:]] if len(generated_sequence) > 5 else []
+
+        logger.debug("First 5: %s", preview_start)
+        if preview_end:
+            logger.debug("Last 5: %s", preview_end)
+
+        # Keçeci Prime Number check
+        kpn = find_kececi_prime_number(generated_sequence)
+        if kpn is not None:
+            logger.info("Keçeci Prime Number (KPN) found: %s", kpn)
+        else:
+            logger.info("No Keçeci Prime Number found in the sequence.")
+
+        return generated_sequence
+
+    except Exception as e:
+        logger.exception("ERROR during sequence generation: %s", e)
+        return []
+
+"""
+def get_with_params(
+    kececi_type_choice: int,
+    iterations: int = 10,
+    start_value_raw: Union[str, float, int] = "0",
+    add_value_raw: Union[str, float, int] = "1.0",
+    operation: str = "add",
+    include_intermediate_steps: bool = False,
+    custom_parser: Optional[Any] = None,
+) -> List[Any]:
+
+    #Unified entry point for generating Keçeci numbers based on specified parameters.
+
+    logger.info("Generating Keçeci Sequence: Type %s, Steps %s", kececi_type_choice, iterations)
+    logger.debug("Start: %r, Operation: %r with value: %r, Include intermediate: %s",
+                 start_value_raw, operation, add_value_raw, include_intermediate_steps)
+
+    # Basic input sanitation
+    if start_value_raw is None:
+        start_value_raw = "0"
+    if add_value_raw is None:
+        add_value_raw = "1"
+
+    # Convert to strings for unified_generator
+    start_str = str(start_value_raw) if not isinstance(start_value_raw, str) else start_value_raw
+    add_str = str(add_value_raw) if not isinstance(add_value_raw, str) else add_value_raw
+
+    try:
+        # unified_generator'ı operation parametresi ile çağır
+        generated_sequence = unified_generator(
+            kececi_type=kececi_type_choice,
+            start_input_raw=start_str,
+            add_input_raw=add_str,
+            iterations=iterations,
+            include_intermediate_steps=include_intermediate_steps,
+            operation=operation  # operation parametresini ekle
+        )
+
+        if not generated_sequence:
+            logger.warning("Sequence generation failed or returned empty for type %s with start=%r add=%r", 
+                          kececi_type_choice, start_value_raw, add_value_raw)
+            return []
+
+        logger.info("Generated %d numbers for type %s", len(generated_sequence), kececi_type_choice)
+        
+        # Preview
+        preview_size = min(5, len(generated_sequence))
+        if preview_size > 0:
+            preview_start = [str(x) for x in generated_sequence[:preview_size]]
+            logger.debug("First %d: %s", preview_size, preview_start)
+            
+            if len(generated_sequence) > preview_size * 2:
+                preview_end = [str(x) for x in generated_sequence[-preview_size:]]
+                logger.debug("Last %d: %s", preview_size, preview_end)
+
+        # Keçeci Prime Number check
+        try:
+            kpn = find_kececi_prime_number(generated_sequence)
+            if kpn is not None:
+                logger.info("Keçeci Prime Number (KPN) found: %s", kpn)
+            else:
+                logger.debug("No Keçeci Prime Number found in the sequence.")
+        except Exception as e:
+            logger.debug(f"KPN check skipped or failed: {e}")
+
+        return generated_sequence
+
+    except Exception as e:
+        logger.exception("ERROR during sequence generation: %s", e)
+        raise
+"""
+"""
+# 2. tray bloğu ask kurallarını uygulamıyor
+def get_with_params(
+    kececi_type_choice: int,
+    iterations: int = 10,
+    start_value_raw: Union[str, float, int] = "0",
+    add_value_raw: Union[str, float, int] = "1.0",
+    operation: str = "add",
+    include_intermediate_steps: bool = False,
+    custom_parser: Optional[Callable] = None,
+) -> List[Any]:
+
+    #Unified entry point for generating Keçeci numbers based on specified parameters.
+    from fractions import Fraction
+
+    # Log the start of generation
+    logger.info(
+        "Generating Keçeci Sequence: Type %s, Steps %s", kececi_type_choice, iterations
+    )
+    logger.debug(
+        "Start: %r, Operation: %r with value: %r, Include intermediate: %s",
+        start_value_raw,
+        operation,
+        add_value_raw,
+        include_intermediate_steps,
+    )
+
+    # Basic input sanitation and type conversion
+    if start_value_raw is None:
+        start_value_raw = "0"
+    if add_value_raw is None:
+        if operation == "add":
+            add_value_raw = "1"
+        elif operation == "multiply":
+            add_value_raw = "2"
+        else:
+            add_value_raw = "1"
+
+    # Validate operation
+    valid_operations = ["add", "multiply", "subtract", "divide", "mod", "power"]
+    if operation not in valid_operations:
+        raise ValueError(
+            f"Invalid operation: {operation}. Must be one of {valid_operations}"
+        )
+
+    # Validate iterations
+    if iterations < 1:
+        logger.warning(f"Invalid iterations value: {iterations}, using default 10")
+        iterations = 10
+
+    try:
+        generated_sequence = unified_generator(
+            kececi_type=kececi_type_choice,
+            start_input_raw=start_value_raw,
+            add_input_raw=add_value_raw,
+            iterations=iterations,
+            include_intermediate_steps=include_intermediate_steps
+        )
+
+        if not generated_sequence:
+            logger.warning("Sequence generation failed or returned empty for type %s with start=%r add=%r", kececi_type_choice, start_value_raw, add_value_raw)
+            return []
+
+        logger.info("Generated %d numbers for type %s", len(generated_sequence), kececi_type_choice)
+        # preview
+        preview_start = [str(x) for x in generated_sequence[:5]]
+        preview_end = [str(x) for x in generated_sequence[-5:]] if len(generated_sequence) > 5 else []
+
+        logger.debug("First 5: %s", preview_start)
+        if preview_end:
+            logger.debug("Last 5: %s", preview_end)
+
+        # Keçeci Prime Number check
+        kpn = find_kececi_prime_number(generated_sequence)
+        if kpn is not None:
+            logger.info("Keçeci Prime Number (KPN) found: %s", kpn)
+        else:
+            logger.info("No Keçeci Prime Number found in the sequence.")
+
+        return generated_sequence
+
+    except Exception as e:
+        logger.exception("ERROR during sequence generation: %s", e)
+        return []
+"""
+"""
+    try:
+        # Import parsers and number classes
+        try:
+            from .kececinumbers import (
+                # Parsers
+                _parse_bicomplex,
+                _parse_chingon,
+                _parse_clifford,
+                _parse_complex,
+                _parse_complex_like_string,
+                _parse_dual,
+                _parse_engineering_notation,
+                _parse_fraction,
+                _parse_hyperreal,
+                _parse_neutrosophic,
+                _parse_neutrosophic_bicomplex,
+                _parse_neutrosophic_complex,
+                _parse_octonion,
+                _parse_pathion,
+                _parse_quaternion,
+                _parse_quaternion_from_csv,
+                _parse_real,
+                _parse_routon,
+                _parse_sedenion,
+                _parse_splitcomplex,
+                _parse_super_real,
+                _parse_superreal,
+                _parse_ternary,
+                _parse_to_hypercomplex,
+                _parse_universal,
+                _parse_voudon,
+                _generate_simple_ask_sequence,
+                _parse_with_fallback_simple,
+                _parse_kececi_values,
+                parse_to_hyperreal,
+                parse_to_neutrosophic,
+            )
+            parsers_available = True
+        except ImportError as e:
+            logger.warning(f"Import error: {e}. Using fallback parsers")
+            parsers_available = False
+            
+            # FIX: Define _parse_complex properly before using it
+            def _parse_complex(s: Union[str, float, int]) -> complex:
+                #Fallback complex parser that handles strings like '2+3j'.
+                if isinstance(s, complex):
+                    return s
+                if isinstance(s, (int, float)):
+                    return complex(s)
+                
+                s_str = str(s).strip()
+                try:
+                    # Try Python's built-in complex parser first
+                    return complex(s_str)
+                except ValueError:
+                    # Try alternative formats
+                    s_str = s_str.replace('i', 'j').replace('J', 'j')
+                    
+                    # Handle format: "real,imag"
+                    if ',' in s_str:
+                        parts = s_str.split(',')
+                        if len(parts) == 2:
+                            try:
+                                return complex(float(parts[0]), float(parts[1]))
+                            except:
+                                pass
+                    
+                    # Handle format: "real+imagj"
+                    if '+' in s_str and 'j' in s_str:
+                        # Remove any spaces
+                        s_str = s_str.replace(' ', '')
+                        if 'j' in s_str:
+                            # Split by '+' but be careful with signs
+                            parts = s_str.split('+')
+                            if len(parts) == 2:
+                                try:
+                                    real_part = parts[0]
+                                    imag_part = parts[1]
+                                    # Remove 'j' from imag part
+                                    if imag_part.endswith('j'):
+                                        imag_part = imag_part[:-1]
+                                    return complex(float(real_part), float(imag_part))
+                                except:
+                                    pass
+                    
+                    # If all else fails, try to parse as float for real part
+                    try:
+                        return complex(float(s_str), 0)
+                    except:
+                        return complex(0, 0)
+            
+            # Define _parse_fraction with complex handling
+            def _parse_fraction(s: Union[str, float, int]) -> float:
+                #Fallback fraction parser that handles complex numbers
+                if isinstance(s, (int, float)):
+                    return float(s)
+                
+                s_str = str(s).strip()
+                if not s_str:
+                    return 0.0
+                
+                # First, try to handle complex numbers
+                try:
+                    # Use our _parse_complex function
+                    c = _parse_complex(s_str)
+                    if c.imag != 0:
+                        logger.warning(f"Complex number {s_str} for fraction parsing; using real part only.")
+                        return float(c.real)
+                    else:
+                        return float(c.real)
+                except:
+                    pass
+                
+                # Try as float
+                try:
+                    return float(s_str)
+                except ValueError:
+                    pass
+                
+                # Try fractions
+                if '/' in s_str:
+                    try:
+                        num, den = s_str.split('/')
+                        return float(num) / float(den) if float(den) != 0 else float('inf')
+                    except:
+                        pass
+                
+                # Last resort
+                try:
+                    return float(s_str)
+                except:
+                    raise ValueError(f"Could not parse as number: {s_str}")
+            
+            # Simple fallbacks for other types
+            _parse_neutrosophic = lambda s: (_parse_fraction(s), 0.0, 0.0)
+            _parse_bicomplex = lambda s: complex(_parse_fraction(s), 0)
+            _parse_neutrosophic_complex = lambda s: complex(_parse_fraction(s), 0)
+            _parse_neutrosophic_bicomplex = lambda s: complex(_parse_fraction(s), 0)
+            _parse_quaternion = lambda s: _parse_fraction(s)
+            _parse_octonion = lambda s: _parse_fraction(s)
+            _parse_sedenion = lambda s: _parse_fraction(s)
+            _parse_clifford = lambda s: _parse_fraction(s)
+            _parse_dual = lambda s: _parse_fraction(s)
+            _parse_splitcomplex = lambda s: _parse_fraction(s)
+            _parse_pathion = lambda s: _parse_fraction(s)
+            _parse_chingon = lambda s: _parse_fraction(s)
+            _parse_routon = lambda s: _parse_fraction(s)
+            _parse_voudon = lambda s: _parse_fraction(s)
+            _parse_super_real = lambda s: _parse_fraction(s)
+            _parse_ternary = lambda s: _parse_fraction(s)
+            _parse_hyperreal = lambda s: _parse_fraction(s)
+
+        # Map type choices to parsers
+        type_to_parser = {
+            1: {"parser": _parse_fraction, "name": "Positive Real"},
+            2: {"parser": lambda s: -_parse_fraction(s), "name": "Negative Real"},
+            3: {"parser": _parse_complex, "name": "Complex"},
+            4: {"parser": _parse_fraction, "name": "Float"},
+            5: {"parser": _parse_fraction, "name": "Rational"},
+            6: {"parser": _parse_quaternion, "name": "Quaternion"},
+            7: {"parser": _parse_neutrosophic, "name": "Neutrosophic"},
+            8: {"parser": _parse_neutrosophic_complex, "name": "Neutrosophic Complex"},
+            9: {"parser": _parse_hyperreal, "name": "Hyperreal"},
+            10: {"parser": _parse_bicomplex, "name": "Bicomplex"},
+            11: {"parser": _parse_neutrosophic_bicomplex, "name": "Neutrosophic Bicomplex"},
+            12: {"parser": _parse_octonion, "name": "Octonion"},
+            13: {"parser": _parse_sedenion, "name": "Sedenion"},
+            14: {"parser": _parse_clifford, "name": "Clifford"},
+            15: {"parser": _parse_dual, "name": "Dual"},
+            16: {"parser": _parse_splitcomplex, "name": "Split-Complex"},
+            17: {"parser": _parse_pathion, "name": "Pathion"},
+            18: {"parser": _parse_chingon, "name": "Chingon"},
+            19: {"parser": _parse_routon, "name": "Routon"},
+            20: {"parser": _parse_voudon, "name": "Voudon"},
+            21: {"parser": _parse_super_real, "name": "Super Real"},
+            22: {"parser": _parse_ternary, "name": "Ternary"},
+        }
+
+        # Add custom parser if provided
+        if custom_parser is not None:
+            logger.debug("Using custom parser provided by user")
+            parser_func = cast(Callable[[Any], Any], custom_parser)
+            type_name = "Custom"
+        else:
+            if kececi_type_choice not in type_to_parser:
+                raise ValueError(
+                    f"Invalid type choice: {kececi_type_choice}. Must be 1-22"
+                )
+
+            type_info = type_to_parser[kececi_type_choice]
+            parser_func = cast(Callable[[Any], Any], type_info["parser"])
+            type_name = cast(str, type_info["name"])
+
+        logger.info(f"Generating {type_name} numbers (type {kececi_type_choice})")
+
+        # Parse start and add values
+        try:
+            # Debug logging
+            logger.debug(f"Parsing start_value_raw: {repr(start_value_raw)} with parser {parser_func.__name__ if hasattr(parser_func, '__name__') else type(parser_func).__name__}")
+            logger.debug(f"Parsing add_value_raw: {repr(add_value_raw)}")
+            
+            start_value = parser_func(start_value_raw)
+            add_value = parser_func(add_value_raw)
+
+            logger.debug(
+                f"Parsed start value: {repr(start_value)} (type: {type(start_value)})"
+            )
+            logger.debug(
+                f"Parsed operation value: {repr(add_value)} (type: {type(add_value)})"
+            )
+
+        except Exception as e:
+            logger.error(
+                f"Parsing failed. Start type: {type(start_value_raw)}, Start value: {repr(start_value_raw)}"
+            )
+            logger.error(
+                f"Parsing failed. Add type: {type(add_value_raw)}, Add value: {repr(add_value_raw)}"
+            )
+            raise ValueError(
+                f"Failed to parse values. Start: '{start_value_raw}', Add: '{add_value_raw}'. Error: {str(e)}"
+            )
+
+        # Generate the sequence
+        result = _generate_kececi_sequence(
+            start_value=start_value,
+            add_value=add_value,
+            iterations=iterations,
+            operation=operation,
+            include_intermediate_steps=include_intermediate_steps,
+            number_type=type_name
+        )
+
+        if not result:
+            logger.warning("Sequence generation failed or returned empty")
+            return []
+
+        # Log generation results
+        logger.info(f"Generated {len(result)} numbers for type {type_name}")
+
+        # Preview first and last few elements
+        preview_size = min(3, len(result))
+        if preview_size > 0:
+            preview_start = [
+                str(x)[:50] + "..." if len(str(x)) > 50 else str(x)
+                for x in result[:preview_size]
+            ]
+            logger.debug(f"First {preview_size}: {preview_start}")
+
+            if len(result) > preview_size * 2:
+                preview_end = [
+                    str(x)[:50] + "..." if len(str(x)) > 50 else str(x)
+                    for x in result[-preview_size:]
+                ]
+                logger.debug(f"Last {preview_size}: {preview_end}")
+
+        # Keçeci Prime Number check
+        try:
+            kpn = _find_kececi_prime_number(result)
+            if kpn is not None:
+                logger.info(f"Keçeci Prime Number (KPN) found: {kpn}")
+            else:
+                logger.debug("No Keçeci Prime Number found in the sequence.")
+        except Exception as e:
+            logger.debug(f"KPN check skipped or failed: {e}")
+
+        return result
+
+    except Exception as e:
+        logger.exception(f"ERROR during sequence generation: {e}")
+        raise
+"""
+
+# Yardımcı fonksiyonlar
+def _generate_kececi_sequence(
+    start_value: Any,
+    add_value: Any,
+    iterations: int,
+    operation: str,
+    include_intermediate_steps: bool = False,
+    number_type: str = "Unknown"
+) -> List[Any]:
+    """
+    Generate sequence for Keçeci numbers with proper operation handling.
+    """
+    if include_intermediate_steps:
+        # Detailed output with steps
+        result = []
+        current = start_value
+        
+        # Add initial state
+        result.append({
+            "step": 0,
+            "value": current,
+            "operation": "start",
+            "description": f"Start: {current}"
+        })
+        
+        for i in range(1, iterations):
+            previous = current
+            try:
+                current = _apply_kececi_operation(current, add_value, operation, number_type)
+                
+                result.append({
+                    "step": i,
+                    "value": current,
+                    "operation": operation,
+                    "previous": previous,
+                    "description": f"Step {i}: {previous} {_get_operation_symbol(operation)} {add_value} = {current}"
+                })
+            except Exception as e:
+                logger.error(f"Error at step {i}: {e}")
+                result.append({
+                    "step": i,
+                    "value": current,
+                    "operation": operation,
+                    "error": str(e),
+                    "description": f"Step {i}: ERROR - {e}"
+                })
+                break
+        
+        return result
+    else:
+        # Simple list output
+        result = [start_value]
+        current = start_value
+        
+        for i in range(1, iterations):
+            try:
+                current = _apply_kececi_operation(current, add_value, operation, number_type)
+                result.append(current)
+            except Exception as e:
+                logger.error(f"Error at iteration {i}: {e}")
+                # Try to continue with a default value
+                default_val = _get_default_value_for_type(current)
+                result.append(default_val)
+                current = default_val
+        
+        return result
+
+
+def _apply_kececi_operation(a: Any, b: Any, operation: str, number_type: str = "Unknown") -> Any:
+    """
+    Apply operation to Keçeci numbers with proper type handling.
+    """
+    try:
+        if operation == "add":
+            return a + b
+        elif operation == "subtract":
+            return a - b
+        elif operation == "multiply":
+            return a * b
+        elif operation == "divide":
+            return _safe_divide_kececi(a, b, number_type)
+        elif operation == "mod":
+            return _safe_mod_kececi(a, b, number_type)
+        elif operation == "power":
+            return _safe_power_kececi(a, b, number_type)
+        else:
+            raise ValueError(f"Unsupported operation: {operation}")
+    except Exception as e:
+        # If standard operators fail, try alternative methods
+        logger.debug(f"Standard {operation} failed: {e}, trying alternatives")
+        
+        # Try to use methods if available
+        if operation == "add" and hasattr(a, 'add'):
+            return a.add(b)
+        elif operation == "subtract" and hasattr(a, 'subtract'):
+            return a.subtract(b)
+        elif operation == "multiply" and hasattr(a, 'multiply'):
+            return a.multiply(b)
+        elif operation == "divide" and hasattr(a, 'divide'):
+            return a.divide(b)
+        else:
+            raise
+
+def _safe_divide_kececi(a: Any, b: Any, number_type: str = "Unknown") -> Any:
+    """
+    Safe division for Keçeci numbers.
+    """
+    # Check for zero
+    if _is_zero(b):
+        logger.warning(f"Division by zero in {number_type}")
+        # Handle based on number type
+        if number_type == "Complex":
+            return complex(float('inf'), 0)
+        elif "Neutrosophic" in number_type:
+            return (float('inf'), 0.0, 0.0)
+        elif number_type in ["Quaternion", "Octonion", "Sedenion"]:
+            # Return infinity of same type
+            try:
+                return type(a)(float('inf'))
+            except:
+                return float('inf')
+        else:
+            return float('inf')
+    
+    try:
+        return a / b
+    except (TypeError, AttributeError):
+        # Try alternative division methods
+        if hasattr(a, '__truediv__'):
+            return a.__truediv__(b)
+        elif hasattr(a, 'divide'):
+            return a.divide(b)
+        else:
+            # Try to convert to float
+            try:
+                return float(a) / float(b)
+            except:
+                raise ValueError(f"Cannot divide {type(a)} by {type(b)}")
+
+
+def _safe_mod_kececi(a: Any, b: Any, number_type: str = "Unknown") -> Any:
+    """
+    Safe modulo for Keçeci numbers.
+    """
+    if _is_zero(b):
+        logger.warning(f"Modulo by zero in {number_type}")
+        return a  # Return original value
+    
+    try:
+        return a % b
+    except (TypeError, AttributeError):
+        if hasattr(a, '__mod__'):
+            return a.__mod__(b)
+        else:
+            # For many Keçeci numbers, modulo might not be defined
+            # Return a sensible default
+            logger.warning(f"Modulo operation not defined for {number_type}, returning original value")
+            return a
+
+
+def _safe_power_kececi(a: Any, b: Any, number_type: str = "Unknown") -> Any:
+    """
+    Safe power for Keçeci numbers.
+    """
+    try:
+        return a ** b
+    except (TypeError, AttributeError):
+        if hasattr(a, '__pow__'):
+            return a.__pow__(b)
+        elif hasattr(a, 'power'):
+            return a.power(b)
+        else:
+            # Try to handle common cases
+            if isinstance(b, (int, float)) and b == 2:
+                return a * a
+            elif b == 1:
+                return a
+            elif b == 0:
+                # Return identity element
+                try:
+                    return type(a)(1)
+                except:
+                    return 1
+            else:
+                raise ValueError(f"Power operation not supported for {number_type}")
+
+
+def _is_zero(value: Any) -> bool:
+    """
+    Check if a value is effectively zero.
+    """
+    if isinstance(value, (int, float, complex)):
+        if isinstance(value, complex):
+            return abs(value) < 1e-12
+        return abs(value) < 1e-12
+    
+    # For tuples (like neutrosophic)
+    if isinstance(value, tuple):
+        return all(_is_zero(v) for v in value)
+    
+    # For custom number types
+    if hasattr(value, '__abs__'):
+        try:
+            return abs(value) < 1e-12
+        except:
+            pass
+    
+    # Try conversion to float
+    try:
+        return abs(float(value)) < 1e-12
+    except:
+        return False
+
+
+def _get_operation_symbol(operation: str) -> str:
+    """Get symbol for operation."""
+    symbols = {
+        "add": "+",
+        "subtract": "-",
+        "multiply": "×",
+        "divide": "/",
+        "mod": "%",
+        "power": "^"
+    }
+    return symbols.get(operation, "?")
+
+
+def _get_default_value_for_type(value: Any) -> Any:
+    """Get default value for a given type."""
+    if isinstance(value, (int, float)):
+        return 0
+    elif isinstance(value, complex):
+        return complex(0, 0)
+    elif isinstance(value, tuple):
+        return tuple(0 for _ in value)
+    elif hasattr(value, '__class__'):
+        try:
+            return type(value)()
+        except:
+            return 0
+    else:
+        return 0
+
+
+def _generate_kececi_sequence(
+    start_value: Any,
+    add_value: Any,
+    iterations: int,
+    operation: str,
+    include_intermediate_steps: bool = False,
+    number_type: str = "Unknown"
+) -> List[Any]:
+    """
+    Generate sequence for Keçeci numbers with proper operation handling.
+    """
+    if include_intermediate_steps:
+        # Detailed output with steps
+        result = []
+        current = start_value
+        
+        # Add initial state
+        result.append({
+            "step": 0,
+            "value": current,
+            "operation": "start",
+            "description": f"Start: {current}"
+        })
+        
+        for i in range(1, iterations):
+            previous = current
+            try:
+                current = _apply_kececi_operation(current, add_value, operation, number_type)
+                
+                result.append({
+                    "step": i,
+                    "value": current,
+                    "operation": operation,
+                    "previous": previous,
+                    "description": f"Step {i}: {previous} {_get_operation_symbol(operation)} {add_value} = {current}"
+                })
+            except Exception as e:
+                logger.error(f"Error at step {i}: {e}")
+                result.append({
+                    "step": i,
+                    "value": current,
+                    "operation": operation,
+                    "error": str(e),
+                    "description": f"Step {i}: ERROR - {e}"
+                })
+                break
+        
+        return result
+    else:
+        # Simple list output
+        result = [start_value]
+        current = start_value
+        
+        for i in range(1, iterations):
+            try:
+                current = _apply_kececi_operation(current, add_value, operation, number_type)
+                result.append(current)
+            except Exception as e:
+                logger.error(f"Error at iteration {i}: {e}")
+                # Try to continue with a default value
+                default_val = _get_default_value_for_type(current)
+                result.append(default_val)
+                current = default_val
+        
+        return result
+
+
+def _apply_kececi_operation(a: Any, b: Any, operation: str, number_type: str = "Unknown") -> Any:
+    """
+    Apply operation to Keçeci numbers with proper type handling.
+    """
+    try:
+        if operation == "add":
+            return a + b
+        elif operation == "subtract":
+            return a - b
+        elif operation == "multiply":
+            return a * b
+        elif operation == "divide":
+            return _safe_divide_kececi(a, b, number_type)
+        elif operation == "mod":
+            return _safe_mod_kececi(a, b, number_type)
+        elif operation == "power":
+            return _safe_power_kececi(a, b, number_type)
+        else:
+            raise ValueError(f"Unsupported operation: {operation}")
+    except Exception as e:
+        # If standard operators fail, try alternative methods
+        logger.debug(f"Standard {operation} failed: {e}, trying alternatives")
+        
+        # Try to use methods if available
+        if operation == "add" and hasattr(a, 'add'):
+            return a.add(b)
+        elif operation == "subtract" and hasattr(a, 'subtract'):
+            return a.subtract(b)
+        elif operation == "multiply" and hasattr(a, 'multiply'):
+            return a.multiply(b)
+        elif operation == "divide" and hasattr(a, 'divide'):
+            return a.divide(b)
+        else:
+            raise
+
+
+def _safe_divide_kececi(a: Any, b: Any, number_type: str = "Unknown") -> Any:
+    """
+    Safe division for Keçeci numbers.
+    """
+    # Check for zero
+    if _is_zero(b):
+        logger.warning(f"Division by zero in {number_type}")
+        # Handle based on number type
+        if number_type == "Complex":
+            return complex(float('inf'), 0)
+        elif "Neutrosophic" in number_type:
+            return (float('inf'), 0.0, 0.0)
+        elif number_type in ["Quaternion", "Octonion", "Sedenion"]:
+            # Return infinity of same type
+            try:
+                return type(a)(float('inf'))
+            except:
+                return float('inf')
+        else:
+            return float('inf')
+    
+    try:
+        return a / b
+    except (TypeError, AttributeError):
+        # Try alternative division methods
+        if hasattr(a, '__truediv__'):
+            return a.__truediv__(b)
+        elif hasattr(a, 'divide'):
+            return a.divide(b)
+        else:
+            # Try to convert to float
+            try:
+                return float(a) / float(b)
+            except:
+                raise ValueError(f"Cannot divide {type(a)} by {type(b)}")
+
+
+def _safe_mod_kececi(a: Any, b: Any, number_type: str = "Unknown") -> Any:
+    """
+    Safe modulo for Keçeci numbers.
+    """
+    if _is_zero(b):
+        logger.warning(f"Modulo by zero in {number_type}")
+        return a  # Return original value
+    
+    try:
+        return a % b
+    except (TypeError, AttributeError):
+        if hasattr(a, '__mod__'):
+            return a.__mod__(b)
+        else:
+            # For many Keçeci numbers, modulo might not be defined
+            # Return a sensible default
+            logger.warning(f"Modulo operation not defined for {number_type}, returning original value")
+            return a
+
+
+def _safe_power_kececi(a: Any, b: Any, number_type: str = "Unknown") -> Any:
+    """
+    Safe power for Keçeci numbers.
+    """
+    try:
+        return a ** b
+    except (TypeError, AttributeError):
+        if hasattr(a, '__pow__'):
+            return a.__pow__(b)
+        elif hasattr(a, 'power'):
+            return a.power(b)
+        else:
+            # Try to handle common cases
+            if isinstance(b, (int, float)) and b == 2:
+                return a * a
+            elif b == 1:
+                return a
+            elif b == 0:
+                # Return identity element
+                try:
+                    return type(a)(1)
+                except:
+                    return 1
+            else:
+                raise ValueError(f"Power operation not supported for {number_type}")
+
+
+def _is_zero(value: Any) -> bool:
+    """
+    Check if a value is effectively zero.
+    """
+    if isinstance(value, (int, float, complex)):
+        if isinstance(value, complex):
+            return abs(value) < 1e-12
+        return abs(value) < 1e-12
+    
+    # For tuples (like neutrosophic)
+    if isinstance(value, tuple):
+        return all(_is_zero(v) for v in value)
+    
+    # For custom number types
+    if hasattr(value, '__abs__'):
+        try:
+            return abs(value) < 1e-12
+        except:
+            pass
+    
+    # Try conversion to float
+    try:
+        return abs(float(value)) < 1e-12
+    except:
+        return False
+
+
+def _get_operation_symbol(operation: str) -> str:
+    """Get symbol for operation."""
+    symbols = {
+        "add": "+",
+        "subtract": "-",
+        "multiply": "×",
+        "divide": "/",
+        "mod": "%",
+        "power": "^"
+    }
+    return symbols.get(operation, "?")
+
+
+def _get_default_value_for_type(value: Any) -> Any:
+    """Get default value for a given type."""
+    if isinstance(value, (int, float)):
+        return 0
+    elif isinstance(value, complex):
+        return complex(0, 0)
+    elif isinstance(value, tuple):
+        return tuple(0 for _ in value)
+    elif hasattr(value, '__class__'):
+        try:
+            return type(value)()
+        except:
+            return 0
+    else:
+        return 0
 
 def get_interactive(
     auto_values: Optional[Dict[str, str]] = None,
@@ -12371,7 +15385,7 @@ def get_interactive(
         8: "1+1j",
         9: "0.0,0.001",
         10: "1.0,0.5,0.3,0.2",
-        11: "1.0,0.0,0.1,0.0,0.0,0.0,0.0,0.0",
+        11: "2.5,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
         12: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
         13: "1.0" + ",0.0" * 15,
         14: "1.0+2.0e1+3.0e12",
@@ -12493,11 +15507,9 @@ def get_interactive(
     )
     return sequence, params
 
-
 # ==============================================================================
 # --- ANALYSIS AND PLOTTING ---
 # ==============================================================================
-
 
 def find_period(sequence: List[Any], min_repeats: int = 3) -> Optional[List[Any]]:
     """
@@ -12517,13 +15529,13 @@ def find_period(sequence: List[Any], min_repeats: int = 3) -> Optional[List[Any]
     for p_len in range(1, len(sequence) // min_repeats):
         # Dizinin sonundan potansiyel döngüyü al
         candidate_cycle = sequence[-p_len:]
-
+        
         # Döngünün en az `min_repeats` defa tekrar edip etmediğini kontrol et
         is_periodic = True
         for i in range(1, min_repeats):
             start_index = -(i + 1) * p_len
             end_index = -i * p_len
-
+            
             # Dizinin o bölümünü al
             previous_block = sequence[start_index:end_index]
 
@@ -12531,7 +15543,7 @@ def find_period(sequence: List[Any], min_repeats: int = 3) -> Optional[List[Any]
             if candidate_cycle != previous_block:
                 is_periodic = False
                 break
-
+        
         # Eğer döngü tüm kontrollerden geçtiyse, periyodu bulduk demektir
         if is_periodic:
             return candidate_cycle
@@ -12539,34 +15551,24 @@ def find_period(sequence: List[Any], min_repeats: int = 3) -> Optional[List[Any]
     # Hiçbir periyot bulunamadı
     return None
 
-
 def is_quaternion_like(obj):
     if isinstance(obj, quaternion):
         return True
-    if hasattr(obj, "components"):
+    if hasattr(obj, 'components'):
         comp = np.array(obj.components)
         return comp.size == 4
-    if all(hasattr(obj, attr) for attr in ["w", "x", "y", "z"]):
+    if all(hasattr(obj, attr) for attr in ['w', 'x', 'y', 'z']):
         return True
-    if (
-        hasattr(obj, "scalar")
-        and hasattr(obj, "vector")
-        and isinstance(obj.vector, (list, np.ndarray))
-        and len(obj.vector) == 3
-    ):
+    if hasattr(obj, 'scalar') and hasattr(obj, 'vector') and isinstance(obj.vector, (list, np.ndarray)) and len(obj.vector) == 3:
         return True
     return False
 
-
 def is_neutrosophic_like(obj):
     """NeutrosophicNumber gibi görünen objeleri tanır (t,i,f veya a,b vs.)"""
-    return (
-        (hasattr(obj, "t") and hasattr(obj, "i") and hasattr(obj, "f"))
-        or (hasattr(obj, "a") and hasattr(obj, "b"))
-        or (hasattr(obj, "value") and hasattr(obj, "indeterminacy"))
-        or (hasattr(obj, "determinate") and hasattr(obj, "indeterminate"))
-    )
-
+    return (hasattr(obj, 't') and hasattr(obj, 'i') and hasattr(obj, 'f')) or \
+           (hasattr(obj, 'a') and hasattr(obj, 'b')) or \
+           (hasattr(obj, 'value') and hasattr(obj, 'indeterminacy')) or \
+           (hasattr(obj, 'determinate') and hasattr(obj, 'indeterminate'))
 
 def _pca_var_sum(pca) -> float:
     """
@@ -12584,7 +15586,6 @@ def _pca_var_sum(pca) -> float:
     except Exception:
         return 0.0
 
-
 # Yardımcı fonksiyon: Bileşen dağılımı grafiği
 def _plot_component_distribution(ax, elem, all_keys, seq_length=1):
     """Bileşen dağılımını gösterir"""
@@ -12592,41 +15593,28 @@ def _plot_component_distribution(ax, elem, all_keys, seq_length=1):
         # Tek veri noktası için bileşen değerleri
         components = []
         values = []
-
+        
         for key in all_keys:
-            if key == "":
-                components.append("Scalar")
+            if key == '':
+                components.append('Scalar')
             else:
-                components.append(f"e{key}")
+                components.append(f'e{key}')
             values.append(elem.basis.get(key, 0.0))
-
-        bars = ax.bar(components, values, alpha=0.7, color="tab:blue")
+        
+        bars = ax.bar(components, values, alpha=0.7, color='tab:blue')
         ax.set_title("Component Values")
-        ax.tick_params(axis="x", rotation=45)
-
+        ax.tick_params(axis='x', rotation=45)
+        
         for bar in bars:
             height = bar.get_height()
             if height != 0:
-                ax.text(
-                    bar.get_x() + bar.get_width() / 2.0,
-                    height,
-                    f"{height:.2f}",
-                    ha="center",
-                    va="bottom",
-                )
+                ax.text(bar.get_x() + bar.get_width()/2., height,
+                       f'{height:.2f}', ha='center', va='bottom')
     else:
         # Çoklu veri ama PCA yapılamıyor
-        ax.text(
-            0.5,
-            0.5,
-            f"Need ≥2 data points and ≥2 features\n(Current: {seq_length} points, {len(all_keys)} features)",
-            ha="center",
-            va="center",
-            transform=ax.transAxes,
-            fontsize=11,
-        )
+        ax.text(0.5, 0.5, f"Need ≥2 data points and ≥2 features\n(Current: {seq_length} points, {len(all_keys)} features)", 
+               ha='center', va='center', transform=ax.transAxes, fontsize=11)
         ax.set_title("Insufficient for PCA")
-
 
 def plot_octonion_3d(octonion_sequence, title="3D Octonion Trajectory"):
     """
@@ -12640,7 +15628,7 @@ def plot_octonion_3d(octonion_sequence, title="3D Octonion Trajectory"):
         return
 
     fig = plt.figure(figsize=(10, 8))
-    ax = fig.add_subplot(111, projection="3d")
+    ax = fig.add_subplot(111, projection='3d')
 
     # Octonion bileşenlerini ayıkla (w: gerçek, x/y/z: ilk üç sanal bileşen)
     x = [o.x for o in octonion_sequence]
@@ -12648,14 +15636,14 @@ def plot_octonion_3d(octonion_sequence, title="3D Octonion Trajectory"):
     z = [o.z for o in octonion_sequence]
 
     # 3D uzayda çiz
-    ax.plot(x, y, z, "b-", linewidth=2, alpha=0.7, label="Trajectory")
-    ax.scatter(x[0], y[0], z[0], c="g", s=100, label="Start", depthshade=True)
-    ax.scatter(x[-1], y[-1], z[-1], c="r", s=100, label="End", depthshade=True)
+    ax.plot(x, y, z, 'b-', linewidth=2, alpha=0.7, label='Trajectory')
+    ax.scatter(x[0], y[0], z[0], c='g', s=100, label='Start', depthshade=True)
+    ax.scatter(x[-1], y[-1], z[-1], c='r', s=100, label='End', depthshade=True)
 
     # Eksen etiketleri ve başlık
-    ax.set_xlabel("X (i)")
-    ax.set_ylabel("Y (j)")
-    ax.set_zlabel("Z (k)")
+    ax.set_xlabel('X (i)')
+    ax.set_ylabel('Y (j)')
+    ax.set_zlabel('Z (k)')
     ax.set_title(title)
 
     # Legend ve grid
@@ -12664,7 +15652,6 @@ def plot_octonion_3d(octonion_sequence, title="3D Octonion Trajectory"):
 
     plt.tight_layout()
     plt.show()
-
 
 # Otomatik Periyot Tespiti ve Keçeci Asal Analizi
 def analyze_kececi_sequence(sequence, kececi_type):
@@ -12676,7 +15663,11 @@ def analyze_kececi_sequence(sequence, kececi_type):
     Returns:
         dict: Analysis results including periodicity and KPNs.
     """
-    results = {"periodicity": None, "kececi_primes": [], "prime_indices": []}
+    results = {
+        "periodicity": None,
+        "kececi_primes": [],
+        "prime_indices": []
+    }
 
     # Periyot tespiti
     for window in range(2, len(sequence) // 2):
@@ -12698,7 +15689,6 @@ def analyze_kececi_sequence(sequence, kececi_type):
                 results["prime_indices"].append(idx)
 
     return results
-
 
 # Makine Öğrenimi Entegrasyonu: PCA ve Kümelenme Analizi
 def apply_pca_clustering(sequence, n_components=2):
@@ -12730,7 +15720,6 @@ def apply_pca_clustering(sequence, n_components=2):
 
     return pca_result, clusters
 
-
 # Etkileşimli Görselleştirme (Plotly DASH)
 def generate_interactive_plot(sequence, kececi_type):
     """
@@ -12754,35 +15743,27 @@ def generate_interactive_plot(sequence, kececi_type):
         y = [float(num) for num in sequence]
         z = [0] * len(sequence)
 
-    fig = go.Figure(
-        data=[
-            go.Scatter3d(
-                x=x,
-                y=y,
-                z=z,
-                mode="lines+markers",
-                marker=dict(size=5, color=z, colorscale="Viridis"),
-                line=dict(width=2),
-            )
-        ]
-    )
+    fig = go.Figure(data=[go.Scatter3d(
+        x=x, y=y, z=z,
+        mode='lines+markers',
+        marker=dict(size=5, color=z, colorscale='Viridis'),
+        line=dict(width=2)
+    )])
 
     fig.update_layout(
         title=f"Interactive 3D Plot: Keçeci Type {kececi_type}",
-        scene=dict(xaxis_title="X", yaxis_title="Y", zaxis_title="Z"),
-        margin=dict(l=0, r=0, b=0, t=30),
+        scene=dict(
+            xaxis_title='X',
+            yaxis_title='Y',
+            zaxis_title='Z'
+        ),
+        margin=dict(l=0, r=0, b=0, t=30)
     )
 
     fig.show()
 
-
-# Keçeci Varsayımı Test Aracı: fixture 'sequence' not found
-def test_kececi_conjecture(
-    sequence: List[Any],
-    add_value: Any,
-    kececi_type: Optional[int] = None,
-    max_steps: int = 1000,
-) -> bool:
+# Keçeci Varsayımı Test Aracı
+def test_kececi_conjecture(sequence: List[Any], add_value: Any, kececi_type: Optional[int] = None, max_steps: int = 1000) -> bool:
     """
     Tests the Keçeci Conjecture for a given starting `sequence`.
     - sequence: initial list-like of Keçeci numbers (will be copied).
@@ -12825,6 +15806,201 @@ def test_kececi_conjecture(
 
     return False
 
+def format_fraction(value):
+    """Fraction nesnelerini güvenli bir şekilde formatlar."""
+    if isinstance(value, Fraction):
+        return float(value)  # veya str(value)
+    return value
+
+def plot_octonion_3d(octonion_sequence, title="3D Octonion Trajectory"):
+    """
+    Plots the trajectory of octonion numbers in 3D space using the first three imaginary components (x, y, z).
+    Args:
+        octonion_sequence (list): List of OctonionNumber objects.
+        title (str): Title of the plot.
+    """
+    if not octonion_sequence:
+        print("Empty sequence. Nothing to plot.")
+        return
+
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Octonion bileşenlerini ayıkla (w: gerçek, x/y/z: ilk üç sanal bileşen)
+    x = [o.x for o in octonion_sequence]
+    y = [o.y for o in octonion_sequence]
+    z = [o.z for o in octonion_sequence]
+
+    # 3D uzayda çiz
+    ax.plot(x, y, z, 'b-', linewidth=2, alpha=0.7, label='Trajectory')
+    ax.scatter(x[0], y[0], z[0], c='g', s=100, label='Start', depthshade=True)
+    ax.scatter(x[-1], y[-1], z[-1], c='r', s=100, label='End', depthshade=True)
+
+    # Eksen etiketleri ve başlık
+    ax.set_xlabel('X (i)')
+    ax.set_ylabel('Y (j)')
+    ax.set_zlabel('Z (k)')
+    ax.set_title(title)
+
+    # Legend ve grid
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.show()
+
+# Otomatik Periyot Tespiti ve Keçeci Asal Analizi
+def analyze_kececi_sequence(sequence, kececi_type):
+    """
+    Analyzes a Keçeci sequence for periodicity and Keçeci Prime Numbers (KPN).
+    Args:
+        sequence (list): List of Keçeci numbers.
+        kececi_type (int): Type of Keçeci number (e.g., TYPE_OCTONION).
+    Returns:
+        dict: Analysis results including periodicity and KPNs.
+    """
+    results = {
+        "periodicity": None,
+        "kececi_primes": [],
+        "prime_indices": []
+    }
+
+    # Periyot tespiti
+    for window in range(2, len(sequence) // 2):
+        is_periodic = True
+        for i in range(len(sequence) - window):
+            if sequence[i] != sequence[i + window]:
+                is_periodic = False
+                break
+        if is_periodic:
+            results["periodicity"] = window
+            break
+
+    # Keçeci Asal sayıları tespit et
+    for idx, num in enumerate(sequence):
+        if is_prime_like(num, kececi_type):
+            integer_rep = _get_integer_representation(num)
+            if integer_rep is not None and sympy.isprime(integer_rep):
+                results["kececi_primes"].append(integer_rep)
+                results["prime_indices"].append(idx)
+
+    return results
+
+# Makine Öğrenimi Entegrasyonu: PCA ve Kümelenme Analizi
+def apply_pca_clustering(sequence, n_components=2):
+    """
+    Applies PCA and clustering to a Keçeci sequence for dimensionality reduction and pattern discovery.
+    Args:
+        sequence (list): List of Keçeci numbers.
+        n_components (int): Number of PCA components.
+    Returns:
+        tuple: (pca_result, clusters) - PCA-transformed data and cluster labels.
+    """
+    # Sayıları sayısal vektörlere dönüştür
+    vectors = []
+    for num in sequence:
+        if isinstance(num, OctonionNumber):
+            vectors.append(num.coeffs)
+        elif isinstance(num, Fraction):
+            vectors.append([float(num)])
+        else:
+            vectors.append([float(num)])
+
+    # PCA uygula
+    pca = PCA(n_components=n_components)
+    pca_result = pca.fit_transform(vectors)
+
+    # Kümelenme (K-Means)
+    kmeans = KMeans(n_clusters=3, random_state=42)
+    clusters = kmeans.fit_predict(pca_result)
+
+    return pca_result, clusters
+
+# Etkileşimli Görselleştirme (Plotly DASH)
+def generate_interactive_plot(sequence, kececi_type):
+    """
+    Generates an interactive 3D plot using Plotly for Keçeci sequences.
+    Args:
+        sequence (list): List of Keçeci numbers.
+        kececi_type (int): Type of Keçeci number.
+    """
+    import plotly.graph_objects as go
+
+    if kececi_type == TYPE_OCTONION:
+        x = [num.x for num in sequence]
+        y = [num.y for num in sequence]
+        z = [num.z for num in sequence]
+    elif kececi_type == TYPE_COMPLEX:
+        x = [num.real for num in sequence]
+        y = [num.imag for num in sequence]
+        z = [0] * len(sequence)
+    else:
+        x = range(len(sequence))
+        y = [float(num) for num in sequence]
+        z = [0] * len(sequence)
+
+    fig = go.Figure(data=[go.Scatter3d(
+        x=x, y=y, z=z,
+        mode='lines+markers',
+        marker=dict(size=5, color=z, colorscale='Viridis'),
+        line=dict(width=2)
+    )])
+
+    fig.update_layout(
+        title=f"Interactive 3D Plot: Keçeci Type {kececi_type}",
+        scene=dict(
+            xaxis_title='X',
+            yaxis_title='Y',
+            zaxis_title='Z'
+        ),
+        margin=dict(l=0, r=0, b=0, t=30)
+    )
+
+    fig.show()
+
+# Keçeci Varsayımı Test Aracı
+def test_kececi_conjecture(sequence: List[Any], add_value: Any, kececi_type: Optional[int] = None, max_steps: int = 1000) -> bool:
+    """
+    Tests the Keçeci Conjecture for a given starting `sequence`.
+    - sequence: initial list-like of Keçeci numbers (will be copied).
+    - add_value: typed increment (must be of compatible type with elements).
+    - kececi_type: optional type constant (used by is_prime_like); if None, fallback to is_prime.
+    - max_steps: maximum additional steps to try.
+    Returns True if a Keçeci-prime is reached within max_steps, otherwise False.
+    """
+    traj = list(sequence)
+    if not traj:
+        raise ValueError("sequence must contain at least one element")
+
+    for step in range(max_steps):
+        last = traj[-1]
+        # Check prime-like condition
+        try:
+            if kececi_type is not None:
+                if is_prime_like(last, kececi_type):
+                    return True
+            else:
+                # fallback: try is_prime on integer rep
+                if is_prime(last):
+                    return True
+        except Exception:
+            # If prime test fails, continue attempts
+            pass
+
+        # Compute next element: prefer safe_add, else try native addition
+        next_val = None
+        try:
+            next_val = safe_add(last, add_value, +1)
+        except Exception:
+            try:
+                next_val = last + add_value
+            except Exception:
+                # cannot add -> abort
+                return False
+
+        traj.append(next_val)
+
+    return False
 
 def format_fraction(value):
     """Fraction nesnelerini güvenli bir şekilde formatlar."""
@@ -12832,205 +16008,110 @@ def format_fraction(value):
         return float(value)  # veya str(value)
     return value
 
-
-# Yardımcı fonksiyon: Sequence'i temizle
-def clean_sequence_for_plotting(sequence: List[Any]) -> List[Any]:
-    """
-    Her türlü sequence'i plot fonksiyonu için temizler.
-    """
-    if not sequence:
-        return []
-
-    # Eğer dictionary listesi ise
-    if isinstance(sequence[0], dict):
-        cleaned = []
-        for item in sequence:
-            if isinstance(item, dict):
-                # Önce 'value' anahtarını ara
-                for key in ["value", "result", "numeric_value", "added", "modified"]:
-                    if key in item:
-                        cleaned.append(item[key])
-                        break
-                else:
-                    cleaned.append(0)
-            else:
-                cleaned.append(item)
-        sequence = cleaned
-
-    # String, tuple, list içeriyorsa temizle
-    cleaned_sequence = []
-    for item in sequence:
-        cleaned_sequence.append(extract_numeric_value(item))
-
-    return cleaned_sequence
-
-
-def extract_numeric_value(item: Any) -> float:
-    """
-    Her türlü değerden sayısal değer çıkar.
-    Tüm dönüşümler float tipinde olacak.
-    """
-    # 1. Doğrudan sayısal tipler
-    if isinstance(item, (int, float)):
-        return float(item)
-
-    # 2. Fraction tipi
-    if isinstance(item, Fraction):
-        return float(item)
-
-    # 3. Decimal tipi
-    if isinstance(item, Decimal):
-        return float(item)
-
-    # 4. Complex sayılar (sadece gerçek kısmı)
-    if isinstance(item, complex):
-        return float(item.real)
-
-    # 5. String işleme
-    if isinstance(item, str):
-        item = item.strip()
-        if not item:
-            return 0.0
-
-        # Kesir kontrolü
-        if "/" in item:
-            try:
-                # Örnek: "3/4", "1 1/2"
-                if " " in item:  # Karışık sayı: "1 1/2"
-                    whole, fraction = item.split(" ", 1)
-                    num, den = fraction.split("/")
-                    return float(whole) + (float(num) / float(den))
-                else:  # Basit kesir: "3/4"
-                    num, den = item.split("/")
-                    return float(num) / float(den)
-            except (ValueError, ZeroDivisionError):
-                pass
-
-        # Normal sayısal dize
-        try:
-            # Bilimsel gösterim ve diğer formatları da destekle
-            return float(item)
-        except (ValueError, TypeError):
-            return 0.0
-
-    # 6. Dizi/Iterable tipler
-    if isinstance(item, (tuple, list, set)):
-        for element in item:
-            value = extract_numeric_value(element)
-            if value != 0:
-                return value
-        return 0.0
-
-    # 7. Diğer tipler için deneme
-    try:
-        return float(item)
-    except (ValueError, TypeError, AttributeError):
-        return 0.0
-
-
-def extract_numeric_values(sequence: List[Any], strict: bool = False) -> List[float]:
-    """
-    Her türlü değerden sayısal değerleri çıkar.
-
-    Args:
-        sequence: İşlenecek dizi
-        strict: True ise, dönüştürülemeyen değerler için ValueError fırlatır
-
-    Returns:
-        Sayısal değerler listesi
-    """
-    result: List[float] = []
-
-    for item in sequence:
-        try:
-            value = extract_numeric_value(item)
-            result.append(value)
-        except Exception as e:
-            if strict:
-                raise ValueError(
-                    f"Failed to extract numeric value from {item!r}"
-                ) from e
-            result.append(0.0)
-
-    return result
-
-
-# Ek yardımcı fonksiyonlar
-def extract_clean_numbers(
-    sequence: List[Any], remove_zeros: bool = False
-) -> List[float]:
-    """
-    Temiz sayısal değerleri çıkar ve opsiyonel olarak sıfırları kaldır.
-    """
-    values = extract_numeric_values(sequence)
-    if remove_zeros:
-        values = [v for v in values if v != 0]
-    return values
-
-
-def find_first_numeric(sequence: List[Any]) -> Optional[float]:
-    """
-    Dizideki ilk geçerli sayısal değeri bulur.
-    """
-    for item in sequence:
-        value = extract_numeric_value(item)
-        if value != 0:
-            return value
-    return None
-
-
-def extract_fraction_values(
-    sequence: List[Any],
-) -> tuple[List[float], List[int], List[int]]:
-    """Safely extract values from Fraction sequence."""
-    float_vals: List[float] = []
-    numerators: List[int] = []
-    denominators: List[int] = []
-
-    for item in sequence:
-        if isinstance(item, Fraction):
-            float_vals.append(float(item))
-            numerators.append(item.numerator)
-            denominators.append(item.denominator)
+# Veri çıkarma fonksiyonu
+def extract_neutro_components(sequence):
+    real_parts, imag_parts, indeter_parts = [], [], []
+    
+    for i, x in enumerate(sequence):
+        if isinstance(x, NeutrosophicComplexNumber):
+            real_parts.append(x.real)
+            imag_parts.append(x.imag)
+            indeter_parts.append(x.indeterminacy)
+        elif isinstance(x, (tuple, list)):
+            # Tuple yapısını varsay: (real, imag, indeterminacy) veya (real, imag)
+            real_parts.append(x[0] if len(x) > 0 else 0)
+            imag_parts.append(x[1] if len(x) > 1 else 0)
+            indeter_parts.append(x[2] if len(x) > 2 else 0)
         else:
-            # Diğer tipler için fallback
-            try:
-                float_vals.append(float(item))
-                # Fraction olmadığı için pay/payda uydur
-                if isinstance(item, (int, float)):
-                    numerators.append(int(item))
-                    denominators.append(1)
-                else:
-                    numerators.append(0)
-                    denominators.append(1)
-            except (ValueError, TypeError):
-                float_vals.append(0.0)
-                numerators.append(0)
-                denominators.append(1)
+            real_parts.append(0)
+            imag_parts.append(0)
+            indeter_parts.append(0)
+    
+    return real_parts, imag_parts, indeter_parts
 
-    return float_vals, numerators, denominators
-
-
-def extract_complex_values(
-    sequence: List[Any],
-) -> tuple[List[float], List[float], List[float]]:
-    """Safely extract complex values."""
-    real_parts: List[float] = []
-    imag_parts: List[float] = []
-    magnitudes: List[float] = []
-
-    for item in sequence:
-        if isinstance(item, complex):
-            real_parts.append(float(item.real))
-            imag_parts.append(float(item.imag))
-            magnitudes.append(float(abs(item)))
+def plot_neutrosophic_complex(sequence, start_input_raw, add_input_raw, fig):
+    print("DEBUG: Sequence uzunluk:", len(sequence))
+    
+    # Tuple yapısından Neutro-complex'leri çıkar
+    all_real_parts = []
+    all_imag_parts = []
+    all_indeter_parts = []
+    
+    current_pos = 0
+    step_count = 0
+    
+    while current_pos < len(sequence[0]) and step_count < 41:  # Max 41 adım
+        # Her Neutro-complex 3 eleman: (real, imag, indeterminacy)
+        if current_pos + 2 < len(sequence[0]):
+            real_val = sequence[0][current_pos]
+            imag_val = sequence[0][current_pos + 1]
+            indeter_val = sequence[0][current_pos + 2]
+            
+            all_real_parts.append(real_val)
+            all_imag_parts.append(imag_val)
+            all_indeter_parts.append(indeter_val)
+            
+            print(f"Adım {step_count}: ({real_val}, {imag_val}, {indeter_val})")
+            current_pos += 3
+            step_count += 1
         else:
-            # Complex değilse sıfır ekle
-            real_parts.append(0.0)
-            imag_parts.append(0.0)
-            magnitudes.append(0.0)
+            break
+    
+    # Eğer veri azsa doldur
+    while len(all_real_parts) < 40:
+        all_real_parts.append(all_real_parts[-1] if all_real_parts else 0)
+        all_imag_parts.append(all_imag_parts[-1] if all_imag_parts else 0)
+        all_indeter_parts.append(all_indeter_parts[-1] if all_indeter_parts else 0)
+    
+    magnitudes_z = [abs(complex(r, i)) for r, i in zip(all_real_parts, all_imag_parts)]
+    
+    print(f"Veri aralığı - Real: {min(all_real_parts):.2f}-{max(all_real_parts):.2f}")
+    print(f"Veri aralığı - Imag: {min(all_imag_parts):.2f}-{max(all_imag_parts):.2f}")
 
-    return real_parts, imag_parts, magnitudes
+    gs = GridSpec(2, 2, figure=fig)
+    
+    # 1. Complex Plane
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax1.plot(all_real_parts, all_imag_parts, ".-", alpha=0.7, linewidth=2)
+    ax1.scatter(all_real_parts[0], all_imag_parts[0], c="green", s=150, label="Başlangıç", zorder=5)
+    ax1.scatter(all_real_parts[-1], all_imag_parts[-1], c="red", s=150, label="Bitiş", zorder=5)
+    ax1.set_title("Karmaşık Düzlem")
+    ax1.set_xlabel("Re(z)")
+    ax1.set_ylabel("Im(z)")
+    ax1.legend()
+    ax1.grid(True, alpha=0.3)
+    ax1.axis("equal")
+
+    # 2. Belirsizlik Zaman Üzerinde
+    ax2 = fig.add_subplot(gs[0, 1])
+    ax2.plot(all_indeter_parts, "o-", color="purple", markersize=6)
+    ax2.set_title("Belirsizlik Seviyesi")
+    ax2.set_xlabel("Adım")
+    ax2.set_ylabel("I")
+    ax2.grid(True, alpha=0.3)
+
+    # 3. |z| vs Belirsizlik
+    ax3 = fig.add_subplot(gs[1, 0])
+    sc = ax3.scatter(magnitudes_z, all_indeter_parts, c=range(len(magnitudes_z)), 
+                     cmap="viridis", s=50, edgecolors='white', linewidth=0.5)
+    ax3.set_title("Büyüklük vs Belirsizlik")
+    ax3.set_xlabel("|z|")
+    ax3.set_ylabel("I")
+    plt.colorbar(sc, ax=ax3, label="Adım")
+    ax3.grid(True, alpha=0.3)
+
+    # 4. Re vs Im (I'ye göre renklendirilmiş)
+    ax4 = fig.add_subplot(gs[1, 1])
+    sc2 = ax4.scatter(all_real_parts, all_imag_parts, c=all_indeter_parts, 
+                      cmap="plasma", s=60, edgecolors='white', linewidth=0.5)
+    ax4.set_title("Re vs Im (I renklendirme)")
+    ax4.set_xlabel("Re(z)")
+    ax4.set_ylabel("Im(z)")
+    plt.colorbar(sc2, ax=ax4, label="Belirsizlik (I)")
+    ax4.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+
 
 
 def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Analysis"):
@@ -13051,128 +16132,53 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
     try:
         from sklearn.decomposition import PCA
-
         use_pca = True
     except ImportError:
         use_pca = False
         print("scikit-learn kurulu değil. PCA olmadan çizim yapılıyor...")
 
-    # ÖNEMLİ: Eğer sequence dictionary listesi ise, sadece 'value' değerlerini al
-    if sequence and isinstance(sequence[0], dict):
-        print("Detected dictionary sequence. Extracting 'value' fields for plotting...")
-        # Dictionary'den sadece 'value' değerlerini çıkar
-        extracted_sequence = []
-        for item in sequence:
-            if isinstance(item, dict) and "value" in item:
-                extracted_sequence.append(item["value"])
-            elif isinstance(item, dict) and "result" in item:
-                extracted_sequence.append(item["result"])
-            else:
-                # Diğer durumlarda sıfır ekle
-                extracted_sequence.append(0)
-        sequence = extracted_sequence
-
-    # Ayrıca, eğer sequence string veya tuple içeriyorsa, sayısal değerlere çevir
-    cleaned_sequence = []
-    for item in sequence:
-        if isinstance(item, (int, float, complex, Fraction)):
-            cleaned_sequence.append(item)
-        elif isinstance(item, dict):
-            # Dictionary içinden sayısal değer bulmaya çalış
-            for key in ["value", "result", "numeric_value"]:
-                if key in item and isinstance(
-                    item[key], (int, float, complex, Fraction)
-                ):
-                    cleaned_sequence.append(item[key])
-                    break
-            else:
-                cleaned_sequence.append(0)
-        elif isinstance(item, str):
-            # String'den sayı çıkarmaya çalış
-            try:
-                # Kesir formatı: "3/4"
-                if "/" in item:
-                    parts = item.split("/")
-                    if len(parts) == 2:
-                        num = float(parts[0])
-                        den = float(parts[1])
-                        if den != 0:
-                            cleaned_sequence.append(num / den)
-                            continue
-                # Normal sayı
-                cleaned_sequence.append(float(item))
-            except (ValueError, TypeError):
-                cleaned_sequence.append(0)
-        elif isinstance(item, (tuple, list)):
-            # Tuple/list içinden ilk sayısal değeri al
-            for element in item:
-                if isinstance(element, (int, float, complex, Fraction)):
-                    cleaned_sequence.append(element)
-                    break
-            else:
-                cleaned_sequence.append(0)
-        elif hasattr(item, "real"):
-            # real attribute'u olan nesneler
-            cleaned_sequence.append(float(item.real))
-        else:
-            cleaned_sequence.append(0)
-
-    sequence = cleaned_sequence
-
-    # Temizlenmiş sequence boş mu kontrol et
-    if not sequence:
-        print("Sequence is empty after cleaning. Nothing to plot.")
-        return
 
     fig = plt.figure(figsize=(18, 14), constrained_layout=True)
-    fig.suptitle(title, fontsize=18, fontweight="bold")
+    fig.suptitle(title, fontsize=18, fontweight='bold')
 
     # `sequence` is the iterable you want to visualise
     first_elem = sequence[0]
 
     # --- 1. Fraction (Rational)
     if isinstance(first_elem, Fraction):
-        # Helper fonksiyonları kullan
-        float_vals, numerators, denominators = extract_fraction_values(sequence)
+        # Tüm elemanları `float` olarak dönüştür
+        float_vals = [float(x) for x in sequence]
+        # float_vals = [float(x) if isinstance(x, (int, float, Fraction)) else float(x.value) for x in sequence]
+        # Pay ve paydaları ayrı ayrı al
+        numerators = [x.numerator for x in sequence]
+        denominators = [x.denominator for x in sequence]
 
         # GridSpec ile 4 alt grafik oluştur
         gs = GridSpec(2, 2, figure=fig)
 
         # 1. Grafik: Float değerleri
         ax1 = fig.add_subplot(gs[0, 0])
-        ax1.plot(float_vals, "o-", color="tab:blue")
+        ax1.plot(float_vals, 'o-', color='tab:blue')
         ax1.set_title("Fraction as Float")
         ax1.set_ylabel("Value")
 
         # 2. Grafik: Pay ve payda değerleri
         ax2 = fig.add_subplot(gs[0, 1])
-        ax2.plot(numerators, "s-", label="Numerator", color="tab:orange")
-        ax2.plot(denominators, "^-", label="Denominator", color="tab:green")
+        ax2.plot(numerators, 's-', label='Numerator', color='tab:orange')
+        ax2.plot(denominators, '^-', label='Denominator', color='tab:green')
         ax2.set_title("Numerator & Denominator")
         ax2.legend()
 
         # 3. Grafik: Pay/Payda oranı
         ax3 = fig.add_subplot(gs[1, 0])
-        ratios = [
-            float(n) / float(d) if d != 0 else 0.0
-            for n, d in zip(numerators, denominators)
-        ]
-        ax3.plot(ratios, "o-", color="tab:purple")
+        ratios = [n / d for n, d in zip(numerators, denominators)]
+        ax3.plot(ratios, 'o-', color='tab:purple')
         ax3.set_title("Numerator/Denominator Ratio")
         ax3.set_ylabel("n/d")
 
         # 4. Grafik: Pay vs Payda dağılımı
         ax4 = fig.add_subplot(gs[1, 1])
-        # numpy array'e çevirerek tip güvenliği sağla
-        numerators_arr = np.array(numerators, dtype=np.float64)
-        denominators_arr = np.array(denominators, dtype=np.float64)
-        sc = ax4.scatter(
-            numerators_arr,
-            denominators_arr,
-            c=range(len(sequence)),
-            cmap="plasma",
-            s=30,
-        )
+        sc = ax4.scatter(numerators, denominators, c=range(len(sequence)), cmap='plasma', s=30)
         ax4.set_title("Numerator vs Denominator Trajectory")
         ax4.set_xlabel("Numerator")
         ax4.set_ylabel("Denominator")
@@ -13180,10 +16186,8 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
     # --- 2. int, float (Positive/Negative Real, Float)
     elif isinstance(first_elem, (int, float)):
-        numeric_vals = extract_numeric_values(sequence)
-
         ax = fig.add_subplot(1, 1, 1)
-        ax.plot(numeric_vals, "o-", color="tab:blue", markersize=5)
+        ax.plot([float(x) for x in sequence], 'o-', color='tab:blue', markersize=5)
         ax.set_title("Real Number Sequence")
         ax.set_xlabel("Iteration")
         ax.set_ylabel("Value")
@@ -13191,66 +16195,44 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
     # --- 3. Complex
     elif isinstance(first_elem, complex):
-        real_parts, imag_parts, magnitudes = extract_complex_values(sequence)
-
+        real_parts = [z.real for z in sequence]
+        imag_parts = [z.imag for z in sequence]
+        magnitudes = [abs(z) for z in sequence]
         gs = GridSpec(2, 2, figure=fig)
 
         ax1 = fig.add_subplot(gs[0, 0])
-        ax1.plot(real_parts, "o-", color="tab:blue")
+        ax1.plot(real_parts, 'o-', color='tab:blue')
         ax1.set_title("Real Part")
 
         ax2 = fig.add_subplot(gs[0, 1])
-        ax2.plot(imag_parts, "o-", color="tab:red")
+        ax2.plot(imag_parts, 'o-', color='tab:red')
         ax2.set_title("Imaginary Part")
 
         ax3 = fig.add_subplot(gs[1, 0])
-        ax3.plot(magnitudes, "o-", color="tab:purple")
+        ax3.plot(magnitudes, 'o-', color='tab:purple')
         ax3.set_title("Magnitude |z|")
 
         ax4 = fig.add_subplot(gs[1, 1])
-        # numpy array kullan
-        real_arr = np.array(real_parts, dtype=np.float64)
-        imag_arr = np.array(imag_parts, dtype=np.float64)
-        ax4.plot(real_arr, imag_arr, ".-", alpha=0.7)
-        ax4.scatter(real_arr[0], imag_arr[0], c="g", s=100, label="Start")
-        ax4.scatter(real_arr[-1], imag_arr[-1], c="r", s=100, label="End")
+        ax4.plot(real_parts, imag_parts, '.-', alpha=0.7)
+        ax4.scatter(real_parts[0], imag_parts[0], c='g', s=100, label='Start')
+        ax4.scatter(real_parts[-1], imag_parts[-1], c='r', s=100, label='End')
         ax4.set_title("Complex Plane")
         ax4.set_xlabel("Re(z)")
         ax4.set_ylabel("Im(z)")
         ax4.legend()
-        ax4.axis("equal")
+        ax4.axis('equal')
         ax4.grid(True, alpha=0.3)
 
     # --- 4. quaternion
-    elif (
-        isinstance(first_elem, quaternion)
-        or (
-            hasattr(first_elem, "components")
-            and len(getattr(first_elem, "components", [])) == 4
-        )
-        or (
-            hasattr(first_elem, "w")
-            and hasattr(first_elem, "x")
-            and hasattr(first_elem, "y")
-            and hasattr(first_elem, "z")
-        )
-    ):
+    # Check for numpy-quaternion's quaternion type, or a custom one with 'components' or 'w,x,y,z': çıkarıldı:  and len(getattr(first_elem, 'components', [])) == 4) or \
+    elif isinstance(first_elem, quaternion) or (hasattr(first_elem, 'components') == 4) or \
+         (hasattr(first_elem, 'w') and hasattr(first_elem, 'x') and hasattr(first_elem, 'y') and hasattr(first_elem, 'z')):
 
         try:
-            comp = np.array(
-                [
-                    (
-                        (q.w, q.x, q.y, q.z)
-                        if hasattr(q, "w")
-                        else (
-                            getattr(q, "components", [0, 0, 0, 0])
-                            if hasattr(q, "components")
-                            else [0, 0, 0, 0]
-                        )
-                    )
-                    for q in sequence
-                ]
-            )
+            comp = np.array([
+                (q.w, q.x, q.y, q.z) if hasattr(q, 'w') else q.components
+                for q in sequence
+            ])
 
             w, x, y, z = comp.T
             magnitudes = np.linalg.norm(comp, axis=1)
@@ -13259,7 +16241,7 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
             # Component time‑series
             ax1 = fig.add_subplot(gs[0, 0])
-            labels = ["w", "x", "y", "z"]
+            labels = ['w', 'x', 'y', 'z']
             for i, label in enumerate(labels):
                 ax1.plot(comp[:, i], label=label, alpha=0.8)
             ax1.set_title("Quaternion Components")
@@ -13267,23 +16249,24 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
             # Magnitude plot
             ax2 = fig.add_subplot(gs[0, 1])
-            ax2.plot(magnitudes, "o-", color="tab:purple")
+            ax2.plot(magnitudes, 'o-', color='tab:purple')
             ax2.set_title("Magnitude |q|")
 
             # 3‑D trajectory of the vector part (x, y, z)
-            ax3 = fig.add_subplot(gs[1, :], projection="3d")
+            ax3 = fig.add_subplot(gs[1, :], projection='3d')
             ax3.plot(x, y, z, alpha=0.7)
-            ax3.scatter(x[0], y[0], z[0], c="g", s=100, label="Start")
-            ax3.scatter(x[-1], y[-1], z[-1], c="r", s=100, label="End")
+            ax3.scatter(x[0], y[0], z[0], c='g', s=100, label='Start')
+            ax3.scatter(x[-1], y[-1], z[-1], c='r', s=100, label='End')
             ax3.set_title("3D Trajectory (x,y,z)")
-            ax3.set_xlabel("x")
-            ax3.set_ylabel("y")
+            ax3.set_xlabel("x");
+            ax3.set_ylabel("y");
             ax3.set_zlabel("z")
             ax3.legend()
 
         except Exception as e:
             ax = fig.add_subplot(1, 1, 1)
-            ax.text(0.5, 0.5, f"Error: {e}", ha="center", va="center", color="red")
+            ax.text(0.5, 0.5, f"Error: {e}", ha='center', va='center', color='red')
+
 
     # --- 5. OctonionNumber
     elif isinstance(first_elem, OctonionNumber):
@@ -13293,25 +16276,25 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
         ax1 = fig.add_subplot(gs[0, 0])
         for i in range(4):
-            ax1.plot(coeffs[:, i], label=f"e{i}", alpha=0.7)
+            ax1.plot(coeffs[:, i], label=f'e{i}', alpha=0.7)
         ax1.set_title("e0-e3 Components")
         ax1.legend(ncol=2)
 
         ax2 = fig.add_subplot(gs[0, 1])
         for i in range(4, 8):
-            ax2.plot(coeffs[:, i], label=f"e{i}", alpha=0.7)
+            ax2.plot(coeffs[:, i], label=f'e{i}', alpha=0.7)
         ax2.set_title("e4-e7 Components")
         ax2.legend(ncol=2)
 
         ax3 = fig.add_subplot(gs[1, 0])
-        ax3.plot(magnitudes, "o-", color="tab:purple")
+        ax3.plot(magnitudes, 'o-', color='tab:purple')
         ax3.set_title("Magnitude |o|")
 
-        ax4 = fig.add_subplot(gs[1, 1], projection="3d")
+        ax4 = fig.add_subplot(gs[1, 1], projection='3d')
         ax4.plot(coeffs[:, 1], coeffs[:, 2], coeffs[:, 3], alpha=0.7)
         ax4.set_title("3D (e1,e2,e3)")
-        ax4.set_xlabel("e1")
-        ax4.set_ylabel("e2")
+        ax4.set_xlabel("e1");
+        ax4.set_ylabel("e2");
         ax4.set_zlabel("e3")
 
     # --- 6. SedenionNumber
@@ -13322,18 +16305,18 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
         ax1 = fig.add_subplot(gs[0, 0])
         for i in range(8):
-            ax1.plot(coeffs[:, i], label=f"e{i}", alpha=0.6, linewidth=0.8)
+            ax1.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.8)
         ax1.set_title("Sedenion e0-e7")
         ax1.legend(ncol=2, fontsize=6)
 
         ax2 = fig.add_subplot(gs[0, 1])
         for i in range(8, 16):
-            ax2.plot(coeffs[:, i], label=f"e{i}", alpha=0.6, linewidth=0.8)
+            ax2.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.8)
         ax2.set_title("e8-e15")
         ax2.legend(ncol=2, fontsize=6)
 
         ax3 = fig.add_subplot(gs[1, 0])
-        ax3.plot(magnitudes, "o-", color="tab:purple")
+        ax3.plot(magnitudes, 'o-', color='tab:purple')
         ax3.set_title("Magnitude |s|")
 
         if use_pca:
@@ -13342,33 +16325,22 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
                 if len(sequence) > 2:
                     proj = pca.fit_transform(coeffs)
                     ax4 = fig.add_subplot(gs[1, 1])
-                    sc = ax4.scatter(
-                        proj[:, 0], proj[:, 1], c=range(len(proj)), cmap="viridis", s=25
-                    )
+                    sc = ax4.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
                     var_sum = _pca_var_sum(pca)
                     ax4.set_title(f"PCA Projection (Var: {var_sum:.3f})")
                     plt.colorbar(sc, ax=ax4, label="Iteration")
             except Exception as e:
                 ax4 = fig.add_subplot(gs[1, 1])
-                ax4.text(
-                    0.5, 0.5, f"PCA Error: {e}", ha="center", va="center", fontsize=10
-                )
+                ax4.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=10)
         else:
             ax4 = fig.add_subplot(gs[1, 1])
-            ax4.text(
-                0.5,
-                0.5,
-                "Install sklearn\nfor PCA",
-                ha="center",
-                va="center",
-                fontsize=10,
-            )
+            ax4.text(0.5, 0.5, "Install sklearn\nfor PCA", ha='center', va='center', fontsize=10)
 
     # --- 7. CliffordNumber
     elif isinstance(first_elem, CliffordNumber):
         all_keys = sorted(first_elem.basis.keys(), key=lambda x: (len(x), x))
         values = {k: [elem.basis.get(k, 0.0) for elem in sequence] for k in all_keys}
-        scalar = values.get("", [0] * len(sequence))
+        scalar = values.get('', [0]*len(sequence))
         vector_keys = [k for k in all_keys if len(k) == 1]
 
         # GERÇEK özellik sayısını hesapla (sıfır olmayan bileşenler)
@@ -13385,13 +16357,13 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax3 = fig.add_subplot(gs[1, :])
 
         # 1. Grafik: Skaler ve Vektör Bileşenleri
-        ax1.plot(scalar, "o-", label="Scalar", color="black", linewidth=2)
+        ax1.plot(scalar, 'o-', label='Scalar', color='black', linewidth=2)
 
         # Sadece sıfır olmayan vektör bileşenlerini göster
         visible_vectors = 0
         for k in vector_keys:
             if any(abs(v) > 1e-10 for v in values[k]):
-                ax1.plot(values[k], "o-", label=f"Vec {k}", alpha=0.7, linewidth=1.5)
+                ax1.plot(values[k], 'o-', label=f'Vec {k}', alpha=0.7, linewidth=1.5)
                 visible_vectors += 1
             if visible_vectors >= 3:
                 break
@@ -13401,17 +16373,8 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax1.grid(True, alpha=0.3)
 
         # 2. Grafik: Bivector Magnitude
-        bivector_mags = [
-            sum(v**2 for k, v in elem.basis.items() if len(k) == 2) ** 0.5
-            for elem in sequence
-        ]
-        ax2.plot(
-            bivector_mags,
-            "o-",
-            color="tab:green",
-            linewidth=2,
-            label="Bivector Magnitude",
-        )
+        bivector_mags = [sum(v**2 for k, v in elem.basis.items() if len(k) == 2)**0.5 for elem in sequence]
+        ax2.plot(bivector_mags, 'o-', color='tab:green', linewidth=2, label='Bivector Magnitude')
         ax2.set_title("Bivector Magnitude Over Time")
         ax2.legend()
         ax2.grid(True, alpha=0.3)
@@ -13433,53 +16396,28 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
                 pca = PCA(n_components=min(2, matrix.shape[1]))
                 proj = pca.fit_transform(matrix)
 
-                sc = ax3.scatter(
-                    proj[:, 0],
-                    proj[:, 1],
-                    c=range(len(proj)),
-                    cmap="plasma",
-                    s=50,
-                    alpha=0.8,
-                )
-                ax3.set_title(
-                    f"PCA Projection ({non_zero_features} features)\nVariance: {pca.explained_variance_ratio_[0]:.3f}, {pca.explained_variance_ratio_[1]:.3f}"
-                )
+                sc = ax3.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)),
+                               cmap='plasma', s=50, alpha=0.8)
+                ax3.set_title(f"PCA Projection ({non_zero_features} features)\nVariance: {pca.explained_variance_ratio_[0]:.3f}, {pca.explained_variance_ratio_[1]:.3f}")
 
                 cbar = plt.colorbar(sc, ax=ax3)
                 cbar.set_label("Time Step")
 
-                ax3.plot(proj[:, 0], proj[:, 1], "gray", linestyle="--", alpha=0.5)
+                ax3.plot(proj[:, 0], proj[:, 1], 'gray', linestyle='--', alpha=0.5)
                 ax3.grid(True, alpha=0.3)
 
             except Exception as e:
-                ax3.text(
-                    0.5,
-                    0.5,
-                    f"PCA Error: {str(e)[:30]}",
-                    ha="center",
-                    va="center",
-                    transform=ax3.transAxes,
-                )
+                ax3.text(0.5, 0.5, f"PCA Error: {str(e)[:30]}",
+                        ha='center', va='center', transform=ax3.transAxes)
         else:
             # PCA yapılamazsa bilgi göster
-            ax3.text(
-                0.5,
-                0.5,
-                f"Need ≥2 data points and ≥2 features\n(Current: {len(sequence)} points, {non_zero_features} features)",
-                ha="center",
-                va="center",
-                transform=ax3.transAxes,
-            )
+            ax3.text(0.5, 0.5, f"Need ≥2 data points and ≥2 features\n(Current: {len(sequence)} points, {non_zero_features} features)",
+                   ha='center', va='center', transform=ax3.transAxes)
             if not use_pca:
-                ax3.text(
-                    0.5,
-                    0.65,
-                    "Install sklearn for PCA",
-                    ha="center",
-                    va="center",
-                    transform=ax3.transAxes,
-                )
+                ax3.text(0.5, 0.65, "Install sklearn for PCA",
+                        ha='center', va='center', transform=ax3.transAxes)
             ax3.set_title("Insufficient for PCA")
+
 
     # --- 8. DualNumber
     elif isinstance(first_elem, DualNumber):
@@ -13488,22 +16426,22 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         gs = GridSpec(2, 2, figure=fig)
 
         ax1 = fig.add_subplot(gs[0, 0])
-        ax1.plot(real_vals, "o-", color="tab:blue")
+        ax1.plot(real_vals, 'o-', color='tab:blue')
         ax1.set_title("Real Part")
 
         ax2 = fig.add_subplot(gs[0, 1])
-        ax2.plot(dual_vals, "o-", color="tab:orange")
+        ax2.plot(dual_vals, 'o-', color='tab:orange')
         ax2.set_title("Dual Part (ε)")
 
         ax3 = fig.add_subplot(gs[1, 0])
-        ax3.plot(real_vals, dual_vals, ".-")
+        ax3.plot(real_vals, dual_vals, '.-')
         ax3.set_title("Real vs Dual")
         ax3.set_xlabel("Real")
         ax3.set_ylabel("Dual")
 
         ax4 = fig.add_subplot(gs[1, 1])
-        ratios = [d / r if r != 0 else 0 for r, d in zip(real_vals, dual_vals)]
-        ax4.plot(ratios, "o-", color="tab:purple")
+        ratios = [d/r if r != 0 else 0 for r, d in zip(real_vals, dual_vals)]
+        ax4.plot(ratios, 'o-', color='tab:purple')
         ax4.set_title("Dual/Real Ratio")
 
     # --- 9. SplitcomplexNumber
@@ -13515,21 +16453,21 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         gs = GridSpec(2, 2, figure=fig)
 
         ax1 = fig.add_subplot(gs[0, 0])
-        ax1.plot(real_vals, "o-", color="tab:green")
+        ax1.plot(real_vals, 'o-', color='tab:green')
         ax1.set_title("Real Part")
 
         ax2 = fig.add_subplot(gs[0, 1])
-        ax2.plot(split_vals, "o-", color="tab:brown")
+        ax2.plot(split_vals, 'o-', color='tab:brown')
         ax2.set_title("Split Part (j)")
 
         ax3 = fig.add_subplot(gs[1, 0])
-        ax3.plot(real_vals, split_vals, ".-")
+        ax3.plot(real_vals, split_vals, '.-')
         ax3.set_title("Trajectory (Real vs Split)")
         ax3.grid(True, alpha=0.3)
 
         ax4 = fig.add_subplot(gs[1, 1])
-        ax4.plot(u_vals, label="u = r+j")
-        ax4.plot(v_vals, label="v = r-j")
+        ax4.plot(u_vals, label='u = r+j')
+        ax4.plot(v_vals, label='v = r-j')
         ax4.set_title("Light-Cone Coordinates")
         ax4.legend()
 
@@ -13561,9 +16499,9 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
         # 1. t, i, f zaman içinde
         ax1 = fig.add_subplot(gs[0, 0])
-        ax1.plot(t_vals, "o-", label="Truth (t)", color="tab:blue")
-        ax1.plot(i_vals, "s-", label="Indeterminacy (i)", color="tab:orange")
-        ax1.plot(f_vals, "^-", label="Falsity (f)", color="tab:red")
+        ax1.plot(t_vals, 'o-', label='Truth (t)', color='tab:blue')
+        ax1.plot(i_vals, 's-', label='Indeterminacy (i)', color='tab:orange')
+        ax1.plot(f_vals, '^-', label='Falsity (f)', color='tab:red')
         ax1.set_title("Neutrosophic Components")
         ax1.set_xlabel("Iteration")
         ax1.set_ylabel("Value")
@@ -13572,7 +16510,7 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
         # 2. t vs i
         ax2 = fig.add_subplot(gs[0, 1])
-        ax2.scatter(t_vals, i_vals, c=range(len(t_vals)), cmap="viridis", s=30)
+        ax2.scatter(t_vals, i_vals, c=range(len(t_vals)), cmap='viridis', s=30)
         ax2.set_title("t vs i Trajectory")
         ax2.set_xlabel("Truth (t)")
         ax2.set_ylabel("Indeterminacy (i)")
@@ -13580,28 +16518,161 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
         # 3. t vs f
         ax3 = fig.add_subplot(gs[1, 0])
-        ax3.scatter(t_vals, f_vals, c=range(len(t_vals)), cmap="plasma", s=30)
+        ax3.scatter(t_vals, f_vals, c=range(len(t_vals)), cmap='plasma', s=30)
         ax3.set_title("t vs f Trajectory")
         ax3.set_xlabel("Truth (t)")
         ax3.set_ylabel("Falsity (f)")
         plt.colorbar(ax3.collections[0], ax=ax3, label="Step")
 
         # 4. Magnitude (t² + i² + f²)
-        magnitudes = [
-            np.sqrt(t**2 + i**2 + f**2) for t, i, f in zip(t_vals, i_vals, f_vals)
-        ]
+        magnitudes = [np.sqrt(t**2 + i**2 + f**2) for t, i, f in zip(t_vals, i_vals, f_vals)]
         ax4 = fig.add_subplot(gs[1, 1])
-        ax4.plot(magnitudes, "o-", color="tab:purple")
+        ax4.plot(magnitudes, 'o-', color='tab:purple')
         ax4.set_title("Magnitude √(t²+i²+f²)")
         ax4.set_ylabel("|n|")
 
     # --- 11. NeutrosophicComplexNumber
-    elif isinstance(first_elem, NeutrosophicComplexNumber):
+    # her şeyle çalışır
+    elif hasattr(first_elem, 'indeterminacy') or kececi_type == TYPE_NEUTROSOPHIC_COMPLEX:
+
+        print("DEBUG: NeutrosophicComplex plotting - Universal handler")
+        
+        def safe_extract_real(obj):
+            """Her türden real çıkarır"""
+            if hasattr(obj, 'real'):
+                return float(obj.real)
+            return 0.0
+        
+        def safe_extract_imag(obj):
+            """Her türden imag çıkarır"""
+            if hasattr(obj, 'imag'):
+                return float(obj.imag)
+            return 0.0
+        
+        def safe_extract_indet(obj):
+            """Her türden indeterminacy çıkarır"""
+            if hasattr(obj, 'indeterminacy'):
+                return float(obj.indeterminacy)
+            return 0.0
+        
+        # Sequence'den verileri çıkar (PlotNeutroComplex + diğer tipler)
+        real_parts = [safe_extract_real(x) for x in sequence]
+        imag_parts = [safe_extract_imag(x) for x in sequence]
+        indeter_parts = [safe_extract_indet(x) for x in sequence]
+        magnitudes_z = [abs(complex(r, i)) for r, i in zip(real_parts, imag_parts)]
+        
+        # ✅ 4 grafik - %100 sorunsuz
+        gs = GridSpec(2, 2, figure=fig)
+        
+        # 1. Complex Plane
+        ax1 = fig.add_subplot(gs[0, 0])
+        ax1.plot(real_parts, imag_parts, ".-", alpha=0.7)
+        ax1.scatter(real_parts[0], imag_parts[0], c="g", s=100, label="Start")
+        ax1.scatter(real_parts[-1], imag_parts[-1], c="r", s=100, label="End")
+        ax1.set_title("Neutrosophic Complex Plane")
+        ax1.legend(); ax1.axis("equal")
+        
+        # 2. Indeterminacy
+        ax2 = fig.add_subplot(gs[0, 1])
+        ax2.plot(indeter_parts, "o-", color="purple")
+        ax2.set_title("Indeterminacy (I)")
+        
+        # 3. Magnitude vs I
+        ax3 = fig.add_subplot(gs[1, 0])
+        sc = ax3.scatter(magnitudes_z, indeter_parts, c=range(len(sequence)), 
+                        cmap="viridis", s=30)
+        ax3.set_title("|z| vs I"); plt.colorbar(sc, ax=ax3, label="Step")
+        
+        # 4. Real-Imag colored by I
+        ax4 = fig.add_subplot(gs[1, 1])
+        sc2 = ax4.scatter(real_parts, imag_parts, c=indeter_parts, 
+                         cmap="plasma", s=40)
+        ax4.set_title("Re-Im (by I)"); plt.colorbar(sc2, ax=ax4)
+        """
+        elif isinstance(first_elem, NeutrosophicComplexNumber):
+            
+            print("DEBUG: İlk eleman tipi:", type(first_elem))
+            print("DEBUG: Sequence ilk 3 eleman:", [type(x).__name__ for x in sequence[:3]])
+            
+            # Tuple kontrolü ve güvenli attribute erişimi
+            def safe_get_attr(obj, attr, default=0.0):
+                if hasattr(obj, attr):
+                    return getattr(obj, attr)
+                elif isinstance(obj, (tuple, list)):
+                    attr_map = {'real': 0, 'imag': 1, 'indeterminacy': 2}
+                    if attr in attr_map and len(obj) > attr_map[attr]:
+                        return obj[attr_map[attr]]
+                return default
+            
+            real_parts = [safe_get_attr(x, 'real') for x in sequence]
+            imag_parts = [safe_get_attr(x, 'imag') for x in sequence]
+            indeter_parts = [safe_get_attr(x, 'indeterminacy') for x in sequence]
+            magnitudes_z = [abs(complex(r, i)) for r, i in zip(real_parts, imag_parts)]
+        
+            gs = GridSpec(2, 2, figure=fig)
+        
+            # 1. Complex Plane
+            ax1 = fig.add_subplot(gs[0, 0])
+            ax1.plot(real_parts, imag_parts, ".-", alpha=0.7)
+            ax1.scatter(real_parts[0], imag_parts[0], c="g", s=100, label="Start")
+            ax1.scatter(real_parts[-1], imag_parts[-1], c="r", s=100, label="End")
+            ax1.set_title("Complex Plane")
+            ax1.set_xlabel("Re(z)")
+            ax1.set_ylabel("Im(z)")
+            ax1.legend()
+            ax1.axis("equal")
+        
+            # 2. Indeterminacy over time
+            ax2 = fig.add_subplot(gs[0, 1])
+            ax2.plot(indeter_parts, "o-", color="tab:purple")
+            ax2.set_title("Indeterminacy Level")
+            ax2.set_ylabel("I")
+        
+            # 3. |z| vs Indeterminacy
+            ax3 = fig.add_subplot(gs[1, 0])
+            sc = ax3.scatter(
+                magnitudes_z,
+                indeter_parts,
+                c=range(len(magnitudes_z)),
+                cmap="viridis",
+                s=30,
+            )
+            ax3.set_title("Magnitude vs Indeterminacy")
+            ax3.set_xlabel("|z|")
+            ax3.set_ylabel("I")
+            plt.colorbar(sc, ax=ax3, label="Step")
+        
+            # 4. Real vs Imag colored by I
+            ax4 = fig.add_subplot(gs[1, 1])
+            sc2 = ax4.scatter(real_parts, imag_parts, c=indeter_parts, cmap="plasma", s=40)
+            ax4.set_title("Real vs Imag (colored by I)")
+            ax4.set_xlabel("Re(z)")
+            ax4.set_ylabel("Im(z)")
+            plt.colorbar(sc2, ax=ax4, label="Indeterminacy")
+        """
+        """
+        #elif isinstance(first_elem, NeutrosophicComplexNumber):
+        print("DEBUG: İlk eleman tipi:", type(first_elem))
+        print("DEBUG: Sequence ilk 3 eleman:", [type(x).__name__ for x in sequence[:3]])
+        
+        # Tuple kontrolü ve güvenli attribute erişimi
+        def safe_get_attr(obj, attr, default=0.0):
+            if hasattr(obj, attr):
+                return getattr(obj, attr)
+            elif isinstance(obj, (tuple, list)) and len(obj) > {'real':0, 'imag':1, 'indeterminacy':2}[attr]:
+                return obj[{'real':0, 'imag':1, 'indeterminacy':2}[attr]]
+            return default
+        
+        real_parts = [safe_get_attr(x, 'real') for x in sequence]
+        imag_parts = [safe_get_attr(x, 'imag') for x in sequence]
+        indeter_parts = [safe_get_attr(x, 'indeterminacy') for x in sequence]
+        magnitudes_z = [abs(complex(r, i)) for r, i in zip(real_parts, imag_parts)]
+
         # Sınıfın arayüzünü biliyoruz
-        real_parts = [x.real for x in sequence]
-        imag_parts = [x.imag for x in sequence]
-        indeter_parts = [x.indeterminacy for x in sequence]
-        magnitudes_z = [abs(complex(x.real, x.imag)) for x in sequence]
+        #real_parts = [x.real for x in sequence]
+        #imag_parts = [x.imag for x in sequence]
+        #indeter_parts = [x.indeterminacy for x in sequence]
+        #magnitudes_z = [abs(complex(x.real, x.imag)) for x in sequence]
 
         gs = GridSpec(2, 2, figure=fig)
 
@@ -13643,6 +16714,7 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax4.set_xlabel("Re(z)")
         ax4.set_ylabel("Im(z)")
         plt.colorbar(sc2, ax=ax4, label="Indeterminacy")
+        """
 
     # --- 12. HyperrealNumber
     elif isinstance(first_elem, HyperrealNumber):
@@ -13653,22 +16725,22 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
         ax1 = fig.add_subplot(gs[0, 0])
         for i in range(seq_len):
-            ax1.plot(data[:, i], label=f"ε^{i}", alpha=0.8)
+            ax1.plot(data[:, i], label=f'ε^{i}', alpha=0.8)
         ax1.set_title("Hyperreal Components")
         ax1.legend(ncol=2)
 
         ax2 = fig.add_subplot(gs[0, 1])
         magnitudes = np.linalg.norm(data, axis=1)
-        ax2.plot(magnitudes, "o-", color="tab:purple")
+        ax2.plot(magnitudes, 'o-', color='tab:purple')
         ax2.set_title("Magnitude")
 
         ax3 = fig.add_subplot(gs[1, 0])
-        ax3.plot(data[:, 0], "o-", label="Standard Part")
+        ax3.plot(data[:, 0], 'o-', label='Standard Part')
         ax3.set_title("Standard Part (ε⁰)")
         ax3.legend()
 
         ax4 = fig.add_subplot(gs[1, 1])
-        sc = ax4.scatter(data[:, 0], data[:, 1], c=range(len(data)), cmap="viridis")
+        sc = ax4.scatter(data[:, 0], data[:, 1], c=range(len(data)), cmap='viridis')
         ax4.set_title("Standard vs Infinitesimal")
         ax4.set_xlabel("Standard")
         ax4.set_ylabel("ε¹")
@@ -13684,25 +16756,25 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         gs = GridSpec(2, 2, figure=fig)
 
         ax1 = fig.add_subplot(gs[0, 0])
-        ax1.plot(z1_real, label="Re(z1)")
-        ax1.plot(z1_imag, label="Im(z1)")
+        ax1.plot(z1_real, label='Re(z1)')
+        ax1.plot(z1_imag, label='Im(z1)')
         ax1.set_title("Bicomplex z1")
         ax1.legend()
 
         ax2 = fig.add_subplot(gs[0, 1])
-        ax2.plot(z2_real, label="Re(z2)")
-        ax2.plot(z2_imag, label="Im(z2)")
+        ax2.plot(z2_real, label='Re(z2)')
+        ax2.plot(z2_imag, label='Im(z2)')
         ax2.set_title("Bicomplex z2")
         ax2.legend()
 
         ax3 = fig.add_subplot(gs[1, 0])
-        ax3.plot(z1_real, z1_imag, ".-")
+        ax3.plot(z1_real, z1_imag, '.-')
         ax3.set_title("z1 Trajectory")
         ax3.set_xlabel("Re(z1)")
         ax3.set_ylabel("Im(z1)")
 
         ax4 = fig.add_subplot(gs[1, 1])
-        ax4.plot(z2_real, z2_imag, ".-")
+        ax4.plot(z2_real, z2_imag, '.-')
         ax4.set_title("z2 Trajectory")
         ax4.set_xlabel("Re(z2)")
         ax4.set_ylabel("Im(z2)")
@@ -13712,38 +16784,32 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         # Sınıfın - a, b, c, d, e, f, g, h attribute'ları var
         try:
             # Doğru attribute isimlerini kullanıyoruz
-            comps = np.array(
-                [
-                    [
-                        float(getattr(x, attr))
-                        for attr in ["a", "b", "c", "d", "e", "f", "g", "h"]
-                    ]
-                    for x in sequence
-                ]
-            )
+            comps = np.array([
+                [float(getattr(x, attr))
+                 for attr in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']]
+                for x in sequence
+            ])
             magnitudes = np.linalg.norm(comps, axis=1)
             gs = GridSpec(2, 2, figure=fig)
 
             ax1 = fig.add_subplot(gs[0, 0])
-            for i, label in enumerate(["a", "b", "c", "d"]):
+            for i, label in enumerate(['a', 'b', 'c', 'd']):
                 ax1.plot(comps[:, i], label=label, alpha=0.7)
             ax1.set_title("First 4 Components")
             ax1.legend()
 
             ax2 = fig.add_subplot(gs[0, 1])
-            for i, label in enumerate(["e", "f", "g", "h"]):
+            for i, label in enumerate(['e', 'f', 'g', 'h']):
                 ax2.plot(comps[:, i + 4], label=label, alpha=0.7)
             ax2.set_title("Last 4 Components")
             ax2.legend()
 
             ax3 = fig.add_subplot(gs[1, 0])
-            ax3.plot(magnitudes, "o-", color="tab:purple")
+            ax3.plot(magnitudes, 'o-', color='tab:purple')
             ax3.set_title("Magnitude")
 
             ax4 = fig.add_subplot(gs[1, 1])
-            sc = ax4.scatter(
-                comps[:, 0], comps[:, 1], c=range(len(comps)), cmap="plasma"
-            )
+            sc = ax4.scatter(comps[:, 0], comps[:, 1], c=range(len(comps)), cmap='plasma')
             ax4.set_title("a vs b Trajectory")
             ax4.set_xlabel("a")
             ax4.set_ylabel("b")
@@ -13751,7 +16817,7 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
         except Exception as e:
             ax = fig.add_subplot(1, 1, 1)
-            ax.text(0.5, 0.5, f"Plot error: {e}", ha="center", va="center", color="red")
+            ax.text(0.5, 0.5, f"Plot error: {e}", ha='center', va='center', color='red')
             ax.set_xticks([])
             ax.set_yticks([])
 
@@ -13763,18 +16829,18 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
         ax1 = fig.add_subplot(gs[0, 0])
         for i in range(8):
-            ax1.plot(coeffs[:, i], label=f"e{i}", alpha=0.6, linewidth=0.8)
+            ax1.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.8)
         ax1.set_title("PathionNumber e0-e7")
         ax1.legend(ncol=2, fontsize=6)
 
         ax2 = fig.add_subplot(gs[0, 1])
         for i in range(8, 16):
-            ax2.plot(coeffs[:, i], label=f"e{i}", alpha=0.6, linewidth=0.8)
+            ax2.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.8)
         ax2.set_title("e8-e15")
         ax2.legend(ncol=2, fontsize=6)
 
         ax3 = fig.add_subplot(gs[1, 0])
-        ax3.plot(magnitudes, "o-", color="tab:red")
+        ax3.plot(magnitudes, 'o-', color='tab:red')
         ax3.set_title("Magnitude |p|")
 
         if use_pca:
@@ -13783,27 +16849,16 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
                 if len(sequence) > 2:
                     proj = pca.fit_transform(coeffs)
                     ax4 = fig.add_subplot(gs[1, 1])
-                    sc = ax4.scatter(
-                        proj[:, 0], proj[:, 1], c=range(len(proj)), cmap="viridis", s=25
-                    )
+                    sc = ax4.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
                     var_sum = _pca_var_sum(pca)
                     ax4.set_title(f"PCA Projection (Var: {var_sum:.3f})")
                     plt.colorbar(sc, ax=ax4, label="Iteration")
             except Exception as e:
                 ax4 = fig.add_subplot(gs[1, 1])
-                ax4.text(
-                    0.5, 0.5, f"PCA Error: {e}", ha="center", va="center", fontsize=10
-                )
+                ax4.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=10)
         else:
             ax4 = fig.add_subplot(gs[1, 1])
-            ax4.text(
-                0.5,
-                0.5,
-                "Install sklearn\nfor PCA",
-                ha="center",
-                va="center",
-                fontsize=10,
-            )
+            ax4.text(0.5, 0.5, "Install sklearn\nfor PCA", ha='center', va='center', fontsize=10)
 
     # --- 16. Chingon
     elif isinstance(first_elem, ChingonNumber):
@@ -13813,18 +16868,18 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
         ax1 = fig.add_subplot(gs[0, 0])
         for i in range(16):
-            ax1.plot(coeffs[:, i], label=f"e{i}", alpha=0.6, linewidth=0.5)
+            ax1.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.5)
         ax1.set_title("ChingonNumber e0-e15")
         ax1.legend(ncol=4, fontsize=4)
 
         ax2 = fig.add_subplot(gs[0, 1])
         for i in range(16, 32):
-            ax2.plot(coeffs[:, i], label=f"e{i}", alpha=0.6, linewidth=0.5)
+            ax2.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.5)
         ax2.set_title("e16-e31")
         ax2.legend(ncol=4, fontsize=4)
 
         ax3 = fig.add_subplot(gs[1, 0])
-        ax3.plot(magnitudes, "o-", color="tab:green")
+        ax3.plot(magnitudes, 'o-', color='tab:green')
         ax3.set_title("Magnitude |c|")
 
         if use_pca:
@@ -13833,27 +16888,17 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
                 if len(sequence) > 2:
                     proj = pca.fit_transform(coeffs)
                     ax4 = fig.add_subplot(gs[1, 1])
-                    sc = ax4.scatter(
-                        proj[:, 0], proj[:, 1], c=range(len(proj)), cmap="viridis", s=25
-                    )
+                    sc = ax4.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
                     var_sum = _pca_var_sum(pca)
                     ax4.set_title(f"PCA Projection (Var: {var_sum:.3f})")
                     plt.colorbar(sc, ax=ax4, label="Iteration")
             except Exception as e:
                 ax4 = fig.add_subplot(gs[1, 1])
-                ax4.text(
-                    0.5, 0.5, f"PCA Error: {e}", ha="center", va="center", fontsize=10
-                )
+                ax4.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=10)
         else:
             ax4 = fig.add_subplot(gs[1, 1])
-            ax4.text(
-                0.5,
-                0.5,
-                "Install sklearn\nfor PCA",
-                ha="center",
-                va="center",
-                fontsize=10,
-            )
+            ax4.text(0.5, 0.5, "Install sklearn\nfor PCA", ha='center', va='center', fontsize=10)
+
 
     # --- 17. Routon
     elif isinstance(first_elem, RoutonNumber):
@@ -13863,18 +16908,18 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
         ax1 = fig.add_subplot(gs[0, 0])
         for i in range(32):
-            ax1.plot(coeffs[:, i], label=f"e{i}", alpha=0.6, linewidth=0.3)
+            ax1.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.3)
         ax1.set_title("RoutonNumber e0-e31")
         ax1.legend(ncol=4, fontsize=3)
 
         ax2 = fig.add_subplot(gs[0, 1])
         for i in range(32, 64):
-            ax2.plot(coeffs[:, i], label=f"e{i}", alpha=0.6, linewidth=0.3)
+            ax2.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.3)
         ax2.set_title("e32-e63")
         ax2.legend(ncol=4, fontsize=3)
 
         ax3 = fig.add_subplot(gs[1, 0])
-        ax3.plot(magnitudes, "o-", color="tab:blue")
+        ax3.plot(magnitudes, 'o-', color='tab:blue')
         ax3.set_title("Magnitude |r|")
 
         if use_pca:
@@ -13883,27 +16928,16 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
                 if len(sequence) > 2:
                     proj = pca.fit_transform(coeffs)
                     ax4 = fig.add_subplot(gs[1, 1])
-                    sc = ax4.scatter(
-                        proj[:, 0], proj[:, 1], c=range(len(proj)), cmap="viridis", s=25
-                    )
+                    sc = ax4.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
                     var_sum = _pca_var_sum(pca)
                     ax4.set_title(f"PCA Projection (Var: {var_sum:.3f})")
                     plt.colorbar(sc, ax=ax4, label="Iteration")
             except Exception as e:
                 ax4 = fig.add_subplot(gs[1, 1])
-                ax4.text(
-                    0.5, 0.5, f"PCA Error: {e}", ha="center", va="center", fontsize=10
-                )
+                ax4.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=10)
         else:
             ax4 = fig.add_subplot(gs[1, 1])
-            ax4.text(
-                0.5,
-                0.5,
-                "Install sklearn\nfor PCA",
-                ha="center",
-                va="center",
-                fontsize=10,
-            )
+            ax4.text(0.5, 0.5, "Install sklearn\nfor PCA", ha='center', va='center', fontsize=10)
 
     # --- 18. Voudon
     elif isinstance(first_elem, VoudonNumber):
@@ -13913,18 +16947,18 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
         ax1 = fig.add_subplot(gs[0, 0])
         for i in range(64):
-            ax1.plot(coeffs[:, i], label=f"e{i}", alpha=0.6, linewidth=0.2)
+            ax1.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.2)
         ax1.set_title("VoudonNumber e0-e63")
         ax1.legend(ncol=4, fontsize=2)
 
         ax2 = fig.add_subplot(gs[0, 1])
         for i in range(64, 128):
-            ax2.plot(coeffs[:, i], label=f"e{i}", alpha=0.6, linewidth=0.2)
+            ax2.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.2)
         ax2.set_title("e64-e127")
         ax2.legend(ncol=4, fontsize=2)
 
         ax3 = fig.add_subplot(gs[1, 0])
-        ax3.plot(magnitudes, "o-", color="tab:orange")
+        ax3.plot(magnitudes, 'o-', color='tab:orange')
         ax3.set_title("Magnitude |v|")
 
         if use_pca:
@@ -13933,27 +16967,17 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
                 if len(sequence) > 2:
                     proj = pca.fit_transform(coeffs)
                     ax4 = fig.add_subplot(gs[1, 1])
-                    sc = ax4.scatter(
-                        proj[:, 0], proj[:, 1], c=range(len(proj)), cmap="viridis", s=25
-                    )
+                    sc = ax4.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
                     var_sum = _pca_var_sum(pca)
                     ax4.set_title(f"PCA Projection (Var: {var_sum:.3f})")
                     plt.colorbar(sc, ax=ax4, label="Iteration")
             except Exception as e:
                 ax4 = fig.add_subplot(gs[1, 1])
-                ax4.text(
-                    0.5, 0.5, f"PCA Error: {e}", ha="center", va="center", fontsize=10
-                )
+                ax4.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=10)
         else:
             ax4 = fig.add_subplot(gs[1, 1])
-            ax4.text(
-                0.5,
-                0.5,
-                "Install sklearn\nfor PCA",
-                ha="center",
-                va="center",
-                fontsize=10,
-            )
+            ax4.text(0.5, 0.5, "Install sklearn\nfor PCA", ha='center', va='center', fontsize=10)
+
 
     # --- 21. Super Real
     elif isinstance(first_elem, SuperrealNumber):
@@ -13962,17 +16986,17 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         splits = np.array([x.split for x in sequence])
 
         gs = GridSpec(2, 2, figure=fig)  # 2 satır, 2 sütun
-        # gs = GridSpec(2, 1, figure=fig)
+        #gs = GridSpec(2, 1, figure=fig)
 
         # Real bileşenini çizdir
         ax1 = fig.add_subplot(gs[0, 0])
-        ax1.plot(reals, "o-", color="tab:blue", label="Real")
+        ax1.plot(reals, 'o-', color='tab:blue', label='Real')
         ax1.set_title("Real Component")
         ax1.legend()
 
         # Split bileşenini çizdir
         ax2 = fig.add_subplot(gs[1, 0])
-        ax2.plot(splits, "o-", color="tab:red", label="Split")
+        ax2.plot(splits, 'o-', color='tab:red', label='Split')
         ax2.set_title("Split Component")
         ax2.legend()
 
@@ -13995,13 +17019,7 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
                             # 2D çizim (projisyon iki bileşenli olduğu için daha uygun)
                             ax3 = fig.add_subplot(gs[:, 1])
-                            sc = ax3.scatter(
-                                proj[:, 0],
-                                proj[:, 1],
-                                c=range(len(proj)),
-                                cmap="viridis",
-                                s=25,
-                            )
+                            sc = ax3.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
                             ax3.set_title(f"PCA Projection (Var: {var_sum:.3f})")
                             ax3.set_xlabel("PC1")
                             ax3.set_ylabel("PC2")
@@ -14015,46 +17033,22 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
                         except Exception as e:
                             logger.exception("PCA failed for Superreal data: %s", e)
                             ax3 = fig.add_subplot(gs[:, 1])
-                            ax3.text(
-                                0.5,
-                                0.5,
-                                f"PCA Error: {str(e)[:80]}",
-                                ha="center",
-                                va="center",
-                                fontsize=10,
-                            )
+                            ax3.text(0.5, 0.5, f"PCA Error: {str(e)[:80]}", ha='center', va='center', fontsize=10)
                             ax3.set_title("PCA Projection (Error)")
                     else:
                         ax3 = fig.add_subplot(gs[:, 1])
-                        ax3.text(
-                            0.5,
-                            0.5,
-                            "Insufficient finite data for PCA",
-                            ha="center",
-                            va="center",
-                        )
+                        ax3.text(0.5, 0.5, "Insufficient finite data for PCA", ha='center', va='center')
                         ax3.set_title("PCA Projection (Insufficient data)")
                 else:
                     ax3 = fig.add_subplot(gs[:, 1])
-                    ax3.text(
-                        0.5, 0.5, "Need ≥3 samples for PCA", ha="center", va="center"
-                    )
+                    ax3.text(0.5, 0.5, "Need ≥3 samples for PCA", ha='center', va='center')
                     ax3.set_title("PCA Projection (Not enough samples)")
             except Exception as e:
                 ax3 = fig.add_subplot(gs[:, 1])
-                ax3.text(
-                    0.5, 0.5, f"PCA Error: {e}", ha="center", va="center", fontsize=10
-                )
+                ax3.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=10)
         else:
             ax3 = fig.add_subplot(gs[:, 1])
-            ax3.text(
-                0.5,
-                0.5,
-                "Install sklearn\nfor PCA",
-                ha="center",
-                va="center",
-                fontsize=10,
-            )
+            ax3.text(0.5, 0.5, "Install sklearn\nfor PCA", ha='center', va='center', fontsize=10)
 
     # --- 22. Ternary
     elif isinstance(first_elem, TernaryNumber):
@@ -14075,14 +17069,14 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         # Her bir rakamın dağılımını çizdir
         ax1 = fig.add_subplot(gs[0, 0])
         for i in range(digits.shape[1]):
-            ax1.plot(digits[:, i], "o-", alpha=0.6, label=f"digit {i}")
+            ax1.plot(digits[:, i], 'o-', alpha=0.6, label=f'digit {i}')
         ax1.set_title("Ternary Digits")
         ax1.legend(ncol=4, fontsize=6)
 
         # Üçlü sayı sistemindeki değerleri ondalık sisteme çevirip çizdir
         decimal_values = np.array([x.to_decimal() for x in sequence])
         ax2 = fig.add_subplot(gs[0, 1])
-        ax2.plot(decimal_values, "o-", color="tab:green")
+        ax2.plot(decimal_values, 'o-', color='tab:green')
         ax2.set_title("Decimal Values")
 
         if use_pca and len(sequence) > 2:
@@ -14093,48 +17087,45 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
                 # PCA projeksiyonunu çizdir
                 ax3 = fig.add_subplot(gs[1, :])  # 2. satırın tamamını kullan
-                sc = ax3.scatter(
-                    proj[:, 0], proj[:, 1], c=range(len(proj)), cmap="viridis", s=25
-                )
-                ax3.set_title(
-                    f"PCA Projection (Var: {sum(pca.explained_variance_ratio_):.3f})"
-                )
+                sc = ax3.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
+                ax3.set_title(f"PCA Projection (Var: {sum(pca.explained_variance_ratio_):.3f})")
                 plt.colorbar(sc, ax=ax3, label="Iteration")
             except Exception as e:
                 ax3 = fig.add_subplot(gs[1, :])
-                ax3.text(
-                    0.5, 0.5, f"PCA Error: {e}", ha="center", va="center", fontsize=10
-                )
+                ax3.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=10)
         else:
             ax3 = fig.add_subplot(gs[1, :])
-            ax3.text(
-                0.5,
-                0.5,
-                "Install sklearn\nfor PCA",
-                ha="center",
-                va="center",
-                fontsize=10,
-            )
+            ax3.text(0.5, 0.5, "Install sklearn\nfor PCA", ha='center', va='center', fontsize=10)
+
 
     # --- 19. Bilinmeyen tip
     else:
         ax = fig.add_subplot(1, 1, 1)
         type_name = type(first_elem).__name__
-        ax.text(
-            0.5,
-            0.5,
-            f"Plotting not implemented\nfor '{type_name}'",
-            ha="center",
-            va="center",
-            fontsize=14,
-            fontweight="bold",
-            color="red",
-        )
+        ax.text(0.5, 0.5, f"Plotting not implemented\nfor '{type_name}'",
+                ha='center', va='center', fontsize=14, fontweight='bold', color='red')
         ax.set_xticks([])
         ax.set_yticks([])
 
     plt.show()
 
+# Test kodu
+def test_division():
+    test_cases = [
+        (10, 2, 5.0),
+        (10, 0, float('inf')),
+        (complex(10, 0), 2, complex(5, 0)),
+        (Fraction(10, 1), 2, Fraction(5, 1)),
+        (-10, 2, -5.0),
+        (10, -2, -5.0),
+    ]
+    
+    for a, b, expected in test_cases:
+        try:
+            result = _safe_divide(a, b)
+            print(f"{a} / {b} = {result} (expected: {expected}) - {'✓' if str(result) == str(expected) else '✗'}")
+        except Exception as e:
+            print(f"{a} / {b} = ERROR: {e}")
 
 # ==============================================================================
 # --- MAIN EXECUTION BLOCK ---
@@ -14144,46 +17135,26 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
     logger.info("Keçeci Numbers Module - Demonstration")
-    logger.info(
-        "This script demonstrates the generation of various Keçeci Number types."
-    )
+    logger.info("This script demonstrates the generation of various Keçeci Number types.")
 
     STEPS = 40
     START_VAL = "2.5"
     ADD_VAL = 3.0
 
     all_types = {
-        "Positive Real": TYPE_POSITIVE_REAL,
-        "Negative Real": TYPE_NEGATIVE_REAL,
-        "Complex": TYPE_COMPLEX,
-        "Float": TYPE_FLOAT,
-        "Rational": TYPE_RATIONAL,
-        "Quaternion": TYPE_QUATERNION,
-        "Neutrosophic": TYPE_NEUTROSOPHIC,
-        "Neutrosophic Complex": TYPE_NEUTROSOPHIC_COMPLEX,
-        "Hyperreal": TYPE_HYPERREAL,
-        "Bicomplex": TYPE_BICOMPLEX,
-        "Neutrosophic Bicomplex": TYPE_NEUTROSOPHIC_BICOMPLEX,
-        "Octonion": TYPE_OCTONION,
-        "Sedenion": TYPE_SEDENION,
-        "Clifford": TYPE_CLIFFORD,
-        "Dual": TYPE_DUAL,
-        "Splitcomplex": TYPE_SPLIT_COMPLEX,
-        "Pathion": TYPE_PATHION,
-        "Chingon": TYPE_CHINGON,
-        "Routon": TYPE_ROUTON,
-        "Voudon": TYPE_VOUDON,
-        "Super Real": TYPE_SUPERREAL,
-        "Ternary": TYPE_TERNARY,
-        "Hypercomplex": TYPE_HYPERCOMPLEX,
+        "Positive Real": TYPE_POSITIVE_REAL, "Negative Real": TYPE_NEGATIVE_REAL,
+        "Complex": TYPE_COMPLEX, "Float": TYPE_FLOAT, "Rational": TYPE_RATIONAL,
+        "Quaternion": TYPE_QUATERNION, "Neutrosophic": TYPE_NEUTROSOPHIC,
+        "Neutrosophic Complex": TYPE_NEUTROSOPHIC_COMPLEX, "Hyperreal": TYPE_HYPERREAL,
+        "Bicomplex": TYPE_BICOMPLEX, "Neutrosophic Bicomplex": TYPE_NEUTROSOPHIC_BICOMPLEX,
+        "Octonion": TYPE_OCTONION, "Sedenion": TYPE_SEDENION, "Clifford": TYPE_CLIFFORD, 
+        "Dual": TYPE_DUAL, "Splitcomplex": TYPE_SPLIT_COMPLEX, "Pathion": TYPE_PATHION,
+        "Chingon": TYPE_CHINGON, "Routon": TYPE_ROUTON, "Voudon": TYPE_VOUDON,
+        "Super Real": TYPE_SUPERREAL, "Ternary": TYPE_TERNARY,
     }
 
     for name, type_id in all_types.items():
-        start = (
-            "-5"
-            if type_id == TYPE_NEGATIVE_REAL
-            else "2+3j" if type_id in [TYPE_COMPLEX, TYPE_BICOMPLEX] else START_VAL
-        )
+        start = "-5" if type_id == TYPE_NEGATIVE_REAL else "2+3j" if type_id in [TYPE_COMPLEX, TYPE_BICOMPLEX] else START_VAL
         try:
             seq = get_with_params(type_id, STEPS, start, ADD_VAL)
             if seq:
@@ -14193,88 +17164,3 @@ if __name__ == "__main__":
             logger.exception("Demo generation failed for type %s: %s", name, e)
 
     logger.info("Demonstration finished.")
-
-
-def Real(x: float) -> HypercomplexNumber:
-    """Generate a real number (1D hypercomplex)."""
-    return HypercomplexNumber.from_real(x)
-
-
-def Complex(real: float, imag: float) -> HypercomplexNumber:
-    """Generate a complex number (2D hypercomplex)."""
-    return HypercomplexNumber.from_complex(real, imag)
-
-
-def Quaternion(w: float, x: float, y: float, z: float) -> HypercomplexNumber:
-    """Generate a quaternion (4D hypercomplex)."""
-    return HypercomplexNumber.from_quaternion(w, x, y, z)
-
-
-def Octonion(*coeffs: float) -> HypercomplexNumber:
-    """Generate an octonion (8D hypercomplex)."""
-    return HypercomplexNumber.from_octonion(*coeffs)
-
-
-"""
-def Bicomplex(z1_real: float, z1_imag: float, z2_real: float, z2_imag: float) -> BicomplexNumber:
-    Generate a bicomplex number.
-Argument 1,2 to "BicomplexNumber" has incompatible type "HypercomplexNumber"; expected "complex"  [arg-type]
-    z1 = HypercomplexNumber(z1_real, z1_imag, dimension=2)
-    z2 = HypercomplexNumber(z2_real, z2_imag, dimension=2)
-    return BicomplexNumber(z1, z2)
-"""
-
-
-def Bicomplex(
-    z1_real: float, z1_imag: float, z2_real: float, z2_imag: float
-) -> BicomplexNumber:
-    """Generate a bicomplex number from real/imag parts."""
-    # Doğrudan complex sayılar oluştur
-    z1 = complex(z1_real, z1_imag)
-    z2 = complex(z2_real, z2_imag)
-    return BicomplexNumber(z1, z2)
-
-
-def Neutrosophic(determinate: float, indeterminate: float) -> NeutrosophicNumber:
-    """Generate a neutrosophic number."""
-    return NeutrosophicNumber(determinate, indeterminate)
-
-
-def Sedenion(*coeffs) -> HypercomplexNumber:
-    """Generate a sedenion."""
-    coeffs_tuple = tuple(coeffs)
-    if len(coeffs_tuple) != 16:
-        coeffs_tuple = coeffs_tuple + (0.0,) * (16 - len(coeffs_tuple))
-    return HypercomplexNumber(*coeffs_tuple, dimension=16)
-
-
-def Pathion(*coeffs) -> HypercomplexNumber:
-    """Generate a pathion."""
-    coeffs_tuple = tuple(coeffs)
-    if len(coeffs_tuple) != 32:
-        coeffs_tuple = coeffs_tuple + (0.0,) * (32 - len(coeffs_tuple))
-    return HypercomplexNumber(*coeffs_tuple, dimension=32)
-
-
-def Chingon(*coeffs) -> HypercomplexNumber:
-    """Generate a chingon."""
-    coeffs_tuple = tuple(coeffs)
-    if len(coeffs_tuple) != 64:
-        coeffs_tuple = coeffs_tuple + (0.0,) * (64 - len(coeffs_tuple))
-    return HypercomplexNumber(*coeffs_tuple, dimension=64)
-
-
-def Routon(*coeffs) -> HypercomplexNumber:
-    """Generate a routon."""
-    coeffs_tuple = tuple(coeffs)
-    if len(coeffs_tuple) != 128:
-        coeffs_tuple = coeffs_tuple + (0.0,) * (128 - len(coeffs_tuple))
-    return HypercomplexNumber(*coeffs_tuple, dimension=128)
-
-
-def Voudon(*coeffs) -> HypercomplexNumber:
-    """Generate a voudon."""
-    coeffs_tuple = tuple(coeffs)
-    if len(coeffs_tuple) != 256:
-        coeffs_tuple = coeffs_tuple + (0.0,) * (256 - len(coeffs_tuple))
-    return HypercomplexNumber(*coeffs_tuple, dimension=256)
