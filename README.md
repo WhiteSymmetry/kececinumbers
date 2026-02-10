@@ -1,6 +1,5 @@
 # Keçeci Numbers: Keçeci Sayıları (Keçeci Conjecture)
 ---
-Working version: 0.8.6
 
 [![PyPI version](https://badge.fury.io/py/kececinumbers.svg)](https://badge.fury.io/py/kececinumbers/)
 [![License: AGPL](https://img.shields.io/badge/License-AGPL-yellow.svg)](https://opensource.org/licenses/AGPL)
