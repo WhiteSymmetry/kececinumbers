@@ -644,9 +644,9 @@ pixi init kececinumbers
 
 cd kececinumbers
 
-pixi workspace channel add https://repo.prefix.dev/bilgi --prepend
+pixi workspace channel add [https://prefix.dev/channels/bilgi](https://prefix.dev/channels/bilgi) --prepend
 
-✔ Added https://repo.prefix.dev/bilgi
+✔ Added https://prefix.dev/channels/bilgi
 
 pixi add kececinumbers
 
@@ -662,7 +662,7 @@ pixi run python -c "import kececinumbers; print(kececinumbers.__version__)"
 
 pixi remove kececinumbers
 
-conda install -c https://prefix.dev/bilgi kececinumbers
+conda install -c https://prefix.dev/channels/bilgi kececinumbers
 
 pixi run python -c "import kececinumbers; print(kececinumbers.__version__)"
 
