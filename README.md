@@ -73,12 +73,12 @@
 
 **Keçeci Numbers** is a Python library for generating, analyzing, and visualizing dynamic sequences inspired by the Collatz Conjecture across diverse number systems.
 
-This library provides a unified algorithm that operates on 22 different number types, from standard integers to complex algebraic structures like quaternions and neutrosophic numbers. It is designed as a tool for academic research and exploration in number theory.
+This library provides a unified algorithm that operates on 23 different number types, from standard integers to complex algebraic structures like quaternions and neutrosophic numbers. It is designed as a tool for academic research and exploration in number theory.
 
 <details>
 <summary>🇹🇷 Türkçe Açıklama (Click to expand)</summary>
 
-**Keçeci Sayıları**, Collatz Varsayımı'ndan esinlenen ve farklı sayı sistemlerinde dinamik diziler üreten, analiz eden ve görselleştiren bir Python kütüphanesidir. Bu kütüphane, tamsayılardan karmaşık sayılara, kuaterniyonlardan nötrosofik sayılara kadar 22 farklı sayı türü üzerinde çalışan birleşik bir algoritma sunar. Akademik araştırmalar ve sayı teorisindeki keşifler için bir araç olarak tasarlanmıştır.
+**Keçeci Sayıları**, Collatz Varsayımı'ndan esinlenen ve farklı sayı sistemlerinde dinamik diziler üreten, analiz eden ve görselleştiren bir Python kütüphanesidir. Bu kütüphane, tamsayılardan karmaşık sayılara, kuaterniyonlardan nötrosofik sayılara kadar 23 farklı sayı türü üzerinde çalışan birleşik bir algoritma sunar. Akademik araştırmalar ve sayı teorisindeki keşifler için bir araç olarak tasarlanmıştır.
 
 </details>
 
@@ -97,11 +97,13 @@ This flexible mechanism provides a rich framework for studying the behavior of n
 
 ## Key Features
 
-*   **22 Different Number Types:** Supports integers, rationals, complex numbers, quaternions, neutrosophic numbers, and more.
+*   **23 Different Number Types:** Supports integers, rationals, complex numbers, quaternions, neutrosophic numbers, and more.
 *   **Unified Generator:** Uses a single, consistent `unified_generator` algorithm for all number types.
 *   **Advanced Visualization:** Provides a multi-dimensional `plot_numbers` function tailored to the nature of each number system.
 *   **Keçeci Prime Number (KPN) Analysis:** Identifies the most recurring prime representation in sequences to analyze their convergence behavior.
 *   **Interactive and Programmatic Usage:** Supports both interactive parameter input (`get_interactive`) and direct use in scripts (`get_with_params`).
+
+*   0.9.5: 23 Numbers
 *   0.8.2: 22 Numbers
 *   0.7.9: 20 Numbers
 *   0.7.8: 16 Numbers
@@ -134,6 +136,7 @@ type_names = {
         20: "Voudon",
         21: "Super Real",
         22: "Ternary",
+        23: "Hypercomplex",
     }
 
 
@@ -180,6 +183,39 @@ TYPE_VOUDON = 20
 TYPE_SUPERREAL = 21
 
 TYPE_TERNARY = 22
+
+TYPE_HYPERCOMPLEX = 23
+
+---
+
+INFO: kececinumbers v0.9.5 loaded successfully
+
+🎯 Test of Keçeci Numbers/Keçeci Sayıları Testi
+T  Tip           +     ×     -     ÷    OK%
+--------------------------------------------------
+ 1 POSITIVE_REAL 1.0 1.0 1.0 1.0  ✅
+ 2 NEGATIVE_REAL 1.0 1.0 1.0 1.0  ✅
+ 3 COMPLEX      1.0 1.0 1.0 1.0  ✅
+ 4 FLOAT        1.0 1.0 1.0 1.0  ✅
+ 5 RATIONAL     1.0 1.0 1.0 1.0  ✅
+ 6 QUATERNION   1.0 1.0 1.0 1.0  ✅
+ 7 NEUTROSOPHIC 1.0 1.0 1.0 1.0  ✅
+ 8 NEUTROSOPHIC_COMPLEX 1.0 1.0 1.0 1.0  ✅
+ 9 HYPERREAL    1.0 1.0 1.0 1.0  ✅
+10 BICOMPLEX    1.0 1.0 1.0 1.0  ✅
+11 NEUTROSOPHIC_BICOMPLEX 1.0 1.0 1.0 1.0  ✅
+12 OCTONION     1.0 1.0 1.0 1.0  ✅
+13 SEDENION     1.0 1.0 1.0 1.0  ✅
+14 CLIFFORD     1.0 1.0 1.0 1.0  ✅
+15 DUAL         1.0 1.0 1.0 1.0  ✅
+16 SPLIT_COMPLEX 1.0 1.0 1.0 1.0  ✅
+17 PATHION      1.0 1.0 1.0 1.0  ✅
+18 CHINGON      1.0 1.0 1.0 1.0  ✅
+19 ROUTON       1.0 1.0 1.0 1.0  ✅
+20 VOUDON       1.0 1.0 1.0 1.0  ✅
+21 SUPERREAL    1.0 1.0 1.0 1.0  ✅
+22 TERNARY      1.0 1.0 1.0 1.0  ✅
+23 HYPERCOMPLEX 1.0 1.0 1.0 1.0  ✅
 
 ---
 
@@ -467,7 +503,9 @@ Keçeci Number Types:
         
 22: "12",  # Ternary
 
-Please select Keçeci Number Type (1-22):  1
+23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0"  # Hypercomplex: 8 bileşenli örnek (istendiğinde boyut artırılabilir)
+
+Please select Keçeci Number Type (1-23):  1
 
 Enter the starting number (e.g., 0 or 2.5, complex:3+4j, rational: 3/4, quaternions: 1)  :  0
 
