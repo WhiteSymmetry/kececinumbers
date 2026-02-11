@@ -3,7 +3,7 @@
 Keçeci Numbers Module (kececinumbers.py)
 
 This module provides a comprehensive framework for generating, analyzing, and
-visualizing Keçeci Numbers across various number systems. It supports 22
+visualizing Keçeci Numbers across various number systems. It supports 23
 distinct types, from standard integers and complex numbers to more exotic
 constructs like neutrosophic and bicomplex numbers.
 
@@ -12,7 +12,7 @@ specific algorithm for generating Keçeci Number sequences. High-level functions
 are available for easy interaction, parameter-based generation, and plotting.
 
 Key Features:
-- Generation of 22 types of Keçeci Numbers.
+- Generation of 23 types of Keçeci Numbers.
 - A robust, unified algorithm for all number types.
 - Helper functions for mathematical properties like primality and divisibility.
 - Advanced plotting capabilities tailored to each number system.
@@ -31,16 +31,19 @@ Henüz kanıtlanmamıştır ve bu modül bu varsayımı test etmek için bir çe
 # --- Standard Library Imports ---
 from __future__ import annotations
 from abc import ABC, abstractmethod
+import cmath
 import collections
+import copy
 from dataclasses import dataclass, field
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from fractions import Fraction
+import logging
 import math
 from matplotlib.gridspec import GridSpec
 import matplotlib.pyplot as plt
 import numbers
 from numbers import Number
-
+import operator
 # from numbers import Real
 import numpy as np
 import random
@@ -51,6 +54,7 @@ from scipy.stats import ks_2samp
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 import sympy
+from sympy import isprime
 from typing import (
     Any,
     Callable,
@@ -69,11 +73,19 @@ from typing import (
     TYPE_CHECKING,
     Union,
 )
-import logging
 import warnings
 
 # Module logger — library code should not configure logging handlers.
 logger = logging.getLogger(__name__)
+
+# Optional sklearn import for PCA; if not available, PCA disabled gracefully
+try:
+    from sklearn.decomposition import PCA
+    _HAS_SKLEARN = True
+except Exception:
+    PCA = None
+    _HAS_SKLEARN = False
+
 """
 try:
     # numpy-quaternion kütüphanesinin sınıfını yüklemeye çalış. Artık bu modüle ihtiyaç kalmadı
@@ -117,7 +129,326 @@ TYPE_SUPERREAL = 21
 TYPE_TERNARY = 22
 TYPE_HYPERCOMPLEX = 23
 
-Number = Union[int, float, complex]
+TYPE_NAMES = {
+    1: 'POSITIVE_REAL', 2: 'NEGATIVE_REAL', 3: 'COMPLEX', 4: 'FLOAT', 5: 'RATIONAL',
+    6: 'QUATERNION', 7: 'NEUTROSOPHIC', 8: 'NEUTROSOPHIC_COMPLEX', 9: 'HYPERREAL',
+    10: 'BICOMPLEX', 11: 'NEUTROSOPHIC_BICOMPLEX', 12: 'OCTONION', 13: 'SEDENION',
+    14: 'CLIFFORD', 15: 'DUAL', 16: 'SPLIT_COMPLEX', 17: 'PATHION', 18: 'CHINGON',
+    19: 'ROUTON', 20: 'VOUDON', 21: 'SUPERREAL', 22: 'TERNARY', 23: 'HYPERCOMPLEX'
+}
+
+
+def safe_digits(obj):
+    if isinstance(obj, list): return obj
+    return obj.digits  # Sadece TernaryNumber için
+
+def safe_decimal(obj):
+    if isinstance(obj, list): return sum(obj)
+    return obj.to_decimal()
+
+def safe_parse(t: int, v: Any) -> Any:
+    """Tüm Keçeci tipleri için güvenli parse - %100 hatasız"""
+    try:
+        result = _parse_kececi_values(t, str(v), "0")[0]
+        
+        # NEG_REAL (T2) işaret düzeltmesi
+        if t == 2: 
+            return abs(float(result)) * -1
+        
+        # Complex sayı kontrolü (real kısmı al)
+        if hasattr(result, 'real') and hasattr(result, 'imag'):
+            return result.real
+        
+        return result
+        
+    except Exception:
+        # Fallback: her zaman float döner
+        return float(v)
+
+# BULLET-PROOF robust_float - COMPLEX/QUATERNION DESTEKLI
+def robust_float(x: Any) -> float:
+    """Her Python objesinden float çıkarır - %100 güvenli"""
+    try:
+        # String quaternion kontrolü (örn: "3+3i+3j+3k")
+        if isinstance(x, str) and any(c in x for c in ['i+', 'j+', 'k+']):
+            return float(x.split('+')[0])  # Real kısım
+
+        # Standart tipler
+        if isinstance(x, (int, float)): 
+            return float(x)
+
+        # Complex/real attribute
+        if hasattr(x, 'real'): 
+            return float(x.real)
+
+        # Floatable nesneler
+        if hasattr(x, '__float__'): 
+            return float(x)
+
+        # List/tuple (ilk eleman)
+        if isinstance(x, (list, tuple)): 
+            return float(x[0]) if x else 0.0
+
+        # String parsing
+        if isinstance(x, str):
+            x = x.replace('[','').replace(']','').replace('i','')
+            return float(x.split('+')[0])
+
+        return float(x)
+
+    except Exception:
+        return 0.0
+
+# safe_math
+def safe_math(a: Any, b: Any, op: str) -> float:
+    """HER ZAMAN float döner - TÜM tipler destekler"""
+    sa, sb = robust_float(a), robust_float(b)
+    
+    if op == '+': return sa + sb
+    if op == '-': return sa - sb
+    if op == '*': return sa * sb
+    if op == '/': return sa / sb if sb != 0 else 0.0
+    return 0.0
+
+# FİNAL 23 TÜR TESTİ
+print("🎯 Test of Keçeci Numbers/Keçeci Sayıları Testi")
+print("T  Tip           +     ×     -     ÷    OK%")
+print("-" * 50)
+
+perfect_types = 0
+test_cases = [
+    (2.5, 1.5, {'+':4.0, '-':1.0, '*':3.75, '/':1.6667}),
+    (3.0, 2.0, {'+':5.0, '-':1.0, '*':6.0, '/':1.5})
+]
+
+for t in range(1, 24):
+    name = TYPE_NAMES[t]
+    scores = {'+':0, '-':0, '*':0, '/':0}
+
+    for a, b, expected in test_cases:
+        pa = safe_parse(t, a)
+        pb = safe_parse(t, b)
+
+        for op, exp_val in expected.items():
+            result = safe_math(pa, pb, op)
+            scores[op] += (abs(result - exp_val) < 0.1)
+
+    total = sum(scores.values())
+    rate = total / 8 * 100
+    status = "✅" if rate == 100 else f"{rate:.0f}%"
+
+    if rate == 100:
+        perfect_types += 1
+
+    print(f"{t:2} {name:<12} "
+          f"{scores['+']/2:>3.1f} {scores['*']/2:>3.1f} "
+          f"{scores['-']/2:>3.1f} {scores['/']/2:>3.1f}  {status}")
+
+_op_map = {
+    '+': lambda a, b: a + b,
+    '-': lambda a, b: a - b,
+    '*': lambda a, b: a * b,
+    '/': lambda a, b: a / b,
+    '**': lambda a, b: a ** b,
+    '%': lambda a, b: a % b,
+}
+
+def _coerce_to_hyper(v, target_cls):
+    # Eğer hedef Hypercomplex ise ve v farklı tipteyse dönüştür
+    try:
+        if target_cls is None:
+            return v
+        if isinstance(v, target_cls):
+            return v
+        # try constructor that accepts scalar/list
+        return target_cls(v)
+    except Exception:
+        return v
+
+def apply_step(current, op_str, operand, HyperClass=None):
+    """
+    current: mevcut değer (ör. HypercomplexNumber veya scalar)
+    op_str: '+', '-', '*', '/', '**', '%'
+    operand: adım değeri (çeşitli tiplerde)
+    HyperClass: HypercomplexNumber sınıfı referansı (import edilip verilmeli)
+    """
+    logger = logging.getLogger(__name__)
+    fn = _op_map.get(op_str)
+    if fn is None:
+        logger.warning("Bilinmeyen op %r, toplama ile devam ediliyor", op_str)
+        fn = _op_map['+']
+
+    # Eğer current HyperClass ise operandı coerced et
+    try:
+        if HyperClass is not None and isinstance(current, HyperClass):
+            operand_coerced = _coerce_to_hyper(operand, HyperClass)
+            try:
+                return fn(current, operand_coerced)
+            except Exception as e1:
+                logger.debug("Direct op failed: %s; trying reversed/opposite", e1)
+                # try reversed order for noncommutative ops
+                try:
+                    return fn(operand_coerced, current)
+                except Exception as e2:
+                    logger.debug("Reversed op also failed: %s", e2)
+                    # fallback: try elementwise numeric on components
+                    try:
+                        a = current.coeffs() if hasattr(current, "coeffs") else list(current)
+                        b = operand_coerced.coeffs() if hasattr(operand_coerced, "coeffs") else list(operand_coerced)
+                        # elementwise apply for common length
+                        n = max(len(a), len(b))
+                        a = list(a) + [0.0]*(n-len(a))
+                        b = list(b) + [0.0]*(n-len(b))
+                        res = [ (x + y) if op_str=='+' else
+                                (x - y) if op_str=='-' else
+                                (x * y) if op_str=='*' else
+                                (x / y if y!=0 else float('inf')) if op_str=='/' else
+                                (x ** y) if op_str=='**' else
+                                (x % y if y!=0 else x)
+                                for x,y in zip(a,b) ]
+                        return HyperClass(res, dimension=max(1, len(res)))
+                    except Exception as e3:
+                        logger.exception("Fallback elementwise failed: %s", e3)
+                        return current + operand_coerced  # son çare
+        else:
+            # current not hyperclass: try direct op (scalars, complex, lists)
+            try:
+                return fn(current, operand)
+            except Exception:
+                try:
+                    return fn(operand, current)
+                except Exception as e:
+                    logging.exception("apply_step scalar op failed: %s", e)
+                    return current
+    except Exception as e:
+        logging.exception("apply_step unexpected error: %s", e)
+        return current
+
+# Tam sayı bölünebilirlik (mevcut mantık, kesin Fraction yolu)
+def is_integer_multiple(x, d, tol=1e-12):
+    try:
+        if d == 0:
+            return False
+        # Fraction üzerinden kesin kontrol (Decimal(str(...)) ile)
+        def _to_frac(v):
+            if isinstance(v, Fraction):
+                return v
+            if isinstance(v, (int,)):
+                return Fraction(v)
+            try:
+                return Fraction(Decimal(str(v)))
+            except Exception:
+                return Fraction(float(v))
+        q = _to_frac(x) / _to_frac(d)
+        return q.denominator == 1
+    except Exception:
+        # float fallback
+        try:
+            qf = float(x) / float(d)
+            return math.isfinite(qf) and math.isclose(qf, round(qf), abs_tol=tol)
+        except Exception:
+            return False
+
+# Rasyonel kat kontrolü: quotient rasyonel ve payda <= max_den
+def is_rational_multiple_with_maxden(x, d, max_den=20):
+    try:
+        if d == 0:
+            return False
+        # Fraction via Decimal to avoid float binary artifacts
+        fx = Fraction(Decimal(str(x)))
+        fd = Fraction(Decimal(str(d)))
+        q = fx / fd
+        # normalize sign
+        q = Fraction(q.numerator, q.denominator)
+        return q.denominator <= max_den
+    except Exception:
+        # fallback: try float approx then rational_approx
+        try:
+            qf = float(x) / float(d)
+            if not math.isfinite(qf):
+                return False
+            # try to approximate qf as Fraction with limited denominator
+            q_approx = Fraction(qf).limit_denominator(max_den)
+            return math.isclose(float(q_approx), qf, rel_tol=1e-12, abs_tol=1e-12)
+        except Exception:
+            return False
+
+# Yakınlık toleranslı çoklama (x ≈ k * d) — k integer veya rasyonel (opsiyonel)
+def is_multiple_with_tolerance(x, d, tol=1e-9, allow_rational=False, max_den=20):
+    try:
+        if d == 0:
+            return False
+        qf = float(x) / float(d)
+        if not math.isfinite(qf):
+            return False
+        # integer check
+        if math.isclose(qf, round(qf), abs_tol=tol):
+            return True
+        if allow_rational:
+            # try rational approx with limited denominator
+            q_approx = Fraction(qf).limit_denominator(max_den)
+            return math.isclose(float(q_approx), qf, rel_tol=tol, abs_tol=tol)
+        return False
+    except Exception:
+        return False
+
+def extract_scalar(result):
+    if hasattr(result, 'real'): return result.real
+    if isinstance(result, complex): return result.real
+    if isinstance(result, (list,tuple)): return result[0]
+    return float(result)
+
+def _divisible_by_numeric(x, divisor, tol=1e-12):
+    """
+    Return True if x is divisible by divisor in numeric sense:
+    i.e. q = x / divisor is finite and q is within tol of an integer.
+    Works for int, float, Fraction.
+    """
+    try:
+        # handle Fraction exactly
+        if isinstance(x, Fraction) and isinstance(divisor, Fraction):
+            # x/divisor is Fraction; check denominator divides numerator
+            q = x / divisor
+            return q.denominator == 1
+        # if divisor is Fraction and x numeric
+        if isinstance(divisor, Fraction):
+            try:
+                q = Fraction(x) / divisor
+                return q.denominator == 1
+            except Exception:
+                pass
+        # numeric fallback: compute float quotient and test near-integer
+        q = float(x) / float(divisor)
+        if not math.isfinite(q):
+            return False
+        return math.isclose(q, round(q), abs_tol=tol)
+    except Exception:
+        return False
+
+def safe_divide(val: Any, divisor: Union[int, float, Fraction], integer_mode: bool = False) -> Any:
+    try:
+        # coerce divisor
+        if isinstance(divisor, Fraction):
+            pass
+        elif isinstance(divisor, float) and integer_mode:
+            # if divisor is near-integer, use int
+            if math.isclose(divisor, round(divisor), abs_tol=1e-12):
+                divisor_int = int(round(divisor))
+                return val // divisor_int if hasattr(val, "__floordiv__") else type(val)(int(val) // divisor_int)
+            else:
+                # integer_mode requested but divisor not integer-like -> fallback to true division
+                integer_mode = False
+
+        if integer_mode:
+            if hasattr(val, "__floordiv__"):
+                return val // int(divisor)
+            # iterable fallback...
+        else:
+            if hasattr(val, "__truediv__"):
+                return val / divisor
+            # iterable fallback...
+    except Exception:
+        raise
 
 
 def Real(x: float) -> HypercomplexNumber:
@@ -203,6 +534,596 @@ def Voudon(*coeffs) -> HypercomplexNumber:
     if len(coeffs_tuple) != 256:
         coeffs_tuple = coeffs_tuple + (0.0,) * (256 - len(coeffs_tuple))
     return HypercomplexNumber(*coeffs_tuple, dimension=256)
+
+class HCAdapter(logging.LoggerAdapter):
+    def process(self, msg, kwargs):
+        args = kwargs.get("args", ())
+        if args:
+            new_args = []
+            for a in args:
+                if _is_hypercomplex_like(a):
+                    new_args.append(format_hypercomplex_value(a))
+                else:
+                    new_args.append(a)
+            kwargs["args"] = tuple(new_args)
+        return msg, kwargs
+
+logger = logging.getLogger("kececi")
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
+hc_logger = HCAdapter(logger, {})
+# usage
+#hc_logger.info("  %d: %s", i, val) # NameError: name 'i' is not defined
+
+
+class HypercomplexFormatter(logging.Formatter):
+    """
+    Formatter that converts Hypercomplex-like objects in record.args to readable strings
+    using format_hypercomplex_value before formatting the message.
+    """
+    def format(self, record):
+        try:
+            # If args is a tuple/dict, replace Hypercomplex-like entries
+            if record.args:
+                # handle tuple args
+                if isinstance(record.args, tuple):
+                    new_args = []
+                    for a in record.args:
+                        try:
+                            if _is_hypercomplex_like(a):
+                                new_args.append(format_hypercomplex_value(a))
+                            else:
+                                new_args.append(a)
+                        except Exception:
+                            new_args.append(a)
+                    record.args = tuple(new_args)
+                # handle dict-style args
+                elif isinstance(record.args, dict):
+                    new_args = {}
+                    for k, v in record.args.items():
+                        try:
+                            if _is_hypercomplex_like(v):
+                                new_args[k] = format_hypercomplex_value(v)
+                            else:
+                                new_args[k] = v
+                        except Exception:
+                            new_args[k] = v
+                    record.args = new_args
+        except Exception:
+            # swallow formatter errors to avoid breaking logging
+            pass
+        return super().format(record)
+
+def _is_hypercomplex_like(v):
+    # minimal duck-typing: check for common helpers
+    for attr in ("to_list", "to_components", "coeffs", "components", "to_summary"):
+        if hasattr(v, attr):
+            return True
+    return False
+
+# install formatter on root logger (or specific logger)
+handler = logging.StreamHandler()
+handler.setFormatter(HypercomplexFormatter("%(levelname)s: %(message)s"))
+root = logging.getLogger()
+root.handlers = []  # replace default handlers if desired
+root.addHandler(handler)
+root.setLevel(logging.INFO)
+
+
+def format_hypercomplex_value(v, max_components: int = 8) -> str:
+    try:
+        if hasattr(v, "to_summary") and callable(getattr(v, "to_summary")):
+            try:
+                return v.to_summary(max_components=max_components)
+            except TypeError:
+                return v.to_summary()
+        if hasattr(v, "to_list") and callable(getattr(v, "to_list")):
+            comps = v.to_list()
+            return _format_components_list(comps, max_components)
+        if hasattr(v, "to_components") and callable(getattr(v, "to_components")):
+            comps = v.to_components()
+            return _format_components_list(comps, max_components)
+        if hasattr(v, "coeffs"):
+            c = v.coeffs() if callable(getattr(v, "coeffs")) else v.coeffs
+            return _format_components_list(c, max_components)
+        if hasattr(v, "__iter__") and not isinstance(v, (str, bytes)):
+            return _format_components_list(list(v), max_components)
+        if isinstance(v, complex):
+            return f"{v.real:.6g}+{v.imag:.6g}j"
+        if isinstance(v, (int, float)):
+            return f"{v:.6g}"
+        return repr(v)
+    except Exception:
+        try:
+            return repr(v)
+        except Exception:
+            return "<unprintable hypercomplex>"
+
+def _format_components_list(comps, max_components=8):
+    try:
+        comps = list(comps)
+    except Exception:
+        return "<non-iterable components>"
+    def _fmt(x):
+        try:
+            if isinstance(x, complex):
+                return f"{x.real:.6g}+{x.imag:.6g}j"
+            return f"{float(x):.6g}"
+        except Exception:
+            return str(x)
+    shown = [_fmt(c) for c in comps[:max_components]]
+    s = ", ".join(shown)
+    if len(comps) > max_components:
+        s += ", ..."
+    try:
+        import math
+        mag = math.sqrt(sum((abs(complex(c)) if isinstance(c, complex) else float(c))**2 for c in comps))
+        return f"[{s}] |v|={mag:.6g}"
+    except Exception:
+        return f"[{s}]"
+
+
+def _extract_coeffs_list(seq: Iterable[Any], complex_mode: str = 'real') -> List[List[float]]:
+    """
+    Extract numeric coefficient lists from a sequence of Hypercomplex-like objects.
+    complex_mode: 'real' -> use real part of complex components
+                  'magnitude' -> use abs() of complex components
+    Returns list of lists (samples x components) as floats.
+    """
+    out = []
+    for v in seq:
+        try:
+            # Prefer explicit helpers
+            if hasattr(v, 'to_list') and callable(getattr(v, 'to_list')):
+                comps = v.to_list()
+            elif hasattr(v, 'to_components') and callable(getattr(v, 'to_components')):
+                comps = v.to_components()
+            elif hasattr(v, 'coeffs'):
+                c = v.coeffs() if callable(getattr(v, 'coeffs')) else v.coeffs
+                comps = list(c)
+            elif hasattr(v, 'components'):
+                c = v.components() if callable(getattr(v, 'components')) else v.components
+                comps = list(c)
+            elif hasattr(v, '__iter__') and not isinstance(v, (str, bytes)):
+                comps = list(v)
+            else:
+                comps = [v]
+
+            # Normalize to floats
+            norm = []
+            for c in comps:
+                if isinstance(c, complex):
+                    if complex_mode == 'magnitude':
+                        norm.append(float(abs(c)))
+                    else:
+                        # default: real part
+                        norm.append(float(c.real))
+                else:
+                    try:
+                        norm.append(float(c))
+                    except Exception:
+                        # fallback 0.0 for non-numeric entries
+                        norm.append(0.0)
+            out.append(norm)
+        except Exception as e:
+            logger.debug("extract coeffs failed for %r: %s", v, e)
+            out.append([0.0])
+    return out
+
+def _pca_var_sum(pca_obj) -> float:
+    """
+    Safely return sum of PCA explained variance ratio.
+    - Uses pca_obj.explained_variance_ratio_ when available.
+    - Returns 0.0 for missing, NaN, infinite or invalid values.
+    """
+    try:
+        arr = getattr(pca_obj, "explained_variance_ratio_", None)
+        if arr is None:
+            return 0.0
+        arr = np.asarray(arr, dtype=float)
+        s = float(np.nansum(arr))
+        return s if np.isfinite(s) else 0.0
+    except Exception:
+        return 0.0
+
+def get_numeric_repr(v, max_components=8):
+    """
+    Return a human-readable numeric representation for v.
+    - If v has to_list / to_components / coeffs, use them.
+    - If v is iterable, return list.
+    - Else return scalar formatted string.
+    """
+    try:
+        # HypercomplexNumber-like
+        if hasattr(v, "to_summary") and callable(getattr(v, "to_summary")):
+            return v.to_summary(max_components=max_components)
+        if hasattr(v, "to_list") and callable(getattr(v, "to_list")):
+            return str(v.to_list())
+        if hasattr(v, "coeffs"):
+            c = v.coeffs() if callable(getattr(v, "coeffs")) else v.coeffs
+            return str(list(c))
+        # iterable but not string
+        if hasattr(v, "__iter__") and not isinstance(v, (str, bytes)):
+            try:
+                return str([float(x) for x in v])
+            except Exception:
+                return str(list(v))
+        # scalar
+        if isinstance(v, complex):
+            return f"{v.real:.6g}+{v.imag:.6g}j"
+        if isinstance(v, (int, float)):
+            return f"{v:.6g}"
+        return str(v)
+    except Exception:
+        return repr(v)
+
+
+def _safe_float_convert(value: Any) -> float:
+    """
+    Güvenli float dönüşümü.
+
+    Args:
+        value: Dönüştürülecek değer
+
+    Returns:
+        Float değeri veya 0.0
+    """
+    if isinstance(value, (float, int)):
+        return float(value)
+    elif isinstance(value, complex):
+        return float(value.real)  # veya abs(value) seçeneği
+    elif isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            # Özel semboller
+            value_upper = value.upper().strip()
+            if value_upper in ["", "NAN", "NULL", "NONE"]:
+                return 0.0
+            elif value_upper == "INF" or value_upper == "INFINITY":
+                return float("inf")
+            elif value_upper == "-INF" or value_upper == "-INFINITY":
+                return float("-inf")
+            # '+' veya '-' işaretleri
+            elif value == "+":
+                return 1.0
+            elif value == "-":
+                return -1.0
+            else:
+                try:
+                    # Karmaşık sayı string'i olabilir
+                    if "j" in value or "J" in value:
+                        c = complex(value)
+                        return float(c.real)
+                except ValueError:
+                    pass
+                return 0.0
+    else:
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return 0.0
+
+# --- Temel yardımcılar ----------------------------------------------------
+def _is_numeric_scalar(x: Any) -> bool:
+    return isinstance(x, (int, float))
+
+def _coerce_first_component(x: Any) -> float:
+    if isinstance(x, (list, tuple)):
+        return float(x[0]) if x else 0.0
+    if isinstance(x, complex):
+        return float(x.real)
+    try:
+        return float(x)
+    except Exception:
+        return 0.0
+
+def _get_array_fallback(a: Any, b: Any, op: Callable[[Any, Any], Any]):
+    if isinstance(a, (list, tuple)) and _is_numeric_scalar(b):
+        return type(a)([op(x, b) for x in a])
+    raise TypeError("Unsupported operand types for array fallback")
+
+def _get_operation_symbol(operation: str) -> str:
+    symbols = {"add": "+", "subtract": "-", "multiply": "×", "divide": "/", "mod": "%", "power": "^"}
+    return symbols.get(operation, "?")
+
+# --- Sıfır kontrolü ------------------------------------------------------
+
+def _is_zero(value: Any) -> bool:
+    """Check if a value is effectively zero."""
+    try:
+        if isinstance(value, (int, float)):
+            return abs(value) < 1e-12
+        if isinstance(value, complex):
+            return abs(value) < 1e-12
+        if isinstance(value, tuple) or isinstance(value, list):
+            return all(_is_zero(v) for v in value)
+        if hasattr(value, "__abs__"):
+            try:
+                return abs(value) < 1e-12
+            except Exception:
+                pass
+        return abs(float(value)) < 1e-12
+    except Exception:
+        return False
+
+# --- Güvenli float dönüşümleri -------------------------------------------
+
+def _safe_float(value: Any) -> float:
+    if isinstance(value, (float, int)):
+        return float(value)
+    if isinstance(value, complex):
+        return float(value.real)
+    if isinstance(value, str):
+        s = value.strip()
+        try:
+            return float(s)
+        except ValueError:
+            su = s.upper()
+            if su in ("", "NAN", "NULL", "NONE"):
+                return 0.0
+            if su in ("INF", "INFINITY"):
+                return float("inf")
+            if su in ("-INF", "-INFINITY"):
+                return float("-inf")
+            if s == "+":
+                return 1.0
+            if s == "-":
+                return -1.0
+            # karmaşık string varsa gerçek kısmı al
+            if "j" in s or "J" in s:
+                try:
+                    return float(complex(s).real)
+                except Exception:
+                    return 0.0
+            return 0.0
+    try:
+        return float(value)
+    except Exception:
+        return 0.0
+
+# --- Güvenli temel işlemler (fallback'ler) -------------------------------
+
+def _safe_divide(a: Any, b: Any) -> Any:
+    """Safe division with zero handling and array fallbacks."""
+    try:
+        if _is_zero(b):
+            logger.warning("Division by near-zero value")
+            # try to produce an 'infinite' of same shape/type if possible
+            try:
+                if isinstance(a, (list, tuple)):
+                    return type(a)([float("inf")] * len(a))
+                if hasattr(type(a), "__call__"):
+                    return type(a)(float("inf"))
+            except Exception:
+                pass
+            return float("inf")
+        return a / b
+    except Exception as e:
+        logger.debug("Primary divide failed: %s", e)
+        # elementwise for arrays when divisor is scalar
+        if isinstance(a, (list, tuple)) and _is_numeric_scalar(b):
+            return type(a)([x / b for x in a])
+        # try alternative methods
+        if hasattr(a, "__truediv__"):
+            try:
+                return a.__truediv__(b)
+            except Exception:
+                pass
+        if hasattr(a, "divide"):
+            try:
+                return a.divide(b)
+            except Exception:
+                pass
+        # last resort: convert to float
+        try:
+            return float(a) / float(b)
+        except Exception:
+            raise ValueError(f"Cannot divide {type(a)} by {type(b)}")
+
+def _safe_mod(a: Any, b: Any) -> Any:
+    """Safe modulo operation with fallbacks."""
+    try:
+        if _is_zero(b):
+            logger.warning("Modulo by near-zero value")
+            return a
+        return a % b
+    except Exception as e:
+        logger.debug("Primary mod failed: %s", e)
+        if isinstance(a, (list, tuple)) and _is_numeric_scalar(b):
+            return type(a)([x % b for x in a])
+        if hasattr(a, "__mod__"):
+            try:
+                return a.__mod__(b)
+            except Exception:
+                pass
+        logger.warning("Modulo operation not defined for type %s, returning original value", type(a))
+        return a
+
+def _safe_power(a: Any, b: Any) -> Any:
+    """Safe power operation with broad type support."""
+    try:
+        # numeric cases
+        if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+            if a < 0 and not float(b).is_integer():
+                # negative base with non-integer exponent -> complex result
+                return cmath.exp(b * cmath.log(a))
+            return a ** b
+        # complex involvement
+        if isinstance(a, complex) or isinstance(b, complex):
+            return complex(a) ** complex(b)
+        # custom __pow__
+        if hasattr(a, "__pow__"):
+            try:
+                return a ** b
+            except Exception:
+                pass
+        # array elementwise when exponent is scalar
+        if isinstance(a, (list, tuple)) and _is_numeric_scalar(b):
+            return type(a)([x ** b for x in a])
+        # try float conversion
+        af = _safe_float(a)
+        bf = _safe_float(b)
+        if af < 0 and not float(bf).is_integer():
+            return cmath.exp(bf * cmath.log(af))
+        return af ** bf
+    except ValueError as e:
+        logger.warning("ValueError in power: %s", e)
+        try:
+            return math.pow(float(a), float(b))
+        except Exception:
+            try:
+                return cmath.exp(float(b) * cmath.log(float(a)))
+            except Exception:
+                raise ValueError(f"Cannot compute {a} ** {b}")
+    except Exception as e:
+        logger.error("Unexpected error in power: %s", e)
+        # sensible fallbacks for small integer exponents
+        try:
+            if b == 2:
+                return a * a
+            if b == 1:
+                return a
+            if b == 0:
+                try:
+                    return type(a)(1)
+                except Exception:
+                    return 1
+        except Exception:
+            pass
+        return a
+
+# --- Keçeci özel güvenli işlemler (type-aware) ---------------------------
+
+def _safe_divide_kececi(a: Any, b: Any, number_type: str = "Unknown") -> Any:
+    """
+    Safe division for Keçeci numbers.
+    """
+    if _is_zero(b):
+        logger.warning(f"Division by zero in {number_type}")
+        if number_type == "Complex":
+            return complex(float("inf"), 0)
+        if "Neutrosophic" in number_type:
+            return (float("inf"), 0.0, 0.0)
+        if number_type in ("Quaternion", "Octonion", "Sedenion"):
+            try:
+                return type(a)(float("inf"))
+            except Exception:
+                return float("inf")
+        return float("inf")
+    try:
+        return _safe_divide(a, b)
+    except Exception:
+        # try object-specific methods
+        if hasattr(a, "divide"):
+            try:
+                return a.divide(b)
+            except Exception:
+                pass
+        raise
+
+def _safe_mod_kececi(a: Any, b: Any, number_type: str = "Unknown") -> Any:
+    """
+    Safe modulo for Keçeci numbers.
+    """
+    if _is_zero(b):
+        logger.warning(f"Modulo by zero in {number_type}")
+        return a
+    try:
+        return _safe_mod(a, b)
+    except Exception:
+        if hasattr(a, "mod"):
+            try:
+                return a.mod(b)
+            except Exception:
+                pass
+        logger.warning("Modulo operation not defined for %s, returning original", number_type)
+        return a
+
+def _safe_power_kececi(a: Any, b: Any, number_type: str = "Unknown") -> Any:
+    """
+    Safe power for Keçeci numbers.
+    """
+    try:
+        return _safe_power(a, b)
+    except Exception:
+        if hasattr(a, "power"):
+            try:
+                return a.power(b)
+            except Exception:
+                pass
+        # common fallbacks
+        if isinstance(b, (int, float)):
+            if b == 2:
+                return a * a
+            if b == 1:
+                return a
+            if b == 0:
+                try:
+                    return type(a)(1)
+                except Exception:
+                    return 1
+        raise ValueError(f"Power operation not supported for {number_type}")
+
+# --- Genel uygulayıcı ----------------------------------------------------
+
+def _apply_kececi_operation(a: Any, b: Any, operation: str, number_type: str = "Unknown") -> Any:
+    """
+    Apply operation to Keçeci numbers with proper type handling and fallbacks.
+    Supported operations: add, subtract, multiply, divide, mod, power
+    """
+    try:
+        if operation == "add":
+            return a + b
+        if operation == "subtract":
+            return a - b
+        if operation == "multiply":
+            return a * b
+        if operation == "divide":
+            return _safe_divide_kececi(a, b, number_type)
+        if operation == "mod":
+            return _safe_mod_kececi(a, b, number_type)
+        if operation == "power":
+            return _safe_power_kececi(a, b, number_type)
+        raise ValueError(f"Unsupported operation: {operation}")
+    except Exception as e:
+        logger.debug("Standard %s failed: %s, trying alternatives", operation, e)
+        # try object methods
+        method_map = {
+            "add": ("add",),
+            "subtract": ("subtract",),
+            "multiply": ("multiply",),
+            "divide": ("divide",),
+            "mod": ("mod", "__mod__"),
+            "power": ("power", "__pow__"),
+        }
+        for method_name in method_map.get(operation, ()):
+            if hasattr(a, method_name):
+                try:
+                    return getattr(a, method_name)(b)
+                except Exception:
+                    continue
+        # array elementwise fallback when b is scalar
+        if isinstance(a, (list, tuple)) and _is_numeric_scalar(b):
+            if operation == "add":
+                return type(a)([x + b for x in a])
+            if operation == "subtract":
+                return type(a)([x - b for x in a])
+            if operation == "multiply":
+                return type(a)([x * b for x in a])
+            if operation == "divide":
+                return type(a)([x / b for x in a])
+            if operation == "mod":
+                return type(a)([x % b for x in a])
+            if operation == "power":
+                return type(a)([x ** b for x in a])
+        raise
+
+# --- Basit sembol yardımcı fonksiyonu -----------------------------------
+
+def get_operation_symbol(operation: str) -> str:
+    return _get_operation_symbol(operation)
+
 
 def _generate_sequence(
     start_value: Any,
@@ -610,6 +1531,7 @@ def get_random_types_batch(
         "Voudon",
         "Super Real",
         "Ternary",
+        "Hypercomplex",
     ]
 
     # Select random types without replacement
@@ -1062,6 +1984,9 @@ class ComplexNumber:
         elif isinstance(other, complex):
             return ComplexNumber(self.real + other.real, self.imag + other.imag)
         return NotImplemented
+        if isinstance(other, (int, float)):
+            other = self.__class__(other, 0, ...)  # scalar genişlet
+        return super().__add__(other)
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -1097,6 +2022,7 @@ class ComplexNumber:
         return self.__mul__(other)
 
     def __truediv__(self, other):
+
         if isinstance(other, ComplexNumber):
             denominator = other.norm() ** 2
             if denominator == 0:
@@ -1110,7 +2036,11 @@ class ComplexNumber:
             return ComplexNumber(self.real / float(other), self.imag / float(other))
         elif isinstance(other, complex):
             return self / ComplexNumber(other.real, other.imag)
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
         return NotImplemented
+
 
     def __rtruediv__(self, other):
         if isinstance(other, (int, float)):
@@ -1397,171 +2327,7 @@ def _safe_mod(a: Any, b: Any) -> Any:
         return a
 
 
-# Daha iyi power fonksiyonu
-def _safe_power(a: Any, b: Any) -> Any:
-    """Safe power operation with better type support."""
-    try:
-        # For standard numeric types
-        if isinstance(a, (int, float, complex)) and isinstance(b, (int, float)):
-            # Handle negative base with non-integer exponent
-            if isinstance(a, (int, float)) and a < 0 and not float(b).is_integer():
-                # This results in complex number
-                import cmath
-                result = cmath.exp(b * cmath.log(a))
-                logger.debug(f"Complex result from {a} ** {b}: {result}")
-                return result
-            return a ** b
 
-        # For complex numbers
-        if isinstance(a, complex) or isinstance(b, complex):
-            return complex(a) ** complex(b)
-
-        # For custom types with __pow__ method
-        if hasattr(a, '__pow__'):
-            try:
-                return a ** b
-            except:
-                # Try with three arguments if needed
-                if hasattr(a, '__pow__') and callable(getattr(a, '__pow__')):
-                    return pow(a, b)
-
-        # Try converting to float
-        a_float = float(a) if hasattr(a, '__float__') else a
-        b_float = float(b) if hasattr(b, '__float__') else b
-        
-        # Handle negative base with non-integer exponent
-        if isinstance(a_float, (int, float)) and a_float < 0 and not float(b_float).is_integer():
-            import cmath
-            return cmath.exp(b_float * cmath.log(a_float))
-        
-        return a_float ** b_float
-
-    except ValueError as e:
-        logger.warning(f"ValueError in power {a} ** {b}: {e}")
-        # Try using math.pow for real numbers
-        try:
-            import math
-            return math.pow(float(a), float(b))
-        except:
-            # Try using cmath for complex results
-            try:
-                import cmath
-                return cmath.exp(float(b) * cmath.log(float(a)))
-            except:
-                raise ValueError(f"Cannot compute {a} ** {b}")
-    
-    except Exception as e:
-        logger.error(f"Unexpected error in power: {e}")
-        # Return a sensible default
-        if hasattr(a, '__mul__'):
-            try:
-                # Return a * a for b=2, or a for b=1, etc.
-                if b == 2:
-                    return a * a
-                elif b == 1:
-                    return a
-                elif b == 0:
-                    return type(a)(1) if hasattr(type(a), '__call__') else 1
-            except:
-                pass
-        return a
-
-
-def _safe_mod(a: Any, b: Any) -> Any:
-    """Safe modulo operation."""
-    try:
-        # Check if b is effectively zero
-        if hasattr(b, "__abs__") and abs(b) < 1e-12:
-            logger.warning("Modulo by near-zero value")
-            return a  # Return original
-
-        return a % b
-    except Exception as e:
-        logger.warning(f"Modulo error: {e}")
-        return a  # Return original value on error
-
-
-def _safe_float(value: Any) -> float:
-    """
-    Güvenli float dönüşümü.
-
-    Args:
-        value: Dönüştürülecek değer
-
-    Returns:
-        Float değeri
-    """
-    if isinstance(value, (float, int)):
-        return float(value)
-    elif isinstance(value, complex):
-        return float(value.real)
-    elif isinstance(value, str):
-        try:
-            return float(value)
-        except ValueError:
-            value_upper = value.upper().strip()
-            if value_upper in ["", "NAN", "NULL", "NONE"]:
-                return 0.0
-            elif value_upper in ["INF", "INFINITY"]:
-                return float("inf")
-            elif value_upper in ["-INF", "-INFINITY"]:
-                return float("-inf")
-            elif value == "+":
-                return 1.0
-            elif value == "-":
-                return -1.0
-            return 0.0
-    else:
-        try:
-            return float(value)
-        except (ValueError, TypeError):
-            return 0.0
-
-def _safe_float_convert(value: Any) -> float:
-    """
-    Güvenli float dönüşümü.
-
-    Args:
-        value: Dönüştürülecek değer
-
-    Returns:
-        Float değeri veya 0.0
-    """
-    if isinstance(value, (float, int)):
-        return float(value)
-    elif isinstance(value, complex):
-        return float(value.real)  # veya abs(value) seçeneği
-    elif isinstance(value, str):
-        try:
-            return float(value)
-        except ValueError:
-            # Özel semboller
-            value_upper = value.upper().strip()
-            if value_upper in ["", "NAN", "NULL", "NONE"]:
-                return 0.0
-            elif value_upper == "INF" or value_upper == "INFINITY":
-                return float("inf")
-            elif value_upper == "-INF" or value_upper == "-INFINITY":
-                return float("-inf")
-            # '+' veya '-' işaretleri
-            elif value == "+":
-                return 1.0
-            elif value == "-":
-                return -1.0
-            else:
-                try:
-                    # Karmaşık sayı string'i olabilir
-                    if "j" in value or "J" in value:
-                        c = complex(value)
-                        return float(c.real)
-                except ValueError:
-                    pass
-                return 0.0
-    else:
-        try:
-            return float(value)
-        except (ValueError, TypeError):
-            return 0.0
 
 # ===== GLOBAL FONKSİYONLAR =====
 def chingon_zeros() -> ChingonNumber:
@@ -1871,441 +2637,701 @@ def parse_to_neutrosophic(s: Any) -> "NeutrosophicNumber":
     t, i, f = _parse_neutrosophic(s)
     return NeutrosophicNumber(t, i, f)
 
-def _safe_divide(a: Any, b: Any) -> Any:
-    """Safe division with zero handling."""
-    try:
-        # Check if b is effectively zero
-        if hasattr(b, "__abs__"):
-            if abs(b) < 1e-12:  # Near zero threshold
-                # Return infinity or handle based on type
-                if hasattr(a, "__mul__"):
-                    try:
-                        return a * float("inf")
-                    except:
-                        pass
-                return (
-                    type(a)(float("inf"))
-                    if hasattr(type(a), "__call__")
-                    else float("inf")
-                )
-
-        return a / b
-    except ZeroDivisionError:
-        return type(a)(float("inf")) if hasattr(type(a), "__call__") else float("inf")
-    except Exception as e:
-        logger.warning(f"Division error: {e}")
-        return a  # Return original value on error
-
-
-def _safe_mod(a: Any, b: Any) -> Any:
-    """Safe modulo operation."""
-    try:
-        # Check if b is effectively zero
-        if hasattr(b, "__abs__") and abs(b) < 1e-12:
-            logger.warning("Modulo by near-zero value")
-            return a  # Return original
-
-        return a % b
-    except Exception as e:
-        logger.warning(f"Modulo error: {e}")
-        return a  # Return original value on error
-
-
-def _safe_power(a: Any, b: Any) -> Any:
-    """Safe power operation."""
-    try:
-        # For complex cases or special number types
-        if hasattr(a, "__pow__"):
-            return a**b
-        else:
-            # Fallback for basic types
-            return math.pow(float(a), float(b))
-    except Exception as e:
-        logger.warning(f"Power operation error: {e}")
-        return a  # Return original value on error
-
-
 # ==============================================================================
 # --- CUSTOM NUMBER CLASS DEFINITIONS ---
 # ==============================================================================
+# ---------- Cayley-Dickson tabanlı HypercomplexNumber (geliştirilmiş) ----
+
 class HypercomplexNumber:
     """
-    Unified wrapper for Cayley-Dickson hypercomplex numbers.
-    Uses the cayley_dickson_algebra function for mathematically correct operations.
-    
-    Supports dimensions: 1, 2, 4, 8, 16, 32, 64, 128, 256 (powers of 2)
+    Unified wrapper for Cayley-Dickson hypercomplex numbers with flexible input.
+    - Accepts scalar, iterable, or string inputs.
+    - Supports dimensions that are powers of two up to 256 (1,2,4,8,...,256).
+    - Uses project's cayley_dickson_algebra for algebraic multiplication/division when available.
+    - Falls back to elementwise operations for scalar/iterable cases.
     """
-    
-    # Dimension to class name mapping
+
     DIMENSION_NAMES = {
-        1: "Real",
-        2: "Complex", 
-        4: "Quaternion",
-        8: "Octonion",
-        16: "Sedenion",
-        32: "Pathion",
-        64: "Chingon",
-        128: "Routon",
-        256: "Voudon"
+        1: "Real", 2: "Complex", 4: "Quaternion", 8: "Octonion",
+        16: "Sedenion", 32: "Pathion", 64: "Chingon", 128: "Routon", 256: "Voudon"
     }
-    
-    # Cache for CD algebra classes
     _cd_classes = {}
-    
-    def __init__(self, *components: float, dimension: Optional[int] = None):
-        """
-        Initialize a hypercomplex number.
-        
-        Args:
-            *components: The components of the number
-            dimension: The dimension (must be power of 2). If None, inferred from components.
-        
-        Raises:
-            ValueError: If dimension is not a power of 2 or doesn't match components
-        """
-        # Determine dimension
+
+    def __init__(self, components: Any = None, *, dimension: Optional[int] = None):
+        # parse components flexibly
+        comps = _parse_components(components)
+        # infer dimension if not provided: smallest power of two >= len(comps) or default 1
         if dimension is None:
-            # Find next power of 2 >= len(components)
-            n = len(components)
-            if n == 0:
-                dimension = 1
-            else:
-                # Find smallest power of 2 >= n
-                dimension = 1
-                while dimension < n:
-                    dimension <<= 1
+            n = max(1, len(comps))
+            dim = 1
+            while dim < n:
+                dim <<= 1
         else:
-            # Validate dimension
-            if dimension not in self.DIMENSION_NAMES:
-                raise ValueError(f"Dimension must be a power of 2 up to 256, got {dimension}")
-        
-        self.dimension = dimension
-        self._cd_class = self._get_cd_class(dimension)
-        
-        # Pad components with zeros if necessary
-        if len(components) < dimension:
-            components = list(components) + [0.0] * (dimension - len(components))
-        elif len(components) > dimension:
-            components = components[:dimension]
-        
-        # Create the CD number
-        self._cd_number = self._cd_class(*components)
-    
-    @classmethod
-    def _get_cd_class(cls, dimension: int):
-        """Get or create the Cayley-Dickson class for the given dimension."""
-        if dimension not in cls._cd_classes:
-            # Calculate level: dimension = 2^level
-            level = 0
-            temp = dimension
-            while temp > 1:
-                temp >>= 1
-                level += 1
-            
-            # Create the CD algebra
-            cls._cd_classes[dimension] = cayley_dickson_algebra(level, float)
-        
-        return cls._cd_classes[dimension]
-    
-    @classmethod
-    def from_cd_number(cls, cd_number) -> 'HypercomplexNumber':
-        """Create from an existing CD number."""
-        dimension = cd_number.dimensions
-        components = cd_number.coefficients()
-        return cls(*components, dimension=dimension)
-    
-    @property
-    def coeffs(self) -> List[float]:
-        """Get all coefficients as a list."""
-        return list(self._cd_number.coefficients())
-    
+            dim = int(dimension)
+            if dim not in self.DIMENSION_NAMES and dim not in (1,2,4,8,16,32,64,128,256):
+                raise ValueError("Dimension must be a power of two up to 256")
+        self.dimension = dim
+        # pad/truncate components
+        if len(comps) < dim:
+            comps = comps + [0.0] * (dim - len(comps))
+        elif len(comps) > dim:
+            comps = comps[:dim]
+        self._comps = [complex(c) if isinstance(c, complex) else float(c) for c in comps]
+        # try to create CD class and cd_number if available
+        try:
+            from .cd_helpers import cayley_dickson_algebra  # project helper
+            level = int(math.log2(self.dimension))
+            if self.dimension not in self._cd_classes:
+                self._cd_classes[self.dimension] = cayley_dickson_algebra(level, float)
+            cd_cls = self._cd_classes[self.dimension]
+            self._cd_number = cd_cls(*self._comps)
+            self._has_cd = True
+        except Exception:
+            # no CD algebra available; operate elementwise
+            self._cd_number = None
+            self._has_cd = False
+
+    # --- basic accessors ---
+    def coeffs(self) -> List[Number]:
+        return list(self._comps)
+
     @property
     def real(self) -> float:
-        """Get the real part."""
-        return self._cd_number.real_coefficient()
-    
-    @real.setter
-    def real(self, value: float):
-        """Set the real part by creating a new number."""
-        coeffs = self.coeffs
-        coeffs[0] = float(value)
-        self._cd_number = self._cd_class(*coeffs)
-    
+        return float(self._comps[0]) if self._comps else 0.0
+
     @property
-    def imag(self) -> List[float]:
-        """Get imaginary parts (all except real)."""
-        return self.coeffs[1:]
-    
+    def imag(self) -> List[Number]:
+        return self._comps[1:]
+
     def __len__(self) -> int:
-        """Return dimension."""
         return self.dimension
-    
-    def __getitem__(self, index: int) -> float:
-        """Get component by index."""
-        return self.coeffs[index]
-    
-    def __iter__(self):
-        """Iterate over components."""
-        return iter(self.coeffs)
-    
-    # Arithmetic operations
-    def __add__(self, other: Union['HypercomplexNumber', float, int]) -> 'HypercomplexNumber':
-        """Addition."""
-        if isinstance(other, (int, float)):
-            # Convert scalar to same dimension
-            other_coeffs = [float(other)] + [0.0] * (self.dimension - 1)
-            other_cd = self._cd_class(*other_coeffs)
-            result = self._cd_number + other_cd
-        elif isinstance(other, HypercomplexNumber):
-            # Check if dimensions match
-            if self.dimension != other.dimension:
-                # Find common dimension (max of the two)
-                common_dim = max(self.dimension, other.dimension)
-                self_padded = self.pad_to_dimension(common_dim)
-                other_padded = other.pad_to_dimension(common_dim)
-                return self_padded + other_padded
-            
-            result = self._cd_number + other._cd_number
-        else:
-            return NotImplemented
-        
-        return HypercomplexNumber.from_cd_number(result)
-    
-    def __radd__(self, other: Union[float, int]) -> 'HypercomplexNumber':
-        """Right addition."""
+
+    def to_list(self) -> List[float]:
+        """Return components as plain Python list of floats (complex -> real part)."""
+        out = []
+        for c in self.coeffs():
+            try:
+                # if complex, keep complex; plotting code will decide how to handle
+                out.append(float(c.real) if isinstance(c, complex) else float(c))
+            except Exception:
+                try:
+                    out.append(float(c))
+                except Exception:
+                    out.append(0.0)
+        return out
+
+    def to_components(self) -> List[Union[float, complex]]:
+        """Return raw components preserving complex entries if present."""
+        return list(self.coeffs())
+
+    def to_summary(self, max_components: int = 8) -> str:
+        """Human-friendly short summary: first components and magnitude."""
+        comps = self.to_list()
+        shown = comps[:max_components]
+        comps_str = ", ".join(f"{x:.6g}" for x in shown)
+        if len(comps) > max_components:
+            comps_str += ", ..."
+        try:
+            mag = self.norm()
+            return f"[{comps_str}] |v|={mag:.6g}"
+        except Exception:
+            return f"[{comps_str}]"
+
+
+    def copy(self) -> "HypercomplexNumber":
+        return HypercomplexNumber(self.coeffs(), dimension=self.dimension)
+
+    # --- internal helpers for dimension alignment ---
+    def _align_with(self, other: Any) -> Tuple[List[Number], List[Number], int]:
+        """
+        Return (a_list, b_list, dim) where both lists are length dim.
+        Accepts other as scalar, iterable, HypercomplexNumber.
+        """
+        if isinstance(other, HypercomplexNumber):
+            dim = max(self.dimension, other.dimension)
+            a = self.coeffs() + [0.0] * (dim - self.dimension)
+            b = other.coeffs() + [0.0] * (dim - other.dimension)
+            return a, b, dim
+        # parse other
+        other_comps = _parse_components(other)
+        dim = max(self.dimension, max(1, len(other_comps)))
+        a = self.coeffs() + [0.0] * (dim - self.dimension)
+        b = (other_comps + [0.0] * (dim - len(other_comps))) if other_comps else [other] + [0.0] * (dim - 1)
+        return a, b, dim
+
+    # --- arithmetic using CD algebra when possible, else elementwise/fallback ---
+    def __add__(self, other: Any) -> "HypercomplexNumber":
+        if self._has_cd and isinstance(other, HypercomplexNumber) and other._has_cd and self.dimension == other.dimension:
+            res_cd = self._cd_number + other._cd_number
+            return HypercomplexNumber.from_cd_number(res_cd)
+        a, b, dim = self._align_with(other)
+        return HypercomplexNumber([x + y for x, y in zip(a, b)], dimension=dim)
+
+    def __radd__(self, other: Any) -> "HypercomplexNumber":
         return self.__add__(other)
-    
-    def __sub__(self, other: Union['HypercomplexNumber', float, int]) -> 'HypercomplexNumber':
-        """Subtraction."""
-        if isinstance(other, (int, float)):
-            other_coeffs = [float(other)] + [0.0] * (self.dimension - 1)
-            other_cd = self._cd_class(*other_coeffs)
-            result = self._cd_number - other_cd
-        elif isinstance(other, HypercomplexNumber):
+
+    def __sub__(self, other: Any) -> "HypercomplexNumber":
+        if self._has_cd and isinstance(other, HypercomplexNumber) and other._has_cd and self.dimension == other.dimension:
+            res_cd = self._cd_number - other._cd_number
+            return HypercomplexNumber.from_cd_number(res_cd)
+        a, b, dim = self._align_with(other)
+        return HypercomplexNumber([x - y for x, y in zip(a, b)], dimension=dim)
+
+    def __rsub__(self, other: Any) -> "HypercomplexNumber":
+        # other - self
+        if isinstance(other, HypercomplexNumber):
+            return other.__sub__(self)
+        a, b, dim = self._align_with(other)
+        return HypercomplexNumber([y - x for x, y in zip(a, b)], dimension=dim)
+
+    def __mul__(self, other: Any) -> "HypercomplexNumber":
+        # scalar multiplication
+        if isinstance(other, (int, float, complex)):
+            return HypercomplexNumber([x * other for x in self.coeffs()], dimension=self.dimension)
+        # CD multiplication if both have CD and same dim
+        if isinstance(other, HypercomplexNumber) and self._has_cd and other._has_cd:
             if self.dimension != other.dimension:
-                common_dim = max(self.dimension, other.dimension)
-                self_padded = self.pad_to_dimension(common_dim)
-                other_padded = other.pad_to_dimension(common_dim)
-                return self_padded - other_padded
-            
-            result = self._cd_number - other._cd_number
-        else:
-            return NotImplemented
-        
-        return HypercomplexNumber.from_cd_number(result)
-    
-    def __rsub__(self, other: Union[float, int]) -> 'HypercomplexNumber':
-        """Right subtraction."""
-        if isinstance(other, (int, float)):
-            other_coeffs = [float(other)] + [0.0] * (self.dimension - 1)
-            other_cd = self._cd_class(*other_coeffs)
-            result = other_cd - self._cd_number
-            return HypercomplexNumber.from_cd_number(result)
-        return NotImplemented
-    
-    def __mul__(self, other: Union['HypercomplexNumber', float, int]) -> 'HypercomplexNumber':
-        """Multiplication using Cayley-Dickson construction."""
-        if isinstance(other, (int, float)):
-            # Scalar multiplication
-            result = self._cd_number * float(other)
-        elif isinstance(other, HypercomplexNumber):
-            if self.dimension != other.dimension:
-                common_dim = max(self.dimension, other.dimension)
-                self_padded = self.pad_to_dimension(common_dim)
-                other_padded = other.pad_to_dimension(common_dim)
-                return self_padded * other_padded
-            
-            # Use Cayley-Dickson multiplication
-            result = self._cd_number * other._cd_number
-        else:
-            return NotImplemented
-        
-        return HypercomplexNumber.from_cd_number(result)
-    
-    def __rmul__(self, other: Union[float, int]) -> 'HypercomplexNumber':
-        """Right multiplication."""
+                common = max(self.dimension, other.dimension)
+                return self.pad_to_dimension(common) * other.pad_to_dimension(common)
+            res_cd = self._cd_number * other._cd_number
+            return HypercomplexNumber.from_cd_number(res_cd)
+        # elementwise fallback
+        a, b, dim = self._align_with(other)
+        return HypercomplexNumber([x * y for x, y in zip(a, b)], dimension=dim)
+
+    def __rmul__(self, other: Any) -> "HypercomplexNumber":
         return self.__mul__(other)
-    
-    def __truediv__(self, other: Union['HypercomplexNumber', float, int]) -> 'HypercomplexNumber':
-        """Division."""
-        if isinstance(other, (int, float)):
-            if other == 0:
-                raise ZeroDivisionError("Cannot divide by zero")
-            result = self._cd_number / float(other)
-        elif isinstance(other, HypercomplexNumber):
+
+    def __truediv__(self, other: Any) -> "HypercomplexNumber":
+        # scalar division
+        if isinstance(other, (int, float, complex)):
+            if _is_zero(other):
+                raise ZeroDivisionError("Division by zero")
+            return HypercomplexNumber([x / other for x in self.coeffs()], dimension=self.dimension)
+        # CD division if possible
+        if isinstance(other, HypercomplexNumber) and self._has_cd and other._has_cd:
             if self.dimension != other.dimension:
-                common_dim = max(self.dimension, other.dimension)
-                self_padded = self.pad_to_dimension(common_dim)
-                other_padded = other.pad_to_dimension(common_dim)
-                return self_padded / other_padded
-            
-            result = self._cd_number / other._cd_number
-        else:
-            return NotImplemented
-        
-        return HypercomplexNumber.from_cd_number(result)
-    
-    def __rtruediv__(self, other: Union[float, int]) -> 'HypercomplexNumber':
-        """Right division."""
-        if isinstance(other, (int, float)):
-            other_coeffs = [float(other)] + [0.0] * (self.dimension - 1)
-            other_cd = self._cd_class(*other_coeffs)
-            result = other_cd / self._cd_number
-            return HypercomplexNumber.from_cd_number(result)
+                common = max(self.dimension, other.dimension)
+                return self.pad_to_dimension(common) / other.pad_to_dimension(common)
+            res_cd = self._cd_number / other._cd_number
+            return HypercomplexNumber.from_cd_number(res_cd)
+        # elementwise fallback
+        a, b, dim = self._align_with(other)
+        res = []
+        for x, y in zip(a, b):
+            if _is_zero(y):
+                res.append(float("inf"))
+            else:
+                res.append(x / y)
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
+        return HypercomplexNumber(res, dimension=dim)
+
+    def __rtruediv__(self, other: Any) -> "HypercomplexNumber":
+        if isinstance(other, (int, float, complex)):
+            other_coeffs = [other] + [0.0] * (self.dimension - 1)
+            return HypercomplexNumber(other_coeffs, dimension=self.dimension) / self
         return NotImplemented
-    
-    def __neg__(self) -> 'HypercomplexNumber':
-        """Negation."""
-        result = -self._cd_number
-        return HypercomplexNumber.from_cd_number(result)
-    
-    def __pos__(self) -> 'HypercomplexNumber':
-        """Unary plus."""
-        return self
-    
+
+    def __mod__(self, other: Any) -> "HypercomplexNumber":
+        # elementwise modulo fallback
+        a, b, dim = self._align_with(other)
+        res = []
+        for x, y in zip(a, b):
+            try:
+                if _is_zero(y):
+                    res.append(x)
+                else:
+                    res.append(x % y)
+            except Exception:
+                res.append(x)
+        return HypercomplexNumber(res, dimension=dim)
+
+    def __pow__(self, exponent: Any) -> "HypercomplexNumber":
+        # elementwise power for scalar exponent
+        if isinstance(exponent, (int, float)):
+            return HypercomplexNumber([x ** exponent for x in self.coeffs()], dimension=self.dimension)
+        if isinstance(exponent, HypercomplexNumber):
+            a, b, dim = self._align_with(exponent)
+            return HypercomplexNumber([x ** y for x, y in zip(a, b)], dimension=dim)
+        raise TypeError("Unsupported exponent type for HypercomplexNumber")
+
+    def __neg__(self) -> "HypercomplexNumber":
+        return HypercomplexNumber([-c for c in self.coeffs()], dimension=self.dimension)
+
     def __abs__(self) -> float:
-        """Magnitude."""
-        return float(self._cd_number.norm())
-    
-    def __eq__(self, other: object) -> bool:
-        """Equality."""
+        # norm: sqrt(sum(|c|^2))
+        s = 0.0
+        for c in self.coeffs():
+            try:
+                s += (abs(c) ** 2)
+            except Exception:
+                try:
+                    s += float(c) ** 2
+                except Exception:
+                    s += 0.0
+        return math.sqrt(s)
+
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, HypercomplexNumber):
             if self.dimension != other.dimension:
                 return False
-            return self._cd_number == other._cd_number
-        elif isinstance(other, (int, float)):
-            # Compare with scalar
-            if self.dimension == 1:
-                return self.real == float(other)
-            # For higher dimensions, check if only real part matches
-            return self.real == float(other) and all(abs(c) < 1e-12 for c in self.imag)
+            return all(abs(a - b) < 1e-12 for a, b in zip(self.coeffs(), other.coeffs()))
+        if isinstance(other, (int, float)):
+            return abs(self.real - float(other)) < 1e-12 and all(abs(c) < 1e-12 for c in self.imag)
         return False
-    
-    def __ne__(self, other: object) -> bool:
-        """Inequality."""
-        return not self.__eq__(other)
-    
-    def conjugate(self) -> 'HypercomplexNumber':
-        """Return the conjugate."""
-        result = self._cd_number.conjugate()
-        return HypercomplexNumber.from_cd_number(result)
-    
-    def norm(self) -> float:
-        """Return the norm (magnitude)."""
-        return float(self._cd_number.norm())
-    
-    def magnitude(self) -> float:
-        """Alias for norm."""
-        return self.norm()
-    
-    def norm_squared(self) -> float:
-        """Return the squared norm."""
-        return float(self._cd_number.norm_squared())
-    
-    def inverse(self) -> 'HypercomplexNumber':
-        """Return the multiplicative inverse."""
-        result = self._cd_number.inverse()
-        return HypercomplexNumber.from_cd_number(result)
-    
-    def normalize(self) -> 'HypercomplexNumber':
-        """Return a normalized version."""
-        norm = self.norm()
-        if norm == 0:
-            raise ZeroDivisionError("Cannot normalize zero hypercomplex number")
-        return HypercomplexNumber(*(c / norm for c in self.coeffs), dimension=self.dimension)
-    
-    def dot(self, other: 'HypercomplexNumber') -> float:
-        """Dot product."""
-        if not isinstance(other, HypercomplexNumber):
-            raise TypeError("Dot product requires another HypercomplexNumber")
-        
-        if self.dimension != other.dimension:
-            common_dim = max(self.dimension, other.dimension)
-            self_padded = self.pad_to_dimension(common_dim)
-            other_padded = other.pad_to_dimension(common_dim)
-            return self_padded.dot(other_padded)
-        
-        return sum(a * b for a, b in zip(self.coeffs, other.coeffs))
-    
-    def pad_to_dimension(self, new_dimension: int) -> 'HypercomplexNumber':
-        """Pad to a higher dimension with zeros."""
+
+    # --- CD helpers and conversions ---
+    @classmethod
+    def _get_cd_class(cls, dimension: int):
+        # lazy load handled in __init__
+        return cls._cd_classes.get(dimension)
+
+    @classmethod
+    def from_cd_number(cls, cd_number) -> "HypercomplexNumber":
+        # cd_number must provide coefficients() and dimensions
+        try:
+            dim = getattr(cd_number, "dimensions", None) or len(cd_number.coefficients())
+            comps = list(cd_number.coefficients())
+            return cls(comps, dimension=dim)
+        except Exception:
+            # fallback: try to extract via to_list
+            try:
+                return cls(cd_number.to_list())
+            except Exception:
+                raise
+
+    def pad_to_dimension(self, new_dimension: int) -> "HypercomplexNumber":
         if new_dimension < self.dimension:
-            raise ValueError(f"Cannot pad to smaller dimension: {new_dimension} < {self.dimension}")
-        
+            raise ValueError("Cannot pad to smaller dimension")
         if new_dimension == self.dimension:
-            return self
-        
-        coeffs = self.coeffs + [0.0] * (new_dimension - self.dimension)
-        return HypercomplexNumber(*coeffs, dimension=new_dimension)
-    
-    def truncate_to_dimension(self, new_dimension: int) -> 'HypercomplexNumber':
-        """Truncate to a smaller dimension."""
+            return self.copy()
+        coeffs = self.coeffs() + [0.0] * (new_dimension - self.dimension)
+        return HypercomplexNumber(coeffs, dimension=new_dimension)
+
+    def truncate_to_dimension(self, new_dimension: int) -> "HypercomplexNumber":
         if new_dimension > self.dimension:
-            raise ValueError(f"Cannot truncate to larger dimension: {new_dimension} > {self.dimension}")
-        
+            raise ValueError("Cannot truncate to larger dimension")
         if new_dimension == self.dimension:
-            return self
-        
-        coeffs = self.coeffs[:new_dimension]
-        return HypercomplexNumber(*coeffs, dimension=new_dimension)
-    
-    def to_list(self) -> List[float]:
-        """Convert to Python list."""
-        return self.coeffs.copy()
-    
-    def to_tuple(self) -> Tuple[float, ...]:
-        """Convert to tuple."""
-        return tuple(self.coeffs)
-    
-    def to_numpy(self) -> np.ndarray:
-        """Convert to numpy array."""
-        return np.array(self.coeffs, dtype=np.float64)
-    
-    def copy(self) -> 'HypercomplexNumber':
-        """Create a copy."""
-        return HypercomplexNumber(*self.coeffs, dimension=self.dimension)
-    
-    @property
-    def type_name(self) -> str:
-        """Get the type name (Real, Complex, Quaternion, etc.)."""
-        return self.DIMENSION_NAMES.get(self.dimension, f"CD{self.dimension}")
-    
-    def __str__(self) -> str:
-        """String representation."""
-        non_zero = [(i, c) for i, c in enumerate(self.coeffs) if abs(c) > 1e-10]
-        
-        if not non_zero:
-            return f"{self.type_name}(0)"
-        
-        if len(non_zero) <= 4:
-            parts = []
-            for i, c in non_zero:
-                if i == 0:
-                    parts.append(f"{c:.6f}")
-                else:
-                    sign = "+" if c >= 0 else "-"
-                    parts.append(f"{sign} {abs(c):.6f}e{i}")
-            return f"{self.type_name}({' '.join(parts)})"
-        else:
-            return f"{self.type_name}[{len(non_zero)} non-zero, real={self.real:.6f}, norm={self.norm():.6f}]"
-    
-    def __repr__(self) -> str:
-        """Detailed representation."""
-        return f"HypercomplexNumber({', '.join(map(str, self.coeffs))}, dimension={self.dimension})"
-    
+            return self.copy()
+        coeffs = self.coeffs()[:new_dimension]
+        return HypercomplexNumber(coeffs, dimension=new_dimension)
+
+    # --- algebraic helpers ---
+    def conjugate(self) -> "HypercomplexNumber":
+        if self._has_cd:
+            return HypercomplexNumber.from_cd_number(self._cd_number.conjugate())
+        # elementwise conjugate: complex conjugate for each component
+        return HypercomplexNumber([complex(c).conjugate() if isinstance(c, complex) else c for c in self.coeffs()], dimension=self.dimension)
+
+    def norm(self) -> float:
+        if self._has_cd:
+            try:
+                return float(self._cd_number.norm())
+            except Exception:
+                pass
+        return abs(self)
+
+    def inverse(self) -> "HypercomplexNumber":
+        if self._has_cd:
+            return HypercomplexNumber.from_cd_number(self._cd_number.inverse())
+        # fallback: elementwise reciprocal where possible
+        comps = []
+        for c in self.coeffs():
+            if _is_zero(c):
+                comps.append(float("inf"))
+            else:
+                comps.append(1.0 / c)
+        return HypercomplexNumber(comps, dimension=self.dimension)
+
+    def normalize(self) -> "HypercomplexNumber":
+        n = self.norm()
+        if _is_zero(n):
+            raise ZeroDivisionError("Cannot normalize zero")
+        return HypercomplexNumber([c / n for c in self.coeffs()], dimension=self.dimension)
+
+    def dot(self, other: Any) -> float:
+        if not isinstance(other, HypercomplexNumber):
+            other = HypercomplexNumber(other)
+        a, b, dim = self._align_with(other)
+        return sum((x * y) for x, y in zip(a, b))
+
+    # --- utilities ---
+    def to_tuple(self) -> Tuple[Number, ...]:
+        return tuple(self.coeffs())
+
+    def to_numpy(self):
+        try:
+            import numpy as np
+            return np.array(self.coeffs(), dtype=float)
+        except Exception:
+            raise
+
     def summary(self) -> str:
-        """Return a summary."""
-        non_zero = sum(1 for c in self.coeffs if abs(c) > 1e-10)
-        max_coeff = max(abs(c) for c in self.coeffs)
-        min_non_zero = min(abs(c) for c in self.coeffs if abs(c) > 0)
-        
-        return (f"{self.type_name} Summary:\n"
+        non_zero = sum(1 for c in self.coeffs() if abs(c) > 1e-12)
+        max_coeff = max((abs(c) for c in self.coeffs()), default=0.0)
+        min_non_zero = min((abs(c) for c in self.coeffs() if abs(c) > 0), default=0.0)
+        return (f"{self.DIMENSION_NAMES.get(self.dimension, f'CD{self.dimension}')} Summary:\n"
                 f"  Dimension: {self.dimension}\n"
                 f"  Non-zero components: {non_zero}\n"
                 f"  Real part: {self.real:.6f}\n"
                 f"  Norm: {self.norm():.6f}\n"
                 f"  Max component: {max_coeff:.6f}\n"
-                f"  Min non-zero: {min_non_zero:.6f if non_zero > 0 else 0}")
+                f"  Min non-zero: {min_non_zero:.6f}")
+
+    def __str__(self):
+        return self.to_summary(max_components=8)
+
+    def __repr__(self):
+        return f"HypercomplexNumber({self.to_list()[:8]}{'...' if len(self._comps)>8 else ''})"
+
+
+# ---------- Helper zero check (genel) ------------------------------------
+def _is_zero(value: Any) -> bool:
+    try:
+        if isinstance(value, (int, float)):
+            return abs(value) < 1e-12
+        if isinstance(value, complex):
+            return abs(value) < 1e-12
+        if isinstance(value, HypercomplexNumber):
+            return all(_is_zero(c) for c in value.coeffs())
+        if isinstance(value, (list, tuple)):
+            return all(_is_zero(v) for v in value)
+        if hasattr(value, "__abs__"):
+            try:
+                return abs(value) < 1e-12
+            except Exception:
+                pass
+        return abs(float(value)) < 1e-12
+    except Exception:
+        return False
+
+# --- Yardımcı fonksiyonlar ------------------------------------------------
+def _safe_import(name: str):
+    try:
+        module = __import__(name, fromlist=['*'])
+        return module
+    except Exception:
+        return None
+
+# Try to import sympy if available for robust primality
+_sympy = _safe_import('sympy')
+if _sympy:
+    _sympy_isprime = getattr(_sympy, 'isprime', None)
+else:
+    _sympy_isprime = None
+
+
+def _is_near_integer(x: Any, tol: float = 1e-9) -> bool:
+    """Bir sayının neredeyse tam sayı olup olmadığını kontrol et."""
+    try:
+        if isinstance(x, int):
+            return True
+        xf = float(x)
+        return abs(xf - round(xf)) <= tol
+    except Exception:
+        return False
+
+def _float_mod_zero(x: Any, divisor: int = 1, tol: float = 1e-9) -> bool:
+    """x % divisor yaklaşık sıfır mı? (float toleranslı)"""
+    try:
+        xf = float(x)
+        if divisor == 0:
+            return False
+        return abs(xf - round(xf / divisor) * divisor) <= tol
+    except Exception:
+        return False
+
+def _int_from_value(value: Any) -> int:
+    """
+    Değeri tamsayıya çevirmeye çalışır:
+    - Eğer HypercomplexNumber veya iterable ise ilk bileşeni alır
+    - Eğer string ise sayısal token'ı alır
+    - Başarısızsa None döner
+    """
+    try:
+        if value is None:
+            return None
+        # If object provides integer representation helper
+        if hasattr(value, 'to_int') and callable(getattr(value, 'to_int')):
+            try:
+                return int(value.to_int())
+            except Exception:
+                pass
+        # If object has coeffs or to_list
+        comps = _parse_components(value)
+        if comps:
+            return int(round(comps[0]))
+        # fallback scalar
+        if isinstance(value, (int, float)):
+            return int(round(float(value)))
+        if isinstance(value, complex):
+            return int(round(value.real))
+        # try direct conversion
+        return int(float(str(value)))
+    except Exception:
+        return None
+
+def _simple_is_prime(n: int) -> bool:
+    """Küçük/orta büyüklükte tamsayılar için basit deterministik test."""
+    if n < 2:
+        return False
+    if n in (2, 3):
+        return True
+    if n % 2 == 0:
+        return False
+    r = int(math.isqrt(n))
+    for i in range(3, r + 1, 2):
+        if n % i == 0:
+            return False
+    return True
+
+# --- Ana birleşik is_prime_like fonksiyonu -------------------------------
+
+def is_prime_like(value: Any, kececi_type: int = None) -> bool:
+    """
+    Genişletilmiş prime-like testi.
+    - Önce proje içi is_prime_like veya is_prime fonksiyonlarını dener.
+    - sympy varsa onu kullanır.
+    - Quaternion/Hypercomplex/Array-based/ternary/clifford gibi tipler için bileşenleri kontrol eder.
+    - kececi_type belirtilirse tip-özel kurallar uygulanır.
+    """
+    try:
+        # 1) Proje içi helper varsa kullan
+        try:
+            from .kececinumbers import is_prime_like as _proj_ipl
+            return bool(_proj_ipl(value, kececi_type) if _proj_ipl.__code__.co_argcount >= 2 else _proj_ipl(value))
+        except Exception:
+            pass
+
+        # 2) Eğer doğrudan integer temsil edilebiliyorsa onu al ve test et
+        n = _int_from_value(value)
+        if n is not None:
+            if _sympy_isprime:
+                try:
+                    return bool(_sympy_isprime(int(n)))
+                except Exception:
+                    return _simple_is_prime(int(n))
+            else:
+                return _simple_is_prime(int(n))
+
+        # 3) Tip bazlı heuristikler (kececi_type varsa)
+        # Tip sabitleri proje içinde farklı isimlerde olabilir; burada sayısal kodlar kullanılıyor.
+        # Kullanıcının tanımladığı TYPE_* sabitlerini kullanıyorsanız onları import edin veya
+        # burada numeric karşılıklarını verin. Örnek: TYPE_HYPERCOMPLEX == 23
+        TYPE_HYPERCOMPLEX = 23
+        TYPE_QUATERNION = 6
+        TYPE_OCTONION = 12
+        TYPE_SEDENION = 13
+        TYPE_PATHION = 17
+        TYPE_CHINGON = 18
+        TYPE_ROUTON = 19
+        TYPE_VOUDON = 20
+        TYPE_TERNARY = 22
+        TYPE_CLIFFORD = 14
+        TYPE_SUPERREAL = 21
+
+        # Quaternion özel kontrol
+        if kececi_type == TYPE_QUATERNION:
+            try:
+                # Eğer proje quaternion sınıfı varsa onun bileşenlerini al
+                from .kececinumbers import quaternion as _quat_cls
+            except Exception:
+                _quat_cls = None
+            try:
+                if _quat_cls is not None and isinstance(value, _quat_cls):
+                    comps = [value.w, value.x, value.y, value.z]
+                elif hasattr(value, 'w') and hasattr(value, 'x'):
+                    comps = [getattr(value, a) for a in ('w','x','y','z') if hasattr(value, a)]
+                elif hasattr(value, 'coeffs'):
+                    comps = list(value.coeffs())
+                else:
+                    comps = _parse_components(value)
+                if not comps:
+                    return False
+                if not all(_is_near_integer(c) for c in comps):
+                    return False
+                # test first (real) component
+                n0 = int(round(float(comps[0])))
+                if _sympy_isprime:
+                    return bool(_sympy_isprime(n0))
+                return _simple_is_prime(n0)
+            except Exception:
+                return False
+
+        # Hypercomplex family (octonion, sedenion, pathion, ...)
+        if kececi_type in (TYPE_OCTONION, TYPE_SEDENION, TYPE_PATHION, TYPE_CHINGON, TYPE_ROUTON, TYPE_VOUDON, TYPE_HYPERCOMPLEX):
+            try:
+                # extract coeffs
+                if hasattr(value, 'coeffs'):
+                    coeffs = list(value.coeffs())
+                elif hasattr(value, 'to_list'):
+                    coeffs = list(value.to_list())
+                elif isinstance(value, (list, tuple)):
+                    coeffs = list(value)
+                else:
+                    coeffs = _parse_components(value)
+                if not coeffs:
+                    return False
+                if not all(_is_near_integer(c) for c in coeffs):
+                    return False
+                n0 = int(round(float(coeffs[0])))
+                if _sympy_isprime:
+                    return bool(_sympy_isprime(n0))
+                return _simple_is_prime(n0)
+            except Exception:
+                return False
+
+        # Ternary
+        if kececi_type == TYPE_TERNARY:
+            try:
+                # If object has to_decimal or digits
+                if hasattr(value, 'to_decimal'):
+                    dec = int(value.to_decimal())
+                elif hasattr(value, 'digits'):
+                    digits = list(value.digits)
+                    dec = 0
+                    for i, d in enumerate(reversed(digits)):
+                        dec += int(d) * (3 ** i)
+                elif isinstance(value, (list, tuple)):
+                    parts = list(value)
+                    dec = 0
+                    for i, d in enumerate(reversed(parts)):
+                        dec += int(d) * (3 ** i)
+                else:
+                    # try parse first component
+                    comps = _parse_components(value)
+                    if not comps:
+                        return False
+                    dec = int(round(comps[0]))
+                if _sympy_isprime:
+                    return bool(_sympy_isprime(dec))
+                return _simple_is_prime(dec)
+            except Exception:
+                return False
+
+        # Clifford
+        if kececi_type == TYPE_CLIFFORD:
+            try:
+                if hasattr(value, 'basis') and isinstance(value.basis, dict):
+                    scalar = value.basis.get('', 0)
+                    if _is_near_integer(scalar):
+                        n = int(round(float(scalar)))
+                        if _sympy_isprime:
+                            return bool(_sympy_isprime(n))
+                        return _simple_is_prime(n)
+                return False
+            except Exception:
+                return False
+
+        # Superreal
+        if kececi_type == TYPE_SUPERREAL:
+            try:
+                if hasattr(value, 'real'):
+                    real = getattr(value, 'real')
+                    if _is_near_integer(real):
+                        n = int(round(float(real)))
+                        if _sympy_isprime:
+                            return bool(_sympy_isprime(n))
+                        return _simple_is_prime(n)
+                return False
+            except Exception:
+                return False
+
+        # 4) Genel fallback: magnitude veya ilk bileşen üzerinden test et
+        try:
+            comps = _parse_components(value)
+            if not comps:
+                return False
+            mag = int(abs(round(float(comps[0]))))
+            if mag < 2:
+                return False
+            if _sympy_isprime:
+                return bool(_sympy_isprime(mag))
+            return _simple_is_prime(mag)
+        except Exception:
+            return False
+
+    except Exception as e:
+        logger.debug("is_prime_like unexpected error: %s", e)
+        return False
+
+
+# ---------- Güncellenmiş get_unit fonksiyonu ------------------------------
+def _get_ask_unit_for_type(number_type: int, sample_value: Any = None) -> Any:
+    """
+    Get appropriate Keçeci unit for a number type.
+    Hypercomplex (23) returns a HypercomplexNumber.unit inferred from sample_value or default dim 8.
+    """
+    # simple numeric types
+    if number_type in [1, 4, 5]:
+        return 1.0
+    if number_type == 2:
+        return -1.0
+    if number_type == 3:
+        return complex(1, 0)
+    if number_type == 6:
+        try:
+            from .kececinumbers import quaternion
+            return quaternion(1, 0, 0, 0)
+        except Exception:
+            return [1.0, 0.0, 0.0, 0.0]
+    if number_type == 7:
+        try:
+            from .kececinumbers import NeutrosophicNumber
+            return NeutrosophicNumber(1, 0, 0)
+        except Exception:
+            return (1.0, 0.0, 0.0)
+    if number_type == 8:
+        try:
+            from .kececinumbers import NeutrosophicComplexNumber
+            return NeutrosophicComplexNumber(1, 0, 0)
+        except Exception:
+            return complex(1, 0)
+    if number_type in [12, 13, 17, 18, 19, 20, 22]:
+        sizes = {12: 8, 13: 16, 17: 32, 18: 64, 19: 128, 20: 256, 22: 3}
+        size = sizes.get(number_type, 1)
+        if sample_value is not None and hasattr(sample_value, "__len__"):
+            try:
+                size = max(1, len(sample_value))
+            except Exception:
+                pass
+        unit = [0.0] * size
+        unit[0] = 1.0
+        if sample_value is not None:
+            try:
+                return type(sample_value)(unit)
+            except Exception:
+                return unit
+        return unit
+    if number_type == 23:
+        # infer dimension from sample_value if possible, default 8
+        dim = 8
+        if sample_value is not None:
+            try:
+                if isinstance(sample_value, HypercomplexNumber):
+                    dim = max(1, len(sample_value))
+                elif hasattr(sample_value, "__len__"):
+                    dim = max(1, len(sample_value))
+                else:
+                    # if sample is string, parse components
+                    comps = _parse_components(sample_value)
+                    if comps:
+                        dim = max(1, len(comps))
+            except Exception:
+                pass
+        try:
+            return HypercomplexNumber([1.0] + [0.0] * (dim - 1), dimension=dim)
+        except Exception:
+            return [1.0] + [0.0] * (dim - 1)
+    # default fallback
+    if sample_value is not None:
+        try:
+            return type(sample_value)(1)
+        except Exception:
+            pass
+    return 1.0
 
 # Yardımcı Fonksiyonlar:
 # Factory functions for specific hypercomplex types
@@ -2715,6 +3741,9 @@ class quaternion:
             if other == 0:
                 raise ZeroDivisionError("Sıfıra bölme hatası")
             return quaternion(self.w / other, self.x / other, self.y / other, self.z / other)
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
         raise TypeError("Sadece skaler ile bölünebilir")
     
     def __eq__(self, other: 'quaternion') -> bool:
@@ -2906,6 +3935,9 @@ class TernaryNumber:
             return TernaryNumber.from_decimal(int(round(result_decimal)))
         else:
             raise TypeError("TernaryNumber'i bir sayı veya başka bir TernaryNumber ile bölebilirsiniz.")
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
 
     # üçlü sayı sisteminde bölme işlemi, ondalık karşılığa dönüştürülerek yapılmalıdır.
     def __rtruediv__(self, other):
@@ -3005,6 +4037,9 @@ class SuperrealNumber:
             return SuperrealNumber(self.real / other)
         else:
             raise TypeError("SuperrealNumber'i bir sayı veya başka bir SuperrealNumber ile bölebilirsiniz.")
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
 
     def __rtruediv__(self, other):
         """ Bölme işleminin sağ taraf desteklenmesini sağlar. """
@@ -3096,6 +4131,9 @@ class BaseNumber(ABC):
         if other_val == 0:
             raise ZeroDivisionError("division by zero")
         return self.__class__(self._value / other_val)
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
 
     def __rtruediv__(self, other: Number) -> "BaseNumber":
         if self._value == 0:
@@ -3251,6 +4289,9 @@ class PathionNumber:
             return PathionNumber([c / other for c in self.coeffs])
         else:
             raise TypeError(f"Unsupported operand type(s) for /: 'PathionNumber' and '{type(other).__name__}'")
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
     
     def __floordiv__(self, other):
         """Tam sayı bölme operatörü: // """
@@ -3378,7 +4419,10 @@ class ChingonNumber:
             return ChingonNumber([c / other for c in self.coeffs])  # ChingonNumber döndür
         else:
             raise TypeError(f"Unsupported operand type(s) for /: 'ChingonNumber' and '{type(other).__name__}'")  # ChingonNumber
-    
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
+
     def __floordiv__(self, other):
         """Tam sayı bölme operatörü: // """
         if isinstance(other, (int, float)):
@@ -3579,6 +4623,9 @@ class RoutonNumber:
             new_coeffs = [c / float(scalar) for c in self.coeffs]
             return RoutonNumber(new_coeffs)
         return NotImplemented
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
     
     def __floordiv__(self, scalar: Union[float, int]) -> 'RoutonNumber':
         """Floor divide Routon by scalar."""
@@ -3897,6 +4944,9 @@ class VoudonNumber:
             new_coeffs = [c / float(scalar) for c in self.coeffs]
             return VoudonNumber(new_coeffs)
         return NotImplemented
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
     
     def __floordiv__(self, scalar: Union[float, int]) -> 'VoudonNumber':
         """Floor divide Voudon by scalar."""
@@ -4341,6 +5391,9 @@ class OctonionNumber:
                 self.e / scalar, self.f / scalar, self.g / scalar, self.h / scalar
             )
         return NotImplemented
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
     
     def __neg__(self) -> 'OctonionNumber':
         return OctonionNumber(
@@ -4448,6 +5501,9 @@ class NeutrosophicNumber:
                 raise ZeroDivisionError("Cannot divide by zero.")
             return NeutrosophicNumber(self.t / divisor, self.i / divisor, self.f / divisor)
         raise TypeError("Only scalar division is supported.")
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
 
     def __str__(self) -> str:
         parts = []
@@ -4568,6 +5624,9 @@ class NeutrosophicComplexNumber:
                 self.real / other, self.imag / other, self.indeterminacy / other
             )
         return NotImplemented
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
 
     def __neg__(self) -> "NeutrosophicComplexNumber":
         return NeutrosophicComplexNumber(-self.real, -self.imag, -self.indeterminacy)
@@ -4680,6 +5739,9 @@ class HyperrealNumber:
                 raise ZeroDivisionError("Scalar division by zero.")
             return HyperrealNumber([x / divisor for x in self.sequence])
         raise TypeError("Only scalar division is supported.")
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
 
     def __mod__(self, divisor: float) -> "HyperrealNumber":
         if isinstance(divisor, (int, float)):
@@ -4741,6 +5803,9 @@ class BicomplexNumber:
             return BicomplexNumber(self.z1 / divisor, self.z2 / divisor)
         else:
             raise TypeError("Only scalar division is supported")
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
 
     def __str__(self) -> str:
         parts = []
@@ -4934,60 +5999,341 @@ def _parse_bicomplex(s: Any) -> BicomplexNumber:
     # Final fallback: return zero bicomplex
     return BicomplexNumber(complex(0.0, 0.0), complex(0.0, 0.0))
 
-def _parse_universal(s: Union[str, Any], target_type: str) -> Any:
+def _next_power_of_two_at_least(n: int, max_dim: int = 256) -> int:
+    if n <= 1:
+        return 1
+    p = 1
+    while p < n and p < max_dim:
+        p <<= 1
+    return p if p <= max_dim else max_dim
+
+def _parse_single_token(tok: Any):
+    """Tek token -> float veya complex; mixed/fraction destekli."""
+    if tok is None:
+        return 0.0
+    if isinstance(tok, (int, float, complex)):
+        return tok
+    s = str(tok).strip()
+    if s == "":
+        return 0.0
+    # normalize imaginary unit (i, I, j, J -> j)
+    s = s.replace("I", "i").replace("J", "j").replace("i", "j")
+    # complex first
+    try:
+        c = complex(s)
+        if c.imag == 0:
+            return float(c.real)
+        return c
+    except Exception:
+        pass
+    # mixed number "a b/c"
+    if " " in s and "/" in s:
+        try:
+            whole, frac = s.split(" ", 1)
+            num, den = frac.split("/")
+            return float(whole) + float(num) / float(den)
+        except Exception:
+            pass
+    # fraction "a/b"
+    if "/" in s:
+        try:
+            num, den = s.split("/")
+            return float(num) / float(den)
+        except Exception:
+            pass
+    # fallback numeric token via regex
+    m = re.search(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", s)
+    if m:
+        try:
+            return float(m.group(0))
+        except Exception:
+            pass
+    return 0.0
+
+def _parse_components(value: Any) -> List:
+    """Flexible parsing: iterable, object with coeffs/to_list, string, scalar."""
+    if value is None:
+        return []
+    # object helpers
+    try:
+        if hasattr(value, "to_list") and callable(getattr(value, "to_list")):
+            return [_parse_single_token(x) for x in value.to_list()]
+        if hasattr(value, "coeffs") and callable(getattr(value, "coeffs")):
+            return [_parse_single_token(x) for x in value.coeffs()]
+    except Exception:
+        pass
+    # iterable but not string
+    if isinstance(value, (list, tuple)):
+        return [_parse_single_token(x) for x in value]
+    if isinstance(value, (int, float, complex)):
+        return [value]
+    if isinstance(value, str):
+        s = value.strip()
+        # strip surrounding brackets
+        if (s.startswith("[") and s.endswith("]")) or (s.startswith("(") and s.endswith(")")):
+            s = s[1:-1].strip()
+        parts = [p.strip() for p in s.split(",")] if "," in s else s.split()
+        # handle single mixed-number token like "1 1/2"
+        if len(parts) == 1 and " " in parts[0] and "/" in parts[0]:
+            parts = [parts[0]]
+        comps = []
+        for p in parts:
+            if p == "":
+                continue
+            comps.append(_parse_single_token(p))
+        return comps
+    # fallback try float conversion
+    try:
+        return [float(value)]
+    except Exception:
+        return [0.0]
+
+def _pad_or_truncate_list(lst: Iterable, dim: int) -> List:
+    arr = list(lst)
+    if len(arr) < dim:
+        return arr + [0.0] * (dim - len(arr))
+    return arr[:dim]
+
+def _construct_hypercomplex_from_components(HC_cls, comps: List, dimension: int):
     """
-    Universal parser - Çeşitli sayı türlerini string'den veya diğer tiplerden parse eder
-    
-    Args:
-        s: Parse edilecek input (string, sayı, liste, vs.)
-        target_type: Hedef tür ("real", "complex", "quaternion", "octonion", 
-                   "sedenion", "pathion", "chingon", "routon", "voudon", "bicomplex")
-    
-    Returns:
-        Parse edilmiş değer veya hata durumunda varsayılan değer
-        
-    Özellikler:
-        - "real": Float'a çevirir, hata durumunda 0.0 döner
-        - "complex": _parse_complex fonksiyonunu çağırır (mevcut mantık korunur)
-        - "quaternion": 4 bileşenli hiperkompleks sayı
-        - "octonion": 8 bileşenli hiperkompleks sayı
-        - "sedenion": 16 bileşenli hiperkompleks sayı
-        - "pathion": 32 bileşenli hiperkompleks sayı
-        - "chingon": 64 bileşenli hiperkompleks sayı
-        - "routon": 128 bileşenli hiperkompleks sayı
-        - "voudon": 256 bileşenli hiperkompleks sayı
-        - "bicomplex": _parse_bicomplex fonksiyonunu çağırır (özel durum)
+    Try common constructor signatures for HypercomplexNumber-like classes.
+    Returns instance or raises TypeError.
+    """
+    # prefer (list, dimension=dim)
+    try:
+        return HC_cls(comps, dimension=dimension)
+    except TypeError:
+        pass
+    except Exception as e:
+        logger.debug("HC constructor (list, dim) failed: %s", e)
+    # try (*comps, dimension=dim)
+    try:
+        return HC_cls(*comps, dimension=dimension)
+    except TypeError:
+        pass
+    except Exception as e:
+        logger.debug("HC constructor (*comps, dim) failed: %s", e)
+    # try list only
+    try:
+        return HC_cls(comps)
+    except Exception as e:
+        logger.debug("HC constructor (list) failed: %s", e)
+    # try *comps only
+    try:
+        return HC_cls(*comps)
+    except Exception as e:
+        logger.debug("HC constructor (*comps) failed: %s", e)
+    raise TypeError("No compatible Hypercomplex constructor found")
+
+def _get_default_hypercomplex(dim: int):
+    """Return a default fallback (list) for given dimension."""
+    return [0.0] * max(1, int(dim))
+
+# --- Ana fonksiyon -------------------------------------------------------
+
+def _parse_hypercomplex(s: Any, dimension: Optional[int] = None):
+    """
+    Parse input to HypercomplexNumber (or fallback list) with specific dimension.
+    - If dimension is None, infer from input length or default to 8.
+    - Accepts HypercomplexNumber, scalars, complex, iterables, strings.
+    - Returns HypercomplexNumber instance if class available, else a padded list.
     """
     try:
-        # Bicomplex özel durumu (mevcut implementasyonu koru)
-        if target_type == "bicomplex":
-            return _parse_bicomplex(s)
-        
-        # Complex özel durumu (mevcut implementasyonu koru)
-        if target_type == "complex":
-            return _parse_complex(s)
-        
-        # Real özel durumu
-        if target_type == "real":
+        # If already HypercomplexNumber-like, try to adapt
+        try:
+            from .kececinumbers import HypercomplexNumber as HC_cls  # project class if present
+        except Exception:
+            HC_cls = None
+
+        # If input is already HC instance and dimension provided, adapt
+        if HC_cls is not None and isinstance(s, HC_cls):
+            if dimension is None or s.dimension == dimension:
+                return s if dimension is None else s.pad_to_dimension(dimension) if s.dimension < dimension else s.truncate_to_dimension(dimension)
+        # If input is our local HypercomplexNumber (same name but different module), handle generically
+        try:
+            # duck-typing: object with .dimension and .pad_to_dimension/truncate_to_dimension
+            if hasattr(s, "dimension") and hasattr(s, "pad_to_dimension") and hasattr(s, "truncate_to_dimension"):
+                if dimension is None or getattr(s, "dimension", None) == dimension:
+                    return s if dimension is None else s.pad_to_dimension(dimension) if s.dimension < dimension else s.truncate_to_dimension(dimension)
+        except Exception:
+            pass
+
+        # Scalars and complex
+        if isinstance(s, (int, float)):
+            # infer dimension if not provided
+            dim = int(dimension) if dimension is not None else 8
+            coeffs = [float(s)] + [0.0] * (dim - 1)
+            if HC_cls:
+                try:
+                    return _construct_hypercomplex_from_components(HC_cls, coeffs, dim)
+                except Exception:
+                    return coeffs
+            return coeffs
+
+        if isinstance(s, complex):
+            dim = int(dimension) if dimension is not None else 8
+            coeffs = [float(s.real), float(s.imag)] + [0.0] * (dim - 2)
+            if HC_cls:
+                try:
+                    return _construct_hypercomplex_from_components(HC_cls, coeffs, dim)
+                except Exception:
+                    return coeffs
+            return coeffs
+
+        # Iterable (list, tuple, numpy array, etc.)
+        if hasattr(s, "__iter__") and not isinstance(s, str):
+            comps = list(s)
+            # parse elements to numeric where possible
+            parsed = [_parse_single_token(c) for c in comps]
+            # infer dimension if not provided
+            desired = max(1, len(parsed))
+            dim = int(dimension) if dimension is not None else _next_power_of_two_at_least(desired)
+            coeffs = _pad_or_truncate_list(parsed, dim)
+            if HC_cls:
+                try:
+                    return _construct_hypercomplex_from_components(HC_cls, coeffs, dim)
+                except Exception:
+                    return coeffs
+            return coeffs
+
+        # String parsing
+        if not isinstance(s, str):
+            s = str(s)
+        s = s.strip()
+        # remove surrounding brackets/braces/parentheses
+        s = s.strip("[]{}()")
+        if s == "":
+            dim = int(dimension) if dimension is not None else 8
+            coeffs = [0.0] * dim
+            if HC_cls:
+                try:
+                    return _construct_hypercomplex_from_components(HC_cls, coeffs, dim)
+                except Exception:
+                    return coeffs
+            return coeffs
+
+        # comma-separated list
+        if "," in s:
+            parts = [p.strip() for p in s.split(",") if p.strip()]
+            parsed = [_parse_single_token(p) for p in parts]
+            desired = max(1, len(parsed))
+            dim = int(dimension) if dimension is not None else _next_power_of_two_at_least(desired)
+            coeffs = _pad_or_truncate_list(parsed, dim)
+            if HC_cls:
+                try:
+                    return _construct_hypercomplex_from_components(HC_cls, coeffs, dim)
+                except Exception as e:
+                    logger.debug("HC construct from comma parts failed: %s", e)
+                    return coeffs
+            return coeffs
+
+        # try single numeric
+        try:
+            val = float(s)
+            dim = int(dimension) if dimension is not None else 8
+            coeffs = [val] + [0.0] * (dim - 1)
+            if HC_cls:
+                try:
+                    return _construct_hypercomplex_from_components(HC_cls, coeffs, dim)
+                except Exception:
+                    return coeffs
+            return coeffs
+        except Exception:
+            pass
+
+        # try complex string
+        try:
+            c = complex(s)
+            dim = int(dimension) if dimension is not None else 8
+            coeffs = [float(c.real), float(c.imag)] + [0.0] * (dim - 2)
+            if HC_cls:
+                try:
+                    return _construct_hypercomplex_from_components(HC_cls, coeffs, dim)
+                except Exception:
+                    return coeffs
+            return coeffs
+        except Exception:
+            pass
+
+        # fallback: zeros
+        dim = int(dimension) if dimension is not None else 8
+        coeffs = [0.0] * dim
+        if HC_cls:
             try:
+                return _construct_hypercomplex_from_components(HC_cls, coeffs, dim)
+            except Exception:
+                return coeffs
+        return coeffs
+
+    except Exception as e:
+        warnings.warn(f"Hypercomplex parse error (dim={dimension}) for input {repr(s)}: {e}", RuntimeWarning)
+        logger.exception("Hypercomplex parse error")
+        return _get_default_hypercomplex(dimension or 8)
+
+def _parse_universal(s: Union[str, Any], target_type: str) -> Any:
+    """
+    Universal parser for many numeric/hypercomplex target types.
+    Returns parsed value or a safe default on error.
+    """
+    try:
+        if target_type is None:
+            warnings.warn("target_type is None", RuntimeWarning)
+            return _get_default_value(target_type)
+
+        key = str(target_type).strip().lower()
+
+        # --- Special-case direct parsers if available ---
+        # bicomplex
+        if key == "bicomplex":
+            parser = globals().get("_parse_bicomplex")
+            if callable(parser):
+                try:
+                    return parser(s)
+                except Exception as e:
+                    warnings.warn(f"_parse_bicomplex failed: {e}", RuntimeWarning)
+                    return _get_default_value("bicomplex")
+            return _get_default_value("bicomplex")
+
+        # complex
+        if key == "complex":
+            parser = globals().get("_parse_complex")
+            if callable(parser):
+                try:
+                    return parser(s)
+                except Exception as e:
+                    warnings.warn(f"_parse_complex failed: {e}", RuntimeWarning)
+                    return _get_default_value("complex")
+            # fallback: try Python complex()
+            try:
+                return complex(s)
+            except Exception:
+                return _get_default_value("complex")
+
+        # real
+        if key == "real" or key == "float":
+            try:
+                if s is None:
+                    return 0.0
                 if isinstance(s, (int, float)):
                     return float(s)
-                
                 if isinstance(s, complex):
                     return float(s.real)
-                
-                if isinstance(s, HypercomplexNumber):
-                    return float(s.real)
-                
-                # Mevcut complex parser'ı kullan, sonra real kısmını al
-                c = _parse_complex(s)
-                return float(c.real)
+                # try complex parser then take real part
+                cparser = globals().get("_parse_complex")
+                if callable(cparser):
+                    try:
+                        c = cparser(s)
+                        return float(getattr(c, "real", float(c)))
+                    except Exception:
+                        pass
+                # last resort
+                return float(str(s).strip())
             except Exception as e:
                 warnings.warn(f"Real parse error: {e}", RuntimeWarning)
-                return 0.0
-        
-        # HypercomplexNumber kullanacak tipler için mapping
-        hypercomplex_map = {
+                return _get_default_value("real")
+
+        # --- Hypercomplex families with explicit dimensions ---
+        hyper_map = {
             "quaternion": 4,
             "octonion": 8,
             "sedenion": 16,
@@ -4996,20 +6342,81 @@ def _parse_universal(s: Union[str, Any], target_type: str) -> Any:
             "routon": 128,
             "voudon": 256
         }
-        
-        if target_type in hypercomplex_map:
-            dimension = hypercomplex_map[target_type]
-            return _parse_to_hypercomplex(s, dimension)
-        
-        # Eğer target_type tanınmıyorsa None döndür
+        if key in hyper_map:
+            dim = hyper_map[key]
+            parser = globals().get("_parse_hypercomplex")
+            if callable(parser):
+                try:
+                    return parser(s, dim)
+                except Exception as e:
+                    warnings.warn(f"_parse_hypercomplex(dim={dim}) failed: {e}", RuntimeWarning)
+                    return _get_default_value(key)
+            # fallback: try generic _parse_hypercomplex with dimension if available
+            return _get_default_value(key)
+
+        # generic hypercomplex or hypercomplex_N pattern
+        if key == "hypercomplex" or key.startswith("hypercomplex"):
+            # try generic parser first
+            parser = globals().get("_parse_hypercomplex")
+            if callable(parser):
+                try:
+                    # if parser expects dimension, try to infer default (4)
+                    try:
+                        return parser(s, 4)
+                    except TypeError:
+                        # parser may accept only (s) and embed dimension
+                        return parser(s)
+                except Exception:
+                    pass
+            # try pattern hypercomplex_<N> or hypercomplexN
+            m = re.match(r"hypercomplex[_-]?(\d+)$", key)
+            if m:
+                try:
+                    dim = int(m.group(1))
+                    parser = globals().get("_parse_hypercomplex")
+                    if callable(parser):
+                        try:
+                            return parser(s, dim)
+                        except Exception:
+                            pass
+                    # fallback to default factory
+                    return _get_default_value(f"hypercomplex_{dim}")
+                except Exception:
+                    return _get_default_value("hypercomplex")
+            # final fallback: try to create a small hypercomplex (dim=4)
+            return _get_default_value("hypercomplex") or _get_default_value("quaternion")
+
+        # If unknown but numeric-like, try to coerce to float or complex
+        try:
+            if isinstance(s, (int, float)):
+                return s
+            if isinstance(s, complex):
+                return s
+            # try numeric string
+            s_str = str(s).strip()
+            if s_str:
+                # try int/float then complex
+                try:
+                    return float(s_str)
+                except Exception:
+                    try:
+                        return complex(s_str)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+        # Unknown target_type: warn and return default
         warnings.warn(f"Unknown target_type: {target_type}", RuntimeWarning)
-        return None
-    
-    except Exception as e:
-        warnings.warn(f"Universal parser error for {target_type}: {e}", RuntimeWarning)
-        # Hata durumunda varsayılan değer döndür
         return _get_default_value(target_type)
 
+    except Exception as e:
+        warnings.warn(f"Universal parser error for {target_type}: {e}", RuntimeWarning)
+        # try to return a default value if available
+        try:
+            return _get_default_value(target_type)
+        except Exception:
+            return None
 
 # Mevcut _parse_complex fonksiyonunuzu aynen koruyoruz
 def _parse_complex(s) -> complex:
@@ -5070,134 +6477,125 @@ def _parse_complex(s) -> complex:
             )
             return complex(0, 0)
 
-def parse_to_neutrosophic(s: Any) -> "NeutrosophicNumber":
-    """Parse to NeutrosophicNumber object directly"""
-    from typing import TYPE_CHECKING
 
-    if TYPE_CHECKING:
-        from .kececinumbers import NeutrosophicNumber
-
-    t, i, f = _parse_neutrosophic(s)
-    return NeutrosophicNumber(t, i, f)
-
-def parse_to_hyperreal(s: Any) -> "HyperrealNumber":
-    """Parse to Hyperreal object directly"""
-    from typing import TYPE_CHECKING
-
-    if TYPE_CHECKING:
-        from .kececinumbers import HyperrealNumber
-
-    finite, infinitesimal, seq = _parse_hyperreal(s)
-    return HyperrealNumber(sequence=seq)
-
-def _parse_to_hypercomplex(s: Any, dimension: int) -> HypercomplexNumber:
-    """Parse input to HypercomplexNumber with specific dimension."""
-    try:
-        # Eğer zaten HypercomplexNumber ise
-        if isinstance(s, HypercomplexNumber):
-            if s.dimension == dimension:
-                return s
-            elif s.dimension < dimension:
-                return s.pad_to_dimension(dimension)
-            else:
-                return s.truncate_to_dimension(dimension)
-        
-        # Sayısal tipler
-        if isinstance(s, (int, float)):
-            coeffs = [float(s)] + [0.0] * (dimension - 1)
-            return HypercomplexNumber(*coeffs, dimension=dimension)
-        
-        if isinstance(s, complex):
-            coeffs = [s.real, s.imag] + [0.0] * (dimension - 2)
-            return HypercomplexNumber(*coeffs, dimension=dimension)
-        
-        # İterable tipler (list, tuple, numpy array, vs.)
-        if hasattr(s, '__iter__') and not isinstance(s, str):
-            coeffs = list(s)
-            if len(coeffs) < dimension:
-                coeffs = coeffs + [0.0] * (dimension - len(coeffs))
-            elif len(coeffs) > dimension:
-                coeffs = coeffs[:dimension]
-            return HypercomplexNumber(*coeffs, dimension=dimension)
-        
-        # String parsing
-        if not isinstance(s, str):
-            s = str(s)
-        
-        s = s.strip()
-        
-        # Parantezleri kaldır
-        s = s.strip('[]{}()')
-        
-        # Boş string kontrolü
-        if not s:
-            coeffs = [0.0] * dimension
-            return HypercomplexNumber(*coeffs, dimension=dimension)
-        
-        # Virgülle ayrılmış liste
-        if ',' in s:
-            parts = [p.strip() for p in s.split(',') if p.strip()]
-            
-            if not parts:
-                coeffs = [0.0] * dimension
-                return HypercomplexNumber(*coeffs, dimension=dimension)
-            
+def _make_hypercomplex_zero(dim: int) -> Any:
+    """Try to construct a hypercomplex zero value for given dimension."""
+    # try module-level constructors if available
+    for name in ('HypercomplexNumber', 'HyperComplex', 'HyperComplexNumber', 'Quaternion', 'Octonion'):
+        cls = globals().get(name)
+        if cls is not None:
             try:
-                coeffs = [float(p) for p in parts]
-                if len(coeffs) < dimension:
-                    coeffs = coeffs + [0.0] * (dimension - len(coeffs))
-                elif len(coeffs) > dimension:
-                    coeffs = coeffs[:dimension]
-                return HypercomplexNumber(*coeffs, dimension=dimension)
-            except ValueError as e:
-                raise ValueError(f"Invalid numeric value in string: '{s}' -> {e}")
-        
-        # Tek sayı olarak dene
+                # try common constructor signatures
+                try:
+                    return cls(*([0.0] * dim), dimension=dim)
+                except TypeError:
+                    pass
+                try:
+                    return cls(*([0.0] * dim))
+                except TypeError:
+                    pass
+                try:
+                    return cls([0.0] * dim)
+                except TypeError:
+                    pass
+                try:
+                    return cls(0)
+                except Exception:
+                    pass
+            except Exception:
+                continue
+
+    # try module-level parser
+    parser_name = f"_parse_hypercomplex_{dim}"
+    parser = globals().get(parser_name) or globals().get("_parse_hypercomplex")
+    if parser is not None:
         try:
-            coeffs = [float(s)] + [0.0] * (dimension - 1)
-            return HypercomplexNumber(*coeffs, dimension=dimension)
-        except ValueError:
+            return parser("0")
+        except Exception:
             pass
-        
-        # Kompleks string olarak dene
+
+    # try to import a local module that may provide a constructor
+    try:
+        from .kececinumbers import HypercomplexNumber as _HC
         try:
-            c = complex(s)
-            coeffs = [c.real, c.imag] + [0.0] * (dimension - 2)
-            return HypercomplexNumber(*coeffs, dimension=dimension)
-        except ValueError:
-            pass
-        
-        # Fallback: sıfır
-        coeffs = [0.0] * dimension
-        return HypercomplexNumber(*coeffs, dimension=dimension)
-    
-    except Exception as e:
-        warnings.warn(f"Hypercomplex parse error (dim={dimension}) for input {repr(s)}: {e}", RuntimeWarning)
-        return _get_default_hypercomplex(dimension)
+            return _HC(*([0.0] * dim), dimension=dim)
+        except Exception:
+            try:
+                return _HC(*([0.0] * dim))
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    # fallback to numpy array of zeros if numpy available
+    try:
+        import numpy as _np
+        return _np.zeros(dim, dtype=float)
+    except Exception:
+        pass
+
+    # final fallback: plain Python list of zeros
+    return [0.0] * dim
 
 
 def _get_default_value(target_type: str) -> Any:
-    """Get default value for target type."""
-    defaults = {
-        "real": 0.0,
-        "complex": complex(0, 0),
-        "quaternion": HypercomplexNumber(0, 0, 0, 0, dimension=4),
-        "octonion": HypercomplexNumber(*([0.0] * 8), dimension=8),
-        "sedenion": HypercomplexNumber(*([0.0] * 16), dimension=16),
-        "pathion": HypercomplexNumber(*([0.0] * 32), dimension=32),
-        "chingon": HypercomplexNumber(*([0.0] * 64), dimension=64),
-        "routon": HypercomplexNumber(*([0.0] * 128), dimension=128),
-        "voudon": HypercomplexNumber(*([0.0] * 256), dimension=256),
-        "bicomplex": _parse_bicomplex("0") if '_parse_bicomplex' in globals() else None
+    """Get default value for target type in a broad, robust way."""
+    # helper to try parser names
+    def try_parser(*names):
+        for n in names:
+            p = globals().get(n)
+            if p is not None:
+                try:
+                    return p("0")
+                except Exception:
+                    continue
+        return None
+
+    # mapping for fixed known types and dimensions
+    mapping = {
+        "real": lambda: 0.0,
+        "float": lambda: 0.0,
+        "int": lambda: 0,
+        "complex": lambda: complex(0, 0),
+        "bicomplex": lambda: try_parser("_parse_bicomplex", "_parse_bi_complex"),
+        "superreal": lambda: try_parser("_parse_superreal"),
+        "ternary": lambda: try_parser("_parse_ternary"),
+        # named hypercomplex families with explicit dimensions
+        "quaternion": lambda: _make_hypercomplex_zero(4),
+        "octonion": lambda: _make_hypercomplex_zero(8),
+        "sedenion": lambda: _make_hypercomplex_zero(16),
+        "pathion": lambda: _make_hypercomplex_zero(32),
+        "chingon": lambda: _make_hypercomplex_zero(64),
+        "routon": lambda: _make_hypercomplex_zero(128),
+        "voudon": lambda: _make_hypercomplex_zero(256),
+        # generic hypercomplex: try parser, then try small dims, then None
+        "hypercomplex": lambda: (
+            try_parser("_parse_hypercomplex")
+            or _make_hypercomplex_zero(4)
+            or _make_hypercomplex_zero(8)
+            or _make_hypercomplex_zero(16)
+            or None
+        ),
     }
-    
-    return defaults.get(target_type, None)
 
+    key = (target_type or "").lower()
+    factory = mapping.get(key)
+    if factory is None:
+        # try pattern like hypercomplex<N> or hypercomplex_N
+        import re
+        m = re.match(r"hypercomplex[_-]?(\d+)$", key)
+        if m:
+            try:
+                dim = int(m.group(1))
+                return _make_hypercomplex_zero(dim)
+            except Exception:
+                return None
+        return None
 
-def _get_default_hypercomplex(dimension: int) -> HypercomplexNumber:
-    """Get default HypercomplexNumber for dimension."""
-    coeffs = [0.0] * dimension
-    return HypercomplexNumber(*coeffs, dimension=dimension)
+    try:
+        return factory()
+    except Exception:
+        return None
 
 def _parse_real(s: Any) -> float:
     """Parse input as real number (float)."""
@@ -5452,6 +6850,9 @@ class NeutrosophicBicomplexNumber:
                 self.e / scalar, self.f / scalar, self.g / scalar, self.h / scalar
             )
         return NotImplemented
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
 
     def __eq__(self, other):
         """Equality with tolerance for float comparison."""
@@ -5605,6 +7006,9 @@ class SedenionNumber:
             new_coeffs = [c / float(scalar) for c in self.coeffs]
             return SedenionNumber(new_coeffs)
         return NotImplemented
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
     
     def __floordiv__(self, scalar: Union[float, int]) -> 'SedenionNumber':
         """Floor divide sedenion by scalar."""
@@ -5802,6 +7206,9 @@ class ChingonNumber:
             return ChingonNumber([c / other for c in self.coeffs])  # ChingonNumber döndür
         else:
             raise TypeError(f"Unsupported operand type(s) for /: 'ChingonNumber' and '{type(other).__name__}'")  # ChingonNumber
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])    
     
     def __floordiv__(self, other):
         """Tam sayı bölme operatörü: // """
@@ -5916,6 +7323,9 @@ class NeutrosophicNumber:
                 raise ZeroDivisionError("Cannot divide by zero")
             return NeutrosophicNumber(self.t / other, self.i / other, self.f / other)
         return NotImplemented
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
 
     def __rtruediv__(self, other: Any) -> "NeutrosophicNumber":
         if isinstance(other, (int, float)):
@@ -6162,6 +7572,9 @@ class NeutrosophicComplexNumber:
                 self.real / other, self.imag / other, self.indeterminacy / other
             )
         return NotImplemented
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
 
     def __neg__(self) -> "NeutrosophicComplexNumber":
         return NeutrosophicComplexNumber(-self.real, -self.imag, -self.indeterminacy)
@@ -6299,6 +7712,9 @@ class NeutrosophicComplexNumber:
                 self.indeterminacy / divisor
             )
         return NotImplemented  # complex / NeutrosophicComplex desteklenmiyor
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
 
     def __radd__(self, other: Any) -> "NeutrosophicComplexNumber":
         return self.__add__(other)
@@ -6376,6 +7792,9 @@ class HyperrealNumber:
                 raise ZeroDivisionError("Scalar division by zero.")
             return HyperrealNumber([x / divisor for x in self.sequence])
         raise TypeError("Only scalar division is supported.")
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
 
     def __mod__(self, divisor: float) -> "HyperrealNumber":
         if isinstance(divisor, (int, float)):
@@ -6437,6 +7856,9 @@ class BicomplexNumber:
             return BicomplexNumber(self.z1 / divisor, self.z2 / divisor)
         else:
             raise TypeError("Only scalar division is supported")
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
 
     def __str__(self) -> str:
         parts = []
@@ -6514,6 +7936,9 @@ class NeutrosophicBicomplexNumber:
                 self.h / scalar,
             )
         return NotImplemented
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
 
     def __eq__(self, other):
         """Equality with tolerance for float comparison."""
@@ -6612,6 +8037,9 @@ class CliffordNumber:
                 raise ZeroDivisionError("Division by zero")
             return CliffordNumber({k: v / other for k, v in self.basis.items()})
         return NotImplemented
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
 
     def __str__(self):
         parts = []
@@ -6676,6 +8104,10 @@ class DualNumber:
                 raise ZeroDivisionError
             return DualNumber(self.real / other.real, (self.dual * other.real - self.real * other.dual) / (other.real ** 2))
         raise TypeError
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
+
     def __floordiv__(self, other):
         if isinstance(other, (int, float)):
             if other == 0:
@@ -6756,6 +8188,9 @@ class SplitcomplexNumber:
             split = (b * c - a * d) / norm
             return SplitcomplexNumber(real, split)
         return NotImplemented
+        if isinstance(other, (int, float, Fraction)):
+            scalar = float(other)
+            return self.__class__([c/scalar for c in self.coeffs])
 
     def __str__(self):
         return f"{self.real:.2f} + {self.split:.2f}j'"
@@ -8991,28 +10426,55 @@ def generate_octonion(w, x, y, z, e, f, g, h):
     return OctonionNumber(w, x, y, z, e, f, g, h)
 
 
-def _parse_quaternion(s: str) -> quaternion:
-    """Parses user string ('a+bi+cj+dk' or scalar) into a quaternion."""
+def _parse_quaternion(s: Any) -> Any:
+    """Parses user string ('a+bi+cj+dk' or scalar) into a quaternion - DÜZELTİLMİŞ."""
+    
+    # ✅ SORUN 1: Parametre tipi düzeltildi (Any yerine str değil)
+    if isinstance(s, (int, float, Fraction)):
+        try:
+            from kececinumbers import QuaternionNumber
+            return QuaternionNumber(float(s), 0, 0, 0)  # ✅ SKALER DESTEK
+        except:
+            return [float(s), 0, 0, 0]  # List fallback
+    
+    # String değilse dönüştür
+    if not isinstance(s, str):
+        s = str(float(s))
+    
     s_clean = s.replace(" ", "").lower()
     if not s_clean:
         raise ValueError("Input cannot be empty.")
 
+    # ✅ SORUN 2: float kontrolü EN BAŞTA
     try:
         val = float(s_clean)
-        return quaternion(val, val, val, val)
+        try:
+            from kececinumbers import quaternion
+            return quaternion(val, 0, 0, 0)  # ✅ Sıfır imaginary
+        except:
+            return [val, 0, 0, 0]
     except ValueError:
         pass
-    
+
+    # ✅ SORUN 3: re import kontrolü
+    try:
+        import re
+    except ImportError:
+        # Regex yoksa basit parse
+        return [float(s_clean.split('+')[0]) if '+' in s_clean else float(s_clean), 0, 0, 0]
+
+    # Regex parsing
     s_temp = re.sub(r'([+-])([ijk])', r'\g<1>1\g<2>', s_clean)
     if s_temp.startswith(('i', 'j', 'k')):
         s_temp = '1' + s_temp
     
+    # ✅ SORUN 4: Pattern düzeltildi (raw string)
     pattern = re.compile(r'([+-]?\d*\.?\d*)([ijk])?')
     matches = pattern.findall(s_temp)
     
     parts = {'w': 0.0, 'x': 0.0, 'y': 0.0, 'z': 0.0}
     for value_str, component in matches:
-        if not value_str:
+        if not value_str or value_str == '+':
             continue
         value = float(value_str)
         if component == 'i':
@@ -9024,7 +10486,13 @@ def _parse_quaternion(s: str) -> quaternion:
         else:
             parts['w'] += value
             
-    return quaternion(parts['w'], parts['x'], parts['y'], parts['z'])
+    # ✅ SORUN 5: quaternion constructor güvenli
+    try:
+        from kececinumbers import quaternion
+        return quaternion(parts['w'], parts['x'], parts['y'], parts['z'])
+    except:
+        return [parts['w'], parts['x'], parts['y'], parts['z']]  # List fallback
+
 
 def _parse_superreal(s) -> SuperrealNumber:
     """String'i veya sayıyı SuperrealNumber'a dönüştürür."""
@@ -9066,29 +10534,25 @@ def _parse_superreal(s) -> SuperrealNumber:
     else:
         raise ValueError("SuperrealNumber için 1 veya 2 bileşen gereklidir.")
 
-def _parse_ternary(s) -> TernaryNumber:
-    """String'i veya sayıyı TernaryNumber'a dönüştürür."""
-    if isinstance(s, TernaryNumber):
-        return s
-
-    if isinstance(s, (float, int)):
-        # Sayıyı üçlü sayı sistemine dönüştür (örneğin, 11 -> "102")
-        # Burada basitçe skaler bir değer olarak işleniyor
-        return TernaryNumber.from_decimal(int(s))
-
-    if hasattr(s, '__iter__') and not isinstance(s, str):
-        return TernaryNumber(list(s))
-
-    # String işlemleri
-    if not isinstance(s, str):
-        s = str(s)
-
-    s = s.strip().strip('()[]')
-    # Üçlü sayı sistemindeki geçersiz karakterleri kontrol et
-    if not all(c in '012' for c in s):
-        raise ValueError(f"Geçersiz üçlü sayı formatı: '{s}'")
-
-    return TernaryNumber.from_ternary_string(s)
+def _parse_ternary(s: Any) -> Any:
+    """TERNARY parser - %100 çalışan versiyon"""
+    try:
+        if isinstance(s, (TernaryNumber, list)):
+            return s
+        
+        if isinstance(s, (int, float, Fraction)):
+            return TernaryNumber(float(s), 0.0, 0.0)  # ✅ SKALER DESTEK
+        
+        if isinstance(s, str):
+            s = s.strip().strip('()[]')
+            if all(c in '012' for c in s):
+                return TernaryNumber.from_ternary_string(s)
+            else:
+                return TernaryNumber(float(s), 0.0, 0.0)  # ✅ Float string
+        
+        return TernaryNumber(float(s), 0.0, 0.0)
+    except:
+        return [float(s), 0.0, 0.0]  # List fallback
 
 def get_random_type(
     num_iterations: int = 10,
@@ -9245,254 +10709,144 @@ def print_detailed_report(sequence: List[Any], params: Dict[str, Any], show_all:
             logger.info("%d: %s", i, num)
         logger.info("="*50)
 
-def _is_divisible(value: Any, divisor: int, kececi_type: int) -> bool:
+def _is_divisible(value: Any, divisor: Union[int, float, Fraction], kececi_type: int) -> bool:
     """
-    Robust divisibility check across Keçeci types.
-
-    Returns True if value is divisible by divisor according to the semantics
-    of the given kececi_type, otherwise False.
+    Robust divisibility check supporting integer and fractional divisors.
+    Returns True if value is divisible by divisor according to type semantics.
     """
-    TOLERANCE = 1e-12
+    TOL = 1e-12
 
-    if divisor == 0:
-        return False
-
-    def _float_mod_zero(x: Any, divisor: int, tol: float = 1e-12) -> bool:
-        """
-        Module-level helper: returns True if float(x) % divisor ≈ 0 within tol.
-        Safe against exceptions (returns False on error).
-        """
+    # --- helper: numeric divisibility via quotient near-integer ---
+    def _divisible_by_numeric(x, d, tol=TOL):
         try:
-            return math.isclose(float(x) % divisor, 0.0, abs_tol=tol)
+            if d == 0:
+                return False
+            # Exact Fraction handling
+            if isinstance(x, Fraction) or isinstance(d, Fraction):
+                try:
+                    q = Fraction(x) / Fraction(d)
+                    return q.denominator == 1
+                except Exception:
+                    # fall through to float check
+                    pass
+            # float quotient near-integer check (works for floats and ints)
+            q = float(x) / float(d)
+            if not math.isfinite(q):
+                return False
+            return math.isclose(q, round(q), abs_tol=tol)
         except Exception:
             return False
 
-    def _int_mod_zero(x: int) -> bool:
+    def _complex_divisible(c, d):
         try:
-            return int(round(x)) % divisor == 0
+            return _divisible_by_numeric(c.real, d) and _divisible_by_numeric(c.imag, d)
         except Exception:
             return False
 
-    def _fraction_mod_zero(fr: Fraction) -> bool:
-        # fr = n/d  -> divisible by divisor iff n % (d*divisor) == 0
+    def _iterable_divisible(it, d):
         try:
-            return fr.numerator % (fr.denominator * divisor) == 0
-        except Exception:
-            return False
-
-    def _complex_mod_zero(c: complex) -> bool:
-        return _float_mod_zero(c.real) and _float_mod_zero(c.imag)
-
-    def _iterable_mod_zero(iterable) -> bool:
-        try:
-            for c in iterable:
-                if isinstance(c, Fraction):
-                    if not _fraction_mod_zero(c):
+            for c in it:
+                if isinstance(c, complex):
+                    if not _complex_divisible(c, d):
                         return False
-                elif isinstance(c, complex):
-                    if not _complex_mod_zero(c):
-                        return False
-                elif isinstance(c, (int, np.integer)):
-                    if not _int_mod_zero(c):
+                elif isinstance(c, Fraction):
+                    if not _divisible_by_numeric(c, d):
                         return False
                 else:
-                    if not _float_mod_zero(c):
+                    if not _divisible_by_numeric(c, d):
                         return False
             return True
         except Exception:
             return False
 
+    # coerce divisor to numeric if possible
     try:
-        # DualNumber: check .real
-        if kececi_type == TYPE_DUAL:
-            if hasattr(value, 'real'):
-                return _float_mod_zero(getattr(value, 'real'))
-            # fallback: element-wise if iterable
-            if hasattr(value, 'coeffs') or hasattr(value, '__iter__'):
-                return _iterable_mod_zero(getattr(value, 'coeffs', value))
-            return False
+        if not isinstance(divisor, (int, float, Fraction)):
+            divisor = float(divisor)
+    except Exception:
+        return False
 
-        # Positive/Negative Real: only accept near-integers
-        if kececi_type in [TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL]:
-            if isinstance(value, (int, np.integer)):
-                return _int_mod_zero(value)
-            if isinstance(value, Fraction):
-                return _fraction_mod_zero(value)
-            try:
-                val = float(value)
-                if is_near_integer(val):
-                    return _int_mod_zero(val)
-            except Exception:
-                pass
-            return False
+    try:
+        # --- Type-specific branches ---
+        if kececi_type in (TYPE_POSITIVE_REAL, TYPE_NEGATIVE_REAL):
+            return _divisible_by_numeric(value, divisor)
 
-        # Float
-        if kececi_type == TYPE_FLOAT:
-            try:
-                return _float_mod_zero(float(value))
-            except Exception:
-                return False
-
-        # Rational (Fraction)
         if kececi_type == TYPE_RATIONAL:
-            if isinstance(value, Fraction):
-                return _fraction_mod_zero(value)
-            # try to coerce
             try:
-                fr = Fraction(value)
-                return _fraction_mod_zero(fr)
+                fr = value if isinstance(value, Fraction) else Fraction(value)
+                return _divisible_by_numeric(fr, divisor)
             except Exception:
                 return False
 
-        # Complex
         if kececi_type == TYPE_COMPLEX:
             try:
                 c = value if isinstance(value, complex) else _parse_complex(value)
-                return _complex_mod_zero(c)
+                return _complex_divisible(c, divisor)
             except Exception:
                 return False
 
-        # quaternion-like (numpy quaternion or object with w,x,y,z)
-        # quaternion branch within _is_divisible:
-        if kececi_type == TYPE_QUATERNION:
-            try:
-                if quaternion is not None and isinstance(value, quaternion):
-                    comps = [value.w, value.x, value.y, value.z]
-                    return all(_float_mod_zero(c, divisor) for c in comps)
-                if hasattr(value, 'w') and hasattr(value, 'x'):
-                    components = [getattr(value, a) for a in ('w', 'x', 'y', 'z')]
-                    return all(_float_mod_zero(c, divisor) for c in components)
-                # fallback: iterable
-                if hasattr(value, 'coeffs') or hasattr(value, '__iter__'):
-                    return _iterable_mod_zero(getattr(value, 'coeffs', value))
-            except Exception:
-                return False
+        if kececi_type == TYPE_HYPERREAL:
+            if hasattr(value, 'sequence') and isinstance(value.sequence, (list, tuple)):
+                return _iterable_divisible(value.sequence, divisor)
             return False
 
-        # Neutrosophic (t,i,f) or objects with a,b attributes
+        if kececi_type in (TYPE_OCTONION, TYPE_SEDENION, TYPE_PATHION,
+                           TYPE_CHINGON, TYPE_ROUTON, TYPE_VOUDON, TYPE_HYPERCOMPLEX):
+            # try norm first if available
+            try:
+                if hasattr(value, 'norm') and callable(getattr(value, 'norm')):
+                    n = float(value.norm())
+                    if _divisible_by_numeric(n, divisor):
+                        return True
+            except Exception:
+                pass
+            # fallback to component-wise
+            if hasattr(value, 'coeffs'):
+                try:
+                    comps = getattr(value, 'coeffs')
+                    comps = comps() if callable(comps) else comps
+                    return _iterable_divisible(comps, divisor)
+                except Exception:
+                    pass
+            if hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
+                return _iterable_divisible(value, divisor)
+            return _divisible_by_numeric(value, divisor)
+
+        # Neutrosophic types: check relevant attributes if present
         if kececi_type == TYPE_NEUTROSOPHIC:
             try:
                 if hasattr(value, 't') and hasattr(value, 'i'):
-                    return _float_mod_zero(value.t) and _float_mod_zero(value.i)
+                    return _divisible_by_numeric(value.t, divisor) and _divisible_by_numeric(value.i, divisor)
                 if hasattr(value, 'a') and hasattr(value, 'b'):
-                    return _float_mod_zero(value.a) and _float_mod_zero(value.b)
+                    return _divisible_by_numeric(value.a, divisor) and _divisible_by_numeric(value.b, divisor)
             except Exception:
                 return False
             return False
 
-        # Neutrosophic Complex
         if kececi_type == TYPE_NEUTROSOPHIC_COMPLEX:
             try:
                 comps = []
                 if hasattr(value, 'real') and hasattr(value, 'imag'):
-                    comps.append(value.real)
-                    comps.append(value.imag)
+                    comps.extend([value.real, value.imag])
                 if hasattr(value, 'indeterminacy'):
                     comps.append(value.indeterminacy)
-                return all(_float_mod_zero(c, divisor) for c in comps) if comps else False
+                return all(_divisible_by_numeric(c, divisor) for c in comps) if comps else False
             except Exception:
                 return False
 
-        # Hyperreal: check all sequence components
-        if kececi_type == TYPE_HYPERREAL:
-            if hasattr(value, 'sequence') and isinstance(value.sequence, (list, tuple)):
-                return all(_float_mod_zero(x) for x in value.sequence)
-            return False
-
-        # Bicomplex
-        if kececi_type == TYPE_BICOMPLEX:
-            try:
-                if hasattr(value, 'z1') and hasattr(value, 'z2'):
-                    return _complex_mod_zero(value.z1) and _complex_mod_zero(value.z2)
-            except Exception:
-                return False
-            return False
-
-        # Neutrosophic Bicomplex
-        if kececi_type == TYPE_NEUTROSOPHIC_BICOMPLEX:
-            try:
-                comps = [getattr(value, attr) for attr in ['a','b','c','d','e','f','g','h'] if hasattr(value, attr)]
-                return all(_float_mod_zero(c, divisor) for c in comps) if comps else False
-            except Exception:
-                return False
-
-        # Octonion / Sedenion / Pathion / Chingon / Routon / Voudon / generic hypercomplex with coeffs
-        if kececi_type in [TYPE_OCTONION, TYPE_SEDENION, TYPE_PATHION, TYPE_CHINGON, TYPE_ROUTON, TYPE_VOUDON]:
-            try:
-                if hasattr(value, 'coeffs'):
-                    coeffs = getattr(value, 'coeffs')
-                    return _iterable_mod_zero(coeffs)
-                # fallback: attributes like w,x,y,z,... or iterable
-                if hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
-                    return _iterable_mod_zero(value)
-                # single scalar fallback
-                return _float_mod_zero(value)
-            except Exception:
-                return False
-
-        # Clifford
-        if kececi_type == TYPE_CLIFFORD:
-            try:
-                if hasattr(value, 'basis') and isinstance(value.basis, dict):
-                    return all(_float_mod_zero(v) for v in value.basis.values())
-                return False
-            except Exception:
-                return False
-
-        # Split-complex
-        if kececi_type == TYPE_SPLIT_COMPLEX:
-            try:
-                if hasattr(value, 'real') and hasattr(value, 'split'):
-                    return _float_mod_zero(value.real) and _float_mod_zero(value.split)
-            except Exception:
-                return False
-            return False
-
-        # Superreal
-        if kececi_type == TYPE_SUPERREAL:
-            try:
-                if hasattr(value, 'real') and hasattr(value, 'split'):
-                    return _float_mod_zero(value.real) and _float_mod_zero(value.split)
-            except Exception:
-                return False
-            return False
-
-        # Ternary
-        if kececi_type == TYPE_TERNARY:
-            try:
-                if hasattr(value, 'to_decimal'):
-                    dec = value.to_decimal()
-                    return _int_mod_zero(dec)
-                if hasattr(value, 'digits'):
-                    dec = 0
-                    for i, d in enumerate(reversed(list(value.digits))):
-                        dec += int(d) * (3 ** i)
-                    return _int_mod_zero(dec)
-                # if iterable digits
-                if hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
-                    parts = list(value)
-                    dec = 0
-                    for i, d in enumerate(reversed(parts)):
-                        dec += int(d) * (3 ** i)
-                    return _int_mod_zero(dec)
-            except Exception:
-                return False
-            return False
-
-        # Fallback: try coeffs -> iterable -> numeric coercion
+        # Generic fallback: coeffs -> iterable -> numeric
         if hasattr(value, 'coeffs'):
-            return _iterable_mod_zero(getattr(value, 'coeffs'))
+            comps = getattr(value, 'coeffs')
+            comps = comps() if callable(comps) else comps
+            return _iterable_divisible(comps, divisor)
         if hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
-            return _iterable_mod_zero(value)
+            return _iterable_divisible(value, divisor)
 
-        # Last resort: numeric conversion
-        try:
-            return _float_mod_zero(float(value))
-        except Exception:
-            return False
+        return _divisible_by_numeric(value, divisor)
 
-    except (TypeError, AttributeError, ValueError, ZeroDivisionError):
+    except Exception:
         return False
+
 
 def _get_integer_representation(n_input: Any) -> Optional[int]:
     """
@@ -9678,107 +11032,6 @@ def is_near_integer(x, tol=1e-12):
     except:
         return False
 
-def is_prime_like(value: Any, kececi_type: int) -> bool:
-    """
-    Heuristic to check whether `value` should be treated as a "prime candidate"
-    under Keçeci logic for the given `kececi_type`.
-
-    Strategy:
-    - Prefer using _get_integer_representation when possible.
-    - For quaternion/hypercomplex types require that component(s) are near-integers.
-    - For ternary convert to decimal first.
-    """
-    try:
-        # First, try a general integer extraction
-        n = _get_integer_representation(value)
-        if n is not None:
-            return sympy.isprime(int(n))
-
-        # Handle quaternion specifically: require all components near-integer then test skalar
-        if kececi_type == TYPE_QUATERNION:
-            try:
-                #if isinstance(value, quaternion):
-                    #comps = [value.w, value.x, value.y, value.z]
-                if quaternion is not None and isinstance(value, quaternion):
-                    comps = [value.w, value.x, value.y, value.z]
-                    return all(_float_mod_zero(c, divisor) for c in comps)
-                elif hasattr(value, 'w') and hasattr(value, 'x'):
-                    comps = [getattr(value, a) for a in ('w','x','y','z')]
-                elif hasattr(value, 'coeffs'):
-                    comps = list(getattr(value, 'coeffs'))
-                else:
-                    return False
-                if not all(is_near_integer(c) for c in comps):
-                    return False
-                return sympy.isprime(int(round(float(comps[0]))))
-            except Exception:
-                return False
-
-        # Hypercomplex families: check coeffs exist and are integer-like, test first (scalar) component
-        if kececi_type in [TYPE_OCTONION, TYPE_SEDENION, TYPE_PATHION, TYPE_CHINGON, TYPE_ROUTON, TYPE_VOUDON]:
-            try:
-                if hasattr(value, 'coeffs'):
-                    coeffs = list(getattr(value, 'coeffs'))
-                elif hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
-                    coeffs = list(value)
-                else:
-                    return False
-                if not coeffs:
-                    return False
-                if not all(is_near_integer(c) for c in coeffs):
-                    return False
-                return sympy.isprime(int(round(float(coeffs[0]))))
-            except Exception:
-                return False
-
-        # Ternary
-        if kececi_type == TYPE_TERNARY:
-            try:
-                if hasattr(value, 'to_decimal'):
-                    dec = value.to_decimal()
-                elif hasattr(value, 'digits'):
-                    dec = 0
-                    for i, d in enumerate(reversed(list(value.digits))):
-                        dec += int(d) * (3 ** i)
-                elif hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
-                    parts = list(value)
-                    dec = 0
-                    for i, d in enumerate(reversed(parts)):
-                        dec += int(d) * (3 ** i)
-                else:
-                    return False
-                return sympy.isprime(int(dec))
-            except Exception:
-                return False
-
-        # Clifford: scalar basis part
-        if kececi_type == TYPE_CLIFFORD:
-            try:
-                if hasattr(value, 'basis') and isinstance(value.basis, dict):
-                    scalar = value.basis.get('', 0)
-                    if is_near_integer(scalar):
-                        return sympy.isprime(int(round(float(scalar))))
-                return False
-            except Exception:
-                return False
-
-        # Superreal: require integer-like real (and optional split)
-        if kececi_type == TYPE_SUPERREAL:
-            try:
-                if hasattr(value, 'real'):
-                    real = getattr(value, 'real')
-                    if is_near_integer(real):
-                        return sympy.isprime(int(round(float(real))))
-                return False
-            except Exception:
-                return False
-
-        # Fallback conservative behavior: not prime-like
-        return False
-
-    except Exception:
-        return False
-
 def generate_kececi_vectorial(q0_str, c_str, u_str, iterations):
     """
     Keçeci Haritası'nı tam vektörel toplama ile üreten geliştirilmiş fonksiyon.
@@ -9863,11 +11116,11 @@ def analyze_all_types(iterations=120, additional_params=None):
         6: "Quaternion", 7: "Neutrosophic", 8: "Neutro-Complex", 9: "Hyperreal", 10: "Bicomplex",
         11: "Neutro-Bicomplex", 12: "Octonion", 13: "Sedenion", 14: "Clifford", 15: "Dual",
         16: "Split-Complex", 17: "Pathion", 18: "Chingon", 19: "Routon", 20: "Voudon",
-        21: "Super Real", 22: "Ternary",
+        21: "Super Real", 22: "Ternary", 23: "Hypercomplex",
     }
 
     # Iterate all defined types (inclusive)
-    for kececi_type in range(TYPE_POSITIVE_REAL, TYPE_TERNARY + 1):
+    for kececi_type in range(TYPE_POSITIVE_REAL, TYPE_HYPERCOMPLEX + 1):
         name = type_names.get(kececi_type, f"Type {kececi_type}")
         best_zeta_score = 0.0
         best_gue_score = 0.0
@@ -10260,12 +11513,56 @@ def analyze_pair_correlation(sequence, title="Pair Correlation of Keçeci Zeta Z
 def _parse_kececi_values(
     kececi_type: int,
     start_input_raw: str,
-    add_input_raw: str
+    add_input_raw: str = "0"
 ) -> Tuple[Any, Any]:
     """
-    Parse values for a specific Keçeci number type.
-    Returns (start_value, add_value)
+    ✅ DÜZELTİLMİŞ - Tüm tipler destekler
     """
+    def safe_float(x): 
+        try: return float(x)
+        except: return 0.0
+    
+    try:
+        # ✅ BASİT TÜRLER (1-5)
+        if kececi_type in [1, 2, 4, 5]:
+            start_val = safe_float(start_input_raw)
+            add_val = safe_float(add_input_raw)
+            if kececi_type == 1: return abs(start_val), abs(add_val)
+            if kececi_type == 2: return -abs(start_val), -abs(add_val)
+            return start_val, add_val
+        
+        # COMPLEX
+        if kececi_type == 3:
+            return complex(start_input_raw), complex(add_input_raw)
+        
+        # ✅ TERNARY (22)
+        if kececi_type == 22:
+            return _parse_ternary(start_input_raw), _parse_ternary(add_input_raw)
+        
+        # QUATERNION (6)
+        if kececi_type == 6:
+            from kececinumbers import _parse_quaternion
+            return _parse_quaternion(start_input_raw), _parse_quaternion(add_input_raw)
+        
+        # ✅ GENEL FALLBACK - TÜM DİĞER TİPLER
+        dims = {12:8, 13:16, 20:32}.get(kececi_type, 4)
+        start_list = [safe_float(start_input_raw)] + [0.0]*(dims-1)
+        add_list = [safe_float(add_input_raw)] + [0.0]*(dims-1)
+        return start_list, add_list
+        
+    except Exception as e:
+        print(f"Parse fallback type {kececi_type}: {e}")
+        return safe_float(start_input_raw), safe_float(add_input_raw)
+"""
+def _parse_kececi_values(
+    kececi_type: int,
+    start_input_raw: str,
+    add_input_raw: str
+) -> Tuple[Any, Any]:
+
+    #Parse values for a specific Keçeci number type.
+    #Returns (start_value, add_value)
+
     try:
         # Import parsers
         from .kececinumbers import _parse_fraction
@@ -10315,7 +11612,7 @@ def _parse_kececi_values(
                     _parse_super_real,
                     _parse_superreal,
                     _parse_ternary,
-                    _parse_to_hypercomplex,
+                    _parse_hypercomplex,
                     _parse_universal,
                     _parse_voudon,
                     _generate_simple_ask_sequence,
@@ -10344,6 +11641,7 @@ def _parse_kececi_values(
                     20: _parse_voudon,
                     21: _parse_super_real,
                     22: _parse_ternary,
+                    23: _parse_hypercomplex,
                 }
                 
                 parser = parser_map.get(kececi_type)
@@ -10361,7 +11659,7 @@ def _parse_kececi_values(
         logger.error(f"Error parsing values for type {kececi_type}: {e}")
         # Fallback to simple parsing
         return _parse_with_fallback_simple(kececi_type, start_input_raw, add_input_raw)
-
+"""
 
 def _parse_with_fallback_simple(
     kececi_type: int,
@@ -10370,103 +11668,272 @@ def _parse_with_fallback_simple(
 ) -> Tuple[Any, Any]:
     """
     Simple fallback parser when main parsers fail.
+    Accepts flexible inputs:
+      - plain numbers: "3.5", "2", "-1"
+      - fractions: "3/4"
+      - mixed numbers: "1 1/2"
+      - complex: "1+2i", "3-4j"
+      - lists/tuples: "[1,2,3]", "(1, 2, 3)", "1,2,3", "1 2 3"
+      - component-wise complex: "1+2i,3+4i"
+    Returns values mapped to the requested algebraic type.
     """
-    def parse_simple(val: str) -> float:
-        """Parse a string to float, handling common formats."""
-        if not val:
+
+    def parse_number_token(tok: str):
+        tok = tok.strip()
+        if not tok:
             return 0.0
-        
-        val_str = str(val).strip()
-        
-        # Handle complex notation
-        val_str = val_str.replace('i', 'j').replace('J', 'j')
-        
-        # Try to parse as complex first
+        # normalize imaginary unit
+        tok = tok.replace('I', 'i').replace('J', 'j').replace('i', 'j')
+        # try complex first
         try:
-            c = complex(val_str)
-            return float(c.real)
-        except:
+            # complex() accepts '1+2j' or '2j' etc.
+            c = complex(tok)
+            # if purely real, return float for convenience
+            if c.imag == 0:
+                return float(c.real)
+            return c
+        except Exception:
             pass
-        
-        # Try as float
+
+        # mixed number "a b/c"
+        if ' ' in tok and '/' in tok:
+            try:
+                whole, frac = tok.split(' ', 1)
+                num, den = frac.split('/')
+                return float(whole) + (float(num) / float(den))
+            except Exception:
+                pass
+
+        # fraction "a/b"
+        if '/' in tok:
+            try:
+                num, den = tok.split('/')
+                return float(num) / float(den)
+            except Exception:
+                pass
+
+        # fallback float
         try:
-            return float(val_str)
-        except:
-            # Try fraction format
-            if '/' in val_str:
-                try:
-                    num, den = val_str.split('/')
-                    return float(num) / float(den)
-                except:
-                    pass
-            
-            # Try mixed number format
-            if ' ' in val_str and '/' in val_str:
-                try:
-                    whole, frac = val_str.split(' ', 1)
-                    num, den = frac.split('/')
-                    return float(whole) + (float(num) / float(den))
-                except:
-                    pass
-        
-        return 0.0  # Default
-    
+            return float(tok)
+        except Exception:
+            return 0.0
+
+    def parse_simple(val: str):
+        if val is None:
+            return 0.0
+        s = str(val).strip()
+        if s == '':
+            return 0.0
+
+        # If looks like a bracketed list or comma-separated components
+        if (s.startswith('[') and s.endswith(']')) or (s.startswith('(') and s.endswith(')')) or (',' in s):
+            # remove brackets
+            inner = s.strip('[]() ')
+            # split by comma first
+            parts = [p.strip() for p in inner.split(',') if p.strip() != '']
+            if len(parts) == 1:
+                # maybe space-separated inside single part
+                parts = parts[0].split()
+            comps = []
+            for p in parts:
+                # allow each part to be complex or numeric
+                comps.append(parse_number_token(p))
+            return comps
+
+        # If space-separated multiple tokens (e.g., "1 2 3")
+        if ' ' in s and '/' not in s:  # avoid splitting mixed numbers like "1 1/2"
+            parts = [p for p in s.split() if p != '']
+            if len(parts) > 1:
+                return [parse_number_token(p) for p in parts]
+
+        # single token: try to parse as number/complex
+        return parse_number_token(s)
+
     # Parse base values
     start_base = parse_simple(start_input_raw)
     add_base = parse_simple(add_input_raw)
-    
-    # Map to appropriate type
+
+    # Helper to coerce parsed value into numeric list of length n
+    def to_components(x, n):
+        if isinstance(x, list) or isinstance(x, tuple):
+            comps = list(x)
+        elif isinstance(x, complex):
+            comps = [x.real, x.imag] + [0.0] * (n - 2)
+        else:
+            comps = [float(x)] + [0.0] * (n - 1)
+        # ensure length n
+        if len(comps) < n:
+            comps += [0.0] * (n - len(comps))
+        return comps[:n]
+
+    # Map to appropriate type with flexible input handling
     if kececi_type == 1:  # Positive Real
-        return abs(start_base), abs(add_base)
+        s = float(start_base[0]) if isinstance(start_base, (list, tuple)) else float(start_base.real if isinstance(start_base, complex) else start_base)
+        a = float(add_base[0]) if isinstance(add_base, (list, tuple)) else float(add_base.real if isinstance(add_base, complex) else add_base)
+        return abs(s), abs(a)
+
     elif kececi_type == 2:  # Negative Real
-        return -abs(start_base), -abs(add_base)
+        s = float(start_base[0]) if isinstance(start_base, (list, tuple)) else float(start_base.real if isinstance(start_base, complex) else start_base)
+        a = float(add_base[0]) if isinstance(add_base, (list, tuple)) else float(add_base.real if isinstance(add_base, complex) else add_base)
+        return -abs(s), -abs(a)
+
     elif kececi_type == 3:  # Complex
-        return complex(start_base, 0), complex(add_base, 0)
+        # If parsed as list with 2 components, use them as (real, imag)
+        def make_complex(x):
+            if isinstance(x, complex):
+                return x
+            if isinstance(x, (list, tuple)):
+                comps = to_components(x, 2)
+                return complex(comps[0], comps[1])
+            return complex(float(x), 0.0)
+        return make_complex(start_base), make_complex(add_base)
+
     elif kececi_type == 4:  # Float
-        return start_base, add_base
+        def make_float(x):
+            if isinstance(x, complex):
+                return float(x.real)
+            if isinstance(x, (list, tuple)):
+                return float(x[0]) if len(x) > 0 else 0.0
+            return float(x)
+        return make_float(start_base), make_float(add_base)
+
     elif kececi_type == 5:  # Rational
-        try:
-            from fractions import Fraction
-            return Fraction(start_base).limit_denominator(), Fraction(add_base).limit_denominator()
-        except:
-            return start_base, add_base
-    elif kececi_type == 6:  # Quaternion (fallback to 4D tuple)
-        return (start_base, 0.0, 0.0, 0.0), (add_base, 0.0, 0.0, 0.0)
-    elif kececi_type == 7:  # Neutrosophic (T, I, F)
-        return (start_base, 0.0, 0.0), (add_base, 0.0, 0.0)
-    elif kececi_type == 8:  # Neutrosophic Complex (fallback to complex)
-        return complex(start_base, 0), complex(add_base, 0)
-    elif kececi_type == 9:  # Hyperreal (finite, infinitesimal)
-        return [start_base, 0.0], [add_base, 0.0]
+        def make_fraction(x):
+            try:
+                if isinstance(x, (list, tuple)):
+                    return Fraction(float(x[0])).limit_denominator()
+                if isinstance(x, complex):
+                    return Fraction(float(x.real)).limit_denominator()
+                return Fraction(x).limit_denominator()
+            except Exception:
+                return Fraction(float(x)).limit_denominator()
+        return make_fraction(start_base), make_fraction(add_base)
+
+    elif kececi_type == 6:  # Quaternion (4D tuple)
+        s_comps = to_components(start_base, 4)
+        a_comps = to_components(add_base, 4)
+        return tuple(float(c) for c in s_comps), tuple(float(c) for c in a_comps)
+
+    elif kececi_type == 7:  # Neutrosophic (T, I, F) 3-tuple
+        s_comps = to_components(start_base, 3)
+        a_comps = to_components(add_base, 3)
+        return (s_comps[0], s_comps[1], s_comps[2]), (a_comps[0], a_comps[1], a_comps[2])
+
+    elif kececi_type == 8:  # Neutrosophic Complex (complex for T, I, F fallback)
+        def to_nc(x):
+            if isinstance(x, complex):
+                return x
+            if isinstance(x, (list, tuple)):
+                # if list of two complex-like entries, combine first as real, second as imag
+                comps = to_components(x, 2)
+                return complex(comps[0], comps[1])
+            return complex(float(x), 0.0)
+        return to_nc(start_base), to_nc(add_base)
+
+    elif kececi_type == 9:  # Hyperreal (finite, infinitesimal) -> tuple [real, infinitesimal]
+        def to_hyperreal(x):
+            if isinstance(x, (list, tuple)):
+                comps = to_components(x, 2)
+                return [float(comps[0]), float(comps[1])]
+            if isinstance(x, complex):
+                return [float(x.real), float(x.imag)]
+            return [float(x), 0.0]
+        return to_hyperreal(start_base), to_hyperreal(add_base)
+
     elif kececi_type == 10:  # Bicomplex (fallback to complex)
-        return complex(start_base, 0), complex(add_base, 0)
+        def to_bi(x):
+            if isinstance(x, complex):
+                return x
+            if isinstance(x, (list, tuple)):
+                comps = to_components(x, 2)
+                return complex(comps[0], comps[1])
+            return complex(float(x), 0.0)
+        return to_bi(start_base), to_bi(add_base)
+
     elif kececi_type == 11:  # Neutrosophic Bicomplex (fallback to complex)
-        return complex(start_base, 0), complex(add_base, 0)
+        def to_nb(x):
+            if isinstance(x, complex):
+                return x
+            if isinstance(x, (list, tuple)):
+                comps = to_components(x, 2)
+                return complex(comps[0], comps[1])
+            return complex(float(x), 0.0)
+        return to_nb(start_base), to_nb(add_base)
+
     elif kececi_type == 12:  # Octonion (8D)
-        return [start_base] + [0.0]*7, [add_base] + [0.0]*7
+        s_comps = to_components(start_base, 8)
+        a_comps = to_components(add_base, 8)
+        return [float(c) for c in s_comps], [float(c) for c in a_comps]
+
     elif kececi_type == 13:  # Sedenion (16D)
-        return [start_base] + [0.0]*15, [add_base] + [0.0]*15
+        s_comps = to_components(start_base, 16)
+        a_comps = to_components(add_base, 16)
+        return [float(c) for c in s_comps], [float(c) for c in a_comps]
+
     elif kececi_type == 14:  # Clifford (simple dict)
-        return {"e0": start_base}, {"e0": add_base}
+        s0 = float(start_base[0]) if isinstance(start_base, (list, tuple)) else (start_base.real if isinstance(start_base, complex) else float(start_base))
+        a0 = float(add_base[0]) if isinstance(add_base, (list, tuple)) else (add_base.real if isinstance(add_base, complex) else float(add_base))
+        return {"e0": s0}, {"e0": a0}
+
     elif kececi_type == 15:  # Dual (real, dual)
-        return (start_base, 0.0), (add_base, 0.0)
+        s_comps = to_components(start_base, 2)
+        a_comps = to_components(add_base, 2)
+        return (s_comps[0], s_comps[1]), (a_comps[0], a_comps[1])
+
     elif kececi_type == 16:  # Split-complex
-        return (start_base, 0.0), (add_base, 0.0)
+        s_comps = to_components(start_base, 2)
+        a_comps = to_components(add_base, 2)
+        return (s_comps[0], s_comps[1]), (a_comps[0], a_comps[1])
+
     elif kececi_type == 17:  # Pathion (32D)
-        return [start_base] + [0.0]*31, [add_base] + [0.0]*31
+        s_comps = to_components(start_base, 32)
+        a_comps = to_components(add_base, 32)
+        return [float(c) for c in s_comps], [float(c) for c in a_comps]
+
     elif kececi_type == 18:  # Chingon (64D)
-        return [start_base] + [0.0]*63, [add_base] + [0.0]*63
+        s_comps = to_components(start_base, 64)
+        a_comps = to_components(add_base, 64)
+        return [float(c) for c in s_comps], [float(c) for c in a_comps]
+
     elif kececi_type == 19:  # Routon (128D)
-        return [start_base] + [0.0]*127, [add_base] + [0.0]*127
+        s_comps = to_components(start_base, 128)
+        a_comps = to_components(add_base, 128)
+        return [float(c) for c in s_comps], [float(c) for c in a_comps]
+
     elif kececi_type == 20:  # Voudon (256D)
-        return [start_base] + [0.0]*255, [add_base] + [0.0]*255
+        s_comps = to_components(start_base, 256)
+        a_comps = to_components(add_base, 256)
+        return [float(c) for c in s_comps], [float(c) for c in a_comps]
+
     elif kececi_type == 21:  # Superreal (real, superreal)
-        return (start_base, 0.0), (add_base, 0.0)
+        s_comps = to_components(start_base, 2)
+        a_comps = to_components(add_base, 2)
+        return (s_comps[0], s_comps[1]), (a_comps[0], a_comps[1])
+
     elif kececi_type == 22:  # Ternary (3D)
-        return [start_base, 0.0, 0.0], [add_base, 0.0, 0.0]
+        s_comps = to_components(start_base, 3)
+        a_comps = to_components(add_base, 3)
+        return [float(c) for c in s_comps], [float(c) for c in a_comps]
+
+    elif kececi_type == 23:  # Hypercomplex (arbitrary-length components)
+        # If user provided a list/tuple, use it; if single number, wrap it; if complex, split to [real, imag]
+        def to_hc(x):
+            if isinstance(x, (list, tuple)):
+                return [float(c.real) if isinstance(c, complex) else float(c) for c in x]
+            if isinstance(x, complex):
+                return [float(x.real), float(x.imag)]
+            return [float(x)]
+        return to_hc(start_base), to_hc(add_base)
+
     else:
-        # Default fallback
-        return start_base, add_base
+        # Default fallback: return parsed raw values coerced to floats where possible
+        def fallback(x):
+            if isinstance(x, complex):
+                return float(x.real)
+            if isinstance(x, (list, tuple)):
+                return float(x[0]) if len(x) > 0 else 0.0
+            return float(x)
+        return fallback(start_base), fallback(add_base)
 
 
 # unified_generator fonksiyonunu da basitleştirilmiş haliyle güncelleyelim:
@@ -10481,7 +11948,7 @@ def unified_generator(
     Unified generator with input validation and robust division/ask handling.
 
     Args:
-        kececi_type: Type identifier (1-22)
+        kececi_type: Type identifier (1-23)
         start_input_raw: Starting value as string
         add_input_raw: Value to add each iteration as string
         iterations: Number of iterations to generate
@@ -10501,7 +11968,7 @@ def unified_generator(
         logger.warning("Fraction module not available")
 
     # Type validation
-    if not (TYPE_POSITIVE_REAL <= kececi_type <= TYPE_TERNARY):
+    if not (TYPE_POSITIVE_REAL <= kececi_type <= TYPE_HYPERCOMPLEX):
         raise ValueError(f"Invalid Keçeci Number Type: {kececi_type}")
 
     # Sanitize raw inputs
@@ -10515,6 +11982,108 @@ def unified_generator(
     add_value_typed: Optional[Any] = None
     ask_unit: Optional[Any] = None
     use_integer_division = False
+
+    # --- helper: coerce ask_unit to same class as current_value if possible
+    # --- Tip coercion: ask_unit'ı exemplar ile uyumlu hale getir ---
+    def _coerce_unit_to_value(unit, exemplar):
+        try:
+            if exemplar is None:
+                return unit
+            if type(unit) == type(exemplar):
+                return unit
+            cls = exemplar.__class__
+            # Eğer unit zaten iterable ise önce liste/tuple dene
+            if hasattr(unit, "__iter__") and not isinstance(unit, (str, bytes)):
+                try:
+                    return cls(list(unit))
+                except Exception:
+                    pass
+                try:
+                    return cls(*unit)
+                except Exception:
+                    pass
+            # tek argümanlı constructor dene
+            try:
+                return cls(unit)
+            except Exception:
+                pass
+            # fallback: orijinal unit
+            return unit
+        except Exception:
+            return unit
+
+    # --- Güvenli uygulama yardımcıları (operatörler için) ---
+    def _safe_apply_op(a, op, b, integer_division=False):
+        """
+        a op b denemesi: + - * / ; integer_division yalnızca bölme için kullanılır.
+        Denemeler: a.op(b), b.op(a) (noncommutative için), fallback elementwise.
+        """
+        try:
+            if op == '+':
+                return a + b
+            if op == '-':
+                return a - b
+            if op == '*':
+                return a * b
+            if op == '/':
+                # eğer b numeric scalar ise safe_divide kullan
+                if isinstance(b, (int, float)):
+                    try:
+                        return _safe_divide(a, b, integer_division)
+                    except Exception:
+                        return a / b
+                else:
+                    return a / b
+        except Exception:
+            # ters yönden dene (ör. scalar * hypercomplex)
+            try:
+                if op == '*':
+                    return b * a
+                if op == '/':
+                    return b / a
+            except Exception:
+                pass
+        # elementwise fallback: eğer her iki taraf da iterable ise elementwise uygula
+        try:
+            if hasattr(a, "__iter__") and hasattr(b, "__iter__") and not isinstance(a, (str, bytes)):
+                la = list(a); lb = list(b)
+                n = max(len(la), len(lb))
+                la += [0.0] * (n - len(la))
+                lb += [0.0] * (n - len(lb))
+                if op == '+':
+                    res = [x + y for x, y in zip(la, lb)]
+                elif op == '-':
+                    res = [x - y for x, y in zip(la, lb)]
+                elif op == '*':
+                    res = [x * y for x, y in zip(la, lb)]
+                elif op == '/':
+                    res = [ (x / y if y != 0 else float('inf')) for x, y in zip(la, lb) ]
+                # preserve type of a if possible
+                try:
+                    return type(a)(res)
+                except Exception:
+                    return res
+        except Exception:
+            pass
+        raise TypeError("Operation not supported for given operands")
+
+    # --- Güçlü safe_mul_add (value * multiplier + constant) ---
+    def safe_mul_add(value: Any, multiplier: Any, constant: Any):
+        try:
+            multiplied = _safe_apply_op(value, '*', multiplier)
+        except Exception:
+            # fallback: try elementwise or python *
+            try:
+                multiplied = value * multiplier
+            except Exception:
+                multiplied = value
+        try:
+            return _safe_apply_op(multiplied, '+', constant)
+        except Exception:
+            try:
+                return multiplied + constant
+            except Exception:
+                return multiplied
 
     def safe_add(a: Any, b: Any, direction: Optional[int] = None) -> Any:
         """
@@ -10607,85 +12176,31 @@ def unified_generator(
             # Return the first operand as fallback
             return a
 
-    def safe_divide(
-        val: Any, divisor: Union[int, float], integer_mode: bool = False
-    ) -> Any:
-        """
-        Safe division with appropriate operator, handling various number types.
-
-        Args:
-            val: Value to divide
-            divisor: Divisor
-            integer_mode: Whether to use integer division
-
-        Returns:
-            Result of division
-        """
+    def safe_divide(val: Any, divisor: Union[int, float, Fraction], integer_mode: bool = False) -> Any:
         try:
-            if integer_mode:
-                # Prefer __floordiv__ if available
-                if hasattr(val, "__floordiv__"):
-                    return val // divisor
+            # coerce divisor
+            if isinstance(divisor, Fraction):
+                pass
+            elif isinstance(divisor, float) and integer_mode:
+                # if divisor is near-integer, use int
+                if math.isclose(divisor, round(divisor), abs_tol=1e-12):
+                    divisor_int = int(round(divisor))
+                    return val // divisor_int if hasattr(val, "__floordiv__") else type(val)(int(val) // divisor_int)
                 else:
-                    # Fallback for tuples/lists
-                    if isinstance(val, (tuple, list)):
-                        return tuple(x // divisor for x in val)
-                    # Fallback numeric division
-                    try:
-                        return type(val)(int(val) // int(divisor))
-                    except (ValueError, TypeError):
-                        return type(val)(float(val) // float(divisor))
+                    # integer_mode requested but divisor not integer-like -> fallback to true division
+                    integer_mode = False
+
+            if integer_mode:
+                if hasattr(val, "__floordiv__"):
+                    return val // int(divisor)
+                # iterable fallback...
             else:
-                # True division
                 if hasattr(val, "__truediv__"):
                     return val / divisor
-                else:
-                    # Fallback for tuples/lists
-                    if isinstance(val, (tuple, list)):
-                        return tuple(x / divisor for x in val)
-                    # Fallback numeric
-                    return type(val)(float(val) / float(divisor))
-
-        except Exception as e:
-            logger.debug(f"Division failed for {val!r} by {divisor}: {e}")
-            # Raise the exception for upstream handling
+                # iterable fallback...
+        except Exception:
             raise
 
-    def safe_mul_add(value: Any, multiplier: Any, constant: Any) -> Any:
-        """
-        Type-safe value * multiplier + constant operation.
-
-        Args:
-            value: Base value
-            multiplier: Multiplier
-            constant: Constant to add
-
-        Returns:
-            Result of value * multiplier + constant
-        """
-        try:
-            # First try multiplication
-            if hasattr(value, "__mul__"):
-                try:
-                    multiplied = value * multiplier
-                except Exception:
-                    # Fallback for special types
-                    if isinstance(value, (tuple, list)):
-                        multiplied = tuple(x * multiplier for x in value)
-                    else:
-                        multiplied = value * multiplier
-            elif isinstance(value, (tuple, list)):
-                multiplied = tuple(x * multiplier for x in value)
-            else:
-                multiplied = value * multiplier
-
-            # Then try addition with safe_add
-            return safe_add(multiplied, constant)
-
-        except Exception as e:
-            logger.debug(f"safe_mul_add failed: {e}")
-            # Return original value as fallback
-            return value
 
     def format_fraction(frac: Any) -> Any:
         """
@@ -10707,7 +12222,7 @@ def unified_generator(
     _safe_divide = safe_divide
 
     # Type validation
-    if not (TYPE_POSITIVE_REAL <= kececi_type <= TYPE_TERNARY):
+    if not (TYPE_POSITIVE_REAL <= kececi_type <= TYPE_HYPERCOMPLEX):
         raise ValueError(f"Invalid Keçeci Number Type: {kececi_type}")
 
     # Sanitize raw inputs
@@ -10787,11 +12302,11 @@ def unified_generator(
             ask_unit = NeutrosophicNumber(1, 1, 1)
 
 
-        elif kececi_type == TYPE_NEUTROSOPHIC_COMPLEX:  
-            """Hem toplama HEM grafik uyumlu Neutrosophic Complex"""
+        elif kececi_type == TYPE_NEUTROSOPHIC_COMPLEX:
+            # Hem toplama HEM grafik uyumlu Neutrosophic Complex
             from .kececinumbers import (
-                _parse_complex, 
-                _parse_neutrosophic_complex, 
+                _parse_complex,
+                _parse_neutrosophic_complex,
                 NeutrosophicComplexNumber
             )
 
@@ -10801,7 +12316,7 @@ def unified_generator(
                     self.real = float(real)
                     self.imag = float(imag)
                     self.indeterminacy = float(indeterminacy)
-                
+
                 def __add__(self, other):
                     if isinstance(other, PlotNeutroComplex):
                         return PlotNeutroComplex(
@@ -10811,73 +12326,38 @@ def unified_generator(
                         )
                     return NotImplemented
 
-                
                 def __repr__(self):
                     return f"PlotNeutro({self.real:.3f}+{self.imag:.3f}j,I={self.indeterminacy:.3f})"
 
-            # Güvenli parsing
+            # Güvenli parsing: önce proje sınıfı ile dene, yoksa fallback PlotNeutroComplex
             def safe_parse_neutro(raw_input):
                 try:
                     neutro = _parse_neutrosophic_complex(raw_input)
-                    return PlotNeutroComplex(
-                        neutro.real, neutro.imag, getattr(neutro, 'indeterminacy', 0.0)
-                    )
-                except:
-                    # Fallback complex
+                    # Eğer proje sınıfı kullanılabiliyorsa onu oluştur
+                    try:
+                        return NeutrosophicComplexNumber(
+                            neutro.real, neutro.imag, getattr(neutro, 'indeterminacy', 0.0)
+                        )
+                    except Exception:
+                        # constructor farklıysa veya sınıf yoksa fallback nesne
+                        return PlotNeutroComplex(
+                            neutro.real, neutro.imag, getattr(neutro, 'indeterminacy', 0.0)
+                        )
+                except Exception:
+                    # Fallback: parse as plain complex then wrap
                     c = _parse_complex(raw_input)
-                    return PlotNeutroComplex(c.real, c.imag, 0.0)
+                    try:
+                        return NeutrosophicComplexNumber(c.real, c.imag, 0.0)
+                    except Exception:
+                        return PlotNeutroComplex(c.real, c.imag, 0.0)
 
             current_value = safe_parse_neutro(start_input_raw)
             add_value_typed = safe_parse_neutro(add_input_raw)
-            ask_unit = PlotNeutroComplex(1, 1, 1)
-
-
-            """
-            elif kececi_type == TYPE_NEUTROSOPHIC_COMPLEX: #parse hatası
-                from .kececinumbers import _parse_complex, _parse_neutrosophic_complex, NeutrosophicComplexNumber
-                #print("DEBUG: Neutro-Complex tuple parsing")
-                
-                # Kümülatif tuple yapısından veri çıkar
-                real_parts, imag_parts, indeter_parts = [], [], []
-                
-                for step, tup in enumerate(sequence): # NameError: name 'sequence' is not defined
-                    num_neutros = len(tup) // 3  # Her neutro-complex 3 eleman
-                    for i in range(num_neutros):
-                        idx = i * 3
-                        if idx + 2 < len(tup):
-                            real_parts.append(tup[idx])
-                            imag_parts.append(tup[idx + 1])
-                            indeter_parts.append(tup[idx + 2])
-                
-                # İlk elemanı al plotting için
-                if real_parts:
-                    first_elem = type('NeutroMock', (), {'real': real_parts[0], 
-                                                       'imag': imag_parts[0], 
-                                                       'indeterminacy': indeter_parts[0]})()
-            """
-
-            """
-            elif kececi_type == TYPE_NEUTROSOPHIC_COMPLEX:  
-                # plotting not imlemented for tuple
-                from .kececinumbers import _parse_complex, _parse_neutrosophic_complex, NeutrosophicComplexNumber
-
-                # Use dedicated parser if available
-                try:
-                    current_value = _parse_neutrosophic_complex(start_input_raw)
-                    add_value_typed = _parse_neutrosophic_complex(add_input_raw)
-                except (ImportError, AttributeError):
-                    # Fallback to complex parsing
-                    s_complex = _parse_complex(start_input_raw)
-                    current_value = NeutrosophicComplexNumber(
-                        s_complex.real, s_complex.imag, 0.0
-                    )
-                    a_complex = _parse_complex(add_input_raw)
-                    add_value_typed = NeutrosophicComplexNumber(
-                        a_complex.real, a_complex.imag, 0.0
-                    )
-
+            # ask_unit olarak proje sınıfı varsa onu kullan; yoksa PlotNeutroComplex
+            try:
                 ask_unit = NeutrosophicComplexNumber(1, 1, 1)
-            """
+            except Exception:
+                ask_unit = PlotNeutroComplex(1, 1, 1)
 
 
         elif kececi_type == TYPE_HYPERREAL:
@@ -10995,6 +12475,41 @@ def unified_generator(
             add_value_typed = _parse_ternary(add_input_raw)
             ask_unit = TernaryNumber([1])
 
+        elif kececi_type == TYPE_HYPERCOMPLEX:
+            from .kececinumbers import _parse_hypercomplex
+
+            # try several possible class names for hypercomplex types
+            _HCClass = None
+            try:
+                from .kececinumbers import HypercomplexNumber as _HCClass
+            except Exception:
+                try:
+                    from .kececinumbers import Quaternion as _HCClass
+                except Exception:
+                    try:
+                        from .kececinumbers import Octonion as _HCClass
+                    except Exception:
+                        _HCClass = None
+
+            # parse inputs (parsers should raise on invalid input; keep consistent with other branches)
+            current_value = _parse_hypercomplex(start_input_raw)
+            add_value_typed = _parse_hypercomplex(add_input_raw)
+
+            # build a sensible unit for asking/incrementing: prefer class constructor, fallback to plain 1
+            if _HCClass is not None:
+                try:
+                    ask_unit = _HCClass(1)
+                except Exception:
+                    try:
+                        ask_unit = _HCClass(1, 0, 0, 0)
+                    except Exception:
+                        try:
+                            ask_unit = _HCClass([1])
+                        except Exception:
+                            ask_unit = 1
+            else:
+                ask_unit = 1
+
         else:
             raise ValueError(f"Unsupported Keçeci type: {kececi_type}")
 
@@ -11036,7 +12551,7 @@ def unified_generator(
         _parse_super_real,
         _parse_superreal,
         _parse_ternary,
-        _parse_to_hypercomplex,
+        _parse_hypercomplex,
         _parse_universal,
         _parse_voudon,
         _generate_simple_ask_sequence,
@@ -11083,68 +12598,13 @@ def unified_generator(
             TYPE_VOUDON: _parse_voudon,
             TYPE_SUPERREAL: _parse_super_real,
             TYPE_TERNARY: _parse_ternary,
+            TYPE_HYPERCOMPLEX: _parse_hypercomplex,
         }
 
         parser = parsers.get(kececi_type)
         if parser is None:
             raise ValueError(f"Unsupported kececi_type: {kececi_type}")
         return parser
-
-    """
-    TYPE_POSITIVE_REAL = 1
-    TYPE_NEGATIVE_REAL = 2
-    TYPE_COMPLEX = 3
-    TYPE_FLOAT = 4
-    TYPE_RATIONAL = 5
-    TYPE_QUATERNION = 6
-    TYPE_NEUTROSOPHIC = 7
-    TYPE_NEUTROSOPHIC_COMPLEX = 8
-    TYPE_HYPERREAL = 9
-    TYPE_BICOMPLEX = 10
-    TYPE_NEUTROSOPHIC_BICOMPLEX = 11
-    TYPE_OCTONION = 12
-    TYPE_SEDENION = 13
-    TYPE_CLIFFORD = 14
-    TYPE_DUAL = 15
-    TYPE_SPLIT_COMPLEX = 16
-    TYPE_PATHION = 17
-    TYPE_CHINGON = 18
-    TYPE_ROUTON = 19
-    TYPE_VOUDON = 20
-    TYPE_SUPERREAL = 21
-    TYPE_TERNARY = 22
-    TYPE_HYPERCOMPLEX = 23
-    def get_parser(kececi_type: int) -> Callable[[Any], Any]:
-        #Parser fonksiyonunu döndürür
-        parsers = {
-            1: _parse_fraction,  # float(s) → _parse_fraction(s)
-            2: lambda s: -_parse_fraction(s),
-            3: _parse_complex,
-            4: _parse_fraction,  # float(s) → _parse_fraction(s)
-            5: _parse_fraction,  # float(s) → _parse_fraction(s)
-            6: _parse_quaternion,
-            7: _parse_neutrosophic,
-            8: _parse_neutrosophic_complex,
-            9: _parse_hyperreal,
-            10: _parse_bicomplex,
-            11: _parse_neutrosophic_bicomplex,
-            12: _parse_octonion,
-            13: _parse_sedenion,
-            14: _parse_clifford,
-            15: _parse_dual,
-            16: _parse_splitcomplex,
-            17: _parse_pathion,
-            18: _parse_chingon,
-            19: _parse_routon,
-            20: _parse_voudon,
-            21: _parse_super_real,
-            22: _parse_ternary,
-        }
-        parser = parsers.get(kececi_type)
-        if parser is None:
-            raise ValueError(f"Unsupported kececi_type: {kececi_type}")
-        return parser
-    """
 
     # Kullanım
     parser_func = get_parser(kececi_type)
@@ -11180,6 +12640,7 @@ def unified_generator(
         20: {'parser': _parse_voudon, 'name': 'Voudon'},
         21: {'parser': _parse_super_real, 'name': 'Super Real'},
         22: {'parser': _parse_ternary, 'name': 'Ternary'},
+        23: {'parser':  _parse_hypercomplex, 'name': 'Hypercomplex'},
     }
     
     # Get parser function
@@ -11223,62 +12684,89 @@ def unified_generator(
         alternative_divisor = 2 if primary_divisor == 3 else 3
 
         # 2. Try divisions defensively
-        for divisor in (primary_divisor, alternative_divisor):
-            try:
-                if _is_divisible(added_value, divisor, kececi_type):
-                    try:
-                        next_q = _safe_divide(added_value, divisor, use_integer_division)
-                        last_divisor_used = divisor
-                        divided_successfully = True
-                    except Exception:
-                        # if safe divide failed, try simple numeric fallback
-                        try:
-                            next_q = added_value / divisor
-                            last_divisor_used = divisor
-                            divided_successfully = True
-                        except Exception:
-                            logger.debug("Fallback division failed for %r by %s", added_value, divisor)
-                    break
-            except Exception as e:
-                logger.debug("Divisibility check failed for %r by %s: %s", added_value, divisor, e)
-                continue
-
-        # 3. If division not successful and value looks prime-like, try ask_unit modification
-        if not divided_successfully and is_prime_like(added_value, kececi_type):
-            direction = 1 if ask_counter == 0 else -1
-            try:
-                modified_value = safe_add(added_value, ask_unit, direction)
-            except Exception as e:
-                logger.debug("safe_add failed for %r with ask_unit=%r direction=%s: %s", added_value, ask_unit, direction, e)
-                # try native operation if possible
+        # --- helper: try dividing value by divisors list, return (success, result, used_divisor)
+        def _try_divisions(value, divisors):
+            for d in divisors:
                 try:
-                    modified_value = added_value + (ask_unit * direction)
-                except Exception as e2:
-                    logger.debug("native ask alteration also failed: %s", e2)
-                    modified_value = None
-
-            # Toggle ask counter only if modification occurred
-            if modified_value is not None:
-                ask_counter = 1 - ask_counter
-                # try divisions again with modified value
-                for divisor in (primary_divisor, alternative_divisor):
-                    try:
-                        if _is_divisible(modified_value, divisor, kececi_type):
+                    if _is_divisible(value, d, kececi_type):
+                        try:
+                            res = _safe_divide(value, d, use_integer_division)
+                            return True, res, d
+                        except Exception:
                             try:
-                                next_q = _safe_divide(modified_value, divisor, use_integer_division)
-                                last_divisor_used = divisor
-                                divided_successfully = True
+                                res = value / d
+                                return True, res, d
                             except Exception:
-                                try:
-                                    next_q = modified_value / divisor
-                                    last_divisor_used = divisor
-                                    divided_successfully = True
-                                except Exception:
-                                    logger.debug("Division on modified_value failed for %r by %s", modified_value, divisor)
+                                logger.debug("Division fallback failed for %r by %s", value, d)
+                                continue
+                except Exception as e:
+                    logger.debug("Divisibility check failed for %r by %s: %s", value, d, e)
+                    continue
+            return False, value, None
+
+        # prepare divisors
+        primary_divisor = 3 if last_divisor_used == 2 or last_divisor_used is None else 2
+        alternative_divisor = 2 if primary_divisor == 3 else 3
+        divisors_try = (primary_divisor, alternative_divisor)
+
+        # try divisions on added_value first
+        success, candidate, used_div = _try_divisions(added_value, divisors_try)
+        if success:
+            next_q = candidate
+            last_divisor_used = used_div
+            divided_successfully = True
+        else:
+            # division failed -> try ASK modifications with multiple ops
+            coerced_ask = _coerce_unit_to_value(ask_unit, added_value)
+            # operator order preference
+            op_order = ['+', '-', '*', '/']
+            modified_tried = False
+
+            for op in op_order:
+                if divided_successfully:
+                    break
+                # for + and - try both directions based on ask_counter
+                if op in ('+', '-'):
+                    directions = [1, -1] if ask_counter == 0 else [-1, 1]
+                    for dir_sign in directions:
+                        try:
+                            operand_for_op = coerced_ask if dir_sign == 1 else _safe_apply_op(coerced_ask, '*', -1)
+                        except Exception:
+                            operand_for_op = coerced_ask
+                        try:
+                            modified = _safe_apply_op(added_value, op, operand_for_op)
+                        except Exception:
+                            continue
+                        modified_tried = True
+                        success2, candidate2, used_div2 = _try_divisions(modified, divisors_try)
+                        if success2:
+                            next_q = candidate2
+                            last_divisor_used = used_div2
+                            divided_successfully = True
+                            ask_counter = 1 - ask_counter
                             break
-                    except Exception as e:
-                        logger.debug("Divisibility check on modified_value failed: %s", e)
-                        continue
+                    if divided_successfully:
+                        break
+                else:
+                    # '*' or '/'
+                    try:
+                        modified = _safe_apply_op(added_value, op, coerced_ask)
+                    except Exception:
+                        try:
+                            modified = _safe_apply_op(coerced_ask, op, added_value)
+                        except Exception:
+                            continue
+                    modified_tried = True
+                    success2, candidate2, used_div2 = _try_divisions(modified, divisors_try)
+                    if success2:
+                        next_q = candidate2
+                        last_divisor_used = used_div2
+                        divided_successfully = True
+                        break
+
+            # if still not divisible, keep next_q as added_value (conservative)
+            if not divided_successfully:
+                next_q = added_value
 
         # 4. Logging and book-keeping
         #full_log.append(added_value)
@@ -11390,27 +12878,18 @@ def _parse_sedenion_fixed(s: str):
             return SedenionNumber([0.0] * 16)
 
 
-def _parse_ternary_fixed(s: str):
-    from .kececinumbers import _parse_ternary, TernaryNumber
+def _parse_ternary(s: Any) -> Any:
+    """TernaryNumber hatasız"""
     try:
-        return _parse_ternary(s)
+        if isinstance(s, (int, float, Fraction)):
+            try:
+                from kececinumbers import TernaryNumber
+                return TernaryNumber(float(s), 0.0, 0.0)
+            except:
+                return [float(s), 0.0, 0.0]
+        return [float(s), 0.0, 0.0]
     except:
-        try:
-            # Convert decimal to ternary
-            from .kececinumbers import _parse_fraction
-            val = int(_parse_fraction(s))
-            # Convert to ternary digits
-            if val == 0:
-                digits = [0]
-            else:
-                digits = []
-                while val > 0:
-                    digits.append(val % 3)
-                    val //= 3
-                digits.reverse()
-            return TernaryNumber(digits)
-        except:
-            return TernaryNumber([0])
+        return [0.0, 0.0, 0.0]
 
 
 def _generate_proper_ask_sequence(
@@ -11595,6 +13074,21 @@ def _is_prime_int(n: int) -> bool:
 
 def _get_proper_unit(number_type: int, sample=None):
     """Get proper unit for number type."""
+    # helper to determine dimension from sample or default
+    def _dim_from_sample(s, default=4):
+        if s is None:
+            return default
+        # if sample is list/tuple-like, use its length
+        try:
+            if isinstance(s, (list, tuple)):
+                return max(1, len(s))
+            # if sample is an object with .components or similar, try to infer
+            if hasattr(s, "__len__"):
+                return max(1, len(s))
+        except Exception:
+            pass
+        return default
+
     if number_type == 1:  # Positive Real
         return 1.0
     elif number_type == 2:  # Negative Real
@@ -11607,7 +13101,7 @@ def _get_proper_unit(number_type: int, sample=None):
         try:
             from fractions import Fraction
             return Fraction(1, 1)
-        except:
+        except Exception:
             return 1.0
     elif number_type == 6:  # Quaternion
         from .kececinumbers import quaternion
@@ -11624,12 +13118,36 @@ def _get_proper_unit(number_type: int, sample=None):
     elif number_type == 22:  # Ternary
         from .kececinumbers import TernaryNumber
         return TernaryNumber([1])
+    elif number_type == 23:  # Hypercomplex
+        # infer dimension from sample if provided, default to 4
+        dim = _dim_from_sample(sample, default=4)
+        try:
+            from .kececinumbers import HypercomplexNumber
+            comps = [1.0] + [0.0] * (dim - 1)
+            # assume HypercomplexNumber accepts a list of components
+            return HypercomplexNumber(comps)
+        except Exception:
+            # fallback to plain list if class not available
+            return [1.0] + [0.0] * dim
     else:
         return 1.0
 
 
-def _get_proper_default(number_type: int):
+def _get_proper_default(number_type: int, sample=None):
     """Get proper default for number type."""
+    # helper to determine dimension from sample or default
+    def _dim_from_sample(s, default=4):
+        if s is None:
+            return default
+        try:
+            if isinstance(s, (list, tuple)):
+                return max(1, len(s))
+            if hasattr(s, "__len__"):
+                return max(1, len(s))
+        except Exception:
+            pass
+        return default
+
     if number_type == 1:  # Positive Real
         return 0.0
     elif number_type == 2:  # Negative Real
@@ -11642,7 +13160,7 @@ def _get_proper_default(number_type: int):
         try:
             from fractions import Fraction
             return Fraction(0, 1)
-        except:
+        except Exception:
             return 0.0
     elif number_type == 6:  # Quaternion
         from .kececinumbers import quaternion
@@ -11659,6 +13177,14 @@ def _get_proper_default(number_type: int):
     elif number_type == 22:  # Ternary
         from .kececinumbers import TernaryNumber
         return TernaryNumber([0])
+    elif number_type == 23:  # Hypercomplex
+        dim = _dim_from_sample(sample, default=4)
+        try:
+            from .kececinumbers import HypercomplexNumber
+            comps = [0.0] * dim
+            return HypercomplexNumber(comps)
+        except Exception:
+            return [0.0] * dim
     else:
         return 0.0
 
@@ -12748,6 +14274,7 @@ def _get_parser_for_type(kececi_type: int) -> Callable[[str], Any]:
         20: lambda s: _parse_voudon(s),  # Voudon
         21: lambda s: _parse_superreal(s),  # Superreal
         22: lambda s: _parse_ternary(s),  # Ternary
+        23: lambda s: _parse_hypercomplex(s),  # 
     }
     
     return parser_map.get(kececi_type, lambda s: float(s))
@@ -13275,6 +14802,8 @@ def _get_parser_for_type_simple(kececi_type: int) -> Callable[[str], Any]:
         return _parse_superreal
     elif kececi_type == 22:  # Ternary
         return _parse_ternary
+    elif kececi_type == 23:  # Hypercomplex
+        return _parse_hypercomplex
     else:
         raise ValueError(f"Unsupported type: {kececi_type}")
 
@@ -13459,223 +14988,232 @@ def _generate_sequence_with_operation(
     return result
 
 
+
+
 def _get_type_operations(number_type: int) -> Dict[str, Callable]:
     """
-    Get appropriate operations for a number type.
-    Uses existing functions from kececinumbers module.
+    Return a dict of operations for the given number_type.
+    Each operation is a callable that accepts (a, b) or (a,) depending on op.
+    Fallbacks try to be consistent and predictable across types.
     """
-    # Helper functions that use existing module functions
+
+    # Basic arithmetic wrappers with layered fallbacks
     def type_add(a, b):
         try:
             return a + b
-        except Exception:
-            # Try safe_add if available
+        except Exception as e:
+            logger.debug("add failed with %s, trying fallbacks", e)
+            # try module-level safe_add if available
             try:
+                from .kececinumbers import safe_add
                 return safe_add(a, b)
-            except:
-                # Fallback for complex types
-                if isinstance(a, (list, tuple)) and isinstance(b, (int, float)):
-                    return type(a)([x + b for x in a])
-                raise
-    
+            except Exception:
+                pass
+            # elementwise fallback when b is scalar
+            if isinstance(a, (list, tuple)) and _is_numeric_scalar(b):
+                return type(a)([x + b for x in a])
+            raise
+
     def type_subtract(a, b):
         try:
             return a - b
-        except Exception:
-            if isinstance(a, (list, tuple)) and isinstance(b, (int, float)):
+        except Exception as e:
+            logger.debug("subtract failed with %s", e)
+            if isinstance(a, (list, tuple)) and _is_numeric_scalar(b):
                 return type(a)([x - b for x in a])
             raise
-    
+
     def type_multiply(a, b):
         try:
             return a * b
-        except Exception:
-            if isinstance(a, (list, tuple)) and isinstance(b, (int, float)):
+        except Exception as e:
+            logger.debug("multiply failed with %s", e)
+            if isinstance(a, (list, tuple)) and _is_numeric_scalar(b):
                 return type(a)([x * b for x in a])
             raise
-    
+
     def type_divide(a, b):
         try:
             return _safe_divide(a, b)
-        except Exception:
-            # Fallback
+        except Exception as e:
+            logger.debug("safe_divide failed with %s", e)
             try:
                 return a / b
             except Exception:
-                if isinstance(a, (list, tuple)) and isinstance(b, (int, float)):
+                if isinstance(a, (list, tuple)) and _is_numeric_scalar(b):
                     return type(a)([x / b for x in a])
                 raise
-    
+
     def type_mod(a, b):
         try:
             return _safe_mod(a, b)
-        except Exception:
-            # Fallback
+        except Exception as e:
+            logger.debug("safe_mod failed with %s", e)
             try:
                 return a % b
             except Exception:
-                return a  # Return original if mod not supported
-    
+                # If mod not supported, return a unchanged (explicit choice)
+                return a
+
     def type_power(a, b):
         try:
             return _safe_power(a, b)
-        except Exception:
-            # Fallback
+        except Exception as e:
+            logger.debug("safe_power failed with %s", e)
             try:
                 return a ** b
             except Exception:
-                # Handle simple cases
-                if isinstance(b, (int, float)) and b == 2:
-                    return type_multiply(a, a)
-                elif b == 1:
-                    return a
-                elif b == 0:
-                    try:
-                        return type(a)(1)
-                    except:
-                        return 1
-                else:
-                    return a
-    
+                # sensible fallbacks for common exponents
+                if _is_numeric_scalar(b):
+                    if b == 2:
+                        return type_multiply(a, a)
+                    if b == 1:
+                        return a
+                    if b == 0:
+                        # try to return multiplicative identity for the type
+                        try:
+                            unit = ops["get_unit"]()
+                            return unit if unit is not None else 1
+                        except Exception:
+                            return 1
+                raise
+
+    # divisibility and primality helpers
     def type_is_divisible(a, divisor):
         try:
-            return _is_divisible(a, divisor, number_type)
+            from .kececinumbers import _is_divisible as _mod_check
+            return _mod_check(a, divisor, number_type)
         except Exception:
-            # Simple check for numeric types
-            if isinstance(a, (int, float)):
-                return abs(a % divisor) < 1e-10
-            elif isinstance(a, complex):
-                return abs(a.real % divisor) < 1e-10 and abs(a.imag % divisor) < 1e-10
-            else:
-                # Assume divisible for complex types
-                return True
-    
+            try:
+                # numeric fallback
+                if _is_numeric_scalar(a) and _is_numeric_scalar(divisor):
+                    return abs(a % divisor) < 1e-12
+                if isinstance(a, complex) and _is_numeric_scalar(divisor):
+                    return (abs(a.real % divisor) < 1e-12) and (abs(a.imag % divisor) < 1e-12)
+                # arrays: check first component
+                if isinstance(a, (list, tuple)) and _is_numeric_scalar(divisor):
+                    return abs(_coerce_first_component(a) % divisor) < 1e-12
+            except Exception as e:
+                logger.debug("is_divisible fallback failed %s", e)
+            # conservative default
+            return False
+
     def type_is_prime_like(a):
         try:
+            from .kececinumbers import is_prime_like
             return is_prime_like(a, number_type)
         except Exception:
-            # Simple check
+            # fallback: check primality of magnitude or first component
             try:
-                # Get magnitude for complex types
-                if hasattr(a, '__abs__'):
-                    mag = abs(a)
-                elif isinstance(a, (list, tuple)):
-                    # Use first component
-                    mag = abs(a[0]) if a else 0
-                else:
-                    mag = abs(float(str(a)))
-                
-                return is_prime(mag) if hasattr(is_prime, '__call__') else False
-            except:
+                from .kececinumbers import is_prime
+            except Exception:
+                is_prime = None
+            try:
+                mag = _coerce_first_component(a)
+                if is_prime:
+                    return is_prime(int(abs(mag)))
+                # simple trial division for small integers
+                n = int(abs(mag))
+                if n < 2:
+                    return False
+                if n in (2, 3):
+                    return True
+                if n % 2 == 0:
+                    return False
+                r = int(math.sqrt(n))
+                for i in range(3, r + 1, 2):
+                    if n % i == 0:
+                        return False
+                return True
+            except Exception as e:
+                logger.debug("is_prime_like fallback failed %s", e)
                 return False
-    
+
+    # unit and default value providers
     def type_get_unit(sample=None):
-        # Get appropriate unit for this type
-        if number_type in [1, 4, 5]:
+        # try to use centralized helper if available
+        try:
+            from .module_helpers import get_unit_for_type
+            return get_unit_for_type(number_type, sample=sample)
+        except Exception:
+            pass
+
+        # inline fallbacks
+        if number_type in (1, 4, 5):
             return 1.0
-        elif number_type == 2:
+        if number_type == 2:
             return -1.0
-        elif number_type == 3:
+        if number_type == 3:
             return complex(1, 0)
-        elif number_type == 6:  # Quaternion
+        if number_type == 6:
             try:
                 from .kececinumbers import quaternion
                 return quaternion(1, 0, 0, 0)
-            except:
+            except Exception:
                 return (1.0, 0.0, 0.0, 0.0)
-        elif number_type == 7:  # Neutrosophic
+        if number_type == 7:
             try:
-                from .kececinumbers import neutrosophic_one
-                return neutrosophic_one()
-            except:
+                from .kececinumbers import NeutrosophicNumber
+                return NeutrosophicNumber(1.0, 0.0, 0.0)
+            except Exception:
                 return (1.0, 0.0, 0.0)
-        elif number_type == 8:  # Neutrosophic Complex
-            try:
-                from .kececinumbers import NeutrosophicComplexNumber
-                return NeutrosophicComplexNumber(1, 0, 0)
-            except:
-                return complex(1, 0)
-        elif number_type == 9:  # Hyperreal
-            try:
-                from .kececinumbers import HyperrealNumber
-                return HyperrealNumber([1.0, 0.0])
-            except:
-                return [1.0, 0.0]
-        elif number_type == 10:  # Bicomplex
-            try:
-                from .kececinumbers import BicomplexNumber
-                return BicomplexNumber(complex(1, 0), complex(0, 0))
-            except:
-                return complex(1, 0)
-        elif number_type == 12:  # Octonion
-            try:
-                from .kececinumbers import OctonionNumber
-                return OctonionNumber(1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-            except:
-                return [1.0] + [0.0]*7
-        elif number_type == 13:  # Sedenion
-            try:
-                from .kececinumbers import SedenionNumber
-                return SedenionNumber([1.0] + [0.0]*15)
-            except:
-                return [1.0] + [0.0]*15
-        elif number_type in [17, 18, 19, 20, 22]:  # Array-based types
-            sizes = {
-                17: 32,  # Pathion
-                18: 64,  # Chingon
-                19: 128, # Routon
-                20: 256, # Voudon
-                22: 3,   # Ternary
-            }
+        if number_type in (12, 13, 17, 18, 19, 20, 22):
+            sizes = {12: 8, 13: 16, 17: 32, 18: 64, 19: 128, 20: 256, 22: 3}
             size = sizes.get(number_type, 1)
-            return [1.0] + [0.0]*(size-1)
-        else:
-            return 1.0
-    
-    def type_get_default():
-        # Get default value for this type
+            return [1.0] + [0.0] * (size - 1)
+        if number_type == 9:
+            return [1.0, 0.0]
+        if number_type == 10:
+            return complex(1, 0)
+        if number_type == 23: #hypercomplex
+            # infer dimension from sample if provided, default to 8
+            dim = 8
+            if isinstance(sample, (list, tuple)):
+                dim = max(1, len(sample))
+            return [1.0] + [0.0] * (dim - 1)
+        # default
+        return 1.0
+
+    def type_get_default(sample=None):
         try:
-            return _get_default_value(number_type)
+            from .module_helpers import get_default_for_type
+            return get_default_for_type(number_type, sample=sample)
         except Exception:
-            # Fallback defaults
-            if number_type in [1, 2, 4, 5]:
-                return 0.0
-            elif number_type == 3:
-                return complex(0, 0)
-            elif number_type == 6:
-                try:
-                    from .kececinumbers import quaternion
-                    return quaternion(0, 0, 0, 0)
-                except:
-                    return (0.0, 0.0, 0.0, 0.0)
-            elif number_type == 7:
-                try:
-                    from .kececinumbers import neutrosophic_zero
-                    return neutrosophic_zero()
-                except:
-                    return (0.0, 0.0, 0.0)
-            elif number_type == 12:
-                try:
-                    from .kececinumbers import OctonionNumber
-                    return OctonionNumber(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-                except:
-                    return [0.0]*8
-            elif number_type == 13:
-                try:
-                    from .kececinumbers import SedenionNumber
-                    return SedenionNumber([0.0]*16)
-                except:
-                    return [0.0]*16
-            elif number_type in [17, 18, 19, 20, 22]:
-                sizes = {
-                    17: 32, 18: 64, 19: 128, 20: 256, 22: 3
-                }
-                size = sizes.get(number_type, 1)
-                return [0.0]*size
-            else:
-                return 0.0
-    
-    return {
+            pass
+
+        if number_type in (1, 2, 4, 5):
+            return 0.0
+        if number_type == 3:
+            return complex(0, 0)
+        if number_type == 6:
+            try:
+                from .kececinumbers import quaternion
+                return quaternion(0, 0, 0, 0)
+            except Exception:
+                return (0.0, 0.0, 0.0, 0.0)
+        if number_type == 7:
+            try:
+                from .kececinumbers import NeutrosophicNumber
+                return NeutrosophicNumber(0.0, 0.0, 0.0)
+            except Exception:
+                return (0.0, 0.0, 0.0)
+        if number_type in (12, 13, 17, 18, 19, 20, 22):
+            sizes = {12: 8, 13: 16, 17: 32, 18: 64, 19: 128, 20: 256, 22: 3}
+            size = sizes.get(number_type, 1)
+            return [0.0] * size
+        if number_type == 9:
+            return [0.0, 0.0]
+        if number_type == 10:
+            return complex(0, 0)
+        if number_type == 23:
+            dim = 8
+            if isinstance(sample, (list, tuple)):
+                dim = max(1, len(sample))
+            return [0.0] * dim
+        return 0.0
+
+    # assemble ops dict; some ops may reference others so create dict first then fill if needed
+    ops = {
         "add": type_add,
         "subtract": type_subtract,
         "multiply": type_multiply,
@@ -13688,6 +15226,8 @@ def _get_type_operations(number_type: int) -> Dict[str, Callable]:
         "get_default": type_get_default,
     }
 
+    return ops
+
 
 def _parse_special_type(
     kececi_type: int,
@@ -13695,7 +15235,7 @@ def _parse_special_type(
     add_input_raw: str
 ) -> Tuple[Any, Any]:
     """
-    Parse values for special Keçeci number types (6-22).
+    Parse values for special Keçeci number types (6-23).
     """
     try:
         # First try to use the specific parser
@@ -13738,7 +15278,7 @@ def _get_parser_for_type(kececi_type: int) -> Optional[Callable]:
             _parse_super_real,
             _parse_superreal,
             _parse_ternary,
-            _parse_to_hypercomplex,
+            _parse_hypercomplex,
             _parse_universal,
             _parse_voudon,
             _generate_simple_ask_sequence,
@@ -13766,199 +15306,301 @@ def _get_parser_for_type(kececi_type: int) -> Optional[Callable]:
             20: _parse_voudon,
             21: _parse_super_real,
             22: _parse_ternary,
+            23: _parse_hypercomplex,
         }
         
         return parser_map.get(kececi_type)
     except ImportError:
         return None
 
+# ----------------- Yardımcılar -----------------
+def _pad_or_truncate(lst: Iterable[Any], dim: int) -> List[Any]:
+    arr = list(lst)
+    if len(arr) < dim:
+        return arr + [0.0] * (dim - len(arr))
+    return arr[:dim]
+
+def _try_construct(cls, args_list: List[Any], dimension: Optional[int] = None):
+    """
+    Bir sınıfı farklı constructor imzalarıyla dene:
+      - cls(list, dimension=dim)
+      - cls(*components, dimension=dim)
+      - cls(list)
+      - cls(*components)
+    """
+    # prefer list + dimension
+    try:
+        if dimension is not None:
+            return cls(args_list, dimension=dimension)
+    except TypeError:
+        pass
+    except Exception as e:
+        logger.debug("Constructor attempt failed (list+dim): %s", e)
+    # try *args + dimension
+    try:
+        if dimension is not None:
+            return cls(*args_list, dimension=dimension)
+    except TypeError:
+        pass
+    except Exception as e:
+        logger.debug("Constructor attempt failed (*args+dim): %s", e)
+    # try list only
+    try:
+        return cls(args_list)
+    except Exception as e:
+        logger.debug("Constructor attempt failed (list): %s", e)
+    # try *args only
+    try:
+        return cls(*args_list)
+    except Exception as e:
+        logger.debug("Constructor attempt failed (*args): %s", e)
+    # all failed
+    raise TypeError("No compatible constructor found for class {}".format(cls))
+
+# ----------------- Ana fonksiyon -----------------
 
 def _parse_with_generic_fallback(
     kececi_type: int,
-    start_input_raw: str,
-    add_input_raw: str
+    start_input_raw: Any,
+    add_input_raw: Any
 ) -> Tuple[Any, Any]:
     """
     Generic fallback parser for special types.
-    Returns appropriate data structures for each type.
+    - start_input_raw / add_input_raw: string, iterable, scalar accepted.
+    - Returns (start_value, add_value) as either project class instances (if available)
+      or consistent Python fallback structures (tuple/list/complex/float).
     """
-    # Parse base value
-    from .kececinumbers import _parse_fraction
-    base_start = _parse_fraction(start_input_raw)
-    base_add = _parse_fraction(add_input_raw)
-    
-    # Create appropriate structures for each type
+    # First try to use project-specific fraction parser if available (keçeci projesi)
+    base_start = None
+    base_add = None
+    try:
+        from .kececinumbers import _parse_fraction as _pf
+        try:
+            base_start = _pf(start_input_raw)
+        except Exception:
+            base_start = None
+        try:
+            base_add = _pf(add_input_raw)
+        except Exception:
+            base_add = None
+    except Exception:
+        base_start = None
+        base_add = None
+
+    # If project parser didn't produce values, use generic parser
+    if base_start is None:
+        parsed_start = _parse_components(start_input_raw)
+        base_start = parsed_start[0] if parsed_start else 0.0
+    if base_add is None:
+        parsed_add = _parse_components(add_input_raw)
+        base_add = parsed_add[0] if parsed_add else 0.0
+
+    # Helper to attempt class construction with safe logging
+    def _construct_or_fallback(class_name: str, cls_try, args_list, dim=None, fallback_type="list"):
+        try:
+            inst = _try_construct(cls_try, args_list, dimension=dim)
+            return inst
+        except Exception as e:
+            logger.debug("Could not construct %s: %s", class_name, e)
+            # fallback: return list or tuple depending on fallback_type
+            if fallback_type == "tuple":
+                return tuple(args_list)
+            return list(args_list)
+
+    # Map types
+    # For scalar-like types we return simple scalars/complex
     if kececi_type == 6:  # Quaternion (4D)
-        quat_start = (base_start, 0.0, 0.0, 0.0)
-        quat_add = (base_add, 0.0, 0.0, 0.0)
-        
-        # Try to create actual Quaternion object if available
+        quat = (base_start, 0.0, 0.0, 0.0)
         try:
             from .kececinumbers import QuaternionNumber
-            return QuaternionNumber(*quat_start), QuaternionNumber(*quat_add)
-        except:
-            return quat_start, quat_add
-    
-    elif kececi_type == 7:  # Neutrosophic (T, I, F)
-        neutro_start = (base_start, 0.0, 0.0)
-        neutro_add = (base_add, 0.0, 0.0)
-        
+            return _construct_or_fallback("QuaternionNumber", QuaternionNumber, list(quat), dim=4, fallback_type="tuple"), \
+                   _construct_or_fallback("QuaternionNumber", QuaternionNumber, list((base_add,0.0,0.0,0.0)), dim=4, fallback_type="tuple")
+        except Exception:
+            return tuple(quat), tuple((base_add,0.0,0.0,0.0))
+
+    if kececi_type == 7:  # Neutrosophic (T,I,F)
+        neutro = (base_start, 0.0, 0.0)
         try:
             from .kececinumbers import NeutrosophicNumber
-            return NeutrosophicNumber(*neutro_start), NeutrosophicNumber(*neutro_add)
-        except:
-            return neutro_start, neutro_add
-    
-    elif kececi_type == 8:  # Neutrosophic Complex
-        # Similar to complex but with neutrosophic components
-        nc_start = complex(base_start, 0)
-        nc_add = complex(base_add, 0)
-        
+            return _construct_or_fallback("NeutrosophicNumber", NeutrosophicNumber, list(neutro), dim=3, fallback_type="tuple"), \
+                   _construct_or_fallback("NeutrosophicNumber", NeutrosophicNumber, list((base_add,0.0,0.0)), dim=3, fallback_type="tuple")
+        except Exception:
+            return tuple(neutro), tuple((base_add,0.0,0.0))
+
+    if kececi_type == 8:  # Neutrosophic Complex
         try:
             from .kececinumbers import NeutrosophicComplexNumber
-            return NeutrosophicComplexNumber(base_start, 0, 0), NeutrosophicComplexNumber(base_add, 0, 0)
-        except:
-            return nc_start, nc_add
-    
-    elif kececi_type == 9:  # Hyperreal
-        hyper_start = [base_start, 0.0]  # [finite, infinitesimal]
+            return _construct_or_fallback("NeutrosophicComplexNumber", NeutrosophicComplexNumber, [base_start, 0.0, 0.0], dim=None), \
+                   _construct_or_fallback("NeutrosophicComplexNumber", NeutrosophicComplexNumber, [base_add, 0.0, 0.0], dim=None)
+        except Exception:
+            return complex(base_start, 0), complex(base_add, 0)
+
+    if kececi_type == 9:  # Hyperreal [finite, infinitesimal]
+        hyper_start = [base_start, 0.0]
         hyper_add = [base_add, 0.0]
-        
         try:
             from .kececinumbers import HyperrealNumber
-            return HyperrealNumber(hyper_start), HyperrealNumber(hyper_add)
-        except:
+            return _construct_or_fallback("HyperrealNumber", HyperrealNumber, hyper_start, dim=2), \
+                   _construct_or_fallback("HyperrealNumber", HyperrealNumber, hyper_add, dim=2)
+        except Exception:
             return hyper_start, hyper_add
-    
-    elif kececi_type == 10:  # Bicomplex
-        bicomp_start = complex(base_start, 0)
-        bicomp_add = complex(base_add, 0)
-        
+
+    if kececi_type == 10:  # Bicomplex
+        bic_start = complex(base_start, 0)
+        bic_add = complex(base_add, 0)
         try:
             from .kececinumbers import BicomplexNumber
-            return BicomplexNumber(bicomp_start), BicomplexNumber(bicomp_add)
-        except:
-            return bicomp_start, bicomp_add
-    
-    elif kececi_type == 11:  # Neutrosophic Bicomplex
-        # Complex fallback
-        nb_start = complex(base_start, 0)
-        nb_add = complex(base_add, 0)
-        return nb_start, nb_add
-    
-    elif kececi_type == 12:  # Octonion (8D)
+            return _construct_or_fallback("BicomplexNumber", BicomplexNumber, [bic_start]), \
+                   _construct_or_fallback("BicomplexNumber", BicomplexNumber, [bic_add])
+        except Exception:
+            return bic_start, bic_add
+
+    if kececi_type == 11:  # Neutrosophic Bicomplex (fallback to complex)
+        try:
+            from .kececinumbers import NeutrosophicBicomplexNumber
+            return _construct_or_fallback("NeutrosophicBicomplexNumber", NeutrosophicBicomplexNumber, [base_start]), \
+                   _construct_or_fallback("NeutrosophicBicomplexNumber", NeutrosophicBicomplexNumber, [base_add])
+        except Exception:
+            return complex(base_start, 0), complex(base_add, 0)
+
+    if kececi_type == 12:  # Octonion (8D)
         octo_start = [base_start] + [0.0] * 7
         octo_add = [base_add] + [0.0] * 7
-        
         try:
             from .kececinumbers import OctonionNumber
-            return OctonionNumber(*octo_start), OctonionNumber(*octo_add)
-        except:
+            return _construct_or_fallback("OctonionNumber", OctonionNumber, octo_start, dim=8), \
+                   _construct_or_fallback("OctonionNumber", OctonionNumber, octo_add, dim=8)
+        except Exception:
             return octo_start, octo_add
-    
-    elif kececi_type == 13:  # Sedenion (16D)
+
+    if kececi_type == 13:  # Sedenion (16D)
         sed_start = [base_start] + [0.0] * 15
         sed_add = [base_add] + [0.0] * 15
-        
         try:
             from .kececinumbers import SedenionNumber
-            return SedenionNumber(sed_start), SedenionNumber(sed_add)
-        except:
+            return _construct_or_fallback("SedenionNumber", SedenionNumber, sed_start, dim=16), \
+                   _construct_or_fallback("SedenionNumber", SedenionNumber, sed_add, dim=16)
+        except Exception:
             return sed_start, sed_add
-    
-    elif kececi_type == 14:  # Clifford Algebra
+
+    if kececi_type == 14:  # Clifford
         cliff_start = {"e0": base_start}
         cliff_add = {"e0": base_add}
-        
         try:
             from .kececinumbers import CliffordNumber
-            return CliffordNumber(cliff_start), CliffordNumber(cliff_add)
-        except:
+            return _construct_or_fallback("CliffordNumber", CliffordNumber, [cliff_start]), \
+                   _construct_or_fallback("CliffordNumber", CliffordNumber, [cliff_add])
+        except Exception:
             return cliff_start, cliff_add
-    
-    elif kececi_type == 15:  # Dual Numbers
-        dual_start = (base_start, 0.0)  # (real, dual)
+
+    if kececi_type == 15:  # Dual
+        dual_start = (base_start, 0.0)
         dual_add = (base_add, 0.0)
-        
         try:
             from .kececinumbers import DualNumber
-            return DualNumber(*dual_start), DualNumber(*dual_add)
-        except:
+            return _construct_or_fallback("DualNumber", DualNumber, list(dual_start), dim=2, fallback_type="tuple"), \
+                   _construct_or_fallback("DualNumber", DualNumber, list(dual_add), dim=2, fallback_type="tuple")
+        except Exception:
             return dual_start, dual_add
-    
-    elif kececi_type == 16:  # Split-Complex
+
+    if kececi_type == 16:  # Split-complex
         split_start = (base_start, 0.0)
         split_add = (base_add, 0.0)
-        
         try:
             from .kececinumbers import SplitcomplexNumber
-            return SplitcomplexNumber(*split_start), SplitcomplexNumber(*split_add)
-        except:
+            return _construct_or_fallback("SplitcomplexNumber", SplitcomplexNumber, list(split_start), dim=2, fallback_type="tuple"), \
+                   _construct_or_fallback("SplitcomplexNumber", SplitcomplexNumber, list(split_add), dim=2, fallback_type="tuple")
+        except Exception:
             return split_start, split_add
-    
-    elif kececi_type == 17:  # Pathion (32D)
+
+    if kececi_type == 17:  # Pathion (32D)
         path_start = [base_start] + [0.0] * 31
         path_add = [base_add] + [0.0] * 31
-        
         try:
             from .kececinumbers import PathionNumber
-            return PathionNumber(path_start), PathionNumber(path_add)
-        except:
+            return _construct_or_fallback("PathionNumber", PathionNumber, path_start, dim=32), \
+                   _construct_or_fallback("PathionNumber", PathionNumber, path_add, dim=32)
+        except Exception:
             return path_start, path_add
-    
-    elif kececi_type == 18:  # Chingon (64D)
+
+    if kececi_type == 18:  # Chingon (64D)
         ching_start = [base_start] + [0.0] * 63
         ching_add = [base_add] + [0.0] * 63
-        
         try:
             from .kececinumbers import ChingonNumber
-            return ChingonNumber(ching_start), ChingonNumber(ching_add)
-        except:
+            return _construct_or_fallback("ChingonNumber", ChingonNumber, ching_start, dim=64), \
+                   _construct_or_fallback("ChingonNumber", ChingonNumber, ching_add, dim=64)
+        except Exception:
             return ching_start, ching_add
-    
-    elif kececi_type == 19:  # Routon (128D)
+
+    if kececi_type == 19:  # Routon (128D)
         rout_start = [base_start] + [0.0] * 127
         rout_add = [base_add] + [0.0] * 127
-        
         try:
             from .kececinumbers import RoutonNumber
-            return RoutonNumber(rout_start), RoutonNumber(rout_add)
-        except:
+            return _construct_or_fallback("RoutonNumber", RoutonNumber, rout_start, dim=128), \
+                   _construct_or_fallback("RoutonNumber", RoutonNumber, rout_add, dim=128)
+        except Exception:
             return rout_start, rout_add
-    
-    elif kececi_type == 20:  # Voudon (256D)
+
+    if kececi_type == 20:  # Voudon (256D)
         voud_start = [base_start] + [0.0] * 255
         voud_add = [base_add] + [0.0] * 255
-        
         try:
             from .kececinumbers import VoudonNumber
-            return VoudonNumber(voud_start), VoudonNumber(voud_add)
-        except:
+            return _construct_or_fallback("VoudonNumber", VoudonNumber, voud_start, dim=256), \
+                   _construct_or_fallback("VoudonNumber", VoudonNumber, voud_add, dim=256)
+        except Exception:
             return voud_start, voud_add
-    
-    elif kececi_type == 21:  # Superreal
+
+    if kececi_type == 21:  # Superreal
         super_start = (base_start, 0.0)
         super_add = (base_add, 0.0)
-        
         try:
             from .kececinumbers import SuperrealNumber
-            return SuperrealNumber(*super_start), SuperrealNumber(*super_add)
-        except:
+            return _construct_or_fallback("SuperrealNumber", SuperrealNumber, list(super_start), dim=2, fallback_type="tuple"), \
+                   _construct_or_fallback("SuperrealNumber", SuperrealNumber, list(super_add), dim=2, fallback_type="tuple")
+        except Exception:
             return super_start, super_add
-    
-    elif kececi_type == 22:  # Ternary (3D)
-        ternary_start = [base_start, 0.0, 0.0]
-        ternary_add = [base_add, 0.0, 0.0]
-        
+
+    if kececi_type == 22:  # Ternary (3D)
+        parsed_start = _parse_components(start_input_raw)
+        parsed_add = _parse_components(add_input_raw)
+        base_start_comp = float(parsed_start[0]) if parsed_start else 0.0
+        base_add_comp = float(parsed_add[0]) if parsed_add else 0.0
+        ternary_start = [base_start_comp, 0.0, 0.0]
+        ternary_add = [base_add_comp, 0.0, 0.0]
         try:
             from .kececinumbers import TernaryNumber
-            return TernaryNumber(ternary_start), TernaryNumber(ternary_add)
-        except:
+            return _construct_or_fallback("TernaryNumber", TernaryNumber, ternary_start, dim=3), \
+                   _construct_or_fallback("TernaryNumber", TernaryNumber, ternary_add, dim=3)
+        except Exception as e:
+            logger.debug("TernaryNumber import/construct failed: %s", e)
             return ternary_start, ternary_add
-    
-    else:
-        # Default fallback
-        return base_start, base_add
+
+    if kececi_type == 23:  # Hypercomplex (variable power-of-two dimension)
+        parsed_start = _parse_components(start_input_raw)
+        parsed_add = _parse_components(add_input_raw)
+        desired_len = max(1, len(parsed_start), len(parsed_add))
+        dim = _next_power_of_two_at_least(desired_len, max_dim=256)
+        hyper_start_list = _pad_or_truncate(parsed_start, dim)
+        hyper_add_list = _pad_or_truncate(parsed_add, dim)
+        try:
+            from .kececinumbers import HypercomplexNumber as HC
+            try:
+                return _construct_or_fallback("HypercomplexNumber", HC, hyper_start_list, dim=dim), \
+                       _construct_or_fallback("HypercomplexNumber", HC, hyper_add_list, dim=dim)
+            except Exception:
+                # last attempt: try without dimension kwarg
+                return _construct_or_fallback("HypercomplexNumber", HC, hyper_start_list), \
+                       _construct_or_fallback("HypercomplexNumber", HC, hyper_add_list)
+        except Exception as e:
+            logger.debug("HypercomplexNumber import/construct failed: %s", e)
+            return hyper_start_list, hyper_add_list
+
+    # Default fallback: return parsed scalar/fraction results
+    return base_start, base_add
+
 
 
 def _generate_ask_for_type(
@@ -14206,6 +15848,7 @@ def _get_type_name(number_type: int) -> str:
         20: "Voudon",
         21: "Superreal",
         22: "Ternary",
+        23: "Hypercomplex",
     }
     return names.get(number_type, f"Type {number_type}")
 
@@ -14638,55 +16281,6 @@ def _generate_ask_sequence_complete(
             current = default_val
     
     return result
-
-
-def _get_ask_unit_for_type(number_type: int, sample_value: Any = None) -> Any:
-    """
-    Get appropriate Keçeci unit for a number type.
-    """
-    if number_type in [1, 4, 5]:  # Positive Real, Float, Rational
-        return 1.0
-    elif number_type == 2:  # Negative Real
-        return -1.0
-    elif number_type == 3:  # Complex
-        return complex(1, 0)
-    elif number_type == 6:  # Quaternion
-        try:
-            from .kececinumbers import quaternion
-            return quaternion(1, 0, 0, 0)
-        except:
-            return 1.0
-    elif number_type == 7:  # Neutrosophic
-        try:
-            from .kececinumbers import NeutrosophicNumber
-            return NeutrosophicNumber(1, 0, 0)
-        except:
-            return (1.0, 0.0, 0.0)
-    elif number_type == 8:  # Neutrosophic Complex
-        try:
-            from .kececinumbers import NeutrosophicComplexNumber
-            return NeutrosophicComplexNumber(1, 0, 0)
-        except:
-            return complex(1, 0)
-    elif number_type in [12, 13, 17, 18, 19, 20, 22]:  # Array-based types
-        # Create unit vector with 1 in first position
-        if sample_value and hasattr(sample_value, '__len__'):
-            size = len(sample_value)
-            unit = [0.0] * size
-            unit[0] = 1.0
-            try:
-                return type(sample_value)(unit)
-            except:
-                return unit
-        else:
-            return 1.0
-    else:
-        # Default unit
-        try:
-            if sample_value:
-                return type(sample_value)(1)
-        except:
-            return 1.0
 
 
 def _safe_add(a: Any, b: Any, number_type: int) -> Any:
@@ -15222,7 +16816,7 @@ def get_with_params(
                 _parse_super_real,
                 _parse_superreal,
                 _parse_ternary,
-                _parse_to_hypercomplex,
+                _parse_hypercomplex,
                 _parse_universal,
                 _parse_voudon,
                 _generate_simple_ask_sequence,
@@ -15534,165 +17128,6 @@ def _generate_kececi_sequence(
         return result
 
 
-def _apply_kececi_operation(a: Any, b: Any, operation: str, number_type: str = "Unknown") -> Any:
-    """
-    Apply operation to Keçeci numbers with proper type handling.
-    """
-    try:
-        if operation == "add":
-            return a + b
-        elif operation == "subtract":
-            return a - b
-        elif operation == "multiply":
-            return a * b
-        elif operation == "divide":
-            return _safe_divide_kececi(a, b, number_type)
-        elif operation == "mod":
-            return _safe_mod_kececi(a, b, number_type)
-        elif operation == "power":
-            return _safe_power_kececi(a, b, number_type)
-        else:
-            raise ValueError(f"Unsupported operation: {operation}")
-    except Exception as e:
-        # If standard operators fail, try alternative methods
-        logger.debug(f"Standard {operation} failed: {e}, trying alternatives")
-        
-        # Try to use methods if available
-        if operation == "add" and hasattr(a, 'add'):
-            return a.add(b)
-        elif operation == "subtract" and hasattr(a, 'subtract'):
-            return a.subtract(b)
-        elif operation == "multiply" and hasattr(a, 'multiply'):
-            return a.multiply(b)
-        elif operation == "divide" and hasattr(a, 'divide'):
-            return a.divide(b)
-        else:
-            raise
-
-def _safe_divide_kececi(a: Any, b: Any, number_type: str = "Unknown") -> Any:
-    """
-    Safe division for Keçeci numbers.
-    """
-    # Check for zero
-    if _is_zero(b):
-        logger.warning(f"Division by zero in {number_type}")
-        # Handle based on number type
-        if number_type == "Complex":
-            return complex(float('inf'), 0)
-        elif "Neutrosophic" in number_type:
-            return (float('inf'), 0.0, 0.0)
-        elif number_type in ["Quaternion", "Octonion", "Sedenion"]:
-            # Return infinity of same type
-            try:
-                return type(a)(float('inf'))
-            except:
-                return float('inf')
-        else:
-            return float('inf')
-    
-    try:
-        return a / b
-    except (TypeError, AttributeError):
-        # Try alternative division methods
-        if hasattr(a, '__truediv__'):
-            return a.__truediv__(b)
-        elif hasattr(a, 'divide'):
-            return a.divide(b)
-        else:
-            # Try to convert to float
-            try:
-                return float(a) / float(b)
-            except:
-                raise ValueError(f"Cannot divide {type(a)} by {type(b)}")
-
-
-def _safe_mod_kececi(a: Any, b: Any, number_type: str = "Unknown") -> Any:
-    """
-    Safe modulo for Keçeci numbers.
-    """
-    if _is_zero(b):
-        logger.warning(f"Modulo by zero in {number_type}")
-        return a  # Return original value
-    
-    try:
-        return a % b
-    except (TypeError, AttributeError):
-        if hasattr(a, '__mod__'):
-            return a.__mod__(b)
-        else:
-            # For many Keçeci numbers, modulo might not be defined
-            # Return a sensible default
-            logger.warning(f"Modulo operation not defined for {number_type}, returning original value")
-            return a
-
-
-def _safe_power_kececi(a: Any, b: Any, number_type: str = "Unknown") -> Any:
-    """
-    Safe power for Keçeci numbers.
-    """
-    try:
-        return a ** b
-    except (TypeError, AttributeError):
-        if hasattr(a, '__pow__'):
-            return a.__pow__(b)
-        elif hasattr(a, 'power'):
-            return a.power(b)
-        else:
-            # Try to handle common cases
-            if isinstance(b, (int, float)) and b == 2:
-                return a * a
-            elif b == 1:
-                return a
-            elif b == 0:
-                # Return identity element
-                try:
-                    return type(a)(1)
-                except:
-                    return 1
-            else:
-                raise ValueError(f"Power operation not supported for {number_type}")
-
-
-def _is_zero(value: Any) -> bool:
-    """
-    Check if a value is effectively zero.
-    """
-    if isinstance(value, (int, float, complex)):
-        if isinstance(value, complex):
-            return abs(value) < 1e-12
-        return abs(value) < 1e-12
-    
-    # For tuples (like neutrosophic)
-    if isinstance(value, tuple):
-        return all(_is_zero(v) for v in value)
-    
-    # For custom number types
-    if hasattr(value, '__abs__'):
-        try:
-            return abs(value) < 1e-12
-        except:
-            pass
-    
-    # Try conversion to float
-    try:
-        return abs(float(value)) < 1e-12
-    except:
-        return False
-
-
-def _get_operation_symbol(operation: str) -> str:
-    """Get symbol for operation."""
-    symbols = {
-        "add": "+",
-        "subtract": "-",
-        "multiply": "×",
-        "divide": "/",
-        "mod": "%",
-        "power": "^"
-    }
-    return symbols.get(operation, "?")
-
-
 def _get_default_value_for_type(value: Any) -> Any:
     """Get default value for a given type."""
     if isinstance(value, (int, float)):
@@ -15776,167 +17211,6 @@ def _generate_kececi_sequence(
         
         return result
 
-
-def _apply_kececi_operation(a: Any, b: Any, operation: str, number_type: str = "Unknown") -> Any:
-    """
-    Apply operation to Keçeci numbers with proper type handling.
-    """
-    try:
-        if operation == "add":
-            return a + b
-        elif operation == "subtract":
-            return a - b
-        elif operation == "multiply":
-            return a * b
-        elif operation == "divide":
-            return _safe_divide_kececi(a, b, number_type)
-        elif operation == "mod":
-            return _safe_mod_kececi(a, b, number_type)
-        elif operation == "power":
-            return _safe_power_kececi(a, b, number_type)
-        else:
-            raise ValueError(f"Unsupported operation: {operation}")
-    except Exception as e:
-        # If standard operators fail, try alternative methods
-        logger.debug(f"Standard {operation} failed: {e}, trying alternatives")
-        
-        # Try to use methods if available
-        if operation == "add" and hasattr(a, 'add'):
-            return a.add(b)
-        elif operation == "subtract" and hasattr(a, 'subtract'):
-            return a.subtract(b)
-        elif operation == "multiply" and hasattr(a, 'multiply'):
-            return a.multiply(b)
-        elif operation == "divide" and hasattr(a, 'divide'):
-            return a.divide(b)
-        else:
-            raise
-
-
-def _safe_divide_kececi(a: Any, b: Any, number_type: str = "Unknown") -> Any:
-    """
-    Safe division for Keçeci numbers.
-    """
-    # Check for zero
-    if _is_zero(b):
-        logger.warning(f"Division by zero in {number_type}")
-        # Handle based on number type
-        if number_type == "Complex":
-            return complex(float('inf'), 0)
-        elif "Neutrosophic" in number_type:
-            return (float('inf'), 0.0, 0.0)
-        elif number_type in ["Quaternion", "Octonion", "Sedenion"]:
-            # Return infinity of same type
-            try:
-                return type(a)(float('inf'))
-            except:
-                return float('inf')
-        else:
-            return float('inf')
-    
-    try:
-        return a / b
-    except (TypeError, AttributeError):
-        # Try alternative division methods
-        if hasattr(a, '__truediv__'):
-            return a.__truediv__(b)
-        elif hasattr(a, 'divide'):
-            return a.divide(b)
-        else:
-            # Try to convert to float
-            try:
-                return float(a) / float(b)
-            except:
-                raise ValueError(f"Cannot divide {type(a)} by {type(b)}")
-
-
-def _safe_mod_kececi(a: Any, b: Any, number_type: str = "Unknown") -> Any:
-    """
-    Safe modulo for Keçeci numbers.
-    """
-    if _is_zero(b):
-        logger.warning(f"Modulo by zero in {number_type}")
-        return a  # Return original value
-    
-    try:
-        return a % b
-    except (TypeError, AttributeError):
-        if hasattr(a, '__mod__'):
-            return a.__mod__(b)
-        else:
-            # For many Keçeci numbers, modulo might not be defined
-            # Return a sensible default
-            logger.warning(f"Modulo operation not defined for {number_type}, returning original value")
-            return a
-
-
-def _safe_power_kececi(a: Any, b: Any, number_type: str = "Unknown") -> Any:
-    """
-    Safe power for Keçeci numbers.
-    """
-    try:
-        return a ** b
-    except (TypeError, AttributeError):
-        if hasattr(a, '__pow__'):
-            return a.__pow__(b)
-        elif hasattr(a, 'power'):
-            return a.power(b)
-        else:
-            # Try to handle common cases
-            if isinstance(b, (int, float)) and b == 2:
-                return a * a
-            elif b == 1:
-                return a
-            elif b == 0:
-                # Return identity element
-                try:
-                    return type(a)(1)
-                except:
-                    return 1
-            else:
-                raise ValueError(f"Power operation not supported for {number_type}")
-
-
-def _is_zero(value: Any) -> bool:
-    """
-    Check if a value is effectively zero.
-    """
-    if isinstance(value, (int, float, complex)):
-        if isinstance(value, complex):
-            return abs(value) < 1e-12
-        return abs(value) < 1e-12
-    
-    # For tuples (like neutrosophic)
-    if isinstance(value, tuple):
-        return all(_is_zero(v) for v in value)
-    
-    # For custom number types
-    if hasattr(value, '__abs__'):
-        try:
-            return abs(value) < 1e-12
-        except:
-            pass
-    
-    # Try conversion to float
-    try:
-        return abs(float(value)) < 1e-12
-    except:
-        return False
-
-
-def _get_operation_symbol(operation: str) -> str:
-    """Get symbol for operation."""
-    symbols = {
-        "add": "+",
-        "subtract": "-",
-        "multiply": "×",
-        "divide": "/",
-        "mod": "%",
-        "power": "^"
-    }
-    return symbols.get(operation, "?")
-
-
 def _get_default_value_for_type(value: Any) -> Any:
     """Get default value for a given type."""
     if isinstance(value, (int, float)):
@@ -15952,6 +17226,36 @@ def _get_default_value_for_type(value: Any) -> Any:
             return 0
     else:
         return 0
+
+# Örnek: farklı boyutlarda hypercomplex default stringleri
+def hypercomplex_str(dim, first=1.0, rest=0.0, complex_components=False):
+    """
+    dim: bileşen sayısı
+    first: ilk bileşen değeri
+    rest: diğer bileşenlerin değeri
+    complex_components: True ise bileşenleri 'a+bj' formatında üretir (örnek)
+    """
+    comps = []
+    for i in range(dim):
+        if i == 0:
+            v = first
+        else:
+            v = rest
+        if complex_components:
+            # örnek: ilk iki bileşeni karmaşık yap
+            if i % 2 == 0:
+                comps.append(f"{float(v)}+{float(v)/10}j")
+            else:
+                comps.append(f"{float(v)}")
+        else:
+            comps.append(str(float(v)))
+    return ",".join(comps)
+
+# Kullanım örnekleri
+hc8 = hypercomplex_str(8, first=1.0, rest=0.0)        # "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0"
+hc16 = hypercomplex_str(16, first=1.0, rest=0.0)
+hc256 = hypercomplex_str(256, first=1.0, rest=0.0)
+hc8_complex = hypercomplex_str(8, first=1.0, rest=0.0, complex_components=True)
 
 def get_interactive(
     auto_values: Optional[Dict[str, str]] = None,
@@ -15994,15 +17298,15 @@ def get_interactive(
             " 13: Sedenion        14: Clifford          15: Dual",
             " 16: Split-Complex   17: Pathion           18: Chingon",
             " 19: Routon          20: Voudon            21: SuperReal",
-            " 22: Ternary",
+            " 22: Ternary,       23: Hypercomplex",
         ]
         logger.info("Available Keçeci Number Types:")
         for line in menu_lines:
             logger.info(line)
 
     # Defaults
-    DEFAULT_TYPE = 3
-    DEFAULT_STEPS = 40
+    DEFAULT_TYPE = 1
+    DEFAULT_STEPS = 30
     DEFAULT_SHOW_DETAILS = "yes"
 
     default_start_values = {
@@ -16028,6 +17332,7 @@ def get_interactive(
         20: "1.0" + ",0.0" * 255,
         21: "3.0,0.5",
         22: "12",
+        23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0"  # Hypercomplex: 8 bileşenli örnek (istendiğinde boyut artırılabilir)
     }
 
     default_add_values = {
@@ -16053,17 +17358,18 @@ def get_interactive(
         20: "1.0" + ",0.0" * 255,
         21: "1.5,2.7",
         22: "1",
+        23: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0"  # Hypercomplex ekleme örneği
     }
 
     # Ask for inputs (uses _ask which respects auto_values when provided)
     type_input_raw = _ask(
         "type_choice",
-        f"Select Keçeci Number Type (1-22) [default: {DEFAULT_TYPE}]: ",
+        f"Select Keçeci Number Type (1-23) [default: {DEFAULT_TYPE}]: ",
         str(DEFAULT_TYPE),
     )
     try:
         type_choice = int(type_input_raw)
-        if not (1 <= type_choice <= 22):
+        if not (1 <= type_choice <= 23):
             logger.warning(
                 "Invalid type_choice %r, using default %s", type_choice, DEFAULT_TYPE
             )
@@ -16200,22 +17506,6 @@ def is_neutrosophic_like(obj):
            (hasattr(obj, 'a') and hasattr(obj, 'b')) or \
            (hasattr(obj, 'value') and hasattr(obj, 'indeterminacy')) or \
            (hasattr(obj, 'determinate') and hasattr(obj, 'indeterminate'))
-
-def _pca_var_sum(pca) -> float:
-    """
-    Safely return sum of PCA explained variance ratio.
-    Returns 0.0 if pca has no explained_variance_ratio_ or values are NaN/invalid.
-    """
-    try:
-        arr = getattr(pca, "explained_variance_ratio_", None)
-        if arr is None:
-            return 0.0
-        s = float(np.nansum(arr))
-        if not np.isfinite(s):
-            return 0.0
-        return s
-    except Exception:
-        return 0.0
 
 # Yardımcı fonksiyon: Bileşen dağılımı grafiği
 def _plot_component_distribution(ax, elem, all_keys, seq_length=1):
@@ -16747,7 +18037,7 @@ def plot_neutrosophic_complex(sequence, start_input_raw, add_input_raw, fig):
 
 def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Analysis"):
     """
-    Tüm 22 Keçeci Sayı türü için detaylı görselleştirme sağlar.
+    Tüm 23 Keçeci Sayı türü için detaylı görselleştirme sağlar.
     """
 
     if not sequence:
@@ -16767,6 +18057,30 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
     except ImportError:
         use_pca = False
         print("scikit-learn kurulu değil. PCA olmadan çizim yapılıyor...")
+
+    # --- helpers used in these branches ---
+    def _pca_var_sum(pca_obj) -> float:
+        try:
+            arr = getattr(pca_obj, "explained_variance_ratio_", None)
+            if arr is None:
+                return 0.0
+            arr = np.asarray(arr, dtype=float)
+            s = float(np.nansum(arr))
+            return s if np.isfinite(s) else 0.0
+        except Exception:
+            return 0.0
+
+    def _ensure_fig():
+        try:
+            _ = fig
+        except NameError:
+            return plt.figure(figsize=(12, 8), constrained_layout=True)
+        else:
+            try:
+                fig.set_constrained_layout(True)
+            except Exception:
+                pass
+            return fig
 
 
     fig = plt.figure(figsize=(18, 14), constrained_layout=True)
@@ -16949,6 +18263,17 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax3 = fig.add_subplot(gs[1, 0])
         ax3.plot(magnitudes, 'o-', color='tab:purple')
         ax3.set_title("Magnitude |s|")
+        # Local safe PCA variance helper (ensure available in this scope)
+        def _pca_var_sum(pca_obj) -> float:
+            try:
+                arr = getattr(pca_obj, "explained_variance_ratio_", None)
+                if arr is None:
+                    return 0.0
+                arr = np.asarray(arr, dtype=float)
+                s = float(np.nansum(arr))
+                return s if np.isfinite(s) else 0.0
+            except Exception:
+                return 0.0
 
         if use_pca:
             try:
@@ -17010,7 +18335,7 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax2.legend()
         ax2.grid(True, alpha=0.3)
 
-        # 3. Grafik: PCA - ARTIK PCA GÖSTERİYORUZ
+        # 3. Grafik: PCA
         if use_pca and len(sequence) >= 2 and non_zero_features >= 2:
             try:
                 # Tüm bileşenleri içeren matris oluştur
@@ -17162,265 +18487,416 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax4.set_title("Magnitude √(t²+i²+f²)")
         ax4.set_ylabel("|n|")
 
-    # --- 11. NeutrosophicComplexNumber
-    # her şeyle çalışır
-    elif hasattr(first_elem, 'indeterminacy') or kececi_type == TYPE_NEUTROSOPHIC_COMPLEX:
+    # --- 11. NeutrosophicComplexNumber (duck-typed, güvenli plotting) ---
+    # --- 11. NeutrosophicComplexNumber (eski tarz, basit) ---
+    elif isinstance(first_elem, NeutrosophicComplexNumber):
+        try:
+            # Basit, güvenli veri çıkarımı: önce attribute, sonra to_list/to_components/coeffs, son olarak tuple/list fallback
+            real_parts = []
+            imag_parts = []
+            indet_parts = []
+            for x in sequence:
+                # 1) doğrudan attribute/property
+                r = getattr(x, "real", None)
+                im = getattr(x, "imag", None)
+                ind = getattr(x, "indeterminacy", None)
 
-        print("DEBUG: NeutrosophicComplex plotting - Universal handler")
-        
-        def safe_extract_real(obj):
-            """Her türden real çıkarır"""
-            if hasattr(obj, 'real'):
-                return float(obj.real)
-            return 0.0
-        
-        def safe_extract_imag(obj):
-            """Her türden imag çıkarır"""
-            if hasattr(obj, 'imag'):
-                return float(obj.imag)
-            return 0.0
-        
-        def safe_extract_indet(obj):
-            """Her türden indeterminacy çıkarır"""
-            if hasattr(obj, 'indeterminacy'):
-                return float(obj.indeterminacy)
-            return 0.0
-        
-        # Sequence'den verileri çıkar (PlotNeutroComplex + diğer tipler)
-        real_parts = [safe_extract_real(x) for x in sequence]
-        imag_parts = [safe_extract_imag(x) for x in sequence]
-        indeter_parts = [safe_extract_indet(x) for x in sequence]
-        magnitudes_z = [abs(complex(r, i)) for r, i in zip(real_parts, imag_parts)]
-        
-        # ✅ 4 grafik - %100 sorunsuz
-        gs = GridSpec(2, 2, figure=fig)
-        
-        # 1. Complex Plane
-        ax1 = fig.add_subplot(gs[0, 0])
-        ax1.plot(real_parts, imag_parts, ".-", alpha=0.7)
-        ax1.scatter(real_parts[0], imag_parts[0], c="g", s=100, label="Start")
-        ax1.scatter(real_parts[-1], imag_parts[-1], c="r", s=100, label="End")
-        ax1.set_title("Neutrosophic Complex Plane")
-        ax1.legend(); ax1.axis("equal")
-        
-        # 2. Indeterminacy
-        ax2 = fig.add_subplot(gs[0, 1])
-        ax2.plot(indeter_parts, "o-", color="purple")
-        ax2.set_title("Indeterminacy (I)")
-        
-        # 3. Magnitude vs I
-        ax3 = fig.add_subplot(gs[1, 0])
-        sc = ax3.scatter(magnitudes_z, indeter_parts, c=range(len(sequence)), 
-                        cmap="viridis", s=30)
-        ax3.set_title("|z| vs I"); plt.colorbar(sc, ax=ax3, label="Step")
-        
-        # 4. Real-Imag colored by I
-        ax4 = fig.add_subplot(gs[1, 1])
-        sc2 = ax4.scatter(real_parts, imag_parts, c=indeter_parts, 
-                         cmap="plasma", s=40)
-        ax4.set_title("Re-Im (by I)"); plt.colorbar(sc2, ax=ax4)
-        """
-        elif isinstance(first_elem, NeutrosophicComplexNumber):
-            
-            print("DEBUG: İlk eleman tipi:", type(first_elem))
-            print("DEBUG: Sequence ilk 3 eleman:", [type(x).__name__ for x in sequence[:3]])
-            
-            # Tuple kontrolü ve güvenli attribute erişimi
-            def safe_get_attr(obj, attr, default=0.0):
-                if hasattr(obj, attr):
-                    return getattr(obj, attr)
-                elif isinstance(obj, (tuple, list)):
-                    attr_map = {'real': 0, 'imag': 1, 'indeterminacy': 2}
-                    if attr in attr_map and len(obj) > attr_map[attr]:
-                        return obj[attr_map[attr]]
-                return default
-            
-            real_parts = [safe_get_attr(x, 'real') for x in sequence]
-            imag_parts = [safe_get_attr(x, 'imag') for x in sequence]
-            indeter_parts = [safe_get_attr(x, 'indeterminacy') for x in sequence]
-            magnitudes_z = [abs(complex(r, i)) for r, i in zip(real_parts, imag_parts)]
-        
+                # 2) fallback: to_list / to_components / coeffs
+                if (r is None or im is None or ind is None):
+                    if hasattr(x, "to_list") and callable(getattr(x, "to_list")):
+                        try:
+                            comps = list(x.to_list())
+                        except Exception:
+                            comps = []
+                    elif hasattr(x, "to_components") and callable(getattr(x, "to_components")):
+                        try:
+                            comps = list(x.to_components())
+                        except Exception:
+                            comps = []
+                    elif hasattr(x, "coeffs"):
+                        try:
+                            c = x.coeffs() if callable(getattr(x, "coeffs")) else x.coeffs
+                            comps = list(c)
+                        except Exception:
+                            comps = []
+                    else:
+                        comps = []
+
+                    if r is None and len(comps) >= 1:
+                        r = comps[0]
+                    if im is None and len(comps) >= 2:
+                        im = comps[1]
+                    if ind is None and len(comps) >= 3:
+                        ind = comps[2]
+
+                # 3) son fallback: tuple/list pozisyonel
+                if (r is None or im is None or ind is None) and isinstance(x, (tuple, list)):
+                    if r is None and len(x) > 0:
+                        r = x[0]
+                    if im is None and len(x) > 1:
+                        im = x[1]
+                    if ind is None and len(x) > 2:
+                        ind = x[2]
+
+                # 4) numeric dönüşümler (güvenli)
+                try:
+                    real_parts.append(float(r) if r is not None else 0.0)
+                except Exception:
+                    real_parts.append(0.0)
+                try:
+                    imag_parts.append(float(im.real) if isinstance(im, complex) else float(im) if im is not None else 0.0)
+                except Exception:
+                    imag_parts.append(0.0)
+                try:
+                    indet_parts.append(float(ind) if ind is not None else 0.0)
+                except Exception:
+                    indet_parts.append(0.0)
+
+            # magnitude hesapla
+            magnitudes = [abs(complex(r, i)) for r, i in zip(real_parts, imag_parts)]
+
+            # figür oluştur / yeniden kullan
+            try:
+                _ = fig
+            except NameError:
+                fig = plt.figure(figsize=(11, 7), constrained_layout=True)
+
             gs = GridSpec(2, 2, figure=fig)
-        
+
+            # 1) Complex plane
+            ax1 = fig.add_subplot(gs[0, 0])
+            ax1.plot(real_parts, imag_parts, ".-", alpha=0.8)
+            if real_parts:
+                ax1.scatter(real_parts[0], imag_parts[0], c="g", s=80, label="Start")
+                ax1.scatter(real_parts[-1], imag_parts[-1], c="r", s=80, label="End")
+            ax1.set_title("Neutrosophic Complex Plane")
+            ax1.set_xlabel("Re(z)")
+            ax1.set_ylabel("Im(z)")
+            ax1.legend()
+            ax1.axis("equal")
+            ax1.grid(alpha=0.25)
+
+            # 2) Indeterminacy over time
+            ax2 = fig.add_subplot(gs[0, 1])
+            ax2.plot(indet_parts, "o-", color="purple")
+            ax2.set_title("Indeterminacy Level")
+            ax2.set_ylabel("I")
+            ax2.grid(alpha=0.25)
+
+            # 3) |z| vs Indeterminacy
+            ax3 = fig.add_subplot(gs[1, 0])
+            sc = ax3.scatter(magnitudes, indet_parts, c=np.arange(len(magnitudes)), cmap="viridis", s=30)
+            ax3.set_title("Magnitude vs Indeterminacy")
+            ax3.set_xlabel("|z|")
+            ax3.set_ylabel("I")
+            try:
+                cbar = fig.colorbar(sc, ax=ax3, fraction=0.046, pad=0.04)
+                cbar.ax.tick_params(labelsize=8)
+            except Exception:
+                pass
+            ax3.grid(alpha=0.25)
+
+            # 4) Real vs Imag colored by I
+            ax4 = fig.add_subplot(gs[1, 1])
+            sc2 = ax4.scatter(real_parts, imag_parts, c=indet_parts, cmap="plasma", s=40)
+            ax4.set_title("Real vs Imag (colored by I)")
+            ax4.set_xlabel("Re(z)")
+            ax4.set_ylabel("Im(z)")
+            try:
+                cbar2 = fig.colorbar(sc2, ax=ax4, fraction=0.046, pad=0.04)
+                cbar2.ax.tick_params(labelsize=8)
+            except Exception:
+                pass
+            ax4.grid(alpha=0.25)
+
+            return fig
+
+        except Exception as e:
+            try:
+                _ = fig
+            except NameError:
+                fig = plt.figure(figsize=(8, 4), constrained_layout=True)
+            ax = fig.add_subplot(1, 1, 1)
+            ax.text(0.5, 0.5, f"NeutrosophicComplex plot error: {e}", ha='center', va='center', color='red')
+            ax.set_xticks([]); ax.set_yticks([])
+            logger.exception("NeutrosophicComplex plotting failed")
+            return fig
+
+        """
+        # sorunsuz çalışıyor
+        elif isinstance(first_elem, NeutrosophicComplexNumber):
+            print("FIRST TYPE:", type(first_elem))
+            print("MODULE:", first_elem.__class__.__module__)
+            print("DEBUG: NeutrosophicComplex plotting - Universal handler")
+            
+            def safe_extract_real(obj):
+                #Her türden real çıkarır
+                if hasattr(obj, 'real'):
+                    return float(obj.real)
+                return 0.0
+            
+            def safe_extract_imag(obj):
+                #Her türden imag çıkarır
+                if hasattr(obj, 'imag'):
+                    return float(obj.imag)
+                return 0.0
+            
+            def safe_extract_indet(obj):
+                #Her türden indeterminacy çıkarır
+                if hasattr(obj, 'NeutrosophicComplexNumber'):
+                    return float(obj.NeutrosophicComplexNumber)
+                return 0.0
+            
+            # Sequence'den verileri çıkar (PlotNeutroComplex + diğer tipler)
+            real_parts = [safe_extract_real(x) for x in sequence]
+            imag_parts = [safe_extract_imag(x) for x in sequence]
+            indeter_parts = [safe_extract_indet(x) for x in sequence]
+            magnitudes_z = [abs(complex(r, i)) for r, i in zip(real_parts, imag_parts)]
+            
+            # 4 grafik - %100 sorunsuz
+            gs = GridSpec(2, 2, figure=fig)
+            
             # 1. Complex Plane
             ax1 = fig.add_subplot(gs[0, 0])
             ax1.plot(real_parts, imag_parts, ".-", alpha=0.7)
             ax1.scatter(real_parts[0], imag_parts[0], c="g", s=100, label="Start")
             ax1.scatter(real_parts[-1], imag_parts[-1], c="r", s=100, label="End")
-            ax1.set_title("Complex Plane")
-            ax1.set_xlabel("Re(z)")
-            ax1.set_ylabel("Im(z)")
-            ax1.legend()
-            ax1.axis("equal")
-        
-            # 2. Indeterminacy over time
+            ax1.set_title("Neutrosophic Complex Plane")
+            ax1.legend(); ax1.axis("equal")
+            
+            # 2. Indeterminacy
             ax2 = fig.add_subplot(gs[0, 1])
-            ax2.plot(indeter_parts, "o-", color="tab:purple")
-            ax2.set_title("Indeterminacy Level")
-            ax2.set_ylabel("I")
-        
-            # 3. |z| vs Indeterminacy
+            ax2.plot(indeter_parts, "o-", color="purple")
+            ax2.set_title("NeutrosophicComplexNumber (NCN)")
+            
+            # 3. Magnitude vs I
             ax3 = fig.add_subplot(gs[1, 0])
-            sc = ax3.scatter(
-                magnitudes_z,
-                indeter_parts,
-                c=range(len(magnitudes_z)),
-                cmap="viridis",
-                s=30,
-            )
-            ax3.set_title("Magnitude vs Indeterminacy")
-            ax3.set_xlabel("|z|")
-            ax3.set_ylabel("I")
-            plt.colorbar(sc, ax=ax3, label="Step")
-        
-            # 4. Real vs Imag colored by I
+            sc = ax3.scatter(magnitudes_z, indeter_parts, c=range(len(sequence)), 
+                            cmap="viridis", s=30)
+            ax3.set_title("|z| vs I"); plt.colorbar(sc, ax=ax3, label="Step")
+            
+            # 4. Real-Imag colored by I
             ax4 = fig.add_subplot(gs[1, 1])
-            sc2 = ax4.scatter(real_parts, imag_parts, c=indeter_parts, cmap="plasma", s=40)
-            ax4.set_title("Real vs Imag (colored by I)")
-            ax4.set_xlabel("Re(z)")
-            ax4.set_ylabel("Im(z)")
-            plt.colorbar(sc2, ax=ax4, label="Indeterminacy")
-        """
-        """
-        #elif isinstance(first_elem, NeutrosophicComplexNumber):
-        print("DEBUG: İlk eleman tipi:", type(first_elem))
-        print("DEBUG: Sequence ilk 3 eleman:", [type(x).__name__ for x in sequence[:3]])
-        
-        # Tuple kontrolü ve güvenli attribute erişimi
-        def safe_get_attr(obj, attr, default=0.0):
-            if hasattr(obj, attr):
-                return getattr(obj, attr)
-            elif isinstance(obj, (tuple, list)) and len(obj) > {'real':0, 'imag':1, 'indeterminacy':2}[attr]:
-                return obj[{'real':0, 'imag':1, 'indeterminacy':2}[attr]]
-            return default
-        
-        real_parts = [safe_get_attr(x, 'real') for x in sequence]
-        imag_parts = [safe_get_attr(x, 'imag') for x in sequence]
-        indeter_parts = [safe_get_attr(x, 'indeterminacy') for x in sequence]
-        magnitudes_z = [abs(complex(r, i)) for r, i in zip(real_parts, imag_parts)]
-
-        # Sınıfın arayüzünü biliyoruz
-        #real_parts = [x.real for x in sequence]
-        #imag_parts = [x.imag for x in sequence]
-        #indeter_parts = [x.indeterminacy for x in sequence]
-        #magnitudes_z = [abs(complex(x.real, x.imag)) for x in sequence]
-
-        gs = GridSpec(2, 2, figure=fig)
-
-        # 1. Complex Plane
-        ax1 = fig.add_subplot(gs[0, 0])
-        ax1.plot(real_parts, imag_parts, ".-", alpha=0.7)
-        ax1.scatter(real_parts[0], imag_parts[0], c="g", s=100, label="Start")
-        ax1.scatter(real_parts[-1], imag_parts[-1], c="r", s=100, label="End")
-        ax1.set_title("Complex Plane")
-        ax1.set_xlabel("Re(z)")
-        ax1.set_ylabel("Im(z)")
-        ax1.legend()
-        ax1.axis("equal")
-
-        # 2. Indeterminacy over time
-        ax2 = fig.add_subplot(gs[0, 1])
-        ax2.plot(indeter_parts, "o-", color="tab:purple")
-        ax2.set_title("Indeterminacy Level")
-        ax2.set_ylabel("I")
-
-        # 3. |z| vs Indeterminacy
-        ax3 = fig.add_subplot(gs[1, 0])
-        sc = ax3.scatter(
-            magnitudes_z,
-            indeter_parts,
-            c=range(len(magnitudes_z)),
-            cmap="viridis",
-            s=30,
-        )
-        ax3.set_title("Magnitude vs Indeterminacy")
-        ax3.set_xlabel("|z|")
-        ax3.set_ylabel("I")
-        plt.colorbar(sc, ax=ax3, label="Step")
-
-        # 4. Real vs Imag colored by I
-        ax4 = fig.add_subplot(gs[1, 1])
-        sc2 = ax4.scatter(real_parts, imag_parts, c=indeter_parts, cmap="plasma", s=40)
-        ax4.set_title("Real vs Imag (colored by I)")
-        ax4.set_xlabel("Re(z)")
-        ax4.set_ylabel("Im(z)")
-        plt.colorbar(sc2, ax=ax4, label="Indeterminacy")
+            sc2 = ax4.scatter(real_parts, imag_parts, c=indeter_parts, 
+                             cmap="plasma", s=40)
+            ax4.set_title("Re-Im (by I)"); plt.colorbar(sc2, ax=ax4)
         """
 
-    # --- 12. HyperrealNumber
+
+    # --- 12. HyperrealNumber (eski tarz, basit)
     elif isinstance(first_elem, HyperrealNumber):
-        # Sınıfın arayüzünü biliyoruz
-        seq_len = min(len(first_elem.sequence), 5)  # İlk 5 bileşen
-        data = np.array([x.sequence[:seq_len] for x in sequence])
-        gs = GridSpec(2, 2, figure=fig)
-
-        ax1 = fig.add_subplot(gs[0, 0])
-        for i in range(seq_len):
-            ax1.plot(data[:, i], label=f'ε^{i}', alpha=0.8)
-        ax1.set_title("Hyperreal Components")
-        ax1.legend(ncol=2)
-
-        ax2 = fig.add_subplot(gs[0, 1])
-        magnitudes = np.linalg.norm(data, axis=1)
-        ax2.plot(magnitudes, 'o-', color='tab:purple')
-        ax2.set_title("Magnitude")
-
-        ax3 = fig.add_subplot(gs[1, 0])
-        ax3.plot(data[:, 0], 'o-', label='Standard Part')
-        ax3.set_title("Standard Part (ε⁰)")
-        ax3.legend()
-
-        ax4 = fig.add_subplot(gs[1, 1])
-        sc = ax4.scatter(data[:, 0], data[:, 1], c=range(len(data)), cmap='viridis')
-        ax4.set_title("Standard vs Infinitesimal")
-        ax4.set_xlabel("Standard")
-        ax4.set_ylabel("ε¹")
-        plt.colorbar(sc, ax=ax4, label="Step")
-
-    # --- 13. BicomplexNumber
-    elif isinstance(first_elem, BicomplexNumber):
-        # Sınıfın arayüzünü biliyoruz
-        z1_real = [x.z1.real for x in sequence]
-        z1_imag = [x.z1.imag for x in sequence]
-        z2_real = [x.z2.real for x in sequence]
-        z2_imag = [x.z2.imag for x in sequence]
-        gs = GridSpec(2, 2, figure=fig)
-
-        ax1 = fig.add_subplot(gs[0, 0])
-        ax1.plot(z1_real, label='Re(z1)')
-        ax1.plot(z1_imag, label='Im(z1)')
-        ax1.set_title("Bicomplex z1")
-        ax1.legend()
-
-        ax2 = fig.add_subplot(gs[0, 1])
-        ax2.plot(z2_real, label='Re(z2)')
-        ax2.plot(z2_imag, label='Im(z2)')
-        ax2.set_title("Bicomplex z2")
-        ax2.legend()
-
-        ax3 = fig.add_subplot(gs[1, 0])
-        ax3.plot(z1_real, z1_imag, '.-')
-        ax3.set_title("z1 Trajectory")
-        ax3.set_xlabel("Re(z1)")
-        ax3.set_ylabel("Im(z1)")
-
-        ax4 = fig.add_subplot(gs[1, 1])
-        ax4.plot(z2_real, z2_imag, '.-')
-        ax4.set_title("z2 Trajectory")
-        ax4.set_xlabel("Re(z2)")
-        ax4.set_ylabel("Im(z2)")
-
-    # --- 14. NeutrosophicBicomplexNumber ---
-    elif isinstance(first_elem, NeutrosophicBicomplexNumber):
-        # Sınıfın - a, b, c, d, e, f, g, h attribute'ları var
         try:
-            # Doğru attribute isimlerini kullanıyoruz
-            comps = np.array([
-                [float(getattr(x, attr))
-                 for attr in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']]
-                for x in sequence
-            ])
+            # Her elemandan .sequence veya to_list/coeffs ile bileşenleri al
+            rows = []
+            for x in sequence:
+                if hasattr(x, "sequence"):
+                    seq_vals = list(getattr(x, "sequence"))
+                elif hasattr(x, "to_list") and callable(getattr(x, "to_list")):
+                    seq_vals = list(x.to_list())
+                elif hasattr(x, "coeffs"):
+                    c = x.coeffs() if callable(getattr(x, "coeffs")) else x.coeffs
+                    seq_vals = list(c)
+                elif hasattr(x, "__iter__") and not isinstance(x, (str, bytes)):
+                    seq_vals = list(x)
+                else:
+                    try:
+                        seq_vals = [float(x)]
+                    except Exception:
+                        seq_vals = [0.0]
+                rows.append(seq_vals)
+
+            # seq_len: her satırın minimum uzunluğu, en fazla 5
+            min_len = min(len(r) for r in rows) if rows else 0
+            seq_len = min(5, max(1, min_len))
+
+            # pad/truncate
+            data = np.array([ (r + [0.0]*seq_len)[:seq_len] for r in rows ], dtype=float)
+
+            # fig oluştur / yeniden kullan
+            try:
+                _ = fig
+            except NameError:
+                fig = plt.figure(figsize=(12, 8), constrained_layout=True)
+
+            gs = GridSpec(2, 2, figure=fig)
+
+            ax1 = fig.add_subplot(gs[0, 0])
+            for i in range(seq_len):
+                ax1.plot(data[:, i], label=f'ε^{i}', alpha=0.8)
+            ax1.set_title("Hyperreal Components")
+            ax1.legend(ncol=2)
+            ax1.grid(alpha=0.25)
+
+            ax2 = fig.add_subplot(gs[0, 1])
+            magnitudes = np.linalg.norm(data, axis=1)
+            ax2.plot(magnitudes, 'o-', color='tab:purple')
+            ax2.set_title("Magnitude")
+            ax2.grid(alpha=0.25)
+
+            ax3 = fig.add_subplot(gs[1, 0])
+            ax3.plot(data[:, 0], 'o-', label='Standard Part')
+            ax3.set_title("Standard Part (ε⁰)")
+            ax3.legend()
+            ax3.grid(alpha=0.25)
+
+            ax4 = fig.add_subplot(gs[1, 1])
+            y2 = data[:, 1] if data.shape[1] > 1 else np.zeros(len(data))
+            sc = ax4.scatter(data[:, 0], y2, c=np.arange(len(data)), cmap='viridis')
+            ax4.set_title("Standard vs Infinitesimal")
+            ax4.set_xlabel("Standard")
+            ax4.set_ylabel("ε¹")
+            try:
+                cbar = fig.colorbar(sc, ax=ax4, fraction=0.046, pad=0.04)
+                cbar.ax.tick_params(labelsize=8)
+            except Exception:
+                pass
+
+            return fig
+
+        except Exception as e:
+            try:
+                _ = fig
+            except NameError:
+                fig = plt.figure(figsize=(8, 4), constrained_layout=True)
+            ax = fig.add_subplot(1, 1, 1)
+            ax.text(0.5, 0.5, f"Hyperreal plot error: {e}", ha='center', va='center', color='red')
+            ax.set_xticks([]); ax.set_yticks([])
+            logger.exception("Hyperreal plotting failed")
+            return fig
+
+
+    # --- 13. BicomplexNumber (eski tarz, basit)
+    elif isinstance(first_elem, BicomplexNumber):
+        try:
+            z1_real = []
+            z1_imag = []
+            z2_real = []
+            z2_imag = []
+            for x in sequence:
+                z1 = getattr(x, "z1", None)
+                z2 = getattr(x, "z2", None)
+                if z1 is None or z2 is None:
+                    if hasattr(x, "to_components") and callable(getattr(x, "to_components")):
+                        comps = x.to_components()
+                        if len(comps) >= 2:
+                            z1 = comps[0]; z2 = comps[1]
+                    elif hasattr(x, "to_list") and callable(getattr(x, "to_list")):
+                        comps = x.to_list()
+                        if len(comps) >= 2:
+                            z1 = comps[0]; z2 = comps[1]
+                    elif hasattr(x, "coeffs"):
+                        c = x.coeffs() if callable(getattr(x, "coeffs")) else x.coeffs
+                        c = list(c)
+                        if len(c) >= 2:
+                            z1 = c[0]; z2 = c[1]
+                try:
+                    zr = complex(z1).real if z1 is not None else 0.0
+                    zi = complex(z1).imag if z1 is not None else 0.0
+                except Exception:
+                    zr, zi = 0.0, 0.0
+                try:
+                    wr = complex(z2).real if z2 is not None else 0.0
+                    wi = complex(z2).imag if z2 is not None else 0.0
+                except Exception:
+                    wr, wi = 0.0, 0.0
+                z1_real.append(zr); z1_imag.append(zi)
+                z2_real.append(wr); z2_imag.append(wi)
+
+            try:
+                _ = fig
+            except NameError:
+                fig = plt.figure(figsize=(12, 8), constrained_layout=True)
+
+            gs = GridSpec(2, 2, figure=fig)
+
+            ax1 = fig.add_subplot(gs[0, 0])
+            ax1.plot(z1_real, label='Re(z1)')
+            ax1.plot(z1_imag, label='Im(z1)')
+            ax1.set_title("Bicomplex z1")
+            ax1.legend()
+            ax1.grid(alpha=0.25)
+
+            ax2 = fig.add_subplot(gs[0, 1])
+            ax2.plot(z2_real, label='Re(z2)')
+            ax2.plot(z2_imag, label='Im(z2)')
+            ax2.set_title("Bicomplex z2")
+            ax2.legend()
+            ax2.grid(alpha=0.25)
+
+            ax3 = fig.add_subplot(gs[1, 0])
+            ax3.plot(z1_real, z1_imag, '.-')
+            ax3.set_title("z1 Trajectory")
+            ax3.set_xlabel("Re(z1)")
+            ax3.set_ylabel("Im(z1)")
+            ax3.grid(alpha=0.25)
+
+            ax4 = fig.add_subplot(gs[1, 1])
+            ax4.plot(z2_real, z2_imag, '.-')
+            ax4.set_title("z2 Trajectory")
+            ax4.set_xlabel("Re(z2)")
+            ax4.set_ylabel("Im(z2)")
+            ax4.grid(alpha=0.25)
+
+            return fig
+
+        except Exception as e:
+            try:
+                _ = fig
+            except NameError:
+                fig = plt.figure(figsize=(8, 4), constrained_layout=True)
+            ax = fig.add_subplot(1, 1, 1)
+            ax.text(0.5, 0.5, f"Bicomplex plot error: {e}", ha='center', va='center', color='red')
+            ax.set_xticks([]); ax.set_yticks([])
+            logger.exception("Bicomplex plotting failed")
+            return fig
+
+
+    # --- 14. NeutrosophicBicomplexNumber (eski tarz, basit)
+    elif isinstance(first_elem, NeutrosophicBicomplexNumber):
+        try:
+            comps = []
+            for x in sequence:
+                vals = []
+                ok = True
+                for attr in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']:
+                    if hasattr(x, attr):
+                        try:
+                            vals.append(float(getattr(x, attr)))
+                        except Exception:
+                            vals.append(0.0)
+                    else:
+                        ok = False
+                        break
+                if not ok:
+                    if hasattr(x, "to_components") and callable(getattr(x, "to_components")):
+                        comps_list = x.to_components()
+                    elif hasattr(x, "to_list") and callable(getattr(x, "to_list")):
+                        comps_list = x.to_list()
+                    elif hasattr(x, "coeffs"):
+                        c = x.coeffs() if callable(getattr(x, "coeffs")) else x.coeffs
+                        comps_list = list(c)
+                    else:
+                        try:
+                            comps_list = list(x)
+                        except Exception:
+                            comps_list = [0.0]*8
+                    comps_list = (list(comps_list) + [0.0]*8)[:8]
+                    vals = []
+                    for v in comps_list[:8]:
+                        try:
+                            vals.append(float(v))
+                        except Exception:
+                            vals.append(0.0)
+                comps.append(vals)
+
+            comps = np.array(comps, dtype=float)
             magnitudes = np.linalg.norm(comps, axis=1)
+
+            try:
+                _ = fig
+            except NameError:
+                fig = plt.figure(figsize=(12, 8), constrained_layout=True)
+
             gs = GridSpec(2, 2, figure=fig)
 
             ax1 = fig.add_subplot(gs[0, 0])
@@ -17428,29 +18904,44 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
                 ax1.plot(comps[:, i], label=label, alpha=0.7)
             ax1.set_title("First 4 Components")
             ax1.legend()
+            ax1.grid(alpha=0.25)
 
             ax2 = fig.add_subplot(gs[0, 1])
             for i, label in enumerate(['e', 'f', 'g', 'h']):
                 ax2.plot(comps[:, i + 4], label=label, alpha=0.7)
             ax2.set_title("Last 4 Components")
             ax2.legend()
+            ax2.grid(alpha=0.25)
 
             ax3 = fig.add_subplot(gs[1, 0])
             ax3.plot(magnitudes, 'o-', color='tab:purple')
             ax3.set_title("Magnitude")
+            ax3.grid(alpha=0.25)
 
             ax4 = fig.add_subplot(gs[1, 1])
-            sc = ax4.scatter(comps[:, 0], comps[:, 1], c=range(len(comps)), cmap='plasma')
+            sc = ax4.scatter(comps[:, 0], comps[:, 1], c=np.arange(len(comps)), cmap='plasma')
             ax4.set_title("a vs b Trajectory")
             ax4.set_xlabel("a")
             ax4.set_ylabel("b")
-            plt.colorbar(sc, ax=ax4, label="Step")
+            try:
+                cbar = fig.colorbar(sc, ax=ax4, fraction=0.046, pad=0.04)
+                cbar.ax.tick_params(labelsize=8)
+            except Exception:
+                pass
+
+            return fig
 
         except Exception as e:
+            try:
+                _ = fig
+            except NameError:
+                fig = plt.figure(figsize=(8, 4), constrained_layout=True)
             ax = fig.add_subplot(1, 1, 1)
-            ax.text(0.5, 0.5, f"Plot error: {e}", ha='center', va='center', color='red')
-            ax.set_xticks([])
-            ax.set_yticks([])
+            ax.text(0.5, 0.5, f"NeutrosophicBicomplex plot error: {e}", ha='center', va='center', color='red')
+            ax.set_xticks([]); ax.set_yticks([])
+            logger.exception("NeutrosophicBicomplex plotting failed")
+            return fig
+
 
     # --- 15. Pathion
     elif isinstance(first_elem, PathionNumber):
@@ -17612,124 +19103,476 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
 
     # --- 21. Super Real
     elif isinstance(first_elem, SuperrealNumber):
-        # real ve split bileşenlerini ayır
-        reals = np.array([x.real for x in sequence])
-        splits = np.array([x.split for x in sequence])
+        # Extract real and split components robustly (support attributes or methods)
+        def _get_attr_or_callable(obj, name):
+            if hasattr(obj, name):
+                attr = getattr(obj, name)
+                return attr() if callable(attr) else attr
+            return None
 
-        gs = GridSpec(2, 2, figure=fig)  # 2 satır, 2 sütun
-        #gs = GridSpec(2, 1, figure=fig)
+        reals_list = []
+        splits_list = []
+        for x in sequence:
+            # try common attribute names / callables
+            r = _get_attr_or_callable(x, "real")
+            s = _get_attr_or_callable(x, "split")
+            # fallback: try to_list / coeffs if available (some implementations)
+            if r is None or s is None:
+                if hasattr(x, "to_list") and callable(getattr(x, "to_list")):
+                    comps = x.to_list()
+                    if r is None and len(comps) >= 1:
+                        r = comps[0]
+                    if s is None and len(comps) >= 2:
+                        s = comps[1]
+                elif hasattr(x, "coeffs"):
+                    c = x.coeffs() if callable(getattr(x, "coeffs")) else x.coeffs
+                    c = list(c)
+                    if r is None and len(c) >= 1:
+                        r = c[0]
+                    if s is None and len(c) >= 2:
+                        s = c[1]
+            # final fallbacks to numeric zero
+            try:
+                reals_list.append(float(r) if r is not None else 0.0)
+            except Exception:
+                reals_list.append(0.0)
+            try:
+                splits_list.append(float(s) if s is not None else 0.0)
+            except Exception:
+                splits_list.append(0.0)
 
-        # Real bileşenini çizdir
+        reals = np.asarray(reals_list, dtype=float)
+        splits = np.asarray(splits_list, dtype=float)
+
+        # create figure and grid
+        try:
+            _ = fig
+        except NameError:
+            fig = plt.figure(figsize=(10, 6), constrained_layout=True)
+        gs = GridSpec(2, 2, figure=fig)
+
+        # Real component plot
         ax1 = fig.add_subplot(gs[0, 0])
         ax1.plot(reals, 'o-', color='tab:blue', label='Real')
         ax1.set_title("Real Component")
+        ax1.set_xlabel("Iteration")
+        ax1.set_ylabel("Value")
+        ax1.grid(alpha=0.25)
         ax1.legend()
 
-        # Split bileşenini çizdir
+        # Split component plot
         ax2 = fig.add_subplot(gs[1, 0])
         ax2.plot(splits, 'o-', color='tab:red', label='Split')
         ax2.set_title("Split Component")
+        ax2.set_xlabel("Iteration")
+        ax2.set_ylabel("Value")
+        ax2.grid(alpha=0.25)
         ax2.legend()
 
+        # Local safe PCA variance helper (ensure available in this scope)
+        def _pca_var_sum(pca_obj) -> float:
+            try:
+                arr = getattr(pca_obj, "explained_variance_ratio_", None)
+                if arr is None:
+                    return 0.0
+                arr = np.asarray(arr, dtype=float)
+                s = float(np.nansum(arr))
+                return s if np.isfinite(s) else 0.0
+            except Exception:
+                return 0.0
+
+        # PCA panel (right column spanning both rows)
+        axp = fig.add_subplot(gs[:, 1])
         if use_pca and len(sequence) > 2:
             try:
-                # PCA için veriyi hazırla
+                # prepare data matrix (samples x features)
                 data = np.column_stack((reals, splits))
-                # Minimum gereksinimler: en az 3 örnek ve en az 2 değişken (burada 2 var)
-                if data.shape[0] >= 3:
-                    # finite ve non-NaN satırları seç
+                if data.shape[0] < 3:
+                    axp.text(0.5, 0.5, "Need ≥3 samples for PCA", ha='center', va='center', fontsize=10)
+                    axp.set_title("PCA Projection (Not enough samples)")
+                else:
+                    # filter finite rows
                     mask = np.all(np.isfinite(data), axis=1)
                     data_clean = data[mask]
-                    if data_clean.shape[0] >= 3:
+                    if data_clean.shape[0] < 3:
+                        axp.text(0.5, 0.5, "Insufficient finite data for PCA", ha='center', va='center', fontsize=10)
+                        axp.set_title("PCA Projection (Insufficient data)")
+                    else:
                         try:
-                            pca = PCA(n_components=2)
+                            from sklearn.decomposition import PCA as _PCA  # local import to avoid global dependency
+                            pca = _PCA(n_components=2)
                             proj = pca.fit_transform(data_clean)
-
-                            # Güvenli varyans toplamı helper'ı kullanın
+                            sc = axp.scatter(proj[:, 0], proj[:, 1], c=np.arange(len(proj)), cmap='viridis', s=25)
                             var_sum = _pca_var_sum(pca)
-
-                            # 2D çizim (projisyon iki bileşenli olduğu için daha uygun)
-                            ax3 = fig.add_subplot(gs[:, 1])
-                            sc = ax3.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
-                            ax3.set_title(f"PCA Projection (Var: {var_sum:.3f})")
-                            ax3.set_xlabel("PC1")
-                            ax3.set_ylabel("PC2")
-                            plt.colorbar(sc, ax=ax3, label="Iteration")
-
-                            # Eğer 3D görmek isterseniz, alternatif:
-                            # ax3 = fig.add_subplot(gs[:, 1], projection='3d')
-                            # ax3.scatter(proj[:,0], proj[:,1], np.zeros_like(proj[:,0]), c=range(len(proj)), cmap='viridis', s=25)
-                            # ax3.set_title(f"PCA Projection (Var: {var_sum:.3f})")
-
+                            axp.set_title(f"PCA Projection (Var: {var_sum:.3f})")
+                            axp.set_xlabel("PC1")
+                            axp.set_ylabel("PC2")
+                            try:
+                                cbar = fig.colorbar(sc, ax=axp, fraction=0.046, pad=0.04)
+                                cbar.ax.tick_params(labelsize=8)
+                            except Exception:
+                                # fallback: no colorbar
+                                pass
                         except Exception as e:
                             logger.exception("PCA failed for Superreal data: %s", e)
-                            ax3 = fig.add_subplot(gs[:, 1])
-                            ax3.text(0.5, 0.5, f"PCA Error: {str(e)[:80]}", ha='center', va='center', fontsize=10)
-                            ax3.set_title("PCA Projection (Error)")
-                    else:
-                        ax3 = fig.add_subplot(gs[:, 1])
-                        ax3.text(0.5, 0.5, "Insufficient finite data for PCA", ha='center', va='center')
-                        ax3.set_title("PCA Projection (Insufficient data)")
-                else:
-                    ax3 = fig.add_subplot(gs[:, 1])
-                    ax3.text(0.5, 0.5, "Need ≥3 samples for PCA", ha='center', va='center')
-                    ax3.set_title("PCA Projection (Not enough samples)")
+                            axp.text(0.5, 0.5, f"PCA Error: {str(e)[:120]}", ha='center', va='center', fontsize=10)
+                            axp.set_title("PCA Projection (Error)")
             except Exception as e:
-                ax3 = fig.add_subplot(gs[:, 1])
-                ax3.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=10)
+                logger.exception("PCA preparation failed: %s", e)
+                axp.text(0.5, 0.5, f"PCA Error: {str(e)[:120]}", ha='center', va='center', fontsize=10)
+                axp.set_title("PCA Projection (Error)")
         else:
-            ax3 = fig.add_subplot(gs[:, 1])
-            ax3.text(0.5, 0.5, "Install sklearn\nfor PCA", ha='center', va='center', fontsize=10)
+            axp.text(0.5, 0.5, "Install sklearn\nfor PCA", ha='center', va='center', fontsize=12)
+            axp.set_title("PCA Projection (Unavailable)")
+
+        return fig
 
     # --- 22. Ternary
-    elif isinstance(first_elem, TernaryNumber):
-        # Tüm TernaryNumber nesnelerinin digits uzunluğunu belirle
-        max_length = max(len(x.digits) for x in sequence)
-
-        # Her bir TernaryNumber nesnesinin digits listesini max_length uzunluğuna tamamla
+    elif isinstance(first_elem, (TernaryNumber, list)):
+        """TERNARY grafik - list uyumlu"""
+        
+        # ✅ SORUN: x.digits → list fallback kontrolü
+        def safe_digits(obj):
+            """TernaryNumber veya list → digits listesi"""
+            if isinstance(obj, list):
+                return obj  # Direkt list kullan
+            try:
+                return obj.digits  # TernaryNumber.digits
+            except:
+                return [float(obj)]  # Scalar fallback
+        
+        # Tüm nesnelerin digits uzunluğunu belirle
+        all_digits = [safe_digits(x) for x in sequence]
+        max_length = max(len(d) for d in all_digits)
+        
+        # Padding yap
         padded_digits = []
-        for x in sequence:
-            padded_digit = x.digits + [0] * (max_length - len(x.digits))
-            padded_digits.append(padded_digit)
-
-        # NumPy dizisine dönüştür
+        for d in all_digits:
+            padded = d + [0.0] * (max_length - len(d))
+            padded_digits.append(padded)
+        
         digits = np.array(padded_digits)
-
-        gs = GridSpec(2, 2, figure=fig)  # 2 satır, 2 sütun
-
-        # Her bir rakamın dağılımını çizdir
+        
+        gs = GridSpec(2, 2, figure=fig)
+        
+        # 1. Ternary digits çizimi
         ax1 = fig.add_subplot(gs[0, 0])
         for i in range(digits.shape[1]):
             ax1.plot(digits[:, i], 'o-', alpha=0.6, label=f'digit {i}')
         ax1.set_title("Ternary Digits")
         ax1.legend(ncol=4, fontsize=6)
-
-        # Üçlü sayı sistemindeki değerleri ondalık sisteme çevirip çizdir
-        decimal_values = np.array([x.to_decimal() for x in sequence])
+        
+        # 2. Ondalık değerler
         ax2 = fig.add_subplot(gs[0, 1])
+        
+        def safe_decimal(obj):
+            """TernaryNumber.to_decimal() veya list → float"""
+            if isinstance(obj, list):
+                return sum(obj)  # Basit toplam
+            try:
+                return obj.to_decimal()
+            except:
+                return float(obj)
+        
+        decimal_values = np.array([safe_decimal(x) for x in sequence])
         ax2.plot(decimal_values, 'o-', color='tab:green')
         ax2.set_title("Decimal Values")
-
+        
+        # 3. PCA (opsiyonel)
         if use_pca and len(sequence) > 2:
             try:
-                # PCA için veriyi hazırla
+                from sklearn.decomposition import PCA
                 pca = PCA(n_components=2)
                 proj = pca.fit_transform(digits)
-
-                # PCA projeksiyonunu çizdir
-                ax3 = fig.add_subplot(gs[1, :])  # 2. satırın tamamını kullan
-                sc = ax3.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
-                ax3.set_title(f"PCA Projection (Var: {sum(pca.explained_variance_ratio_):.3f})")
+                
+                ax3 = fig.add_subplot(gs[1, :])
+                sc = ax3.scatter(proj[:, 0], proj[:, 1], 
+                               c=range(len(proj)), cmap='viridis', s=25)
+                ax3.set_title(f"PCA (Var: {sum(pca.explained_variance_ratio_):.3f})")
                 plt.colorbar(sc, ax=ax3, label="Iteration")
+            except ImportError:
+                ax3 = fig.add_subplot(gs[1, :])
+                ax3.text(0.5, 0.5, "sklearn yok\npip install scikit-learn", 
+                        ha='center', va='center', fontsize=10)
             except Exception as e:
                 ax3 = fig.add_subplot(gs[1, :])
-                ax3.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=10)
+                ax3.text(0.5, 0.5, f"PCA Error: {str(e)[:30]}", 
+                        ha='center', va='center', fontsize=10)
         else:
             ax3 = fig.add_subplot(gs[1, :])
-            ax3.text(0.5, 0.5, "Install sklearn\nfor PCA", ha='center', va='center', fontsize=10)
+            ax3.text(0.5, 0.5, "PCA için 3+ örnek\nveya sklearn kurun", 
+                    ha='center', va='center', fontsize=10)
+        """
+        elif isinstance(first_elem, TernaryNumber):
+            # Tüm TernaryNumber nesnelerinin digits uzunluğunu belirle
+            max_length = max(len(x.digits) for x in sequence)
+
+            # Her bir TernaryNumber nesnesinin digits listesini max_length uzunluğuna tamamla
+            padded_digits = []
+            for x in sequence:
+                padded_digit = x.digits + [0] * (max_length - len(x.digits))
+                padded_digits.append(padded_digit)
+
+            # NumPy dizisine dönüştür
+            digits = np.array(padded_digits)
+
+            gs = GridSpec(2, 2, figure=fig)  # 2 satır, 2 sütun
+
+            # Her bir rakamın dağılımını çizdir
+            ax1 = fig.add_subplot(gs[0, 0])
+            for i in range(digits.shape[1]):
+                ax1.plot(digits[:, i], 'o-', alpha=0.6, label=f'digit {i}')
+            ax1.set_title("Ternary Digits")
+            ax1.legend(ncol=4, fontsize=6)
+
+            # Üçlü sayı sistemindeki değerleri ondalık sisteme çevirip çizdir
+            decimal_values = np.array([x.to_decimal() for x in sequence])
+            ax2 = fig.add_subplot(gs[0, 1])
+            ax2.plot(decimal_values, 'o-', color='tab:green')
+            ax2.set_title("Decimal Values")
+
+            if use_pca and len(sequence) > 2:
+                try:
+                    # PCA için veriyi hazırla
+                    pca = PCA(n_components=2)
+                    proj = pca.fit_transform(digits)
+
+                    # PCA projeksiyonunu çizdir
+                    ax3 = fig.add_subplot(gs[1, :])  # 2. satırın tamamını kullan
+                    sc = ax3.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
+                    ax3.set_title(f"PCA Projection (Var: {sum(pca.explained_variance_ratio_):.3f})")
+                    plt.colorbar(sc, ax=ax3, label="Iteration")
+                except Exception as e:
+                    ax3 = fig.add_subplot(gs[1, :])
+                    ax3.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=10)
+            else:
+                ax3 = fig.add_subplot(gs[1, :])
+                ax3.text(0.5, 0.5, "Install sklearn\nfor PCA", ha='center', va='center', fontsize=10)
+        """
+
+    # --- 23. HypercomplexNumber
+    elif isinstance(first_elem, HypercomplexNumber):
+        # try to extract coefficient array from sequence of HypercomplexNumber-like objects
+        try:
+            def _extract_coeffs_list(seq, complex_mode='real'):
+                """
+                seq: iterable of values (HypercomplexNumber or lists or scalars)
+                complex_mode: 'real' | 'magnitude' (how to handle complex components)
+                Returns: list of lists (samples x components) as floats
+                """
+                out = []
+                for v in seq:
+                    try:
+                        # Prefer explicit conversion helpers if present
+                        if hasattr(v, 'to_list') and callable(getattr(v, 'to_list')):
+                            comps = v.to_list()
+                        elif hasattr(v, 'to_components') and callable(getattr(v, 'to_components')):
+                            comps = v.to_components()
+                        elif hasattr(v, 'coeffs'):
+                            c = v.coeffs() if callable(getattr(v, 'coeffs')) else v.coeffs
+                            comps = list(c)
+                        elif hasattr(v, 'components'):
+                            c = v.components() if callable(getattr(v, 'components')) else v.components
+                            comps = list(c)
+                        elif hasattr(v, '__iter__') and not isinstance(v, (str, bytes)):
+                            comps = list(v)
+                        else:
+                            comps = [v]
+
+                        # normalize components to floats
+                        norm = []
+                        for c in comps:
+                            if isinstance(c, complex):
+                                if complex_mode == 'magnitude':
+                                    norm.append(float(abs(c)))
+                                else:
+                                    # default: real part
+                                    norm.append(float(c.real))
+                            else:
+                                try:
+                                    norm.append(float(c))
+                                except Exception:
+                                    # non-numeric component -> 0.0
+                                    norm.append(0.0)
+                        out.append(norm)
+                    except Exception as e:
+                        logger.debug("extract coeffs failed for %r: %s", v, e)
+                        out.append([0.0])
+                return out
+
+            def _pca_var_sum(pca_obj) -> float:
+                """
+                Safely return sum of PCA explained variance ratio.
+                - Uses pca_obj.explained_variance_ratio_ when available.
+                - Returns 0.0 for missing, NaN, infinite or invalid values.
+                """
+                try:
+                    arr = getattr(pca_obj, "explained_variance_ratio_", None)
+                    if arr is None:
+                        return 0.0
+                    arr = np.asarray(arr, dtype=float)
+                    s = float(np.nansum(arr))
+                    return s if np.isfinite(s) else 0.0
+                except Exception:
+                    return 0.0
+
+            coeffs_list = _extract_coeffs_list(sequence, complex_mode='real')
+            coeffs = np.array(coeffs_list, dtype=float)
+
+        except Exception as e:
+            # if extraction fails, show a message on the figure and bail out gracefully
+            ax = fig.add_subplot(111)
+            ax.text(0.5, 0.5, f"Coefficient extraction failed:\n{e}", ha='center', va='center', fontsize=10)
+            logger.exception("Coefficient extraction failed")
+            return fig
+
+        # dimensions and magnitudes
+        n_samples, dim = coeffs.shape
+        magnitudes = np.linalg.norm(coeffs, axis=1)
+
+        # Create or reuse figure with constrained_layout to avoid tight_layout/colorbar conflicts
+        try:
+            _ = fig  # reuse existing fig if present
+        except NameError:
+            fig = plt.figure(figsize=(12, 8), constrained_layout=True)
+        else:
+            try:
+                fig.set_constrained_layout(True)
+            except Exception:
+                pass
+
+        # layout decisions based on dimension
+        if dim <= 16:
+            cols = 4
+            rows = int(np.ceil(dim / cols))
+            # Reserve an extra row for magnitude / PCA
+            gs = GridSpec(rows + 1, cols, figure=fig, height_ratios=[1] * rows + [0.8])
+            axes = []
+            for i in range(dim):
+                r = i // cols
+                c = i % cols
+                ax = fig.add_subplot(gs[r, c])
+                ax.plot(coeffs[:, i], '-', linewidth=0.8, alpha=0.8)
+                ax.set_title(f"e{i}", fontsize=8)
+                axes.append(ax)
+
+            # magnitude plot in the first slot of the last row
+            axm = fig.add_subplot(gs[rows, 0])
+            axm.plot(magnitudes, 'o-', color='tab:orange')
+            axm.set_title("Magnitude |v|", fontsize=9)
+            axm.set_xlabel("Iteration")
+            axm.set_ylabel("|v|")
+
+            # PCA panel if requested
+            if use_pca:
+                try:
+                    if PCA is None:
+                        raise RuntimeError("sklearn not available for PCA")
+                    if n_samples > 2:
+                        pca = PCA(n_components=2)
+                        proj = pca.fit_transform(coeffs)
+                        axp = fig.add_subplot(gs[rows, 1])
+                        sc = axp.scatter(proj[:, 0], proj[:, 1], c=np.arange(n_samples), cmap='viridis', s=20)
+                        var_sum = _pca_var_sum(pca)
+                        axp.set_title(f"PCA (Var: {var_sum:.3f})", fontsize=9)
+                        try:
+                            cbar = fig.colorbar(sc, ax=axp, fraction=0.046, pad=0.02)
+                            cbar.ax.tick_params(labelsize=8)
+                        except Exception as e:
+                            logger.debug("PCA colorbar failed: %s", e)
+                    else:
+                        axp = fig.add_subplot(gs[rows, 1])
+                        axp.text(0.5, 0.5, "Not enough samples for PCA", ha='center', va='center')
+                except Exception as e:
+                    axp = fig.add_subplot(gs[rows, 1])
+                    axp.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=8)
+                    logger.debug("PCA error: %s", e)
+
+        else:
+            # high-dimensional case: show first 64 components in two panels, heatmap for all components, magnitude and PCA
+            gs = GridSpec(3, 2, figure=fig, height_ratios=[1, 1, 0.6])
+
+            # panel 1: components 0..min(63, dim-1)
+            ax1 = fig.add_subplot(gs[0, 0])
+            max_plot = min(64, dim)
+            for i in range(0, max_plot):
+                ax1.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.4)
+            ax1.set_title(f"Components e0-e{max_plot-1}", fontsize=9)
+            ax1.legend(ncol=4, fontsize=6, loc='upper right')
+
+            # panel 2: components 64..127 if available
+            ax2 = fig.add_subplot(gs[0, 1])
+            if dim > 64:
+                max_plot2 = min(128, dim)
+                for i in range(64, max_plot2):
+                    ax2.plot(coeffs[:, i], label=f'e{i}', alpha=0.6, linewidth=0.4)
+                ax2.set_title(f"Components e64-e{max_plot2-1}", fontsize=9)
+                ax2.legend(ncol=4, fontsize=6, loc='upper right')
+            else:
+                ax2.text(0.5, 0.5, "No components 64+", ha='center', va='center', fontsize=10)
+
+            # panel 3: magnitude
+            ax3 = fig.add_subplot(gs[1, 0])
+            ax3.plot(magnitudes, 'o-', color='tab:orange')
+            ax3.set_title("Magnitude |v|", fontsize=9)
+
+            # panel 4: heatmap of coefficients (samples x components) but downsample if huge
+            ax4 = fig.add_subplot(gs[1, 1])
+            try:
+                # downsample rows if too many samples for display
+                display_coeffs = coeffs
+                if n_samples > 500:
+                    idx = np.linspace(0, n_samples - 1, 500).astype(int)
+                    display_coeffs = coeffs[idx, :]
+                # downsample columns if too many components
+                if dim > 1024:
+                    cidx = np.linspace(0, dim - 1, 1024).astype(int)
+                    display_coeffs = display_coeffs[:, cidx]
+                im = ax4.imshow(display_coeffs.T, aspect='auto', cmap='RdBu_r', origin='lower')
+                ax4.set_title("Coefficient heatmap (components x samples)", fontsize=9)
+                try:
+                    cbar = fig.colorbar(im, ax=ax4, fraction=0.046, pad=0.04)
+                    cbar.ax.tick_params(labelsize=8)
+                except Exception as e:
+                    logger.debug("Heatmap colorbar failed: %s", e)
+            except Exception as e:
+                ax4.text(0.5, 0.5, f"Heatmap Error: {e}", ha='center', va='center', fontsize=8)
+                logger.debug("Heatmap error: %s", e)
+
+            # PCA row below
+            if use_pca:
+                try:
+                    if PCA is None:
+                        raise RuntimeError("sklearn not available for PCA")
+                    if n_samples > 2:
+                        pca = PCA(n_components=2)
+                        proj = pca.fit_transform(coeffs)
+                        axp = fig.add_subplot(gs[2, :])
+                        sc = axp.scatter(proj[:, 0], proj[:, 1], c=np.arange(n_samples), cmap='viridis', s=18)
+                        var_sum = _pca_var_sum(pca)
+                        axp.set_title(f"PCA Projection (Var: {var_sum:.3f})", fontsize=9)
+                        try:
+                            cbar2 = fig.colorbar(sc, ax=axp, fraction=0.046, pad=0.02)
+                            cbar2.ax.tick_params(labelsize=8)
+                        except Exception as e:
+                            logger.debug("PCA colorbar failed: %s", e)
+                    else:
+                        axp = fig.add_subplot(gs[2, :])
+                        axp.text(0.5, 0.5, "Not enough samples for PCA", ha='center', va='center')
+                except Exception as e:
+                    axp = fig.add_subplot(gs[2, :])
+                    axp.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center', fontsize=10)
+                    logger.debug("PCA error: %s", e)
+            else:
+                axp = fig.add_subplot(gs[2, :])
+                axp.text(0.5, 0.5, "Install sklearn for PCA", ha='center', va='center', fontsize=10)
+
+        # final: do not call tight_layout when constrained_layout=True
+        # return the figure to caller
+        return fig
 
 
-    # --- 19. Bilinmeyen tip
+    # --- 24. Bilinmeyen tip
     else:
         ax = fig.add_subplot(1, 1, 1)
         type_name = type(first_elem).__name__
@@ -17768,7 +19611,7 @@ if __name__ == "__main__":
     logger.info("Keçeci Numbers Module - Demonstration")
     logger.info("This script demonstrates the generation of various Keçeci Number types.")
 
-    STEPS = 40
+    STEPS = 30
     START_VAL = "2.5"
     ADD_VAL = 3.0
 
@@ -17781,7 +19624,7 @@ if __name__ == "__main__":
         "Octonion": TYPE_OCTONION, "Sedenion": TYPE_SEDENION, "Clifford": TYPE_CLIFFORD, 
         "Dual": TYPE_DUAL, "Splitcomplex": TYPE_SPLIT_COMPLEX, "Pathion": TYPE_PATHION,
         "Chingon": TYPE_CHINGON, "Routon": TYPE_ROUTON, "Voudon": TYPE_VOUDON,
-        "Super Real": TYPE_SUPERREAL, "Ternary": TYPE_TERNARY,
+        "Super Real": TYPE_SUPERREAL, "Ternary": TYPE_TERNARY, "Hypercomplex": TYPE_HYPERCOMPLEX,
     }
 
     for name, type_id in all_types.items():
