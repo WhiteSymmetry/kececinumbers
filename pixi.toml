@@ -4,11 +4,11 @@ authors = ["Mehmet Keçeci <mkececi@yaani.com>"]
 channels = ["pypi", "https://prefix.dev/conda-forge", "https://conda.modular.com/max-nightly", "conda-forge", "https://repo.prefix.dev/modular-community"]
 platforms = ["linux-64"]
 name = "kececinumbers"
-version = "0.9.4"
+version = "0.9.5"
 
 [package]
 name = "kececinumbers"
-version = "0.9.4"
+version = "0.9.5"
 license = "AGPL-3.0-or-later"
 
 [dependencies]
