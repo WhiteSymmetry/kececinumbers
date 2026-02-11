@@ -16,7 +16,7 @@ from __future__ import annotations
 import warnings
 
 # Paket sürüm numarası
-__version__ = "0.9.4"
+__version__ = "0.9.5"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 __description__ = "Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets."
@@ -69,7 +69,7 @@ from .kececinumbers import (
     _parse_super_real,
     _parse_superreal,
     _parse_ternary,
-    _parse_to_hypercomplex,
+    _parse_hypercomplex,
     _parse_universal,
     _parse_voudon,
     _generate_simple_ask_sequence,
@@ -77,6 +77,7 @@ from .kececinumbers import (
     _parse_kececi_values,
     parse_to_hyperreal,
     parse_to_neutrosophic,
+    safe_parse,
 )
 
 # Sayı Sınıfları
@@ -179,6 +180,13 @@ from .kececinumbers import (
     _generate_simple_sequence,
     _generate_detailed_sequence,
     _generate_default_value,
+    _make_hypercomplex_zero,
+    hypercomplex_str,
+    _divisible_by_numeric,
+    _is_divisible,
+    is_integer_multiple, 
+    is_rational_multiple_with_maxden,
+    is_multiple_with_tolerance,
 )
 
 # Tip Sabitleri
@@ -215,20 +223,20 @@ __all__ = [
     # Ana fonksiyonlar
     'analyze_all_types', 'analyze_kececi_sequence', 'analyze_pair_correlation',
     'apply_pca_clustering', 'find_kececi_prime_number', 'test_kececi_conjecture',
-    
+
     # Sınıflar
     'ComplexNumber', 'Quaternion', 'OctonionNumber', 'BicomplexNumber',
     'HyperrealNumber', 'NeutrosophicNumber', 'ChingonNumber',
-    
+
     # Parser
     'parse_to_hyperreal', 'parse_to_neutrosophic',
-    
+
     # Yardımcılar
-    'is_prime', 'plot_numbers', 'generate_interactive_plot',
-    
+    'is_prime', 'plot_numbers', 'generate_interactive_plot', 'get_interactive',
+
     # Tip sabitleri
     'TYPE_COMPLEX', 'TYPE_QUATERNION', 'TYPE_OCTONION',
-    
+
     # Metadata
     '__version__', '__author__', '__description__',
 ]
