@@ -399,7 +399,8 @@ if seq_interactive:
         "Positive Real", "Negative Real", "Complex", "Float", "Rational", 
         "Quaternion", "Neutrosophic", "Neutro-Complex", "Hyperreal", 
         "Bicomplex", "Neutro-Bicomplex", "Octonion", "Sedenion", "Clifford",
-        "Dual", "Split-Complex", "Pathion", "Chingon", "Routon", "Voudon", "Super Real", "Ternary",
+        "Dual", "Split-Complex", "Pathion", "Chingon", "Routon", "Voudon",
+        "Super Real", "Ternary", "Hypercomplex"
     ]
     # type_name'i params sözlüğüne ekleyerek raporu zenginleştirelim
     params['type_name'] = type_names[type_choice - 1]
