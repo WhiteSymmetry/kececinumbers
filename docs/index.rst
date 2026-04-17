@@ -17,8 +17,8 @@ Welcome to Keçeci Numbers's Documentation!
    :target: https://github.com/WhiteSymmetry/kececinumbers/actions/workflows/python_ci.yml
 .. image:: https://codecov.io/gh/WhiteSymmetry/kececinumbers/graph/badge.svg?token=0X78S7TL0W
    :target: https://codecov.io/gh/WhiteSymmetry/kececinumbers
-.. image:: https://img.shields.io/badge/License-MIT-yellow.svg
-   :target: https://opensource.org/licenses/MIT
+.. image:: https://img.shields.io/badge/License-agpl-yellow.svg
+   :target: https://opensource.org/license/agpl-3-0
 .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.15377659.svg
    :target: https://doi.org/10.5281/zenodo.15377659
 
