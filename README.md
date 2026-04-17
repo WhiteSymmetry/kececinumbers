@@ -4,7 +4,7 @@
 # Keçeci Numbers <img src="docs/logo.jpg" alt="Keçeci Numbers" align="right" height="140"/>
 
 [![PyPI version](https://badge.fury.io/py/kececinumbers.svg)](https://badge.fury.io/py/kececinumbers/)
-[![License: AGPL](https://img.shields.io/badge/License-AGPL-yellow.svg)](https://opensource.org/licenses/AGPL)
+[![License: AGPL](https://img.shields.io/badge/License-AGPL-yellow.svg)](https://opensource.org/license/agpl-3-0)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15377659.svg)](https://doi.org/10.5281/zenodo.15377659)
 [![WorkflowHub DOI](https://img.shields.io/badge/DOI-10.48546%2Fworkflowhub.datafile.14.2-blue)](https://doi.org/10.48546/workflowhub.datafile.14.2)
 [![figshare DOI](https://img.shields.io/badge/DOI-10.6084/m9.figshare.29816414-blue)](https://doi.org/10.6084/m9.figshare.29816414)
