@@ -11,7 +11,7 @@ Prerequisites
 
 Before you begin, ensure you have the following installed:
 
-*   **Python 3.8 or newer**.
+*   **Python 3.11 or newer**.
 *   **pip** (the Python package installer), which is usually included with modern Python installations.
 *   (Optional) The **Conda** package manager, if you prefer installing through the Conda ecosystem.
 
