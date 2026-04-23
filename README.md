@@ -581,49 +581,57 @@ Enter the number of iterations (positive integer: e.g., 30):  30
 import matplotlib.pyplot as plt
 import kececinumbers as kn
 import logging
+import sympy
+import re
+from collections import Counter
+from typing import List, Any, Optional
+
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 # ==============================================================================
 # --- Interactive Test ---
 # ==============================================================================
 print("--- Interactive Test ---")
-
-# DÜZELTME: Fonksiyondan dönen 2 değeri ayrı değişkenlere alıyoruz.
-# Sadece diziye ihtiyacımız olduğu için 'params'ı şimdilik kullanmayacağız.
-seq_interactive, params_interactive = kn.get_interactive() 
-
-# Dizi başarılı bir şekilde oluşturulduysa (boş değilse) grafiği çiz
+seq_interactive, params_interactive = kn.get_interactive()
 if seq_interactive:
     kn.plot_numbers(seq_interactive, "Interactive Keçeci Numbers")
+    kpn = kn.safe_find_kpn(seq_interactive)
+    if kpn:
+        print(f"Interactive sequence KPN: {kpn}")
+    else:
+        print("Interactive sequence: KPN bulunamadı.")
 
 # ==============================================================================
-# --- Random Type Test (Bu kısım zaten doğruydu) ---
+# --- Random Type Test ---
 # ==============================================================================
 print("\n--- Random Type Test (60 Keçeci Steps) ---")
-# num_iterations burada Keçeci adımı sayısıdır
-seq_random = kn.get_random_type(num_iterations=60) 
+seq_random = kn.get_random_type(num_iterations=60)
 if seq_random:
     kn.plot_numbers(seq_random, "Random Type Keçeci Numbers")
+    kpn = kn.safe_find_kpn(seq_random)
+    if kpn:
+        print(f"Random type sequence KPN: {kpn}")
+    else:
+        print("Random type sequence: KPN bulunamadı.")
 
 # ==============================================================================
-# --- Fixed Params Test (Bu kısım da zaten doğruydu) ---
+# --- Fixed Params Test (Complex, 60 Keçeci Steps) ---
 # ==============================================================================
 print("\n--- Fixed Params Test (Complex, 60 Keçeci Steps) ---")
 seq_fixed = kn.get_with_params(
-    kececi_type_choice=kn.TYPE_COMPLEX, 
-    iterations=60, 
-    start_value_raw="1+2j", 
-    add_value_raw=3.0,
+    kececi_type_choice=kn.TYPE_COMPLEX,
+    iterations=60,
+    start_value_raw="1+1j",
+    add_value_raw="0.1+0.1j",
     include_intermediate_steps=True
 )
 if seq_fixed:
     kn.plot_numbers(seq_fixed, "Fixed Params (Complex) Keçeci Numbers")
-
-# İsterseniz find_kececi_prime_number'ı ayrıca da çağırabilirsiniz:
-if seq_fixed:
-    kpn_direct = kn.find_kececi_prime_number(seq_fixed)
-    if kpn_direct is not None:
-        print(f"\nDirect call to find_kececi_prime_number for fixed numbers: {kpn_direct}")
+    kpn = kn.safe_find_kpn(seq_fixed)
+    if kpn:
+        print(f"Fixed params sequence KPN: {kpn}")
+    else:
+        print("Fixed params sequence: KPN bulunamadı.")
 
 # ==============================================================================
 # --- Tüm Grafikleri Göster ---
