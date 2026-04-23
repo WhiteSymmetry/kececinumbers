@@ -86,16 +86,41 @@ This library provides a unified algorithm that operates on 23 different number t
 
 ---
 
-## What are Keçeci Numbers?
+## Türkçe
+
+### Keçeci Sayıları Nedir?
+
+Keçeci Sayıları, bir başlangıç değerinden özyineli (rekürsif) bir kuralla üretilen sayı dizileridir. Her adımda şu süreç izlenir:
+
+1.  **Ekle ve Kaydet:** Geçerli değere sabit bir artış değeri eklenir ve bu yeni "eklenmiş değer" diziye kaydedilir.
+2.  **Bölmeyi Dene:** "Eklenmiş değer", bir önceki adımda kullanılmayan sayıya (2 veya 3) bölünmeye çalışılır. Bölme başarılı olursa, sonuç bir sonraki eleman olur.
+3.  **ASK (Artır/Azalt ve Kontrol Et) Kuralı:** Eğer sayı bölünemiyor ve ana bileşeni asal ise, türe özgü bir birim değer eklenir veya çıkarılır. Elde edilen bu "değiştirilmiş değer" kaydedilir ve bölme işlemi yeniden denenir.
+4.  **Aktar:** Bölme yine başarısız olursa veya sayı asal değilse, mevcut değer (eklenmiş veya değiştirilmiş değer) doğrudan dizinin bir sonraki elemanı olur.
+
+Bu esnek mekanizma, 23 farklı sayı türünde (Pozitif Reel'den Hiperkomplekse, Nötrosofik'ten Ternary'ye kadar) başarıyla test edilmiş olup, sayı dizilerinin çeşitli cebirsel sistemlerdeki davranışını incelemek için zengin ve evrensel bir çerçeve sunar.
+
+**Son Genişlemeler ve Ulaşılan Olgular:**
+
+Tüm bu türlerde, diziler içinde "Keçeci Asal Sayıları (KPN)" olarak adlandırılan, tekrar eden ve asal olan özel sayılar keşfedilmiştir. Bu KPN'lerin dizilerdeki ardışık konumları arasındaki maksimum boşluklar analiz edildiğinde, boşluk oranının (Cramér'in (log N)² sınırına göre) tüm türlerde 1'in oldukça altında kaldığı ampirik olarak doğrulanmıştır. Bu bulgu, "Keçeci-Cramér Konjektürü"nün sadece klasik sayılarda değil, standart olmayan sayı kümelerinde de geçerli olduğunu göstermekte ve asal-benzeri sayıların dağılımına dair yeni bir bakış açısı kazandırmaktadır.
+
+---
+
+## English
+
+### What are Keçeci Numbers?
 
 Keçeci Numbers are sequences generated from a starting value using a recursive rule. The process for each step is:
 
-1.  **Add & Record:** A fixed increment value is added to the current value. This new "added value" is recorded in the sequence.
-2.  **Attempt Division:** An attempt is made to divide the "added value" by 3 or 2 (whichever was not used in the previous step). If successful, the result becomes the next element.
-3.  **ASK (Augment/Shrink then Check) Rule:** If the number is indivisible and its principal component is **prime**, a type-specific unit value is added or subtracted. This "modified value" is recorded, and the division is re-attempted.
-4.  **Carry Over:** If division fails again, or if the number is not prime, the value itself (either the "added value" or "modified value") becomes the next element in the sequence.
+1.  **Add & Record:** A fixed increment value is added to the current value, and this new "added value" is recorded in the sequence.
+2.  **Attempt Division:** An attempt is made to divide the "added value" by either 2 or 3 (whichever was not used in the previous step). If successful, the result becomes the next element.
+3.  **ASK (Augment/Shrink then Check) Rule:** If the number is indivisible and its principal component is prime, a type‑specific unit value is either added (augment) or subtracted (shrink). This "modified value" is recorded, and the division is re‑attempted.
+4.  **Carry Over:** If division fails again, or if the number is not prime, the current value (either the "added value" or the "modified value") becomes the next element in the sequence.
 
-This flexible mechanism provides a rich framework for studying the behavior of numerical sequences in various algebraic systems.
+This flexible mechanism has been successfully tested across 23 distinct number types—ranging from Positive Real to Hypercomplex, and including Neutrosophic, Ternary, and Quaternionic algebras—providing a rich and universal framework for studying the behavior of numerical sequences in various algebraic systems.
+
+**Recent Extensions and Established Facts:**
+
+Within all of these types, special repeating prime numbers called "Keçeci Prime Numbers (KPN)" have been identified. Analysis of the maximum gaps between consecutive KPN positions in the sequences has empirically confirmed that the gap ratio (normalized by Cramér's (log N)² bound) remains well below 1 for every tested type. This finding demonstrates that the "Keçeci–Cramér Conjecture" holds not only for classical integers but also across non‑standard number systems, offering a new perspective on the distribution of prime‑like numbers.
 
 ## Key Features
 
