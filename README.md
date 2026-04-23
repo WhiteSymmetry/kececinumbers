@@ -482,7 +482,13 @@ if seq:
     # plot_numbers fonksiyonuna artık doğru şekilde SADECE listeyi gönderiyoruz.
     kn.plot_numbers(seq, title=f"Interactive Keçeci Numbers ({params.get('type_name', '')})")
     # Grafiği göstermek için plt.show() ekleyelim
-    plt.show() 
+    plt.show()
+
+    kpn = kn.safe_find_kpn(seq)          # <--- Güvenli KPN bulucu
+    if kpn:
+        print(f"\nKeçeci Prime Number (KPN) found for this sequence: {kpn}")
+    else:
+        print("\nKPN bulunamadı.")
 else:
     print("\nSequence generation failed or was cancelled.")
 
