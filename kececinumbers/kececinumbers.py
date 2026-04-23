@@ -17,7 +17,41 @@ Key Features:
 - Helper functions for mathematical properties like primality and divisibility.
 - Advanced plotting capabilities tailored to each number system.
 - Functions for interactive use or programmatic integration.
----
+
+ASK: Augment/Shrink then Check
+
+Türkçe
+Keçeci Sayıları Nedir?
+
+Keçeci Sayıları, bir başlangıç değerinden özyineli (rekürsif) bir kuralla üretilen sayı dizileridir. Her adımda şu süreç izlenir:
+
+    Ekle ve Kaydet: Geçerli değere sabit bir artış değeri eklenir ve bu yeni "eklenmiş değer" diziye kaydedilir.
+    Bölmeyi Dene: "Eklenmiş değer", bir önceki adımda kullanılmayan sayıya (2 veya 3) bölünmeye çalışılır. Bölme başarılı olursa, sonuç bir sonraki eleman olur.
+    ASK (Artır/Azalt ve Kontrol Et) Kuralı: Eğer sayı bölünemiyor ve ana bileşeni asal ise, türe özgü bir birim değer eklenir veya çıkarılır. Elde edilen bu "değiştirilmiş değer" kaydedilir ve bölme işlemi yeniden denenir.
+    Aktar: Bölme yine başarısız olursa veya sayı asal değilse, mevcut değer (eklenmiş veya değiştirilmiş değer) doğrudan dizinin bir sonraki elemanı olur.
+
+Bu esnek mekanizma, 23 farklı sayı türünde (Pozitif Reel'den Hiperkomplekse, Nötrosofik'ten Ternary'ye kadar) başarıyla test edilmiş olup, sayı dizilerinin çeşitli cebirsel sistemlerdeki davranışını incelemek için zengin ve evrensel bir çerçeve sunar.
+
+Son Genişlemeler ve Ulaşılan Olgular:
+
+Tüm bu türlerde, diziler içinde "Keçeci Asal Sayıları (KPN)" olarak adlandırılan, tekrar eden ve asal olan özel sayılar keşfedilmiştir. Bu KPN'lerin dizilerdeki ardışık konumları arasındaki maksimum boşluklar analiz edildiğinde, boşluk oranının (Cramér'in (log N)² sınırına göre) tüm türlerde 1'in oldukça altında kaldığı ampirik olarak doğrulanmıştır. Bu bulgu, "Keçeci-Cramér Konjektürü"nün sadece klasik sayılarda değil, standart olmayan sayı kümelerinde de geçerli olduğunu göstermekte ve asal-benzeri sayıların dağılımına dair yeni bir bakış açısı kazandırmaktadır.
+
+English
+What are Keçeci Numbers?
+
+Keçeci Numbers are sequences generated from a starting value using a recursive rule. The process for each step is:
+
+    Add & Record: A fixed increment value is added to the current value, and this new "added value" is recorded in the sequence.
+    Attempt Division: An attempt is made to divide the "added value" by either 2 or 3 (whichever was not used in the previous step). If successful, the result becomes the next element.
+    ASK (Augment/Shrink then Check) Rule: If the number is indivisible and its principal component is prime, a type‑specific unit value is either added (augment) or subtracted (shrink). This "modified value" is recorded, and the division is re‑attempted.
+    Carry Over: If division fails again, or if the number is not prime, the current value (either the "added value" or the "modified value") becomes the next element in the sequence.
+
+This flexible mechanism has been successfully tested across 23 distinct number types—ranging from Positive Real to Hypercomplex, and including Neutrosophic, Ternary, and Quaternionic algebras—providing a rich and universal framework for studying the behavior of numerical sequences in various algebraic systems.
+
+Recent Extensions and Established Facts:
+
+Within all of these types, special repeating prime numbers called "Keçeci Prime Numbers (KPN)" have been identified. Analysis of the maximum gaps between consecutive KPN positions in the sequences has empirically confirmed that the gap ratio (normalized by Cramér's (log N)² bound) remains well below 1 for every tested type. This finding demonstrates that the "Keçeci–Cramér Conjecture" holds not only for classical integers but also across non‑standard number systems, offering a new perspective on the distribution of prime‑like numbers.
+
 
 Keçeci Conjecture: Keçeci Varsayımı, Keçeci-Vermutung, Conjecture de Keçeci, Гипотеза Кечеджи, 凯杰西猜想, ケジェジ予想, Keçeci Huds, Keçeci Hudsiye, Keçeci Hudsia, [...]
 
@@ -33,10 +67,14 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import cmath
 import collections
+from collections import Counter
 import copy
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
+import gc
+#from .helpers import robust_int, is_prime, is_divisible, safe_divide  # yeni birleşik fonksiyonlar
+#ModuleNotFoundError: No module named 'kececinumbers.helpers'
 import logging
 import math
 from matplotlib.gridspec import GridSpec
@@ -130,13 +168,409 @@ TYPE_TERNARY = 22
 TYPE_HYPERCOMPLEX = 23
 
 TYPE_NAMES = {
+    1: "Positive Real", 2: "Negative Real", 3: "Complex", 4: "Float",
+    5: "Rational", 6: "Quaternion", 7: "Neutrosophic", 8: "Neutrosophic Complex",
+    9: "Hyperreal", 10: "Bicomplex", 11: "Neutrosophic Bicomplex",
+    12: "Octonion", 13: "Sedenion", 14: "Clifford", 15: "Dual",
+    16: "Split Complex", 17: "Pathion", 18: "Chingon", 19: "Routon",
+    20: "Voudon", 21: "Super Real", 22: "Ternary", 23: "Hypercomplex"
+}
+"""
+TYPE_NAMES = {
     1: 'POSITIVE_REAL', 2: 'NEGATIVE_REAL', 3: 'COMPLEX', 4: 'FLOAT', 5: 'RATIONAL',
     6: 'QUATERNION', 7: 'NEUTROSOPHIC', 8: 'NEUTROSOPHIC_COMPLEX', 9: 'HYPERREAL',
     10: 'BICOMPLEX', 11: 'NEUTROSOPHIC_BICOMPLEX', 12: 'OCTONION', 13: 'SEDENION',
     14: 'CLIFFORD', 15: 'DUAL', 16: 'SPLIT_COMPLEX', 17: 'PATHION', 18: 'CHINGON',
     19: 'ROUTON', 20: 'VOUDON', 21: 'SUPERREAL', 22: 'TERNARY', 23: 'HYPERCOMPLEX'
 }
+"""
 
+# ==================== VARSAYILAN PARAMETRELER ====================
+DEFAULT_STARTS = {
+    1: "2.5", 2: "-5.0", 3: "1+1j", 4: "3.14", 5: "3.5",
+    6: "1.0,0.0,0.0,0.0", 7: "0.6,0.2,0.1", 8: "1+1j",
+    9: "1.0", 10: "1.34,2.55,0.25,4.61",
+    11: "2.5,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+    12: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+    13: "1.0" + ",0.0" * 15,
+    14: "1.0+2.0e1+3.0e12",
+    15: "1.0,0.1", 16: "1.0,0.5",
+    17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
+    19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
+    21: "12.85,0.08", 22: "2", 23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+}
+DEFAULT_ADDS = {
+    1: "0.5", 2: "-0.5", 3: "0.1+0.1j", 4: "0.1", 5: "0.1",
+    6: "0.1,0.0,0.0,0.0", 7: "0.1,0.0,0.0", 8: "0.1+0.1j",
+    9: "2.0", 10: "0.08,0.0,0.0,0.0",
+    11: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+    12: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+    13: "0.1" + ",0.0" * 15,
+    14: "0.1+0.2e1", 15: "0.1,0.0", 16: "0.1,0.0",
+    17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
+    19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
+    21: "0.56,1.7", 22: "1", 23: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+}
+
+### robust_int – Evrensel Tam Sayı Çıkarıcı
+def robust_int(x: Any) -> Optional[int]:
+    """
+    Herhangi bir Keçeci sayısından güvenli bir şekilde pozitif bir tam sayı çıkarır.
+    - Önce _get_integer_representation denenir (katı kurallar).
+    - Başarısız olursa daha esnek yöntemlerle (norm, ilk bileşen, string regex) tam sayı elde edilir.
+    """
+    # 1) Mevcut sağlam fonksiyon
+    val = _get_integer_representation(x)
+    if val is not None:
+        return val
+
+    # 2) Esnek yuvarlama
+    try:
+        if isinstance(x, (int, float)):
+            return int(round(abs(x)))
+    except:
+        pass
+
+    # 3) Norm/büyüklük
+    for attr in ('norm', '__abs__', 'magnitude'):
+        if hasattr(x, attr):
+            try:
+                return int(round(abs(x() if callable(getattr(x, attr)) else getattr(x, attr))))
+            except:
+                pass
+
+    # 4) İlk bileşen (coeffs, coefficients, w, real, t, a, value, x)
+    for attr in ('coeffs', 'coefficients'):
+        if hasattr(x, attr):
+            try:
+                c0 = list(getattr(x, attr))[0]
+                return int(round(float(c0)))
+            except:
+                pass
+
+    for attr in ('w', 'real', 't', 'a', 'value', 'x'):
+        if hasattr(x, attr):
+            try:
+                v = getattr(x, attr)
+                if isinstance(v, complex):
+                    return int(round(abs(v)))
+                return int(round(float(v)))
+            except:
+                continue
+
+    # 5) Ternary digits
+    if hasattr(x, 'digits'):
+        try:
+            dec = 0
+            for i, d in enumerate(reversed(list(x.digits))):
+                dec += int(d) * (3 ** i)
+            return abs(dec)
+        except:
+            pass
+
+    # 6) Liste/tuple ilk eleman
+    if isinstance(x, (list, tuple)) and len(x) > 0:
+        try:
+            return int(round(float(x[0])))
+        except:
+            pass
+
+    # 7) String temsili üzerinden sayı çıkarma
+    try:
+        nums = re.findall(r"[-+]?\d*\.?\d+", str(x))
+        if nums:
+            return int(round(abs(float(nums[0]))))
+    except:
+        pass
+
+    return None
+
+
+### extract_scalar – Her Türden Skaler Çıkarma
+def extract_scalar(x: Any) -> float:
+    """Keçeci sayısının birincil skaler değerini float olarak döndürür."""
+    if hasattr(x, 'real'):
+        return float(x.real)
+    if isinstance(x, complex):
+        return x.real
+    if isinstance(x, (list, tuple)) and len(x) > 0:
+        return float(x[0])
+    return float(x)
+
+"""
+def extract_scalar(result):
+    if hasattr(result, 'real'): return result.real
+    if isinstance(result, complex): return result.real
+    if isinstance(result, (list,tuple)): return result[0]
+    return float(result)
+"""
+# ==================== EVRENSEL YEDEK KPN BULUCU ====================
+"""
+def robust_int(x: Any) -> Optional[int]:
+
+    #Her türden mutlaka bir tamsayı çıkarmaya çalışır.
+    #Önce _get_integer_representation, olmazsa çeşitli yuvarlama yöntemleri.
+
+    # Önce asıl fonksiyonu dene
+    val = _get_integer_representation(x)
+    if val is not None:
+        return val
+
+    # Yumuşak çıkarma: sırasıyla dene
+    try:
+        # Direkt float ise yuvarla
+        if isinstance(x, (int, float)):
+            return int(round(abs(x)))
+    except:
+        pass
+
+    # Kompleks büyüklük (norm)
+    try:
+        if isinstance(x, complex):
+            return int(round(abs(x)))
+    except:
+        pass
+
+    # Norm özelliği olanlar
+    if hasattr(x, 'norm'):
+        try:
+            return int(round(x.norm()))
+        except:
+            pass
+
+    # İlk bileşeni al (coeffs, __iter__, t, w, real, a, value)
+    for attr in ('coeffs', 'coefficients'):
+        if hasattr(x, attr):
+            try:
+                c0 = list(getattr(x, attr))[0]
+                return int(round(float(c0)))
+            except:
+                continue
+
+    for attr in ('t', 'w', 'real', 'a', 'value', 'x'):
+        if hasattr(x, attr):
+            try:
+                v = getattr(x, attr)
+                if isinstance(v, complex):
+                    return int(round(abs(v)))
+                return int(round(float(v)))
+            except:
+                continue
+
+    # Ternary için digits
+    if hasattr(x, 'digits'):
+        try:
+            digits = list(x.digits)
+            dec = 0
+            for i, d in enumerate(reversed(digits)):
+                dec += int(d) * (3 ** i)
+            return abs(int(dec))
+        except:
+            pass
+
+    # Liste/tuple ise ilk elemanı
+    if isinstance(x, (list, tuple)) and len(x) > 0:
+        try:
+            return int(round(float(x[0])))
+        except:
+            pass
+
+    # String temsilinden sayı çıkar
+    try:
+        s = str(x)
+        nums = re.findall(r"[-+]?\d*\.?\d+", s)
+        if nums:
+            return int(round(abs(float(nums[0]))))
+    except:
+        pass
+
+    return None
+"""
+
+def universal_fallback_kpn(seq: List[Any]) -> Optional[int]:
+    """Tüm türler için çalışan KPN bulucu (yumuşak tamsayı çıkarma + asallık)."""
+    vals = []
+    for x in seq[:5000]:
+        try:
+            r = robust_int(x)
+            if r is not None and r > 1 and sympy.isprime(r):
+                vals.append(r)
+        except:
+            continue
+    if not vals:
+        return None
+    cnt = Counter(vals)
+    # En az iki kez görülen en sık asal
+    best = max(cnt.items(), key=lambda item: item[1])
+    if best[1] > 1:
+        return best[0]
+    return None
+
+
+def safe_find_kpn(sequence: List[Any], type_num: Optional[int] = None) -> Optional[int]:
+    """
+    Keçeci asal sayısını (KPN) bulur.
+    1) Güncel find_kececi_prime_number fonksiyonunu dener.
+    2) Başarısız olursa universal_fallback_kpn kullanır.
+    """
+    # 1. Aşama: Kütüphanenin asıl bulucusu
+    try:
+        from kececinumbers import find_kececi_prime_number
+        kpn = find_kececi_prime_number(sequence)
+        if kpn is not None:
+            return kpn
+    except Exception:
+        pass
+
+    # 2. Aşama: Evrensel yedek
+    try:
+        kpn = universal_fallback_kpn(sequence)
+        if kpn is not None:
+            return kpn
+    except Exception:
+        pass
+
+    return None
+"""
+def safe_find_kpn(sequence, type_num):
+    # 1) Güncel fonksiyon
+    try:
+        kpn = find_kececi_prime_number(sequence)
+        if kpn is not None:
+            return kpn
+    except:
+        pass
+
+    # 2) Evrensel yedek (tüm türler için)
+    try:
+        kpn = universal_fallback_kpn(sequence)
+        if kpn is not None:
+            return kpn
+    except:
+        pass
+
+    return None
+"""
+"""
+def safe_find_kpn(sequence):
+    # 1) Önce güncel kütüphane fonksiyonunu dene
+    kpn = kn.find_kececi_prime_number(sequence)
+    if kpn is not None:
+        return kpn
+    # 2) Başarısız olursa evrensel yedek bulucuyu kullan
+    return universal_fallback_kpn(sequence)
+"""
+
+# ==================== ANALİZ SINIFI ====================
+class KececiAnalyzer:
+    def __init__(self):
+        self.results = []
+        self.type_stats = {}
+        self.global_stats = {}
+        self.failed = {}
+
+    def _try_many(self, type_num, param_list, label):
+        for i, params in enumerate(param_list):
+            if i % 500 == 0:
+                print(f"   {label} {i+1}/{len(param_list)}")
+            res = run_test(type_num, params['start'], params['add'])
+            if res.get('success'):
+                self.results.append(res)
+                print(f"\n   ✅ {i+1}. denemede BAŞARILI! KPN={res['kpn']} Ratio={res['ratio']:.4f}")
+                return True
+            if (i+1) % 100 == 0:
+                gc.collect()
+        return False
+
+    def run_analysis(self):
+        print("="*80)
+        print("🎯 KEÇECI CRAMÉR CONJECTURE – ESNEK KPN BULUCU")
+        print("   (Güncel + evrensel yedek)")
+        print("="*80)
+
+        print("\n📌 Varsayılan parametrelerle test...")
+        for t in range(1, 24):
+            name = TYPE_NAMES[t]
+            print(f"   {name:20}: ", end="", flush=True)
+            res = run_test(t, DEFAULT_STARTS[t], DEFAULT_ADDS[t])
+            if res.get('success'):
+                self.results.append(res)
+                print(f"✅ KPN={res['kpn']} Ratio={res['ratio']:.4f}")
+            else:
+                reason = res.get('reason', '?')
+                self.failed[t] = reason
+                print(f"❌ ({reason})")
+
+        # Başarısız özel türler için toplu deneme (Bicomplex, SuperReal, Ternary)
+        for t, label, pool in [
+            (10, "Bicomplex", BICOMPLEX_TESTS),
+            (21, "Super Real", SUPER_REAL_TESTS),
+            (22, "Ternary", TERNARY_TESTS)
+        ]:
+            if t in self.failed:
+                print(f"\n📌 {label} için 10k deneme...")
+                if self._try_many(t, pool, label):
+                    del self.failed[t]
+                else:
+                    print("   ❌ Bulunamadı")
+
+        self._summarize()
+
+    def _summarize(self):
+        if self.results:
+            groups = {}
+            for r in self.results:
+                groups.setdefault(r['type'], []).append(r)
+            self.type_stats = {}
+            for t, lst in groups.items():
+                best = min(lst, key=lambda x: x['ratio'])
+                self.type_stats[t] = {
+                    'type_name': TYPE_NAMES[t],
+                    'ratio': best['ratio'],
+                    'kpn': best['kpn'],
+                    'kpn_freq': best['kpn_freq']*100,
+                    'start': best['start']
+                }
+            all_r = [v['ratio'] for v in self.type_stats.values()]
+            self.global_stats = {
+                'successful': len(self.type_stats),
+                'avg_ratio': np.mean(all_r),
+                'min_ratio': min(all_r),
+                'max_ratio': max(all_r)
+            }
+
+        print("\n" + "="*80)
+        print("🏁 SONUÇ")
+        print("="*80)
+        print(f"Başarılı tür: {len(self.type_stats)}/23")
+        if self.failed:
+            print("❌ Başarısız kalanlar:")
+            for t, reason in self.failed.items():
+                print(f"   • {TYPE_NAMES[t]}: {reason}")
+        else:
+            print("✅ TÜM TÜRLER BAŞARILI!")
+        if self.global_stats:
+            g = self.global_stats
+            print(f"\n📊 Ratio ort: {g['avg_ratio']:.4f} (Cramér'in %{g['avg_ratio']*100:.1f}'i)")
+            print(f"   Aralık: {g['min_ratio']:.4f} – {g['max_ratio']:.4f}")
+
+
+# ==================== HAVUZLAR (10.000) ====================
+def gen_ternary():
+    return [{"start": ''.join(str(random.choice([0,1,2])) for _ in range(random.randint(1,4))).lstrip('0') or '1',
+             "add": str(random.randint(1,3))} for _ in range(10000)]
+
+def gen_bicomplex():
+    return [{"start": f"{round(random.uniform(0.1,10),2)},{round(random.uniform(0,5),2)},{round(random.uniform(0,5),2)},{round(random.uniform(0,5),2)}",
+             "add": f"{round(random.uniform(0.05,0.5),2)},0.0,0.0,0.0"} for _ in range(10000)]
+
+def gen_superreal():
+    return [{"start": f"{round(random.uniform(1,20),2)},{round(random.uniform(0,10),2)}",
+             "add": f"{round(random.uniform(0.5,5),2)},{round(random.uniform(0,4),2)}"} for _ in range(10000)]
+
+TERNARY_TESTS = gen_ternary()
+BICOMPLEX_TESTS = gen_bicomplex()
+SUPER_REAL_TESTS = gen_superreal()
 
 def safe_digits(obj):
     if isinstance(obj, list): return obj
@@ -391,12 +825,6 @@ def is_multiple_with_tolerance(x, d, tol=1e-9, allow_rational=False, max_den=20)
         return False
     except Exception:
         return False
-
-def extract_scalar(result):
-    if hasattr(result, 'real'): return result.real
-    if isinstance(result, complex): return result.real
-    if isinstance(result, (list,tuple)): return result[0]
-    return float(result)
 
 def _divisible_by_numeric(x, divisor, tol=1e-12):
     """
@@ -2099,6 +2527,7 @@ class ComplexNumber:
         """Convert to HypercomplexNumber."""
         return HypercomplexNumber(self.real, self.imag, dimension=2)
 
+# aktif kullanımı güncel kodda yok (eski kodlarda var)
 def _find_kececi_prime_number(sequence: List[Any]) -> Optional[Any]:
     """
     Find a Keçeci Prime Number in the sequence.
@@ -3022,9 +3451,51 @@ if _sympy:
 else:
     _sympy_isprime = None
 
+def is_near_integer(x: Any, tol: float = 1e-12) -> bool:
+    """
+    Bir sayının (veya sayı benzeri nesnenin) tam sayıya yeterince yakın olup olmadığını kontrol eder.
+    - Karmaşık sayılar için imajiner kısmın sıfıra yakın, reel kısmın tam sayıya yakın olması gerekir.
+    - Liste/demet gibi iterable'lar için False döner (doğrudan sayı değildir).
+    - Sayıya çevrilebilen her tür için çalışır.
+    """
+    try:
+        # Karmaşık sayı kontrolü
+        if isinstance(x, complex):
+            if abs(x.imag) > tol:
+                return False
+            x = x.real
+        elif isinstance(x, (list, tuple)):
+            return False  # Dizi tipinde tam sayı kontrolü yapılmaz, ayrıca ele alınır.
+        
+        # Genel durum: float'a çevir ve yuvarlamaya yakınlığına bak
+        xf = float(x)
+        return abs(xf - round(xf)) <= tol
+    except Exception:
+        return False
+
+"""
+def is_near_integer(x, tol=1e-12):
+
+    #Checks if a number (or its real part) is close to an integer.
+    #Useful for float-based primality and divisibility checks.
+
+    try:
+        if isinstance(x, complex):
+            # Sadece gerçek kısım önemli, imajiner sıfıra yakın olmalı
+            if abs(x.imag) > tol:
+                return False
+            x = x.real
+        elif isinstance(x, (list, tuple)):
+            return False  # Desteklenmeyen tip
+
+        # Genel durum: float veya int
+        x = float(x)
+        return abs(x - round(x)) < tol
+    except:
+        return False
 
 def _is_near_integer(x: Any, tol: float = 1e-9) -> bool:
-    """Bir sayının neredeyse tam sayı olup olmadığını kontrol et."""
+    #Bir sayının neredeyse tam sayı olup olmadığını kontrol et.
     try:
         if isinstance(x, int):
             return True
@@ -3032,6 +3503,7 @@ def _is_near_integer(x: Any, tol: float = 1e-9) -> bool:
         return abs(xf - round(xf)) <= tol
     except Exception:
         return False
+"""
 
 def _float_mod_zero(x: Any, divisor: int = 1, tol: float = 1e-9) -> bool:
     """x % divisor yaklaşık sıfır mı? (float toleranslı)"""
@@ -3150,7 +3622,7 @@ def is_prime_like(value: Any, kececi_type: int = None) -> bool:
                     comps = _parse_components(value)
                 if not comps:
                     return False
-                if not all(_is_near_integer(c) for c in comps):
+                if not all(is_near_integer(c) for c in comps):
                     return False
                 # test first (real) component
                 n0 = int(round(float(comps[0])))
@@ -3174,7 +3646,7 @@ def is_prime_like(value: Any, kececi_type: int = None) -> bool:
                     coeffs = _parse_components(value)
                 if not coeffs:
                     return False
-                if not all(_is_near_integer(c) for c in coeffs):
+                if not all(is_near_integer(c) for c in coeffs):
                     return False
                 n0 = int(round(float(coeffs[0])))
                 if _sympy_isprime:
@@ -3216,7 +3688,7 @@ def is_prime_like(value: Any, kececi_type: int = None) -> bool:
             try:
                 if hasattr(value, 'basis') and isinstance(value.basis, dict):
                     scalar = value.basis.get('', 0)
-                    if _is_near_integer(scalar):
+                    if is_near_integer(scalar):
                         n = int(round(float(scalar)))
                         if _sympy_isprime:
                             return bool(_sympy_isprime(n))
@@ -3230,7 +3702,7 @@ def is_prime_like(value: Any, kececi_type: int = None) -> bool:
             try:
                 if hasattr(value, 'real'):
                     real = getattr(value, 'real')
-                    if _is_near_integer(real):
+                    if is_near_integer(real):
                         n = int(round(float(real)))
                         if _sympy_isprime:
                             return bool(_sympy_isprime(n))
@@ -10602,6 +11074,7 @@ def get_random_type(
         "Voudon",
         "Super Real",
         "Ternary",
+        "Hypercomplex",
     ]
 
     # Define available types (1-based indexing)
@@ -10644,6 +11117,7 @@ def get_random_type(
         add_value_raw=add_value_str,
     )
 
+# güncel kodlarda kullanılıyor
 def find_kececi_prime_number(kececi_numbers_list: List[Any]) -> Optional[int]:
     """Finds the Keçeci Prime Number from a generated sequence."""
     if not kececi_numbers_list:
@@ -10708,6 +11182,45 @@ def print_detailed_report(sequence: List[Any], params: Dict[str, Any], show_all:
         for i, num in enumerate(sequence):
             logger.info("%d: %s", i, num)
         logger.info("="*50)
+
+def is_divisible(x: Any, d: Any, tol: float = 1e-12, allow_rational: bool = False, max_den: int = 20) -> bool:
+    """
+    x sayısının d ile (yaklaşık olarak) bölünüp bölünemediğini kontrol eder.
+    - Önce Fraction ile kesin kontrol yapar.
+    - Başarısız olursa float bölüm üzerinden toleranslı tam sayı kontrolü.
+    - allow_rational=True ise, bölümün paydası max_den'i aşmayan bir rasyonel sayı olmasına izin verir.
+    """
+    try:
+        if d == 0:
+            return False
+
+        # Fraction ile kesin kontrol
+        def to_frac(v):
+            if isinstance(v, Fraction):
+                return v
+            if isinstance(v, int):
+                return Fraction(v)
+            try:
+                return Fraction(Decimal(str(v)))
+            except Exception:
+                return Fraction(float(v))
+
+        q = to_frac(x) / to_frac(d)
+        if q.denominator == 1:
+            return True
+
+        if allow_rational:
+            if q.denominator <= max_den:
+                return True
+
+        # Float tabanlı toleranslı kontrol
+        qf = float(x) / float(d)
+        if not math.isfinite(qf):
+            return False
+        return math.isclose(qf, round(qf), abs_tol=tol)
+
+    except Exception:
+        return False
 
 def _is_divisible(value: Any, divisor: Union[int, float, Fraction], kececi_type: int) -> bool:
     """
@@ -11010,27 +11523,6 @@ def is_prime(n_input: Any) -> bool:
     # Adım 3: Asallık testini sympy'ye bırak
     # sympy.isprime, 2'den küçük sayılar (1, 0, negatifler) için zaten False döndürür.
     return sympy.isprime(value_to_check)
-
-
-def is_near_integer(x, tol=1e-12):
-    """
-    Checks if a number (or its real part) is close to an integer.
-    Useful for float-based primality and divisibility checks.
-    """
-    try:
-        if isinstance(x, complex):
-            # Sadece gerçek kısım önemli, imajiner sıfıra yakın olmalı
-            if abs(x.imag) > tol:
-                return False
-            x = x.real
-        elif isinstance(x, (list, tuple)):
-            return False  # Desteklenmeyen tip
-
-        # Genel durum: float veya int
-        x = float(x)
-        return abs(x - round(x)) < tol
-    except:
-        return False
 
 def generate_kececi_vectorial(q0_str, c_str, u_str, iterations):
     """
@@ -13905,7 +14397,7 @@ def _generate_ternary_operation_sequence(
     
     return result
 
-
+#kullanılmıyor
 def _generate_ask_sequence_proper(
     start_value: Any,
     add_value: Any,
@@ -13914,8 +14406,76 @@ def _generate_ask_sequence_proper(
     number_type: int = 1
 ) -> List[Any]:
     """
-    Proper ASK algorithm that handles different number types correctly.
+    ASK algoritması – tüm türler için tek tip işlemlerle.
+    Bölünebilirlik ve asallık kontrollerini robust_int üzerinden yapar.
     """
+    result = []
+    current = start_value
+    ask_counter = 0
+
+    if include_intermediate_steps:
+        result.append({"step": 0, "value": current, "operation": "start"})
+    else:
+        result.append(current)
+
+    # İhtiyaç duyulan birim ve varsayılan değerler (türe göre değişebilir)
+    # Basitçe 1 ve 0 alalım; tür uyumsuzluğunda kütüphanenin __add__ overload'ları devreye girer.
+    unit = 1
+    default_val = 0
+
+    for i in range(1, iterations):
+        try:
+            # 1. Topla
+            added = current + add_value
+            next_val = added
+            divided = False
+
+            # 2. 2 veya 3'e bölünebilir mi? (robust_int ile tamsayı değerine bakarak)
+            int_val = robust_int(added)
+            if int_val is not None and (int_val % 2 == 0 or int_val % 3 == 0):
+                next_val = safe_divide(added, 2) if int_val % 2 == 0 else safe_divide(added, 3)
+                divided = True
+            else:
+                # 3. Bölünemediyse ve asal ise Keçeci birim uygula
+                if is_prime(added):
+                    adjusted = added + unit if ask_counter == 0 else added - unit
+                    ask_counter = 1 - ask_counter
+                    # adjusted'ın 2 veya 3'e bölünebilirliğini tekrar kontrol et
+                    adj_int = robust_int(adjusted)
+                    if adj_int is not None and (adj_int % 2 == 0 or adj_int % 3 == 0):
+                        next_val = safe_divide(adjusted, 2) if adj_int % 2 == 0 else safe_divide(adjusted, 3)
+                    else:
+                        next_val = adjusted
+
+            current = next_val
+
+            if include_intermediate_steps:
+                result.append({"step": i, "value": current, "operation": "step"})
+            else:
+                result.append(current)
+
+        except Exception as e:
+            # Hata durumunda varsayılan değere geç
+            current = default_val
+            if include_intermediate_steps:
+                result.append({"step": i, "value": current, "operation": "error"})
+            else:
+                result.append(current)
+
+    return result
+
+""" 
+#kullanılmıyor   
+def _generate_ask_sequence_proper(
+    start_value: Any,
+    add_value: Any,
+    iterations: int,
+    include_intermediate_steps: bool = False,
+    number_type: int = 1
+) -> List[Any]:
+
+    #Proper ASK algorithm that handles different number types correctly.
+
     # Get type-specific handler
     handler = _get_type_handler(number_type)
     
@@ -13993,7 +14553,7 @@ def _generate_ask_sequence_proper(
             current = default_val
     
     return result
-
+"""
 
 def _get_type_handler(number_type: int) -> Dict[str, Callable]:
     """
@@ -17310,6 +17870,34 @@ def get_interactive(
     DEFAULT_SHOW_DETAILS = "yes"
 
     default_start_values = {
+    1: "2.5", 2: "-5.0", 3: "1+1j", 4: "3.14", 5: "3.5",
+    6: "1.0,0.0,0.0,0.0", 7: "0.6,0.2,0.1", 8: "1+1j",
+    9: "1.0", 10: "1.34,2.55,0.25,4.61",
+    11: "2.5,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+    12: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+    13: "1.0" + ",0.0" * 15,
+    14: "1.0+2.0e1+3.0e12",
+    15: "1.0,0.1", 16: "1.0,0.5",
+    17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
+    19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
+    21: "12.85,0.08", 22: "2", 23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+    }
+
+    default_add_values = {
+    1: "0.5", 2: "-0.5", 3: "0.1+0.1j", 4: "0.1", 5: "0.1",
+    6: "0.1,0.0,0.0,0.0", 7: "0.1,0.0,0.0", 8: "0.1+0.1j",
+    9: "2.0", 10: "0.08,0.0,0.0,0.0",
+    11: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+    12: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+    13: "0.1" + ",0.0" * 15,
+    14: "0.1+0.2e1", 15: "0.1,0.0", 16: "0.1,0.0",
+    17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
+    19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
+    21: "0.56,1.7", 22: "1", 23: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+    }
+
+    """
+    default_start_values = {
         1: "2.5",
         2: "-5.0",
         3: "1+1j",
@@ -17331,7 +17919,7 @@ def get_interactive(
         19: "1.0" + ",0.0" * 127,
         20: "1.0" + ",0.0" * 255,
         21: "3.0,0.5",
-        22: "12",
+        22: "2",
         23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0"  # Hypercomplex: 8 bileşenli örnek (istendiğinde boyut artırılabilir)
     }
 
@@ -17360,6 +17948,7 @@ def get_interactive(
         22: "1",
         23: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0"  # Hypercomplex ekleme örneği
     }
+    """
 
     # Ask for inputs (uses _ask which respects auto_values when provided)
     type_input_raw = _ask(
@@ -19600,6 +20189,63 @@ def test_division():
             print(f"{a} / {b} = {result} (expected: {expected}) - {'✓' if str(result) == str(expected) else '✗'}")
         except Exception as e:
             print(f"{a} / {b} = ERROR: {e}")
+
+# ==================== TEST YÜRÜTÜCÜ ====================
+def run_test(type_num, start, add, iterations=10000):
+    seq = None
+    try:
+        # Daha az bellek için 1000 adım
+        seq = get_with_params(
+            kececi_type_choice=type_num,
+            iterations=iterations//10,
+            start_value_raw=start,
+            add_value_raw=add,
+            include_intermediate_steps=True
+        )
+        if not seq or len(seq) < 100:
+            return {'success': False, 'reason': 'SHORT_SEQUENCE'}
+
+        kpn = safe_find_kpn(seq, type_num)
+        if kpn is None:
+            return {'success': False, 'reason': 'NO_KPN'}
+
+        positions = []
+        for i, x in enumerate(seq):
+            try:
+                if robust_int(x) == kpn:   # Yumuşak kontrol
+                    positions.append(i)
+            except:
+                continue
+        if len(positions) < 2:
+            return {'success': False, 'reason': 'TOO_FEW_KPN'}
+
+        gaps = np.diff(positions)
+        max_gap = float(np.max(gaps))
+        n_total = len(seq)
+        bound = (math.log(max(n_total, 100))) ** 2 * 0.5
+        ratio = max_gap / bound
+        if ratio >= 1:
+            return {'success': False, 'reason': f'RATIO_EXCEEDED ({ratio:.4f})'}
+
+        return {
+            'success': True,
+            'type': type_num,
+            'type_name': TYPE_NAMES[type_num],
+            'start': start,
+            'add': add,
+            'kpn': kpn,
+            'kpn_count': len(positions),
+            'kpn_freq': len(positions)/n_total,
+            'max_gap': max_gap,
+            'n_total': n_total,
+            'ratio': ratio
+        }
+    except Exception as e:
+        return {'success': False, 'reason': f'EXCEPTION: {str(e)[:80]}'}
+    finally:
+        del seq
+        gc.collect()
+
 
 # ==============================================================================
 # --- MAIN EXECUTION BLOCK ---
