@@ -330,31 +330,47 @@ The following example generates and visualizes a Keçeci sequence with complex n
 ```python
 import matplotlib.pyplot as plt
 import kececinumbers as kn
-import logging
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+import sympy
+import re
+from collections import Counter
 
-# Generate a Keçeci sequence with specific parameters
-# Type: Complex Number, Iterations: 60
-sequence = kn.get_with_params(
+# ------------------------------------------------------------------
+# Ana program
+# ------------------------------------------------------------------
+seq = kn.get_with_params(
     kececi_type_choice=kn.TYPE_COMPLEX,
     iterations=60,
-    start_value_raw="1+2j",
-    add_value_raw=3.0,
+    start_value_raw="1+1j",
+    add_value_raw="0.1+0.1j",
     include_intermediate_steps=True
 )
 
-# If the sequence was generated successfully, plot it
-if sequence:
-    kn.plot_numbers(sequence, title="Complex Keçeci Numbers Example")
+if seq:
+    kn.plot_numbers(seq, title="Complex Keçeci Numbers Example")
     plt.show()
 
-    # Find the Keçeci Prime Number (KPN) for the sequence
-    kpn = kn.find_kececi_prime_number(sequence)
+    kpn = kn.safe_find_kpn(seq, type_num=3)          # <--- Güvenli KPN bulucu
     if kpn:
         print(f"\nKeçeci Prime Number (KPN) found for this sequence: {kpn}")
+    else:
+        print("\nKPN bulunamadı.")
 ```
 
 ![Keçeci Numbers Example](https://github.com/WhiteSymmetry/kececinumbers/blob/main/examples/kn-c.png?raw=true)
+
+```python
+import kececinumbers as kn
+
+seq = kn.get_with_params(
+    kececi_type_choice=kn.TYPE_COMPLEX,
+    iterations=60,
+    start_value_raw="1+1j",
+    add_value_raw="0.1+0.1j",
+    include_intermediate_steps=True
+)
+kpn = kn.safe_find_kpn(seq, type_num=3)  # type_num isteğe bağlı
+print(kpn)
+```
 
 ---
 
