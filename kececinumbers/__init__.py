@@ -23,6 +23,8 @@ __description__ = "Keçeci Numbers: An Exploration of a Dynamic Sequence Across 
 
 # Ana Analiz Fonksiyonları
 from .kececinumbers import (
+    safe_find_kpn,
+    KececiAnalyzer,
     analyze_all_types,
     analyze_kececi_sequence,
     analyze_pair_correlation,
@@ -221,7 +223,7 @@ from .kececinumbers import (
 # Public API - from * import ile erişilebilenler
 __all__ = [
     # Ana fonksiyonlar
-    'analyze_all_types', 'analyze_kececi_sequence', 'analyze_pair_correlation',
+    'safe_find_kpn', 'KececiAnalyzer', 'analyze_all_types', 'analyze_kececi_sequence', 'analyze_pair_correlation',
     'apply_pca_clustering', 'find_kececi_prime_number', 'test_kececi_conjecture',
 
     # Sınıflar
