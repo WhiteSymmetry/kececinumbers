@@ -33,6 +33,7 @@
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/kececinumbers?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/kececinumbers)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/WhiteSymmetry/kececinumbers)
 
+[![RepoStars](https://repostars.dev/api/embed?repo=WhiteSymmetry%2Fkececinumbers&theme=dark)](https://repostars.dev/?repos=WhiteSymmetry%2Fkececinumbers&theme=dark)
 ---
 
 <p align="left">
