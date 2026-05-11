@@ -11,7 +11,6 @@ about it. If not, you can submit a new issue, making sure to include:
 
 * Your OS name and version.
 * Any details about your local setup (_e.g._, your Python environment setup) that might be helpful in troubleshooting.
-* The Solar Data Tools version you are using.
 * Detailed steps to reproduce the bug.
 * A tag, if appropriate (_e.g._, "bug" or "enhancement").
 
@@ -32,11 +31,11 @@ part of the documentation, such as the getting started guides or the docstrings/
 
 ## Get Started!
 
-Ready to contribute? Here's how to set up Solar Data Tools for local development.
+Ready to contribute? Here's how to set up Keçeci Numbers for local development.
 
 1. You will need to have `git` installed on your local machine, and you will need some way to create and manage
 Python virtual environments. We recommend using `conda`.
-2. Create your own fork of the Solar Data Tools [repository](https://github.com/WhiteSymmetry/kececinumbers).
+2. Create your own fork of the Keçeci Numbers [repository](https://github.com/WhiteSymmetry/kececinumbers).
 3. Clone your repository, for example by typing in your terminal:
 `git clone https://github.com/<your_username>/kececinumbers.git`.
 4. Install `kececinumbers` as editable in your new environment:
@@ -77,5 +76,5 @@ Before you submit a pull request, check that it meets these guidelines:
 
 ## Code of Conduct
 
-Please note that the Solar Data Tools project is released with a
+Please note that the Keçeci Numbers project is released with a
 [Code of Conduct](getting_started/CODE_OF_CONDUCT.md). By contributing to this project you agree to abide by its terms.
