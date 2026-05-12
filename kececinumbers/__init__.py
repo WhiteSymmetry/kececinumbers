@@ -189,6 +189,8 @@ from .kececinumbers import (
     is_integer_multiple, 
     is_rational_multiple_with_maxden,
     is_multiple_with_tolerance,
+    _generate_kececi_sequence,
+    generate_kececi_sequence,
 )
 
 # Tip Sabitleri
@@ -234,7 +236,7 @@ __all__ = [
     'parse_to_hyperreal', 'parse_to_neutrosophic',
 
     # Yardımcılar
-    'is_prime', 'plot_numbers', 'generate_interactive_plot', 'get_interactive',
+    'is_prime', 'plot_numbers', 'generate_interactive_plot', 'get_interactive', '_generate_kececi_sequence', 'generate_kececi_sequence',
 
     # Tip sabitleri
     'TYPE_COMPLEX', 'TYPE_QUATERNION', 'TYPE_OCTONION',
