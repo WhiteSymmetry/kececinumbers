@@ -17705,7 +17705,7 @@ def _get_default_value_for_type(value: Any) -> Any:
         return 0
 
 
-def _generate_kececi_sequence(
+def generate_kececi_sequence(
     start_value: Any,
     add_value: Any,
     iterations: int,
