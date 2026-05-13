@@ -1,7 +1,7 @@
 # Keçeci Numbers: Keçeci Sayıları (Keçeci Conjecture)
 ---
 
-# Keçeci Numbers <img src="docs/logo.jpg" alt="Keçeci Numbers" align="right" height="140"/>
+# Keçeci Numbers <img src="https://github.com/WhiteSymmetry/kececinumbers/blob/main/docs/logo.jpg" alt="Keçeci Numbers" align="right" height="140"/>
 
 [![PyPI version](https://badge.fury.io/py/kececinumbers.svg)](https://badge.fury.io/py/kececinumbers/)
 [![License: AGPL](https://img.shields.io/badge/License-AGPL-yellow.svg)](https://opensource.org/license/agpl-3-0)
