@@ -32,7 +32,6 @@ from .kececinumbers import (
     extract_values_for_plotting,
     find_period,
     find_kececi_prime_number,
-    generate_interactive_plot,
     generate_kececi_vectorial,
     get_interactive,
     get_random_type,
@@ -40,10 +39,27 @@ from .kececinumbers import (
     get_with_params,
     kececi_bicomplex_algorithm,
     kececi_bicomplex_advanced,
+    generate_interactive_plot,
     plot_numbers,
+    plot_octonion_3d,
+    plot_neutrosophic_complex,
+    plot_results,
+    safe_plot_numbers,
     print_detailed_report,
     test_kececi_conjecture,
     unified_generator,
+    _generate_ask_sequence_complete,
+    flatten_sequence,
+    find_stable_period, 
+    find_first_occurrence, 
+    run_variation_test, 
+    print_results, 
+    plot_results,
+    analyze_kececi_primes,
+    find_cycle_with_earliest_start,
+    is_prime_value,
+    generate_kececi_sequence0,
+    get_parser,
 )
 
 # Parser Fonksiyonları
@@ -189,8 +205,8 @@ from .kececinumbers import (
     is_integer_multiple, 
     is_rational_multiple_with_maxden,
     is_multiple_with_tolerance,
-    _generate_kececi_sequence,
     generate_kececi_sequence,
+    _generate_kececi_sequence,
 )
 
 # Tip Sabitleri
@@ -236,7 +252,8 @@ __all__ = [
     'parse_to_hyperreal', 'parse_to_neutrosophic',
 
     # Yardımcılar
-    'is_prime', 'plot_numbers', 'generate_interactive_plot', 'get_interactive', '_generate_kececi_sequence', 'generate_kececi_sequence',
+    'is_prime', 'plot_numbers', 'generate_interactive_plot', 'get_interactive', 'generate_kececi_sequence', '_generate_kececi_sequence', '_generate_ask_sequence_complete',
+    #'generate_ask_sequence_complete',
 
     # Tip sabitleri
     'TYPE_COMPLEX', 'TYPE_QUATERNION', 'TYPE_OCTONION',
