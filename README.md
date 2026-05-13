@@ -259,7 +259,7 @@ conda install -c bilgi kececinumbers
 # Install with Pip
 pip install kececinumbers
 
-# extras_require
+# extras_require: only old versions
 
 # Pip için explicit
 quaternion-pip: ["numpy-quaternion"]: pip install numpy-quaternion
