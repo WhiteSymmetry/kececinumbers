@@ -60,6 +60,19 @@ Keçeci Varsayımı (Keçeci Conjecture) - Önerilen
 Her Keçeci Sayı türü için, `unified_generator` fonksiyonu tarafından oluşturulan dizilerin, sonlu adımdan sonra periyodik bir yapıya veya tekrar eden bir asal temsiline (Keçeci Asal Sayısı[...]
 
 Henüz kanıtlanmamıştır ve bu modül bu varsayımı test etmek için bir çerçeve sunar.
+
+*   0.9.8: Keçeci Numbers Sapce (KNS: Keçeci Sayıları Uzayı, KSU):
+  
+Keçeci Sayıları 0.9.7 sürümünde, artık seri üretimi için **ilk bölen** (`first_divisor`) ve **ASK sırası** (`ask_plus_first`) parametreleri doğrudan kullanılabilmektedir. Böylece farklı bölen sayıları (3,2,5,...) ve ASK önceliği (+1 önce / -1 önce) ile aynı başlangıç ve artım değerlerine sahip seriler kolayca karşılaştırılabilir. `get_with_params` fonksiyonu da bu yeni parametreleri destekleyecek şekilde güncellenmiştir.
+
+In version 0.9.7 of Keçeci Numbers, the sequence generation now supports **first divisor** (`first_divisor`) and **ASK order** (`ask_plus_first`) parameters directly. This allows easy comparison of sequences with the same start and increment but different divisors (3,2,5,...) and ASK priorities (+1 first / -1 first). The `get_with_params` function has been updated to accept these new parameters.
+
+*   0.9.5: 23 Numbers
+*   0.8.2: 22 Numbers
+*   0.7.9: 20 Numbers
+*   0.7.8: 16 Numbers
+*   0.6.7: 11 Numbers
+
 """
 
 # --- Standard Library Imports ---
@@ -1614,7 +1627,7 @@ def _generate_sequence(
     add_value: Any,
     iterations: int,
     operation: str,
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
 ) -> List[Any]:
     """
     Generate a sequence based on the operation.
@@ -1747,7 +1760,7 @@ def generate_sequence_safe(
     add_value: Any,
     iterations: int,
     operation: str,
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
 ) -> Union[List[Any], List[Dict[str, Any]]]:
     """
     Safer version with separate return types.
@@ -13065,24 +13078,25 @@ def unified_generator(
         def is_prime_like(val): return False
 
     # ==================================================================
-    # ASK algoritması (ask_unit kullanarak)
+    # ASK algoritması (ask_unit kullanarak) – DÜZELTİLMİŞ VERSİYON
     # ==================================================================
-    sequence = []
+    all_steps = []          # tüm adımlar (ara adımlar dahil)
+    main_steps = []         # sadece ana adımlar (her iterasyon sonundaki current)
     current = start_val
     ask_counter = 0
     primary = first_divisor
     secondary = 2 if primary == 3 else 3
 
+    # İlk değeri ekle
     if include_intermediate_steps:
-        sequence.append(current)
+        all_steps.append(current)
+    main_steps.append(current)
 
     for i in range(1, iterations + 1):
         # 1. Adım: Add
         added = add(current, add_val)
         if include_intermediate_steps:
-            sequence.append(added)
-        else:
-            sequence.append(added)
+            all_steps.append(added)
 
         # 2. Adım: Bölünebilirlik kontrolü (primary, secondary)
         next_val = added
@@ -13091,7 +13105,7 @@ def unified_generator(
             if is_divisible(added, divisor):
                 divided_val = divide(added, divisor)
                 if include_intermediate_steps:
-                    sequence.append(divided_val)
+                    all_steps.append(divided_val)
                 next_val = divided_val
                 divided = True
                 # swap divisors
@@ -13106,7 +13120,7 @@ def unified_generator(
                 delta = -delta
             adjusted = add(added, delta * ask_unit)
             if include_intermediate_steps:
-                sequence.append(adjusted)
+                all_steps.append(adjusted)
             next_val = adjusted
             ask_counter = 1 - ask_counter
 
@@ -13116,7 +13130,7 @@ def unified_generator(
                 if is_divisible(adjusted, divisor):
                     final_val = divide(adjusted, divisor)
                     if include_intermediate_steps:
-                        sequence.append(final_val)
+                        all_steps.append(final_val)
                     next_val = final_val
                     ask_divided = True
                     if divisor == primary:
@@ -13126,11 +13140,14 @@ def unified_generator(
                 next_val = adjusted
 
         current = next_val
+        # Ana adımı kaydet (her iterasyon sonundaki current)
+        main_steps.append(current)
 
+    # Sonuç döndür
     if include_intermediate_steps:
-        return sequence
+        return all_steps
     else:
-        return [sequence[-1]] if sequence else []
+        return main_steps   # artık sadece son değer değil, tüm ana adımlar
 
 """
 def unified_generator(kececi_type, start_input_raw, add_input_raw,
@@ -14048,7 +14065,7 @@ def unified_generator(
     start_input_raw: str,
     add_input_raw: str,
     iterations: int,
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
     first_divisor: int = 3,
     ask_plus_first: bool = True
 ) -> List[Any]:
@@ -14279,7 +14296,7 @@ def _generate_proper_ask_sequence(
     start_value: Any,
     add_value: Any,
     iterations: int,
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
     number_type: int = 1
 ) -> List[Any]:
     """
@@ -14577,7 +14594,7 @@ def _generate_fallback_sequence(
     start_input_raw: str,
     add_input_raw: str,
     iterations: int,
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
     operation: str = "ask"
 ) -> List[Any]:
     """
@@ -14682,7 +14699,7 @@ def _unified_generator_fallback(
     start_input_raw: str,
     add_input_raw: str,
     iterations: int,
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
     operation: str = "ask"
 ) -> List[Any]:
     """
@@ -14761,7 +14778,7 @@ def _generate_ask_sequence_direct(
     start_value: Any,
     add_value: Any,
     iterations: int,
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
     number_type: int = 1
 ) -> List[Any]:
     """
@@ -14862,7 +14879,7 @@ def _generate_operation_sequence_direct(
     add_value: Any,
     iterations: int,
     operation: str,
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
     number_type: int = 1
 ) -> List[Any]:
     """
@@ -15033,7 +15050,7 @@ def _generate_simple_sequence_direct(
     start_value: Any,
     add_value: Any,
     iterations: int,
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
     number_type: int = 1
 ) -> List[Any]:
     """
@@ -15087,7 +15104,7 @@ def _generate_ternary_ask_sequence(
     start_value: 'TernaryNumber',
     add_value: 'TernaryNumber',
     iterations: int,
-    include_intermediate_steps: bool = False
+    include_intermediate_steps: bool = True
 ) -> List[Any]:
     """
     ASK algorithm specifically for TernaryNumber.
@@ -15194,7 +15211,7 @@ def _generate_ternary_operation_sequence(
     add_value: 'TernaryNumber',
     iterations: int,
     operation: str,
-    include_intermediate_steps: bool = False
+    include_intermediate_steps: bool = True
 ) -> List[Any]:
     """
     Standard operations for TernaryNumber.
@@ -15293,7 +15310,7 @@ def _generate_ask_sequence_proper(
     start_value: Any,
     add_value: Any,
     iterations: int,
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
     number_type: int = 1
 ) -> List[Any]:
     """
@@ -15361,7 +15378,7 @@ def _generate_ask_sequence_proper(
     start_value: Any,
     add_value: Any,
     iterations: int,
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
     number_type: int = 1
 ) -> List[Any]:
 
@@ -15735,7 +15752,7 @@ def _generate_ask_sequence_fixed(
     start_value: Any,
     add_value: Any,
     iterations: int,
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
     number_type: int = 1
 ) -> List[Any]:
     """
@@ -16263,7 +16280,7 @@ def _generate_sequence_original(
     start_value: Any,
     add_value: Any,
     iterations: int,
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
     number_type: int = 1
 ) -> List[Any]:
     """
@@ -16371,7 +16388,7 @@ def _generate_sequence_with_operation(
     add_value: Any,
     iterations: int,
     operation: str,
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
     number_type: int = 1
 ) -> List[Any]:
     """
@@ -17308,7 +17325,7 @@ def _generate_simple_ask_sequence(
     start_value: Any,
     add_value: Any,
     iterations: int,
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
     number_type: int = 1
 ) -> List[Any]:
     """
@@ -17968,7 +17985,7 @@ def _generate_ask_sequence_complete_hata(
     start_value: Any,
     add_value: Any,
     iterations: int,
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
     number_type: int = 1
 ) -> List[Any]:
 
@@ -18277,7 +18294,7 @@ def get_with_params(
     start_value_raw: Union[str, float, int] = "0",
     add_value_raw: Union[str, float, int] = "1.0",
     operation: str = "ask",  # Default ASK algoritması
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
     custom_parser: Optional[Callable] = None,
 ) -> List[Any]:
 
@@ -18349,7 +18366,7 @@ def get_with_params(
     iterations: int,
     start_value_raw: str,
     add_value_raw: str,
-    include_intermediate_steps: bool = False
+    include_intermediate_steps: bool = True
 ) -> List[Any]:
 
     #Common entry point: validates inputs early, logs info instead of printing.
@@ -18703,17 +18720,31 @@ def get_with_params(
     iterations: int,
     start_value_raw: str,
     add_value_raw: str,
-    include_intermediate_steps: bool = False
+    include_intermediate_steps: bool = True,
+    first_divisor: int = 3,          # yeni parametre
+    ask_plus_first: bool = True      # yeni parametre
 ) -> List[Any]:
-    # Her durumda unified_generator'ı kullan
+    """
+    Keçeci sayıları serisi üretir.
+    Args:
+        kececi_type_choice: 1-23 arası tip numarası
+        iterations: adım sayısı
+        start_value_raw: başlangıç değeri (string)
+        add_value_raw: artım değeri (string)
+        include_intermediate_steps: ara adımlar dahil mi?
+        first_divisor: ilk bölen sayısı (varsayılan 3)
+        ask_plus_first: ASK işleminde önce +1 mi? (True=+1 önce, False=-1 önce)
+    Returns:
+        Seri listesi
+    """
     return unified_generator(
         kececi_type=kececi_type_choice,
         start_input_raw=start_value_raw,
         add_input_raw=add_value_raw,
         iterations=iterations,
         include_intermediate_steps=include_intermediate_steps,
-        first_divisor=3,          # varsayılan
-        ask_plus_first=True       # varsayılan
+        first_divisor=first_divisor,
+        ask_plus_first=ask_plus_first
     )
 """
 def get_with_params(
@@ -18721,7 +18752,7 @@ def get_with_params(
     iterations: int,
     start_value_raw: str,
     add_value_raw: str,
-    include_intermediate_steps: bool = False
+    include_intermediate_steps: bool = True
 ) -> List[Any]:
     if kececi_type_choice == 1:  # Positive Real
         start = float(start_value_raw)
@@ -18745,7 +18776,7 @@ def get_with_params(
     iterations: int,
     start_value: str,
     add_value: str,
-    include_intermediate_steps: bool = False
+    include_intermediate_steps: bool = True
 ) -> List[Any]:
 
     logger.info("Generating Keçeci Sequence: Type %s, Steps %s", kececi_type_choice, iterations)
@@ -18799,7 +18830,7 @@ def get_with_params(
     iterations: int,
     start_value_raw: str,
     add_value_raw: str,
-    include_intermediate_steps: bool = False
+    include_intermediate_steps: bool = True
 ) -> List[Any]:
 
     #Common entry point: validates inputs early, logs info instead of printing.
@@ -18858,7 +18889,7 @@ def get_with_params(
     start_value_raw: Union[str, float, int] = "0",
     add_value_raw: Union[str, float, int] = "1.0",
     operation: str = "add",
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
     custom_parser: Optional[Any] = None,
 ) -> List[Any]:
 
@@ -18930,7 +18961,7 @@ def get_with_params(
     start_value_raw: Union[str, float, int] = "0",
     add_value_raw: Union[str, float, int] = "1.0",
     operation: str = "add",
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
     custom_parser: Optional[Callable] = None,
 ) -> List[Any]:
 
@@ -19286,7 +19317,7 @@ def _generate_kececi_sequence(
     add_value: Any,
     iterations: int,
     operation: str,
-    include_intermediate_steps: bool = False,
+    include_intermediate_steps: bool = True,
     number_type: str = "Unknown"
 ) -> List[Any]:
     """
