@@ -23,6 +23,7 @@ __description__ = "Keçeci Numbers: An Exploration of a Dynamic Sequence Across 
 
 # Ana Analiz Fonksiyonları
 from .kececinumbers import (
+    TYPE_NAMES,
     safe_find_kpn,
     KececiAnalyzer,
     analyze_all_types,
@@ -60,6 +61,14 @@ from .kececinumbers import (
     is_prime_value,
     generate_kececi_sequence0,
     get_parser,
+    random_start_add,
+    srandom_start_add,
+    test_variations,
+    run_comprehensive_analysis,
+    find_kpn,
+    run_test,
+    run_cramer_test,
+    comprehensive_cramer_test,
 )
 
 # Parser Fonksiyonları
