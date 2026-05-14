@@ -61,7 +61,7 @@ Her Keçeci Sayı türü için, `unified_generator` fonksiyonu tarafından oluş
 
 Henüz kanıtlanmamıştır ve bu modül bu varsayımı test etmek için bir çerçeve sunar.
 
-*   0.9.8: Keçeci Numbers Sapce (KNS: Keçeci Sayıları Uzayı, KSU):
+*   0.9.7-0.9.9: Keçeci Numbers Sapce (KNS: Keçeci Sayıları Uzayı, KSU):
   
 Keçeci Sayıları 0.9.7 sürümünde, artık seri üretimi için **ilk bölen** (`first_divisor`) ve **ASK sırası** (`ask_plus_first`) parametreleri doğrudan kullanılabilmektedir. Böylece farklı bölen sayıları (3,2,5,...) ve ASK önceliği (+1 önce / -1 önce) ile aynı başlangıç ve artım değerlerine sahip seriler kolayca karşılaştırılabilir. `get_with_params` fonksiyonu da bu yeni parametreleri destekleyecek şekilde güncellenmiştir.
 
@@ -211,7 +211,7 @@ DEFAULT_STARTS = {
     15: "1.0,0.1", 16: "1.0,0.5",
     17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
     19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
-    21: "12.85,0.08", 22: "2", 23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+    21: "12.85,0.08", 22: "11", 23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
 }
 DEFAULT_ADDS = {
     1: "9", 2: "-3", 3: "0.1+0.1j", 4: "4.5", 5: "0.1", # 1: "0.5"
@@ -223,7 +223,7 @@ DEFAULT_ADDS = {
     14: "0.1+0.2e1", 15: "0.1,0.0", 16: "0.1,0.0",
     17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
     19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
-    21: "0.56,1.7", 22: "1", 23: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+    21: "0.56,1.7", 22: "22", 23: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
 }
 
 type_class_map = {
@@ -574,7 +574,7 @@ class KececiAnalyzer:
             15: "1.0,0.1", 16: "1.0,0.5",
             17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
             19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
-            21: "12.85,0.08", 22: "2", 23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+            21: "12.85,0.08", 22: "11", 23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
         }
         default_adds = {
             1: "9", 2: "-0.5", 3: "0.1+0.1j", 4: "0.1", 5: "0.1",
@@ -586,7 +586,7 @@ class KececiAnalyzer:
             14: "0.1+0.2e1", 15: "0.1,0.0", 16: "0.1,0.0",
             17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
             19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
-            21: "0.56,1.7", 22: "1", 23: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+            21: "0.56,1.7", 22: "22", 23: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
         }
         print("\n📌 Varsayılan parametrelerle test...")
         for t in range(1, 24):
@@ -1873,7 +1873,6 @@ def _safe_power_kececi(a: Any, b: Any, number_type: str = "Unknown") -> Any:
         raise ValueError(f"Power operation not supported for {number_type}")
 
 # --- Genel uygulayıcı ----------------------------------------------------
-
 def _apply_kececi_operation(a: Any, b: Any, operation: str, number_type: str = "Unknown") -> Any:
     """
     Apply operation to Keçeci numbers with proper type handling and fallbacks.
@@ -1927,7 +1926,6 @@ def _apply_kececi_operation(a: Any, b: Any, operation: str, number_type: str = "
         raise
 
 # --- Basit sembol yardımcı fonksiyonu -----------------------------------
-
 def get_operation_symbol(operation: str) -> str:
     return _get_operation_symbol(operation)
 
@@ -3702,7 +3700,8 @@ class HypercomplexNumber:
         if isinstance(other, HypercomplexNumber):
             if self.dimension != other.dimension:
                 return False
-            return all(abs(a - b) < 1e-12 for a, b in zip(self.coeffs(), other.coeffs()))
+            #return all(abs(a - b) < 1e-12 for a, b in zip(self.coeffs(), other.coeffs()))
+            return all(abs(a - b) < 1e-12 for a, b in zip(self.coeffs, other.coeffs))
         if isinstance(other, (int, float)):
             return abs(self.real - float(other)) < 1e-12 and all(abs(c) < 1e-12 for c in self.imag)
         return False
@@ -5308,6 +5307,11 @@ class PathionNumber:
             pass
         return 0.0
 
+    def __rmul__(self, scalar):
+        if isinstance(scalar, (int, float)):
+            return self.__class__(*[scalar * c for c in self.components])
+        return NotImplemented
+
 @dataclass
 class ChingonNumber:
     """64-bileşenli Chingon sayısı"""  # Açıklama düzeltildi
@@ -5433,6 +5437,11 @@ class ChingonNumber:
         except Exception:
             pass
         return 0.0
+
+    def __rmul__(self, scalar):
+        if isinstance(scalar, (int, float)):
+            return self.__class__(*[scalar * c for c in self.components])
+        return NotImplemented
 
 @dataclass
 class RoutonNumber:
@@ -13009,11 +13018,95 @@ def _parse_with_fallback_simple(
     start = parser(start_input_raw)
     add_val = parser(add_input_raw)
 """
+def convert_to_plot_value(item):
+    if isinstance(item, dict):
+        val = item['value']
+    else:
+        val = item
+    return float(_first_component_as_int(val))  # veya doğrudan ilk bileşen
+
+def _first_component_as_int(val):
+    """Her türlü Keçeci sayısından ilk sayısal bileşeni int olarak döndürür."""
+    try:
+        # HyperrealNumber için
+        if hasattr(val, 'finite'):
+            f = val.finite if not callable(val.finite) else val.finite()
+            return int(round(float(f)))
+        # BicomplexNumber için
+        if hasattr(val, 'a'):  # BicomplexNumber'ın a attribute'ü complex olabilir
+            a = val.a
+            if hasattr(a, 'real'):
+                return int(round(float(a.real)))
+            return int(round(float(a)))
+        if hasattr(val, 'real'):  # complex, dual, split-complex, vs.
+            r = val.real
+            if callable(r):
+                r = r()
+            return int(round(float(r)))
+        if hasattr(val, 't'):  # NeutrosophicNumber
+            return int(round(float(val.t)))
+        if hasattr(val, 'components'):
+            comps = val.components if not callable(val.components) else val.components()
+            if comps:
+                return int(round(float(comps[0])))
+        if hasattr(val, 'coeffs'):
+            c = val.coeffs if not callable(val.coeffs) else val.coeffs()
+            if c:
+                return int(round(float(c[0])))
+        if isinstance(val, (int, float)):
+            return int(round(val))
+        if isinstance(val, (list, tuple)) and val:
+            return int(round(float(val[0])))
+        return 0
+    except:
+        return 0
+
+def make_unit(exemplar):
+    cls = type(exemplar)
+    if cls is dict:
+        return {'': 1.0}
+    if cls is tuple:
+        return cls((1, 1, 1))
+    if cls is list:
+        return cls([1, 1, 1])
+    if issubclass(cls, (int, float, complex)):
+        return cls(1)
+    if hasattr(cls, '__init__'):
+        init = cls.__init__
+        if hasattr(init, '__code__'):
+            total_args = init.__code__.co_argcount  # self dahil
+            expected = total_args - 1
+            if expected == 0:
+                return cls()
+            elif expected == 1:
+                return cls(1)
+            elif expected == 2:
+                return cls(1, 1)
+            elif expected == 3:
+                return cls(1, 1, 1)
+            elif expected == 4:
+                return cls(1, 1, 1, 1)
+            elif expected == 8:
+                return cls(1, 1, 1, 1, 1, 1, 1, 1)
+            else:
+                return cls(*([1] * expected))
+        else:
+            # built-in
+            if cls in (int, float, complex, str, bool):
+                return cls(1)
+            elif cls in (tuple, list):
+                return cls([1])
+            else:
+                return cls()
+    return cls(1)
+
+
 def unified_generator(
     kececi_type: int,
     start_input_raw: str,
     add_input_raw: str,
     iterations: int,
+    operation='ask',
     include_intermediate_steps: bool = True,
     first_divisor: int = 3,
     ask_plus_first: bool = True,
@@ -13024,6 +13117,606 @@ def unified_generator(
     """
 
     logger = logging.getLogger(__name__)
+
+    def is_prime_like(val):
+        v = _first_component_as_int(val)
+        return v > 1 and isprime(v)
+
+    def _is_prime_decimal(n: int) -> bool:
+        """Basit ve hızlı asallık testi."""
+        if n < 2:
+            return False
+        if n == 2 or n == 3:
+            return True
+        if n % 2 == 0 or n % 3 == 0:
+            return False
+        i = 5
+        while i * i <= n:
+            if n % i == 0 or n % (i + 2) == 0:
+                return False
+            i += 6
+        return True
+
+    # ------------------------------------------------------------------
+    # Yardımcı: make_unit (doğru argüman sayısı ile birim eleman üretir)
+    # ------------------------------------------------------------------
+    def make_unit(exemplar):
+        cls = type(exemplar)
+        if cls is dict:
+            return {'': 1.0}
+        if cls is tuple:
+            return cls((1, 1, 1))
+        if cls is list:
+            return cls([1, 1, 1])
+        if issubclass(cls, (int, float, complex)):
+            return cls(1)
+        if hasattr(cls, '__init__'):
+            init = cls.__init__
+            if hasattr(init, '__code__'):
+                total_args = init.__code__.co_argcount  # self dahil
+                expected = total_args - 1
+                if expected == 0:
+                    return cls()
+                elif expected == 1:
+                    return cls(1)
+                elif expected == 2:
+                    return cls(1, 1)
+                elif expected == 3:
+                    return cls(1, 1, 1)
+                elif expected == 4:
+                    return cls(1, 1, 1, 1)
+                elif expected == 8:
+                    return cls(1, 1, 1, 1, 1, 1, 1, 1)
+                else:
+                    return cls(*([1] * expected))
+            else:
+                # built-in
+                if cls in (int, float, complex, str, bool):
+                    return cls(1)
+                elif cls in (tuple, list):
+                    return cls([1])
+                else:
+                    return cls()
+        return cls(1)
+
+    # ------------------------------------------------------------------
+    # Parser (mevcut modülün get_parser'ını kullan, fallback ile)
+    # ------------------------------------------------------------------
+    try:
+        from .kececinumbers import get_parser as _get_parser
+        base_parser = _get_parser(kececi_type)
+    except ImportError:
+        def base_parser(s):
+            s = s.strip()
+            if ',' in s:
+                parts = [p.strip() for p in s.split(',')]
+                return [float(p) if '.' in p or 'e' in p else int(p) for p in parts]
+            try:
+                return int(s) if '.' not in s and 'e' not in s else float(s)
+            except:
+                return s
+
+    def parser(val):
+        """Güvenli parser: None/boş girdi -> 0, tip 7/8 için özel nesneler."""
+        if val is None:
+            return 0
+        if isinstance(val, str) and val.strip() == '':
+            return 0
+        return base_parser(val)
+
+    start_val = parser(start_input_raw)
+    add_val = parser(add_input_raw)
+
+    # ------------------------------------------------------------------
+    # convert_to_number: ham veriyi uygun Keçeci sınıfına çevir
+    # ------------------------------------------------------------------
+    def convert_to_number(val, typ):
+        # Tip 7: NeutrosophicNumber
+        if typ == 7:
+            from .kececinumbers import NeutrosophicNumber
+            if isinstance(val, NeutrosophicNumber):
+                return val
+            if isinstance(val, str):
+                parts = val.split(',')
+                t = float(parts[0]) if parts else 0.0
+                i = float(parts[1]) if len(parts) > 1 else 0.0
+                f = float(parts[2]) if len(parts) > 2 else 0.0
+                return NeutrosophicNumber(t, i, f)
+            elif isinstance(val, (list, tuple)):
+                return NeutrosophicNumber(*val)
+            else:
+                return NeutrosophicNumber(float(val), 0.0, 0.0)
+
+        # Tip 8: NeutrosophicComplexNumber
+        if typ == 8:
+            from .kececinumbers import NeutrosophicComplexNumber
+            if isinstance(val, NeutrosophicComplexNumber):
+                return val
+            if isinstance(val, str):
+                parts = val.split(',')
+                real = float(parts[0]) if parts else 0.0
+                imag = float(parts[1]) if len(parts) > 1 else 0.0
+                return NeutrosophicComplexNumber(real, imag)
+            elif isinstance(val, (list, tuple)):
+                return NeutrosophicComplexNumber(*val)
+            else:
+                return NeutrosophicComplexNumber(float(val), 0.0)
+
+        # Tip 9: HyperrealNumber
+        if typ == 9:
+            from .kececinumbers import HyperrealNumber
+            if isinstance(val, HyperrealNumber):
+                return val
+            if isinstance(val, str):
+                parts = val.split(',')
+                finite = float(parts[0]) if parts else 0.0
+                infinitesimal = float(parts[1]) if len(parts) > 1 else 0.0
+                return HyperrealNumber(finite, infinitesimal)
+            elif isinstance(val, (list, tuple)):
+                if len(val) >= 2:
+                    return HyperrealNumber(float(val[0]), float(val[1]))
+                else:
+                    return HyperrealNumber(float(val[0]), 0.0)
+            else:
+                return HyperrealNumber(float(val), 0.0)
+
+        # Tip 10: BicomplexNumber
+        if typ == 10:
+            from .kececinumbers import BicomplexNumber
+            if isinstance(val, BicomplexNumber):
+                return val
+            if isinstance(val, str):
+                parts = val.split(',')
+                a = complex(float(parts[0]), float(parts[1])) if len(parts) > 1 else complex(float(parts[0]), 0)
+                b = 0j
+                return BicomplexNumber(a, b)
+            elif isinstance(val, (list, tuple)):
+                if len(val) >= 2:
+                    return BicomplexNumber(val[0], val[1])
+                else:
+                    return BicomplexNumber(val[0], 0j)
+            else:
+                return BicomplexNumber(complex(float(val), 0), 0j)
+
+        # Tip 22: TernaryNumber
+        if typ == 22:
+            from .kececinumbers import TernaryNumber
+            if isinstance(val, TernaryNumber):
+                return val
+            if isinstance(val, str):
+                return TernaryNumber.from_ternary_string(val)
+            if isinstance(val, (list, tuple)):
+                # Eski parser'dan gelen [sayı, 0, 0] formatını temizle
+                if len(val) == 3 and val[1] == 0.0 and val[2] == 0.0:
+                    return TernaryNumber.from_decimal(int(round(val[0])))
+                return TernaryNumber(val)
+            if isinstance(val, (int, float)):
+                return TernaryNumber.from_decimal(int(val))
+            return TernaryNumber.from_decimal(0)
+
+        # Diğer tipler için doğrudan dönüş
+        if isinstance(val, (int, float, complex)):
+            return val
+        if isinstance(val, str):
+            try:
+                return int(val) if '.' not in val else float(val)
+            except:
+                return val
+        if isinstance(val, (list, tuple)):
+            return val
+        return val
+
+    start_val = convert_to_number(start_val, kececi_type)
+    add_val = convert_to_number(add_val, kececi_type)
+
+    # Güvenlik: None ise 0 ata
+    if start_val is None:
+        start_val = 0
+    if add_val is None:
+        add_val = 0
+
+    def _first_component_as_int(val):
+        """Her türlü Keçeci sayısından ilk sayısal bileşeni int olarak döndürür."""
+        try:
+            if hasattr(val, 'a'):
+                return int(round(float(val.a.real)))
+            # HyperrealNumber için
+            if hasattr(val, 'finite'):
+                f = val.finite if not callable(val.finite) else val.finite()
+                return int(round(float(f)))
+            # BicomplexNumber için
+            if hasattr(val, 'a'):  # BicomplexNumber'ın a attribute'ü complex olabilir
+                a = val.a
+                if hasattr(a, 'real'):
+                    return int(round(float(a.real)))
+                return int(round(float(a)))
+            if hasattr(val, 'real'):  # complex, dual, split-complex, vs.
+                r = val.real
+                if callable(r):
+                    r = r()
+                return int(round(float(r)))
+            if hasattr(val, 't'):  # NeutrosophicNumber
+                return int(round(float(val.t)))
+            if hasattr(val, 'components'):
+                comps = val.components if not callable(val.components) else val.components()
+                if comps:
+                    return int(round(float(comps[0])))
+            if hasattr(val, 'coeffs'):
+                c = val.coeffs if not callable(val.coeffs) else val.coeffs()
+                if c:
+                    return int(round(float(c[0])))
+            if isinstance(val, (int, float)):
+                return int(round(val))
+            if isinstance(val, (list, tuple)) and val:
+                return int(round(float(val[0])))
+            return 0
+        except:
+            return 0
+
+    # Birim eleman (ask_unit)
+    ask_unit = make_unit(start_val)
+
+    # ------------------------------------------------------------------
+    # Tip-specific işlemlerin tanımı (1..23)
+    # ------------------------------------------------------------------
+    if kececi_type in (1, 2, 4, 5):   # Positive Real, Negative Real, Float, Rational
+        def add(a, b): return a + b
+        def is_divisible(val, d):
+            try:
+                return math.isclose(float(val) % d, 0) or math.isclose(float(val) % d, d)
+            except:
+                return False
+        def divide(val, d):
+            if kececi_type in (1, 2):
+                return int(float(val) // d)
+            else:
+                return float(val) / d
+        def is_prime_like(val):
+            v = int(round(float(val)))
+            return v > 1 and isprime(v)
+
+    elif kececi_type == 3:   # Complex
+        def add(a, b): return a + b
+        def is_divisible(val, d):
+            return math.isclose(val.real % d, 0)
+        def divide(val, d):
+            return complex(val.real / d, val.imag / d)
+        def is_prime_like(val):
+            v = int(round(val.real))
+            return v > 1 and isprime(v)
+
+    elif kececi_type == 6:   # Quaternion
+        def add(a, b): return a + b
+        def is_divisible(val, d):
+            if hasattr(val, 'w'):
+                return math.isclose(val.w % d, 0)
+            return False
+        def divide(val, d):
+            if hasattr(val, '__truediv__'):
+                return val / d
+            return type(val)(val.w/d, val.x/d, val.y/d, val.z/d)
+        def is_prime_like(val):
+            v = int(round(val.w))
+            return v > 1 and isprime(v)
+
+    elif kececi_type == 7:   # NeutrosophicNumber
+        def add(a, b): return a + b
+        def is_divisible(val, d):
+            # val.t (T bileşeni) kullan
+            return math.isclose(val.t % d, 0) if hasattr(val, 't') else False
+        def divide(val, d):
+            # Tüm bileşenleri d'ye böl
+            return type(val)(val.t/d, val.i/d, val.f/d)
+        def is_prime_like(val):
+            v = int(round(val.t))
+            return v > 1 and isprime(v)
+
+    elif kececi_type == 8:   # NeutrosophicComplexNumber
+        def add(a, b): return a + b
+        def is_divisible(val, d):
+            return math.isclose(val.real % d, 0) if hasattr(val, 'real') else False
+        def divide(val, d):
+            return type(val)(val.real/d, val.imag/d, getattr(val, 'indeterminacy', 0)/d)
+        def is_prime_like(val):
+            v = int(round(val.real))
+            return v > 1 and isprime(v)
+        """
+        elif kececi_type == 9:   # HyperrealNumber
+            from .kececinumbers import HyperrealNumber
+            if isinstance(val, str): # NameError: name 'val' is not defined
+                parts = val.split(',')
+                finite = float(parts[0]) if parts else 0.0
+                infinitesimal = float(parts[1]) if len(parts) > 1 else 0.0
+                return HyperrealNumber(finite, infinitesimal)
+            elif isinstance(val, (list, tuple)):
+                if len(val) >= 2:
+                    return HyperrealNumber(float(val[0]), float(val[1]))
+                else:
+                    return HyperrealNumber(float(val[0]), 0.0)
+            else:
+                return HyperrealNumber(float(val), 0.0)
+
+        elif kececi_type == 10:
+            def add(a, b): return a + b
+            def is_divisible(val, d):
+                if hasattr(val, 'a'):
+                    return math.isclose(val.a.real % d, 0)
+                return False
+            def divide(val, d):
+                if hasattr(val, 'a'):
+                    return type(val)(val.a/d, val.b/d)
+                return val
+            def is_prime_like(val):
+                v = _first_component_as_int(val)
+                return v > 1 and isprime(v)
+            ask_unit = type(start_val)(1+1j, 1+1j)
+        """
+        """
+        # Bicomplex (tip 10)
+        elif kececi_type == 10:
+            def add(a, b): return a + b
+            def is_divisible(val, d):
+                if hasattr(val, 'a'):
+                    return math.isclose(val.a.real % d, 0)
+                return False
+            def divide(val, d):
+                if hasattr(val, 'a'):
+                    return type(val)(val.a/d, val.b/d)
+                return val
+            def is_prime_like(val):
+                v = _first_component_as_int(val)
+                return v > 1 and isprime(v)
+            ask_unit = type(start_val)(1+1j, 1+1j)   # özel birim
+        """
+        """
+        # Bicomplex (tip 10)
+        elif kececi_type == 10:
+            def add(a, b): return a + b
+            def is_divisible(val, d):
+                if hasattr(val, 'a'):
+                    return math.isclose(val.a.real % d, 0)
+                return False
+            def divide(val, d):
+                if hasattr(val, 'a'):
+                    return type(val)(val.a/d, val.b/d)
+                return val
+            def is_prime_like(val):
+                v = int(round(val.a.real))
+                return v > 1 and isprime(v)
+            ask_unit = type(start_val)(1+1j, 1+1j)
+        """
+
+    # Neutrosophic Bicomplex (tip 11)
+    elif kececi_type == 11:
+        def add(a, b): return a + b
+        def is_divisible(val, d):
+            v = int(round(val.coeffs[0].real if hasattr(val, 'coeffs') else 0))
+            return math.isclose(v % d, 0)
+        def divide(val, d):
+            if hasattr(val, 'coeffs'):
+                c = val.coeffs if not callable(val.coeffs) else val.coeffs()
+                return type(val)(*(x/d for x in c))
+            return val
+        def is_prime_like(val):
+            v = int(round(val.coeffs[0].real if hasattr(val, 'coeffs') else 0))
+            return v > 1 and isprime(v)
+        ask_unit = make_unit(start_val)
+
+    elif kececi_type in (12, 13, 17, 18, 19, 20, 23):  # Octonion, Sedenion, Pathion, Chingon, Routon, Voudon, Hypercomplex
+        def add(a, b): return a + b
+        def is_divisible(val, d):
+            if hasattr(val, 'components'):
+                comps = val.components if not callable(val.components) else val.components()
+                if comps:
+                    return math.isclose(comps[0] % d, 0)
+            return False
+        def divide(val, d):
+            if hasattr(val, 'components'):
+                comps = val.components if not callable(val.components) else val.components()
+                new = [c/d for c in comps]
+                try:
+                    return type(val)(*new)
+                except TypeError:
+                    return type(val)(new)
+            return val
+        def is_prime_like(val):
+            if hasattr(val, 'components'):
+                comps = val.components if not callable(val.components) else val.components()
+                first = comps[0] if comps else 0
+                v = int(round(float(first)))
+                return v > 1 and isprime(v)
+            return False
+
+    elif kececi_type == 14:  # Clifford
+        def add(a, b): return a + b
+        def is_divisible(val, d):
+            scalar = val.basis.get('', 0)
+            return math.isclose(scalar % d, 0)
+        def divide(val, d):
+            new_basis = {k: v/d for k, v in val.basis.items()}
+            return type(val)(new_basis)
+        def is_prime_like(val):
+            v = int(round(val.basis.get('', 0)))
+            return v > 1 and isprime(v)
+
+    elif kececi_type in (15, 16):  # Dual, Split-Complex
+        def add(a, b): return a + b
+        def is_divisible(val, d):
+            return math.isclose(val.real % d, 0)
+        def divide(val, d):
+            if hasattr(val, 'dual'):
+                return type(val)(val.real/d, val.dual/d)
+            else:
+                return type(val)(val.real/d, val.imag/d)
+        def is_prime_like(val):
+            v = int(round(val.real))
+            return v > 1 and isprime(v)
+
+    # Super Real (tip 21)
+    elif kececi_type == 21:
+        def add(a, b): return a + b
+        def is_divisible(val, d):
+            if hasattr(val, 'finite'):
+                f = val.finite if not callable(val.finite) else val.finite()
+                return math.isclose(f % d, 0)
+            if isinstance(val, (int, float)):
+                return math.isclose(val % d, 0)
+            return False
+        def divide(val, d):
+            if hasattr(val, 'finite'):
+                f = val.finite if not callable(val.finite) else val.finite()
+                i = val.infinitesimal if not callable(val.infinitesimal) else val.infinitesimal()
+                return type(val)(f/d, i/d)
+            if isinstance(val, (int, float)):
+                return type(val)(val / d)
+            return val
+        def is_prime_like(val):
+            v = _first_component_as_int(val)
+            return v > 1 and isprime(v)
+        ask_unit = make_unit(start_val)
+
+    elif kececi_type == 22:  # Ternary
+        from .kececinumbers import TernaryNumber, _generate_ternary_ask_sequence, _generate_ternary_operation_sequence
+        start_str = str(start_input_raw).strip()
+        add_str = str(add_input_raw).strip()
+        if not all(c in '012' for c in start_str):
+            raise ValueError(f"Geçersiz ternary başlangıç: {start_str}")
+        if not all(c in '012' for c in add_str):
+            raise ValueError(f"Geçersiz ternary artış: {add_str}")
+        start_val = TernaryNumber.from_ternary_string(start_str)
+        add_val = TernaryNumber.from_ternary_string(add_str)
+        if operation == 'ask':
+            return _generate_ternary_ask_sequence(start_val, add_val, iterations, include_intermediate_steps)
+        else:
+            return _generate_ternary_operation_sequence(start_val, add_val, iterations, operation, include_intermediate_steps)
+
+    else:
+        # Fallback (sadece toplama)
+        def add(a, b): return a + b
+        def is_divisible(val, d): return False
+        def divide(val, d): return val
+        def is_prime_like(val): return False
+
+    # ==================================================================
+    # ASK algoritması (ask_unit kullanarak)
+    # ==================================================================
+    all_steps = []
+    main_steps = []
+    current = start_val
+    ask_counter = 0
+    primary = first_divisor
+    secondary = 2 if primary == 3 else 3
+
+    if include_intermediate_steps:
+        all_steps.append(current)
+    main_steps.append(current)
+
+    for i in range(1, iterations + 1):
+        added = add(current, add_val)
+        if include_intermediate_steps:
+            all_steps.append(added)
+
+        next_val = added
+        divided = False
+        for divisor in (primary, secondary):
+            if is_divisible(added, divisor):
+                divided_val = divide(added, divisor)
+                if include_intermediate_steps:
+                    all_steps.append(divided_val)
+                next_val = divided_val
+                divided = True
+                if divisor == primary:
+                    primary, secondary = secondary, primary
+                break
+
+        if not divided and is_prime_like(added):
+            delta = 1 if ask_counter == 0 else -1
+            if not ask_plus_first:
+                delta = -delta
+
+            # Güvenli birim ayarlaması (int * obj yerine)
+            if delta == 1:
+                unit_adjust = ask_unit
+            else:
+                # Negatif birim oluşturmayı dene
+                try:
+                    unit_adjust = -ask_unit
+                except Exception:
+                    # Negasyon yoksa, bileşenleri negatifleyerek yeni nesne oluştur
+                    if hasattr(ask_unit, 'components'):
+                        neg_comps = [-c for c in ask_unit.components]
+                        unit_adjust = type(ask_unit)(*neg_comps)
+                    elif hasattr(ask_unit, 'coeffs'):
+                        neg_coeffs = [-c for c in ask_unit.coeffs]
+                        unit_adjust = type(ask_unit)(*neg_coeffs)
+                    else:
+                        # En kötü durum: çarpma dene (eğer başarısız olursa hata fırlat)
+                        unit_adjust = ask_unit * (-1)
+
+            adjusted = add(added, unit_adjust)
+
+            if include_intermediate_steps:
+                all_steps.append(adjusted)
+            next_val = adjusted
+            ask_counter = 1 - ask_counter
+
+            ask_divided = False
+            for divisor in (primary, secondary):
+                if is_divisible(adjusted, divisor):
+                    final_val = divide(adjusted, divisor)
+                    if include_intermediate_steps:
+                        all_steps.append(final_val)
+                    next_val = final_val
+                    ask_divided = True
+                    if divisor == primary:
+                        primary, secondary = secondary, primary
+                    break
+            if not ask_divided:
+                next_val = adjusted
+
+        current = next_val
+        main_steps.append(current)
+
+    if include_intermediate_steps:
+        return all_steps
+    else:
+        return main_steps
+
+"""
+def unified_generator(
+    kececi_type: int,
+    start_input_raw: str,
+    add_input_raw: str,
+    iterations: int,
+    operation='ask',
+    include_intermediate_steps: bool = True,
+    first_divisor: int = 3,
+    ask_plus_first: bool = True,
+) -> List[Any]:
+
+    #Keçeci sayıları üretici – 23 farklı sayı sistemi için ask_unit kullanır.
+    #Tüm matematiksel işlemler (+, -, *, /, %, is_prime_like) tip-specific olarak tanımlanmıştır.
+
+
+    logger = logging.getLogger(__name__)
+
+    def _is_prime_decimal(n: int) -> bool:
+        #Check if an integer is prime.
+
+        if n < 2:
+            return False
+        if n == 2 or n == 3:
+            return True
+        if n % 2 == 0 or n % 3 == 0:
+            return False
+        
+        i = 5
+        while i * i <= n:
+            if n % i == 0 or n % (i + 2) == 0:
+                return False
+            i += 6
+        
+        return True
 
     # ------------------------------------------------------------------
     # Yardımcı: make_unit (doğru argüman sayısı ile birim eleman üretir)
@@ -13085,12 +13778,13 @@ def unified_generator(
                 return s
         parser = parse_simple
 
+
     start_val = parser(start_input_raw)
     add_val = parser(add_input_raw)
 
     # ---------- 2. ORTAK YARDIMCI: ilk bileşeni int'e çevir ----------
     def _first_component_as_int(val):
-        """Her türlü Keçeci sayısından ilk sayısal bileşeni int olarak döndürür."""
+        #Her türlü Keçeci sayısından ilk sayısal bileşeni int olarak döndürür.
         try:
             if hasattr(val, 'real'):
                 r = val.real
@@ -13136,22 +13830,52 @@ def unified_generator(
     }
 
     def convert_to_number(val, typ):
+        # TERNARY İÇİN YENİ EKLEME
         if typ == 22:
             from .kececinumbers import TernaryNumber
-            flat = val if isinstance(val, (list, tuple)) else [val]
-            return TernaryNumber(*flat)
+            if isinstance(val, str):
+                return TernaryNumber.from_ternary_string(val)
+            if isinstance(val, (list, tuple)):
+                # Eski parser hatası için düzeltme
+                if len(val) == 3 and val[1] == 0.0 and val[2] == 0.0:
+                    return TernaryNumber.from_decimal(int(round(val[0])))
+                return TernaryNumber(val)
+            if isinstance(val, (int, float)):
+                return TernaryNumber.from_decimal(int(val))
+            return TernaryNumber.from_decimal(0)
+        
+        # ORİJİNAL KOD (HİÇBİR ŞEY DEĞİŞTİRME)
+        # Aşağıdaki satırlar zaten vardır, aynen bırakın
         if isinstance(val, (int, float, complex)):
             return val
+        if isinstance(val, str):
+            try:
+                return int(val) if '.' not in val else float(val)
+            except:
+                return val
         if isinstance(val, (list, tuple)):
-            cls_name = type_class_map.get(typ)
-            if cls_name and cls_name in globals():
-                cls = globals()[cls_name]
-                try:
-                    return cls(*val)
-                except TypeError:
-                    return cls(val)
-            return val[0] if val else 0
-        return val
+            return val
+        return val  # veya 0
+
+
+        def convert_to_number0(val, typ):
+            if typ == 22:
+                from .kececinumbers import TernaryNumber
+                flat = val if isinstance(val, (list, tuple)) else [val]
+                return TernaryNumber(*flat)
+            if isinstance(val, (int, float, complex)):
+                return val
+            if isinstance(val, (list, tuple)):
+                cls_name = type_class_map.get(typ)
+                if cls_name and cls_name in globals():
+                    cls = globals()[cls_name]
+                    try:
+                        return cls(*val)
+                    except TypeError:
+                        return cls(val)
+                return val[0] if val else 0
+            return val
+
 
     start_val = convert_to_number(start_val, kececi_type)
     add_val = convert_to_number(add_val, kececi_type)
@@ -13213,8 +13937,20 @@ def unified_generator(
                 return type(val)(val.t/d, val.i/d, val.f/d)
             return val
         def is_prime_like(val):
-            v = int(round(val.t))
-            return v > 1 and isprime(v)
+            try:
+                # İlk bileşeni al (T)
+                if isinstance(val, tuple) and len(val) >= 1:
+                    comp = val[0]
+                elif hasattr(val, 't'):
+                    comp = val.t
+                else:
+                    return False
+                v = int(round(float(comp)))
+                return v > 1 and isprime(v)
+            except:
+                return False
+        #ask_unit = make_unit(start)
+
 
     elif kececi_type == 8:   # Neutrosophic Complex
         def add(a, b): return a + b
@@ -13227,8 +13963,18 @@ def unified_generator(
                 return type(val)(val.real/d, val.imag/d, getattr(val, 'indeterminacy', 0)/d)
             return val
         def is_prime_like(val):
-            v = int(round(val.real))
-            return v > 1 and isprime(v)
+            try:
+                if isinstance(val, tuple):
+                    comp = val[0]
+                elif hasattr(val, 'real'):
+                    comp = val.real
+                else:
+                    return False
+                v = int(round(float(comp)))
+                return v > 1 and isprime(v)
+            except:
+                return False
+        #ask_unit = make_unit(start)
 
     # Hyperreal (tip 9)
     elif kececi_type == 9:
@@ -13357,28 +14103,25 @@ def unified_generator(
 
 
     elif kececi_type == 22:  # Ternary
-        def add(a, b): return a + b
-        def is_divisible(val, d):
-            if hasattr(val, 'to_int'):
-                return val.to_int() % d == 0
-            if isinstance(val, (list, tuple)):
-                return val and (val[0] % d == 0)
-            return False
-        def divide(val, d):
-            if hasattr(val, 'divide_by'):
-                return val.divide_by(d)
-            if isinstance(val, (list, tuple)):
-                return type(val)([int(x)//d for x in val])
-            try:
-                return type(val)(int(val)//d)
-            except:
-                return val
-        def is_prime_like(val):
-            if hasattr(val, 'to_int'):
-                v = val.to_int()
-            else:
-                v = int(round(float(val)))
-            return v > 1 and isprime(v)
+        from .kececinumbers import TernaryNumber, _generate_ternary_ask_sequence, _generate_ternary_operation_sequence
+        
+        # Girdileri ternary string olarak kabul et
+        start_str = str(start_input_raw).strip()
+        add_str = str(add_input_raw).strip()
+        
+        # Geçerlilik kontrolü (sadece 0,1,2 rakamları)
+        if not all(c in '012' for c in start_str):
+            raise ValueError(f"Geçersiz ternary başlangıç: {start_str}")
+        if not all(c in '012' for c in add_str):
+            raise ValueError(f"Geçersiz ternary artış: {add_str}")
+        
+        start_value = TernaryNumber.from_ternary_string(start_str)
+        add_value = TernaryNumber.from_ternary_string(add_str)
+        
+        if operation == 'ask':
+            return _generate_ternary_ask_sequence(start_value, add_value, iterations, include_intermediate_steps)
+        else:
+            return _generate_ternary_operation_sequence(start_value, add_value, iterations, operation, include_intermediate_steps)
 
     else:
         # Fallback (sadece toplama)
@@ -13458,6 +14201,7 @@ def unified_generator(
         return all_steps
     else:
         return main_steps   # artık sadece son değer değil, tüm ana adımlar
+"""
 
 """
 def unified_generator(kececi_type, start_input_raw, add_input_raw,
@@ -15409,7 +16153,6 @@ def _generate_simple_sequence_direct(
     
     return result
 
-
 def _generate_ternary_ask_sequence(
     start_value: 'TernaryNumber',
     add_value: 'TernaryNumber',
@@ -15417,8 +16160,98 @@ def _generate_ternary_ask_sequence(
     include_intermediate_steps: bool = True
 ) -> List[Any]:
     """
-    ASK algorithm specifically for TernaryNumber.
+    ASK algorithm for TernaryNumber.
     """
+    result = []
+    current = start_value
+    ask_counter = 0  # 0: +unit, 1: -unit
+
+    if include_intermediate_steps:
+        result.append({
+            "step": 0,
+            "value": current,
+            "operation": "start",
+            "description": f"Start: {current}"
+        })
+    else:
+        result.append(current)
+
+    for i in range(1, iterations + 1):   # iterations kadar adım (1'den başla)
+        try:
+            # STEP 1: ADDITION
+            added = current + add_value
+
+            next_val = added
+            divided = False
+
+            # STEP 2: CHECK DIVISIBILITY by 2 or 3
+            added_decimal = added.to_decimal()
+
+            for divisor in [2, 3]:
+                if added_decimal % divisor == 0:
+                    divided_decimal = added_decimal // divisor
+                    divided_val = TernaryNumber.from_decimal(divided_decimal)
+                    next_val = divided_val
+                    divided = True
+                    break
+
+            # STEP 3: KECEÇI UNIT ADJUSTMENT if not divided and prime-like
+            if not divided and _is_prime_decimal(added_decimal):
+                unit = TernaryNumber.from_decimal(1)
+                if ask_counter == 0:
+                    adjusted = added + unit
+                else:
+                    adjusted = added - unit   # Burada negatif olabilir, hata yönetimi gerekli
+                ask_counter = 1 - ask_counter
+
+                # Try division again on adjusted value
+                adjusted_decimal = adjusted.to_decimal()
+                for divisor in [2, 3]:
+                    if adjusted_decimal % divisor == 0:
+                        final_decimal = adjusted_decimal // divisor
+                        next_val = TernaryNumber.from_decimal(final_decimal)
+                        break
+                else:
+                    # No division successful after adjustment
+                    next_val = adjusted
+
+            current = next_val
+
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": current,
+                    "operation": "step",
+                    "description": f"Step {i}: {current}"
+                })
+            else:
+                result.append(current)
+
+        except Exception as e:
+            logger.error(f"Error at iteration {i} for Ternary: {e}")
+            default_val = TernaryNumber.from_decimal(0)
+            if include_intermediate_steps:
+                result.append({
+                    "step": i,
+                    "value": default_val,
+                    "operation": "error",
+                    "description": f"ERROR: {e}"
+                })
+            else:
+                result.append(default_val)
+            current = default_val
+
+    return result
+"""
+def _generate_ternary_ask_sequence(
+    start_value: 'TernaryNumber',
+    add_value: 'TernaryNumber',
+    iterations: int,
+    include_intermediate_steps: bool = True
+) -> List[Any]:
+
+    #ASK algorithm specifically for TernaryNumber.
+
     result = []
     current = start_value
     ask_counter = 0  # 0: +unit, 1: -unit
@@ -15514,7 +16347,7 @@ def _generate_ternary_ask_sequence(
             current = default_val
     
     return result
-
+"""
 
 def _generate_ternary_operation_sequence(
     start_value: 'TernaryNumber',
@@ -17136,7 +17969,6 @@ def _try_construct(cls, args_list: List[Any], dimension: Optional[int] = None):
     raise TypeError("No compatible constructor found for class {}".format(cls))
 
 # ----------------- Ana fonksiyon -----------------
-
 def _parse_with_generic_fallback(
     kececi_type: int,
     start_input_raw: Any,
@@ -17342,6 +18174,25 @@ def _parse_with_generic_fallback(
             return super_start, super_add
 
     if kececi_type == 22:  # Ternary (3D)
+        try:
+            from .kececinumbers import TernaryNumber
+            start_str = str(start_input_raw).strip()
+            add_str = str(add_input_raw).strip()
+            # Eğer string boş veya geçersizse hata ver
+            if not start_str or not all(c in '012' for c in start_str):
+                raise ValueError(f"Geçersiz ternary başlangıç: {start_str}")
+            if not add_str or not all(c in '012' for c in add_str):
+                raise ValueError(f"Geçersiz ternary artış: {add_str}")
+            start_val = TernaryNumber.from_ternary_string(start_str)
+            add_val = TernaryNumber.from_ternary_string(add_str)
+            return start_val, add_val
+        except Exception as e:
+            logger.error(f"Ternary dönüşüm hatası: {e}")
+            # Fallback: sıfır değerinde ternary
+            fallback = TernaryNumber.from_decimal(0)
+            return fallback, fallback
+    """
+    if kececi_type == 22:  # Ternary (3D)
         parsed_start = _parse_components(start_input_raw)
         parsed_add = _parse_components(add_input_raw)
         base_start_comp = float(parsed_start[0]) if parsed_start else 0.0
@@ -17355,6 +18206,7 @@ def _parse_with_generic_fallback(
         except Exception as e:
             logger.debug("TernaryNumber import/construct failed: %s", e)
             return ternary_start, ternary_add
+    """
 
     if kececi_type == 23:  # Hypercomplex (variable power-of-two dimension)
         parsed_start = _parse_components(start_input_raw)
@@ -17378,7 +18230,6 @@ def _parse_with_generic_fallback(
 
     # Default fallback: return parsed scalar/fraction results
     return base_start, base_add
-
 
 
 def _generate_ask_for_type(
@@ -19790,7 +20641,7 @@ def get_interactive(
         15: "1.0,0.1", 16: "1.0,0.5",
         17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
         19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
-        21: "12.85,0.08", 22: "2", 23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+        21: "12.85,0.08", 22: "11", 23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
     }
 
     default_add_values = {
@@ -19803,7 +20654,7 @@ def get_interactive(
         14: "0.1+0.2e1", 15: "0.1,0.0", 16: "0.1,0.0",
         17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
         19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
-        21: "0.56,1.7", 22: "1", 23: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+        21: "0.56,1.7", 22: "22", 23: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
     }
 
     type_input_raw = _ask(
@@ -19935,7 +20786,7 @@ def get_interactive(
     15: "1.0,0.1", 16: "1.0,0.5",
     17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
     19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
-    21: "12.85,0.08", 22: "2", 23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+    21: "12.85,0.08", 22: "11", 23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
     }
 
     default_add_values = {
@@ -19948,7 +20799,7 @@ def get_interactive(
     14: "0.1+0.2e1", 15: "0.1,0.0", 16: "0.1,0.0",
     17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
     19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
-    21: "0.56,1.7", 22: "1", 23: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0", 
+    21: "0.56,1.7", 22: "22", 23: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0", 
     }
 
     # Ask for inputs (uses _ask which respects auto_values when provided)
@@ -21959,48 +22810,25 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         return fig
 
     # --- 22. TernaryNumber-------
+    # TernaryNumber için özel grafik (plot_numbers içinde)
     elif isinstance(first_elem, TernaryNumber):
-        digits_list = []
+        # Tüm digits listelerini topla
+        all_digits = []
         for x in sequence:
             if isinstance(x, TernaryNumber):
-                digits = x.digits   # property veya attribute
-            elif isinstance(x, list):
-                digits = x
+                all_digits.append(x.digits.copy())
+            elif isinstance(x, list) and all(isinstance(d, int) and 0<=d<=2 for d in x):
+                all_digits.append(x.copy())
             else:
-                digits = [int(x)]   # scalar fallback
-            digits_list.append(digits)
-        max_len = max(len(d) for d in digits_list)
-        padded = [d + [0]*(max_len - len(d)) for d in digits_list]
+                all_digits.append([int(x)] if isinstance(x, (int,float)) else [0])
+        
+        max_len = max(len(d) for d in all_digits) if all_digits else 1
+        padded = [d + [0]*(max_len - len(d)) for d in all_digits]
         digits = np.array(padded, dtype=float)
-
-        #elif isinstance(first_elem, (TernaryNumber, list)):
-        """TERNARY grafik - list uyumlu"""
-        
-        # ✅ SORUN: x.digits → list fallback kontrolü
-        def safe_digits(obj):
-            """TernaryNumber veya list → digits listesi"""
-            if isinstance(obj, list):
-                return obj  # Direkt list kullan
-            try:
-                return obj.digits  # TernaryNumber.digits
-            except:
-                return [float(obj)]  # Scalar fallback
-        
-        # Tüm nesnelerin digits uzunluğunu belirle
-        all_digits = [safe_digits(x) for x in sequence]
-        max_length = max(len(d) for d in all_digits)
-        
-        # Padding yap
-        padded_digits = []
-        for d in all_digits:
-            padded = d + [0.0] * (max_length - len(d))
-            padded_digits.append(padded)
-        
-        digits = np.array(padded_digits)
         
         gs = GridSpec(2, 2, figure=fig)
         
-        # 1. Ternary digits çizimi
+        # 1. Rakam grafiği
         ax1 = fig.add_subplot(gs[0, 0])
         for i in range(digits.shape[1]):
             ax1.plot(digits[:, i], 'o-', alpha=0.6, label=f'digit {i}')
@@ -22008,45 +22836,184 @@ def plot_numbers(sequence: List[Any], title: str = "Keçeci Number Sequence Anal
         ax1.legend(ncol=4, fontsize=6)
         
         # 2. Ondalık değerler
+        decimal_values = [convert_to_float(x) for x in sequence]
         ax2 = fig.add_subplot(gs[0, 1])
-        
-        def safe_decimal(obj):
-            """TernaryNumber.to_decimal() veya list → float"""
-            if isinstance(obj, list):
-                return sum(obj)  # Basit toplam
-            try:
-                return obj.to_decimal()
-            except:
-                return float(obj)
-        
-        decimal_values = np.array([safe_decimal(x) for x in sequence])
         ax2.plot(decimal_values, 'o-', color='tab:green')
         ax2.set_title("Decimal Values")
         
-        # 3. PCA (opsiyonel)
-        if use_pca and len(sequence) > 2:
+        # 3. PCA – sadece yeterli özellik varsa
+        if use_pca and len(sequence) > 2 and max_len >= 2:
             try:
                 from sklearn.decomposition import PCA
-                pca = PCA(n_components=2)
+                # n_components = min(2, max_len, n_samples-1)
+                n_comp = min(2, digits.shape[1], digits.shape[0]-1)
+                pca = PCA(n_components=n_comp, svd_solver='auto')
                 proj = pca.fit_transform(digits)
-                
                 ax3 = fig.add_subplot(gs[1, :])
-                sc = ax3.scatter(proj[:, 0], proj[:, 1], 
-                               c=range(len(proj)), cmap='viridis', s=25)
-                ax3.set_title(f"PCA (Var: {sum(pca.explained_variance_ratio_):.3f})")
-                plt.colorbar(sc, ax=ax3, label="Iteration")
-            except ImportError:
-                ax3 = fig.add_subplot(gs[1, :])
-                ax3.text(0.5, 0.5, "sklearn yok\npip install scikit-learn", 
-                        ha='center', va='center', fontsize=10)
+                if n_comp == 2:
+                    sc = ax3.scatter(proj[:, 0], proj[:, 1], c=range(len(proj)), cmap='viridis', s=25)
+                    ax3.set_title(f"PCA (Var: {sum(pca.explained_variance_ratio_):.3f})")
+                    plt.colorbar(sc, ax=ax3, label="Iteration")
+                else:
+                    # Tek bileşen durumunda 1D projeksiyon çiz
+                    ax3.plot(proj, 'o-', color='purple')
+                    ax3.set_title("PCA (1 component)")
             except Exception as e:
                 ax3 = fig.add_subplot(gs[1, :])
-                ax3.text(0.5, 0.5, f"PCA Error: {str(e)[:30]}", 
-                        ha='center', va='center', fontsize=10)
+                ax3.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center')
         else:
             ax3 = fig.add_subplot(gs[1, :])
-            ax3.text(0.5, 0.5, "PCA için 3+ örnek\nveya sklearn kurun", 
-                    ha='center', va='center', fontsize=10)
+            if max_len < 2:
+                ax3.text(0.5, 0.5, "Not enough digits for PCA (need at least 2 digits)", 
+                         ha='center', va='center')
+            else:
+                ax3.text(0.5, 0.5, "Install sklearn or increase sequence length for PCA", 
+                         ha='center', va='center')
+        """        
+        elif isinstance(first_elem, TernaryNumber):
+            # Tüm nesnelerin digits'lerini al (TernaryNumber veya liste)
+            all_digits = []
+            for x in sequence:
+                if isinstance(x, TernaryNumber):
+                    all_digits.append(x.digits.copy())  # rakam listesi
+                elif isinstance(x, list) and all(isinstance(d, int) and 0<=d<=2 for d in x):
+                    all_digits.append(x.copy())
+                else:
+                    # scalar fallback (nadir)
+                    all_digits.append([int(x)] if isinstance(x, (int,float)) else [0])
+            
+            # Maksimum uzunluğa göre padding (rakamların basamak sayısı)
+            max_len = max(len(d) for d in all_digits) if all_digits else 1
+            padded = []
+            for d in all_digits:
+                padded.append(d + [0]*(max_len - len(d)))
+            digits = np.array(padded, dtype=float)
+            
+            # Grid oluştur (2 satır, 2 sütun)
+            gs = GridSpec(2, 2, figure=fig)
+            
+            # 1. Rakam grafiği
+            ax1 = fig.add_subplot(gs[0, 0])
+            for i in range(digits.shape[1]):
+                ax1.plot(digits[:, i], 'o-', alpha=0.6, label=f'digit {i}')
+            ax1.set_title("Ternary Digits")
+            ax1.legend(ncol=4, fontsize=6)
+            
+            # 2. Ondalık değer grafiği (convert_to_float kullan)
+            decimal_values = [convert_to_float(x) for x in sequence]
+            ax2 = fig.add_subplot(gs[0, 1])
+            ax2.plot(decimal_values, 'o-', color='tab:green')
+            ax2.set_title("Decimal Values")
+            
+            # 3. PCA (isteğe bağlı)
+            if use_pca and len(sequence) > 2:
+                try:
+                    from sklearn.decomposition import PCA
+                    pca = PCA(n_components=2)
+                    proj = pca.fit_transform(digits)
+                    ax3 = fig.add_subplot(gs[1, :])
+                    sc = ax3.scatter(proj[:, 0], proj[:, 1], 
+                                   c=range(len(proj)), cmap='viridis', s=25)
+                    ax3.set_title(f"PCA (Var: {sum(pca.explained_variance_ratio_):.3f})")
+                    plt.colorbar(sc, ax=ax3, label="Iteration")
+                except Exception as e:
+                    ax3 = fig.add_subplot(gs[1, :])
+                    ax3.text(0.5, 0.5, f"PCA Error: {e}", ha='center', va='center')
+            else:
+                ax3 = fig.add_subplot(gs[1, :])
+                ax3.text(0.5, 0.5, "Install sklearn or increase sequence length for PCA",
+                         ha='center', va='center')
+        """
+        """
+        elif isinstance(first_elem, TernaryNumber):
+            digits_list = []
+            for x in sequence:
+                if isinstance(x, TernaryNumber):
+                    digits = x.digits   # property veya attribute
+                elif isinstance(x, list):
+                    digits = x
+                else:
+                    digits = [int(x)]   # scalar fallback
+                digits_list.append(digits)
+            max_len = max(len(d) for d in digits_list)
+            padded = [d + [0]*(max_len - len(d)) for d in digits_list]
+            digits = np.array(padded, dtype=float)
+
+            #elif isinstance(first_elem, (TernaryNumber, list)):
+            #ERNARY grafik - list uyumlu
+            
+            # ✅ SORUN: x.digits → list fallback kontrolü
+            def safe_digits(obj):
+                #TernaryNumber veya list → digits listesi
+                if isinstance(obj, list):
+                    return obj  # Direkt list kullan
+                try:
+                    return obj.digits  # TernaryNumber.digits
+                except:
+                    return [float(obj)]  # Scalar fallback
+            
+            # Tüm nesnelerin digits uzunluğunu belirle
+            all_digits = [safe_digits(x) for x in sequence]
+            max_length = max(len(d) for d in all_digits)
+            
+            # Padding yap
+            padded_digits = []
+            for d in all_digits:
+                padded = d + [0.0] * (max_length - len(d))
+                padded_digits.append(padded)
+            
+            digits = np.array(padded_digits)
+            
+            gs = GridSpec(2, 2, figure=fig)
+            
+            # 1. Ternary digits çizimi
+            ax1 = fig.add_subplot(gs[0, 0])
+            for i in range(digits.shape[1]):
+                ax1.plot(digits[:, i], 'o-', alpha=0.6, label=f'digit {i}')
+            ax1.set_title("Ternary Digits")
+            ax1.legend(ncol=4, fontsize=6)
+            
+            # 2. Ondalık değerler
+            ax2 = fig.add_subplot(gs[0, 1])
+            
+            def safe_decimal(obj):
+                #TernaryNumber.to_decimal() veya list → float
+                if isinstance(obj, list):
+                    return sum(obj)  # Basit toplam
+                try:
+                    return obj.to_decimal()
+                except:
+                    return float(obj)
+            
+            decimal_values = np.array([safe_decimal(x) for x in sequence])
+            ax2.plot(decimal_values, 'o-', color='tab:green')
+            ax2.set_title("Decimal Values")
+            
+            # 3. PCA (opsiyonel)
+            if use_pca and len(sequence) > 2:
+                try:
+                    from sklearn.decomposition import PCA
+                    pca = PCA(n_components=2)
+                    proj = pca.fit_transform(digits)
+                    
+                    ax3 = fig.add_subplot(gs[1, :])
+                    sc = ax3.scatter(proj[:, 0], proj[:, 1], 
+                                   c=range(len(proj)), cmap='viridis', s=25)
+                    ax3.set_title(f"PCA (Var: {sum(pca.explained_variance_ratio_):.3f})")
+                    plt.colorbar(sc, ax=ax3, label="Iteration")
+                except ImportError:
+                    ax3 = fig.add_subplot(gs[1, :])
+                    ax3.text(0.5, 0.5, "sklearn yok\npip install scikit-learn", 
+                            ha='center', va='center', fontsize=10)
+                except Exception as e:
+                    ax3 = fig.add_subplot(gs[1, :])
+                    ax3.text(0.5, 0.5, f"PCA Error: {str(e)[:30]}", 
+                            ha='center', va='center', fontsize=10)
+            else:
+                ax3 = fig.add_subplot(gs[1, :])
+                ax3.text(0.5, 0.5, "PCA için 3+ örnek\nveya sklearn kurun", 
+                        ha='center', va='center', fontsize=10)
+        """
         """
         elif isinstance(first_elem, TernaryNumber):
             # Tüm TernaryNumber nesnelerinin digits uzunluğunu belirle
