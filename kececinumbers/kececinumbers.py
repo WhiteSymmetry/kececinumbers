@@ -201,7 +201,7 @@ TYPE_NAMES = {
 
 # ==================== VARSAYILAN PARAMETRELER ====================
 DEFAULT_STARTS = {
-    1: "0", 2: "-5.0", 3: "1+1j", 4: "3.14", 5: "3.5", # 1: "2.5"
+    1: "0", 2: "-5.0", 3: "1+1j", 4: "2.5", 5: "3.5", # 1: "2.5"
     6: "1.0,0.0,0.0,0.0", 7: "0.6,0.2,0.1", 8: "1+1j",
     9: "1.0", 10: "1.34,2.55,0.25,4.61",
     11: "2.5,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
@@ -214,7 +214,7 @@ DEFAULT_STARTS = {
     21: "12.85,0.08", 22: "2", 23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
 }
 DEFAULT_ADDS = {
-    1: "9", 2: "-0.5", 3: "0.1+0.1j", 4: "0.1", 5: "0.1", # 1: "0.5"
+    1: "9", 2: "-3", 3: "0.1+0.1j", 4: "4.5", 5: "0.1", # 1: "0.5"
     6: "0.1,0.0,0.0,0.0", 7: "0.1,0.0,0.0", 8: "0.1+0.1j",
     9: "2.0", 10: "0.08,0.0,0.0,0.0",
     11: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
@@ -256,8 +256,9 @@ for cls_name in ALL_CLASSES:
     _make_property(cls, 'coeffs')
     _make_property(cls, 'to_list')
 """
+
 # ========================
-# 2. components ve coeffs metodlarını property yap
+# components ve coeffs metodlarını property yap
 # ========================
 def _make_property(cls, attr_name):
     if hasattr(cls, attr_name):
@@ -453,7 +454,7 @@ def robust_int(x: Any) -> Optional[int]:
 """
 
 def universal_fallback_kpn(seq: List[Any]) -> Optional[int]:
-    """Tüm türler için çalışan KPN bulucu (yumuşak tamsayı çıkarma + asallık)."""
+    """Tüm türler için çalışan serideki tekrarlayan ilk asal bulucu (yumuşak tamsayı çıkarma + asallık)."""
     vals = []
     for x in seq[:5000]:
         try:
@@ -471,6 +472,26 @@ def universal_fallback_kpn(seq: List[Any]) -> Optional[int]:
         return best[0]
     return None
 
+def find_kpn(seq, use_safe=True):
+    try:
+        kpn = find_kececi_prime_number(seq)
+        if kpn is not None and kpn > 1:
+            return kpn, "find_kececi_prime_number"
+    except:
+        pass
+    if use_safe:
+        candidates = []
+        for x in seq[:5000]:
+            try:
+                val = robust_int(x)
+                if val > 1 and isprime(val):
+                    candidates.append(val)
+            except:
+                continue
+        if candidates:
+            kpn = Counter(candidates).most_common(1)[0][0]
+            return kpn, "safe_find_kpn"
+    return None, None
 
 def safe_find_kpn(sequence: List[Any], type_num: Optional[int] = None) -> Optional[int]:
     """
@@ -534,52 +555,51 @@ class KececiAnalyzer:
         self.global_stats = {}
         self.failed = {}
 
-    def _try_many(self, type_num, param_list, label):
-        for i, params in enumerate(param_list):
-            if i % 500 == 0:
-                print(f"   {label} {i+1}/{len(param_list)}")
-            res = run_test(type_num, params['start'], params['add'])
-            if res.get('success'):
-                self.results.append(res)
-                print(f"\n   ✅ {i+1}. denemede BAŞARILI! KPN={res['kpn']} Ratio={res['ratio']:.4f}")
-                return True
-            if (i+1) % 100 == 0:
-                import gc
-                gc.collect()
-        return False
-
     def run_analysis(self):
         print("="*80)
-        print("🎯 KEÇECI CRAMÉR CONJECTURE – ESNEK KPN BULUCU")
-        print("   (Güncel + evrensel yedek)")
+        print("🎯 KEÇECI CRAMÉR CONJECTURE – VARSYILAN ANALİZ")
         print("="*80)
-
+        try:
+            type_names = TYPE_NAMES
+        except:
+            type_names = {i: f"Tip{i}" for i in range(1,24)}
+        default_starts = {
+            1: "0", 2: "-5.0", 3: "1+1j", 4: "3.14", 5: "3.5",
+            6: "1.0,0.0,0.0,0.0", 7: "0.6,0.2,0.1", 8: "1+1j",
+            9: "1.0", 10: "1.34,2.55,0.25,4.61",
+            11: "2.5,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+            12: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+            13: "1.0" + ",0.0" * 15,
+            14: "1.0+2.0e1+3.0e12",
+            15: "1.0,0.1", 16: "1.0,0.5",
+            17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
+            19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
+            21: "12.85,0.08", 22: "2", 23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+        }
+        default_adds = {
+            1: "9", 2: "-0.5", 3: "0.1+0.1j", 4: "0.1", 5: "0.1",
+            6: "0.1,0.0,0.0,0.0", 7: "0.1,0.0,0.0", 8: "0.1+0.1j",
+            9: "2.0", 10: "0.08,0.0,0.0,0.0",
+            11: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+            12: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+            13: "0.1" + ",0.0" * 15,
+            14: "0.1+0.2e1", 15: "0.1,0.0", 16: "0.1,0.0",
+            17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
+            19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
+            21: "0.56,1.7", 22: "1", 23: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+        }
         print("\n📌 Varsayılan parametrelerle test...")
         for t in range(1, 24):
-            name = TYPE_NAMES[t]
+            name = type_names.get(t, f"Tip{t}")
             print(f"   {name:20}: ", end="", flush=True)
-            res = run_test(t, DEFAULT_STARTS[t], DEFAULT_ADDS[t])
+            res = run_test(t, default_starts[t], default_adds[t], iterations=100)
             if res.get('success'):
                 self.results.append(res)
-                print(f"✅ KPN={res['kpn']} Ratio={res['ratio']:.4f}")
+                print(f"✅ KPN={res['kpn']} Ratio={res['ratio']:.4f} (bulan: {res.get('method','?')})")
             else:
                 reason = res.get('reason', '?')
                 self.failed[t] = reason
                 print(f"❌ ({reason})")
-
-        # Başarısız özel türler için toplu deneme (Bicomplex, SuperReal, Ternary)
-        for t, label, pool in [
-            (10, "Bicomplex", BICOMPLEX_TESTS),
-            (21, "Super Real", SUPER_REAL_TESTS),
-            (22, "Ternary", TERNARY_TESTS)
-        ]:
-            if t in self.failed:
-                print(f"\n📌 {label} için 10k deneme...")
-                if self._try_many(t, pool, label):
-                    del self.failed[t]
-                else:
-                    print("   ❌ Bulunamadı")
-
         self._summarize()
 
     def _summarize(self):
@@ -591,20 +611,14 @@ class KececiAnalyzer:
             for t, lst in groups.items():
                 best = min(lst, key=lambda x: x['ratio'])
                 self.type_stats[t] = {
-                    'type_name': TYPE_NAMES[t],
+                    'type_name': best['type_name'],
                     'ratio': best['ratio'],
                     'kpn': best['kpn'],
                     'kpn_freq': best['kpn_freq']*100,
-                    'start': best['start']
+                    'start': best['start'],
+                    'add': best['add'],
+                    'method': best.get('method', '?')
                 }
-            all_r = [v['ratio'] for v in self.type_stats.values()]
-            self.global_stats = {
-                'successful': len(self.type_stats),
-                'avg_ratio': np.mean(all_r),
-                'min_ratio': min(all_r),
-                'max_ratio': max(all_r)
-            }
-
         print("\n" + "="*80)
         print("🏁 SONUÇ")
         print("="*80)
@@ -612,13 +626,12 @@ class KececiAnalyzer:
         if self.failed:
             print("❌ Başarısız kalanlar:")
             for t, reason in self.failed.items():
-                print(f"   • {TYPE_NAMES[t]}: {reason}")
+                print(f"   • Tip {t}: {reason}")
         else:
             print("✅ TÜM TÜRLER BAŞARILI!")
-        if self.global_stats:
-            g = self.global_stats
-            print(f"\n📊 Ratio ort: {g['avg_ratio']:.4f} (Cramér'in %{g['avg_ratio']*100:.1f}'i)")
-            print(f"   Aralık: {g['min_ratio']:.4f} – {g['max_ratio']:.4f}")
+        if self.type_stats:
+            ratios = [v['ratio'] for v in self.type_stats.values()]
+            print(f"\n📊 Ratio ort: {np.mean(ratios):.4f}")
 
 
 # ==================== HAVUZLAR (10.000) ====================
@@ -637,6 +650,303 @@ def gen_superreal():
 TERNARY_TESTS = gen_ternary()
 BICOMPLEX_TESTS = gen_bicomplex()
 SUPER_REAL_TESTS = gen_superreal()
+
+# ============================================================
+# Kapsamlı rastgele test (seçenek 1)
+# ============================================================
+def comprehensive_cramer_test(num_trials_per_type=1000, iterations=1000, save_to_file=False):
+    """
+    Her tip için rastgele parametrelerle kapsamlı Cramér testi yapar.
+    Sonuçları konsola yazdırır ve isteğe bağlı olarak dosyaya kaydeder.
+    """
+    import sys
+    if save_to_file:
+        original_stdout = sys.stdout
+        f = open("cramer_test_results.txt", "w", encoding="utf-8")
+        sys.stdout = f
+
+    print("="*80)
+    print("🎯 KEÇECI CRAMÉR – KAPSAMLI RASTGELE TEST (MODÜL İÇİ)")
+    print(f"   Her tip için {num_trials_per_type} rastgele (start, add) çifti test edilecek.")
+    print(f"   Her testte {iterations} ana adım kullanılacak.")
+    print("="*80)
+
+    successes = {}
+    ratios = {}
+    kpn_counter = {}
+    examples = {}   # typ -> list of (start, add, kpn, ratio)
+
+    for typ in range(1, 24):
+        print(f"\n📌 Tip {typ} ({TYPE_NAMES.get(typ, '')}) test ediliyor...")
+        success_count = 0
+        ratio_list = []
+        counter = Counter()
+        ex_list = []
+        for trial in range(num_trials_per_type):
+            if (trial+1) % 100 == 0:
+                print(f"   {trial+1}/{num_trials_per_type} tamamlandı...")
+            start, add = random_start_add(typ)
+            res = run_cramer_test(typ, start, add, iterations=iterations)
+            if res.get('success'):
+                success_count += 1
+                ratio_list.append(res['ratio'])
+                counter[res['kpn']] += 1
+                ex_list.append((start, add, res['kpn'], res['ratio']))
+        success_rate = success_count / num_trials_per_type
+        avg_ratio = np.mean(ratio_list) if ratio_list else 1.0
+        successes[typ] = success_rate
+        ratios[typ] = avg_ratio
+        kpn_counter[typ] = counter
+        examples[typ] = ex_list
+        print(f"   ✅ Başarı oranı: {success_rate*100:.1f}% (Ort. ratio: {avg_ratio:.4f})")
+
+    # Detaylı başarılı örnekler (ilk 5)
+    print("\n" + "="*80)
+    print("📋 BAŞARILI ÖRNEK PARAMETRELER (ilk 5)")
+    print("="*80)
+    for typ in range(1,24):
+        name = TYPE_NAMES.get(typ, str(typ))
+        exs = examples[typ]
+        if exs:
+            print(f"\nTip {typ} ({name}):")
+            for i, (s, a, k, r) in enumerate(exs[:5]):
+                print(f"   {i+1}. start={s}, add={a} -> KPN={k}, ratio={r:.4f}")
+        else:
+            print(f"\nTip {typ} ({name}): Başarılı örnek yok.")
+
+    # Özet tablosu
+    print("\n" + "="*80)
+    print("🏁 KAPSAMLI TEST SONUÇLARI (KPN dağılımı ile)")
+    print("="*80)
+    for typ in range(1,24):
+        name = TYPE_NAMES.get(typ, str(typ))[:20]
+        success_rate = successes[typ]
+        avg_ratio = ratios[typ]
+        counter = kpn_counter[typ]
+        if counter and success_rate > 0:
+            most_common_kpn, freq = counter.most_common(1)[0]
+            freq_percent = freq / (success_rate * num_trials_per_type) * 100
+            print(f"Tip {typ:2} ({name:20}): Başarı: {success_rate*100:5.1f}%   Ort. Ratio: {avg_ratio:.4f}   En sık KPN: {most_common_kpn} ({freq_percent:.1f}% of successes)")
+        else:
+            print(f"Tip {typ:2} ({name:20}): Başarı: {success_rate*100:5.1f}%   Ort. Ratio: {avg_ratio:.4f}   KPN bulunamadı")
+    print("-"*80)
+    print(f"Ortalama başarı oranı (tüm tipler): {np.mean(list(successes.values()))*100:.1f}%")
+    print(f"Ortalama Cramér ratio: {np.mean(list(ratios.values())):.4f}")
+    print("="*80)
+
+    if save_to_file:
+        sys.stdout = original_stdout
+        f.close()
+        print("Sonuçlar 'cramer_test_results.txt' dosyasına kaydedildi.")
+
+def run_comprehensive_analysis(num_trials_per_type=1000, iterations=1000):
+    """
+    Her tip için rastgele parametrelerle kapsamlı Cramér testi yapar.
+    Sonuçları konsola yazdırır.
+    """
+    print("="*80)
+    print("🎯 KEÇECI CRAMÉR – KAPSAMLI RASTGELE TEST (MODÜL İÇİ)")
+    print(f"   Her tip için {num_trials_per_type} rastgele (start, add) çifti test edilecek.")
+    print(f"   Her testte {iterations} ana adım kullanılacak.")
+    print("="*80)
+    successes = {}
+    ratios = {}
+    kpn_counter = {}
+    for typ in range(1, 24):
+        print(f"\n📌 Tip {typ} ({TYPE_NAMES.get(typ, '')}) test ediliyor...")
+        success_count = 0
+        ratio_list = []
+        counter = Counter()
+        for trial in range(num_trials_per_type):
+            if (trial+1) % 100 == 0:
+                print(f"   {trial+1}/{num_trials_per_type} tamamlandı...")
+            start, add = random_start_add(typ)
+            res = run_cramer_test(typ, start, add, iterations=iterations)
+            if res.get('success'):
+                success_count += 1
+                ratio_list.append(res['ratio'])
+                counter[res['kpn']] += 1
+        success_rate = success_count / num_trials_per_type
+        avg_ratio = np.mean(ratio_list) if ratio_list else 1.0
+        successes[typ] = success_rate
+        ratios[typ] = avg_ratio
+        kpn_counter[typ] = counter
+        print(f"   ✅ Başarı oranı: {success_rate*100:.1f}% (Ort. ratio: {avg_ratio:.4f})")
+    
+    print("\n" + "="*80)
+    print("🏁 KAPSAMLI TEST SONUÇLARI (KPN dağılımı ile)")
+    print("="*80)
+    for typ in range(1,24):
+        name = TYPE_NAMES.get(typ, str(typ))[:20]
+        success_rate = successes[typ]
+        avg_ratio = ratios[typ]
+        counter = kpn_counter[typ]
+        if counter and success_rate > 0:
+            most_common_kpn, freq = counter.most_common(1)[0]
+            freq_percent = freq / (success_rate * num_trials_per_type) * 100
+            print(f"Tip {typ:2} ({name:20}): Başarı: {success_rate*100:5.1f}%   Ort. Ratio: {avg_ratio:.4f}   En sık KPN: {most_common_kpn} ({freq_percent:.1f}% of successes)")
+        else:
+            print(f"Tip {typ:2} ({name:20}): Başarı: {success_rate*100:5.1f}%   Ort. Ratio: {avg_ratio:.4f}   KPN bulunamadı")
+    print("-"*80)
+    print(f"Ortalama başarı oranı (tüm tipler): {np.mean(list(successes.values()))*100:.1f}%")
+    print(f"Ortalama Cramér ratio: {np.mean(list(ratios.values())):.4f}")
+    print("="*80)
+"""
+def run_comprehensive_analysis(num_trials_per_type=1000, iterations=1000):
+    print("="*80)
+    print("🎯 KEÇECI CRAMÉR – KAPSAMLI RASTGELE TEST")
+    print(f"   Her tip için {num_trials_per_type} rastgele (start, add) çifti test edilecek.")
+    print(f"   Her testte {iterations} ana adım kullanılacak.")
+    print("="*80)
+    type_names = TYPE_NAMES # if hasattr('TYPE_NAMES') else {i:f"Tip{i}" for i in range(1,24)}
+    successes = {}
+    ratios = {}
+    for typ in range(1, 24):
+        print(f"\n📌 Tip {typ} ({type_names.get(typ,'')}) test ediliyor...")
+        success_count = 0
+        ratio_list = []
+        for trial in range(num_trials_per_type):
+            if (trial+1) % 100 == 0:
+                print(f"   {trial+1}/{num_trials_per_type} tamamlandı...")
+            start, add = random_start_add(typ)
+            res = run_test(typ, start, add, iterations=iterations, first_divisor=3, ask_plus_first=True)
+            if res.get('success'):
+                success_count += 1
+                ratio_list.append(res['ratio'])
+        success_rate = success_count / num_trials_per_type
+        avg_ratio = np.mean(ratio_list) if ratio_list else 1.0
+        successes[typ] = success_rate
+        ratios[typ] = avg_ratio
+        print(f"   ✅ Başarı oranı: {success_rate*100:.1f}% (Ort. ratio: {avg_ratio:.4f})")
+    print("\n" + "="*80)
+    print("🏁 KAPSAMLI TEST SONUÇLARI")
+    print("="*80)
+    for typ in range(1,24):
+        print(f"Tip {typ:2} ({type_names.get(typ,'')[:20]:20}): Başarı: {successes[typ]*100:5.1f}%   Ort. Ratio: {ratios[typ]:.4f}")
+    print("-"*80)
+    print(f"Ortalama başarı oranı (tüm tipler): {np.mean(list(successes.values()))*100:.1f}%")
+    print(f"Ortalama Cramér ratio: {np.mean(list(ratios.values())):.4f}")
+    print("="*80)
+"""
+
+def random_start_add(typ):
+    if typ == 1:
+        return f"{random.uniform(0.1, 50):.2f}", f"{random.uniform(0.1, 10):.2f}"
+    elif typ == 2:
+        return f"{random.uniform(-50, -0.1):.2f}", f"{random.uniform(-10, -0.1):.2f}"
+    elif typ == 3:
+        return f"{random.uniform(0,10):.2f}+{random.uniform(0,10):.2f}j", f"{random.uniform(0.1,2):.2f}+{random.uniform(0,2):.2f}j"
+    elif typ == 4:
+        return f"{random.uniform(0.1, 50):.2f}", f"{random.uniform(0.1, 10):.2f}"
+    elif typ == 5:
+        return f"{random.randint(1,20)}/{random.randint(1,20)}", f"{random.randint(1,5)}/{random.randint(1,5)}"
+    elif typ == 6:
+        return f"{random.uniform(0,5):.2f},{random.uniform(0,2):.2f},{random.uniform(0,2):.2f},{random.uniform(0,2):.2f}", f"{random.uniform(0.01,1):.2f},0,0,0"
+    elif typ == 7:
+        return f"{random.uniform(0,1):.2f},{random.uniform(0,1):.2f},{random.uniform(0,1):.2f}", f"{random.uniform(0.01,0.2):.2f},0,0"
+    elif typ == 8:
+        return f"{random.uniform(0,10):.2f}+{random.uniform(0,10):.2f}j", f"{random.uniform(0.1,2):.2f}+{random.uniform(0,2):.2f}j"
+    elif typ == 9:
+        return f"{random.uniform(0,10):.2f}", f"{random.uniform(0.1,2):.2f}"
+    elif typ == 10:
+        return f"{random.uniform(0,5):.2f},{random.uniform(0,2):.2f},{random.uniform(0,2):.2f},{random.uniform(0,2):.2f}", f"{random.uniform(0.01,0.5):.2f},0,0,0"
+    elif typ == 11:
+        comps = [f"{random.uniform(0,2):.2f}" for _ in range(8)]
+        return ",".join(comps), "0.1,0,0,0,0,0,0,0"
+    elif typ in (12,13,17,18,19,20,23):
+        dim = {12:8,13:16,17:32,18:64,19:128,20:256,23:8}[typ]
+        start_comps = [f"{random.uniform(0,2):.2f}" for _ in range(dim)]
+        add_comps = [f"{random.uniform(0.01,0.5):.2f}"] + ["0.0"]*(dim-1)
+        return ",".join(start_comps), ",".join(add_comps)
+    elif typ == 14:
+        return "1.0+2.0e1+3.0e12", "0.1+0.2e1"
+    elif typ == 15:
+        return f"{random.uniform(0,10):.2f},{random.uniform(0,1):.2f}", f"{random.uniform(0.1,1):.2f},0"
+    elif typ == 16:
+        return f"{random.uniform(0,10):.2f},{random.uniform(0,5):.2f}", f"{random.uniform(0.1,1):.2f},0"
+    elif typ == 21:
+        return f"{random.uniform(1,20):.2f},{random.uniform(0,5):.2f}", f"{random.uniform(0.5,2):.2f},{random.uniform(0,2):.2f}"
+    elif typ == 22:
+        return str(random.randint(1, 50)), str(random.randint(1, 5))
+    else:
+        return "1", "1"
+
+def srandom_start_add(typ):
+    # Başarılı olduğu bilinen referans değerler
+    known_starts = {
+        1: ["0", "2", "5"], 2: ["-5", "-3"], 3: ["1+1j", "2+2j"], 4: ["2.5", "3.14", "1.5"],
+        5: ["3.5", "1/2"], 6: ["1.0,0.0,0.0,0.0"], 7: ["0.6,0.2,0.1"],
+        8: ["1+1j"], 9: ["1.0"], 10: ["1.34,2.55,0.25,4.61"],
+        11: ["2.5,0.0,0.0,0.0,0.0,0.0,0.0,0.0"], 12: ["1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0"],
+        13: ["1.0" + ",0.0" * 15], 14: ["1.0+2.0e1+3.0e12"], 15: ["1.0,0.1"],
+        16: ["1.0,0.5"], 17: ["1.0" + ",0.0" * 31], 18: ["1.0" + ",0.0" * 63],
+        19: ["1.0" + ",0.0" * 127], 20: ["1.0" + ",0.0" * 255], 21: ["12.85,0.08"],
+        22: ["2"], 23: ["1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0"],
+    }
+    known_adds = {
+        1: ["9", "3"], 2: ["-3"], 3: ["0.1+0.1j"], 4: ["4.5"], 5: ["0.1"],
+        6: ["0.1,0.0,0.0,0.0"], 7: ["0.1,0.0,0.0"], 8: ["0.1+0.1j"], 9: ["2.0"],
+        10: ["0.08,0.0,0.0,0.0"], 11: ["0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0"],
+        12: ["0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0"], 13: ["0.1" + ",0.0" * 15],
+        14: ["0.1+0.2e1"], 15: ["0.1,0.0"], 16: ["0.1,0.0"],
+        17: ["1.0" + ",0.0" * 31], 18: ["1.0" + ",0.0" * 63], 19: ["1.0" + ",0.0" * 127],
+        20: ["1.0" + ",0.0" * 255], 21: ["0.56,1.7"], 22: ["1"],
+        23: ["0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0"],
+    }
+    # Eğer tip için bilinen değerler varsa, onlardan rastgele birini seç
+    if typ in known_starts:
+        start = random.choice(known_starts[typ])
+        add = random.choice(known_adds[typ])
+        return start, add
+    else:
+        # Bilinen değer yoksa, eski mantıkla devam et (başlangıç için son çare)
+        return "0", "1"
+
+# ============================================================
+# 8 Varyasyon Testi (seçenek 2)
+# ============================================================
+def test_variations(type_num, start, add, iterations=100):
+    divisors = [2,3]
+    ask_modes = [True, False]
+    inter_modes = [True, False]
+    print(f"\n🔍 8 VARYASYON TESTİ: Tip={type_num}, start={start}, add={add}, iterasyon={iterations} ana adım\n")
+    print(f"{'Bölen':<6} {'ASK':<6} {'AraAdım':<8} {'Adım':<8} {'KPN':<6} {'Ratio':<10} {'Başarılı'}")
+    print("-"*75)
+    for d in divisors:
+        for ap in ask_modes:
+            for inc in inter_modes:
+                try:
+                    seq = get_with_params(
+                        kececi_type_choice=type_num,
+                        iterations=iterations,
+                        start_value_raw=str(start),
+                        add_value_raw=str(add),
+                        include_intermediate_steps=inc,
+                        first_divisor=d,
+                        ask_plus_first=ap
+                    )
+                    if not seq or len(seq) < 20:
+                        print(f"{d:<6} {('+' if ap else '-'):<6} {('Var' if inc else 'Yok'):<8} {len(seq):<8} {'-':<6} {'-':<10} ❌ Kısa dizi")
+                        continue
+                    kpn, method = find_kpn(seq)
+                    if kpn is None:
+                        print(f"{d:<6} {('+' if ap else '-'):<6} {('Var' if inc else 'Yok'):<8} {len(seq):<8} {'-':<6} {'-':<10} ❌ KPN yok")
+                        continue
+                    positions = [i for i, x in enumerate(seq) if robust_int(x) == kpn]
+                    if len(positions) < 2:
+                        print(f"{d:<6} {('+' if ap else '-'):<6} {('Var' if inc else 'Yok'):<8} {len(seq):<8} {kpn:<6} {'-':<10} ❌ Az KPN")
+                        continue
+                    gaps = np.diff(positions)
+                    max_gap = float(np.max(gaps))
+                    n_total = len(seq)
+                    bound = (math.log(max(n_total, 100))) ** 2 * 0.5
+                    ratio = max_gap / bound if bound > 0 else float('inf')
+                    success = ratio < 1
+                    ratio_str = f"{ratio:.4f}" if ratio < 1e6 else ">1e6"
+                    status = "✅ BAŞARILI" if success else f"❌ Ratio≥1"
+                    print(f"{d:<6} {('+' if ap else '-'):<6} {('Var' if inc else 'Yok'):<8} {len(seq):<8} {kpn:<6} {ratio_str:<10} {status}")
+                except Exception as e:
+                    print(f"{d:<6} {('+' if ap else '-'):<6} {('Var' if inc else 'Yok'):<8} HATA    -      -         ❌ {str(e)[:30]}")
 
 def safe_digits(obj):
     if isinstance(obj, list): return obj
@@ -22089,34 +22399,26 @@ def test_division():
             print(f"{a} / {b} = ERROR: {e}")
 
 # ==================== TEST YÜRÜTÜCÜ ====================
-def run_test(type_num, start, add, iterations=1000):
+def run_cramer_test(type_num, start, add, iterations=1000, first_divisor=3, ask_plus_first=True):
     seq = None
     try:
-        # iterations // 10 = 100 adım (orijinal mantık aynen korundu)
         seq = get_with_params(
             kececi_type_choice=type_num,
-            iterations=iterations // 10,
-            start_value_raw=start,
-            add_value_raw=add,
-            include_intermediate_steps=True
+            iterations=iterations,
+            start_value_raw=str(start),
+            add_value_raw=str(add),
+            include_intermediate_steps=True,
+            first_divisor=first_divisor,
+            ask_plus_first=ask_plus_first
         )
-        if not seq or len(seq) < 100:
+        if not seq or len(seq) < 20:
             return {'success': False, 'reason': 'SHORT_SEQUENCE'}
-
-        kpn = safe_find_kpn(seq, type_num)
+        kpn, method = find_kpn(seq)
         if kpn is None:
             return {'success': False, 'reason': 'NO_KPN'}
-
-        positions = []
-        for i, x in enumerate(seq):
-            try:
-                if robust_int(x) == kpn:
-                    positions.append(i)
-            except:
-                continue
+        positions = [i for i, x in enumerate(seq) if robust_int(x) == kpn]
         if len(positions) < 2:
             return {'success': False, 'reason': 'TOO_FEW_KPN'}
-
         gaps = np.diff(positions)
         max_gap = float(np.max(gaps))
         n_total = len(seq)
@@ -22124,28 +22426,66 @@ def run_test(type_num, start, add, iterations=1000):
         ratio = max_gap / bound if bound > 0 else float('inf')
         if ratio >= 1:
             return {'success': False, 'reason': f'RATIO_EXCEEDED ({ratio:.4f})'}
-
         return {
-            'success': True,
-            'type': type_num,
-            'type_name': TYPE_NAMES[type_num],
-            'start': start,
-            'add': add,
-            'kpn': kpn,
-            'kpn_count': len(positions),
-            'kpn_freq': len(positions) / n_total,
-            'max_gap': max_gap,
-            'n_total': n_total,
-            'ratio': ratio
+            'success': True, 'type': type_num,
+            'type_name': TYPE_NAMES.get(type_num, str(type_num)),
+            'start': start, 'add': add,
+            'kpn': kpn, 'kpn_count': len(positions),
+            'kpn_freq': len(positions)/n_total,
+            'max_gap': max_gap, 'n_total': n_total,
+            'ratio': ratio, 'method': method,
+            'first_divisor': first_divisor, 'ask_plus_first': ask_plus_first
         }
     except Exception as e:
         return {'success': False, 'reason': f'EXCEPTION: {str(e)[:80]}'}
     finally:
-        # Belleği serbest bırak (manuel gc.collect() yerine del yeterlidir)
         if seq is not None:
             del seq
         # Eğer çok büyük dizilerle çalışıyorsanız ve bellek sorunu yaşıyorsanız, aşağıdaki satırı açabilirsiniz:
         # import gc; gc.collect()
+
+def run_test(type_num, start, add, iterations=1000, first_divisor=3, ask_plus_first=True):
+    seq = None
+    try:
+        seq = get_with_params(
+            kececi_type_choice=type_num,
+            iterations=iterations,
+            start_value_raw=str(start),
+            add_value_raw=str(add),
+            include_intermediate_steps=True,
+            first_divisor=first_divisor,
+            ask_plus_first=ask_plus_first
+        )
+        if not seq or len(seq) < 20:
+            return {'success': False, 'reason': 'SHORT_SEQUENCE'}
+        kpn, method = find_kpn(seq)
+        if kpn is None:
+            return {'success': False, 'reason': 'NO_KPN'}
+        positions = [i for i, x in enumerate(seq) if robust_int(x) == kpn]
+        if len(positions) < 2:
+            return {'success': False, 'reason': 'TOO_FEW_KPN'}
+        gaps = np.diff(positions)
+        max_gap = float(np.max(gaps))
+        n_total = len(seq)
+        bound = (math.log(max(n_total, 100))) ** 2 * 0.5
+        ratio = max_gap / bound if bound > 0 else float('inf')
+        if ratio >= 1:
+            return {'success': False, 'reason': f'RATIO_EXCEEDED ({ratio:.4f})'}
+        return {
+            'success': True, 'type': type_num,
+            'type_name': TYPE_NAMES.get(type_num, str(type_num)),
+            'start': start, 'add': add,
+            'kpn': kpn, 'kpn_count': len(positions),
+            'kpn_freq': len(positions)/n_total,
+            'max_gap': max_gap, 'n_total': n_total,
+            'ratio': ratio, 'method': method,
+            'first_divisor': first_divisor, 'ask_plus_first': ask_plus_first
+        }
+    except Exception as e:
+        return {'success': False, 'reason': f'EXCEPTION: {str(e)[:80]}'}
+    finally:
+        if seq is not None:
+            del seq
 """
 def run_test(type_num, start, add, iterations=1000):
     seq = None
