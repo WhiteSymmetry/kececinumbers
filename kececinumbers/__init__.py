@@ -16,7 +16,7 @@ from __future__ import annotations
 import warnings
 
 # Paket sürüm numarası
-__version__ = "0.9.8"
+__version__ = "0.9.9"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 __description__ = "Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets."
@@ -69,6 +69,17 @@ from .kececinumbers import (
     run_test,
     run_cramer_test,
     comprehensive_cramer_test,
+    _generate_ternary_ask_sequence,
+    _generate_ternary_operation_sequence,
+    _is_prime_decimal,
+    _apply_kececi_operation,
+    get_operation_symbol,
+    apply_operation,
+    _parse_components,
+    _parse_with_generic_fallback,
+    _first_component_as_int,
+    convert_to_plot_value,
+    make_unit,
 )
 
 # Parser Fonksiyonları
