@@ -131,7 +131,7 @@ Within all of these types, special repeating prime numbers called "Keçeci Prime
 *   **Keçeci Prime Number (KPN) Analysis:** Identifies the most recurring prime representation in sequences to analyze their convergence behavior.
 *   **Interactive and Programmatic Usage:** Supports both interactive parameter input (`get_interactive`) and direct use in scripts (`get_with_params`).
 
-*   0.9.8: Keçeci Numbers Sapce (KNS: Keçeci Sayıları Uzayı, KSU):
+*   0.9.8-0.9.9: **Keçeci Numbers Sapce (KNS: Keçeci Sayıları Uzayı, KSU)**:
   
 Keçeci Sayıları 0.9.7 sürümünde, artık seri üretimi için **ilk bölen** (`first_divisor`) ve **ASK sırası** (`ask_plus_first`) parametreleri doğrudan kullanılabilmektedir. Böylece farklı bölen sayıları (3,2,5,...) ve ASK önceliği (+1 önce / -1 önce) ile aynı başlangıç ve artım değerlerine sahip seriler kolayca karşılaştırılabilir. `get_with_params` fonksiyonu da bu yeni parametreleri destekleyecek şekilde güncellenmiştir.
 
@@ -472,33 +472,34 @@ import matplotlib.pyplot as plt
 import kececinumbers as kn
 import logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-
-# Matplotlib grafiklerinin notebook içinde gösterilmesini sağla
 %matplotlib inline
 
-print("Trying interactive mode (will prompt for input in the console/output area)...")
-
-# DÜZELTİLMİŞ KISIM:
-# get_interactive'ten dönen iki değeri ayrı değişkenlere alıyoruz.
-# 'seq' listenin kendisi, 'params' ise parametre sözlüğüdür.
+print("Trying interactive mode...")
 seq, params = kn.get_interactive()
 
-# Sadece dizi (seq) başarılı bir şekilde oluşturulduysa devam et
 if seq:
     print("\nSequence generated successfully. Plotting...")
-    # plot_numbers fonksiyonuna artık doğru şekilde SADECE listeyi gönderiyoruz.
-    kn.plot_numbers(seq, title=f"Interactive Keçeci Numbers ({params.get('type_name', '')})")
-    # Grafiği göstermek için plt.show() ekleyelim
+
+    # Eğer seq bir dict listesiyse, sadece 'value' anahtarındaki nesneleri al
+    if seq and isinstance(seq[0], dict):
+        values = [item['value'] for item in seq]
+    else:
+        values = seq
+
+    # values listesi artık TernaryNumber, int, float, complex vb. içerir
+    kn.plot_numbers(values, title=f"Interactive Keçeci Numbers ({params.get('type_name', '')})")
     plt.show()
 
-    kpn = kn.safe_find_kpn(seq)          # <--- Güvenli KPN bulucu
+    # safe_find_kpn aynı dönüşümü gerektirebilir, onu da values üzerinde çağıralım
+    # kpn = kn.safe_find_kpn(values)
+    # kpn = kn.find_kececi_prime_number(values) # hassas kpn hesaplama
+    kpn = kn.find_kpn(values)
     if kpn:
-        print(f"\nKeçeci Prime Number (KPN) found for this sequence: {kpn}")
+        print(f"\nKeçeci Prime Number (KPN) found: {kpn}")
     else:
-        print("\nKPN bulunamadı.")
+        print("\nKPN not found.")
 else:
-    print("\nSequence generation failed or was cancelled.")
-
+    print("\nSequence generation failed.")
 
 print("\nDone with examples.")
 print("Keçeci Numbers Module Loaded.")
