@@ -131,6 +131,12 @@ Within all of these types, special repeating prime numbers called "Keçeci Prime
 *   **Keçeci Prime Number (KPN) Analysis:** Identifies the most recurring prime representation in sequences to analyze their convergence behavior.
 *   **Interactive and Programmatic Usage:** Supports both interactive parameter input (`get_interactive`) and direct use in scripts (`get_with_params`).
 
+*   0.9.8: Keçeci Numbers Sapce (KNS: Keçeci Sayıları Uzayı, KSU):
+  
+Keçeci Sayıları 0.9.7 sürümünde, artık seri üretimi için **ilk bölen** (`first_divisor`) ve **ASK sırası** (`ask_plus_first`) parametreleri doğrudan kullanılabilmektedir. Böylece farklı bölen sayıları (3,2,5,...) ve ASK önceliği (+1 önce / -1 önce) ile aynı başlangıç ve artım değerlerine sahip seriler kolayca karşılaştırılabilir. `get_with_params` fonksiyonu da bu yeni parametreleri destekleyecek şekilde güncellenmiştir.
+
+In version 0.9.7 of Keçeci Numbers, the sequence generation now supports **first divisor** (`first_divisor`) and **ASK order** (`ask_plus_first`) parameters directly. This allows easy comparison of sequences with the same start and increment but different divisors (3,2,5,...) and ASK priorities (+1 first / -1 first). The `get_with_params` function has been updated to accept these new parameters.
+
 *   0.9.5: 23 Numbers
 *   0.8.2: 22 Numbers
 *   0.7.9: 20 Numbers
