@@ -45,7 +45,7 @@ jobs:
         run: npm run build
 
       - name: Configure GitHub Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v6
 
       - name: Upload static content artifact
         uses: actions/upload-pages-artifact@v3
