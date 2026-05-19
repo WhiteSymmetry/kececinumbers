@@ -5,11 +5,18 @@
 # Dependabot configuration for automatic dependency updates
 version: 2
 updates:
-  - package-ecosystem: "pip" # Specify package ecosystem (e.g., pip, npm, maven)
-    directory: "/"           # Location of package manifests
+  # 1) Python paketleri
+  - package-ecosystem: "pip"
+    directory: "/"
     schedule:
-      interval: "weekly"     # Check for updates weekly
-    open-pull-requests-limit: 10 # Limit the number of open pull requests
+      interval: "weekly"
+    open-pull-requests-limit: 10
     ignore:
-      - dependency-name: "example-package" # Specify dependencies to ignore, if any
-        versions: ["==1.*"] # Ignore all patch versions of 1.x
+      - dependency-name: "example-package"
+        versions: ["==1.*"]
+
+  # 2) GitHub Actions (actions/... ve github/...)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
