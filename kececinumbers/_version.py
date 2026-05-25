@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # _version.py
 
-__version__ = "0.9.9"
+__version__ = "1.0.0"
 __license__ = "AGPL-3.0-or-later"
 __description__ = "Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets."
 __author__ = "Mehmet Keçeci"
