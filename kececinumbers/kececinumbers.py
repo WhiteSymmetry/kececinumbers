@@ -200,7 +200,48 @@ TYPE_NAMES = {
 """
 
 # ==================== VARSAYILAN PARAMETRELER ====================
-DEFAULT_STARTS = {
+default_starts = {
+    1: "0", 
+    2: "-5.0",
+    3: "1+1j", 
+    4: "3.14", 
+    5: "7/8", # 3.5: 
+    6: "1.0,0.0,0.0,0.0", 7: "0.6,0.2,0.1", 
+    8: "1+1j",
+    9: "9.64", # 1.0
+    10: "1.34,2.55,0.25,4.61",
+    11: "2.5,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+    12: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+    13: "1.0" + ",0.0" * 15,
+    14: "1.0+2.0e1+3.0e12",
+    15: "1.0,0.1", 16: "1.0,0.5",
+    17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
+    19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
+    21: "2", # "12.85,0.08", 
+    22: "11", 
+    23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+}
+default_adds = {
+    1: "9", 
+    2: "-0.5", 
+    3: "0.1+0.1j", 
+    4: "0.1", 
+    5: "4/5", # 0.1
+    6: "0.1,0.0,0.0,0.0", 7: "0.1,0.0,0.0", 8: "0.1+0.1j",
+    9: "0.57", # 2.0
+    10: "0.08,0.0,0.0,0.0",
+    11: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+    12: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+    13: "0.1" + ",0.0" * 15,
+    14: "0.1+0.2e1", 15: "0.1,0.0", 16: "0.1,0.0",
+    17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
+    19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
+    21: "2", # "0.56,1.7", 
+    22: "22", 
+    23: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+}
+"""
+default_starts = {
     1: "0", 2: "-5.0", 3: "1+1j", 4: "2.5", 5: "3.5", # 1: "2.5"
     6: "1.0,0.0,0.0,0.0", 7: "0.6,0.2,0.1", 8: "1+1j",
     9: "1.0", 10: "1.34,2.55,0.25,4.61",
@@ -213,7 +254,8 @@ DEFAULT_STARTS = {
     19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
     21: "12.85,0.08", 22: "11", 23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
 }
-DEFAULT_ADDS = {
+
+default_adds = {
     1: "9", 2: "-3", 3: "0.1+0.1j", 4: "4.5", 5: "0.1", # 1: "0.5"
     6: "0.1,0.0,0.0,0.0", 7: "0.1,0.0,0.0", 8: "0.1+0.1j",
     9: "2.0", 10: "0.08,0.0,0.0,0.0",
@@ -225,7 +267,7 @@ DEFAULT_ADDS = {
     19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
     21: "0.56,1.7", 22: "22", 23: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
 }
-
+"""
 type_class_map = {
     6: 'QuaternionNumber', 7: 'NeutrosophicNumber', 8: 'NeutrosophicComplexNumber',
     10: 'BicomplexNumber', 11: 'NeutrosophicBicomplexNumber', 12: 'OctonionNumber',
@@ -563,36 +605,145 @@ class KececiAnalyzer:
             type_names = TYPE_NAMES
         except:
             type_names = {i: f"Tip{i}" for i in range(1,24)}
+
         default_starts = {
-            1: "0", 2: "-5.0", 3: "1+1j", 4: "3.14", 5: "3.5",
-            6: "1.0,0.0,0.0,0.0", 7: "0.6,0.2,0.1", 8: "1+1j",
-            9: "1.0", 10: "1.34,2.55,0.25,4.61",
-            11: "2.5,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+            1: "0", 
+            2: "-9.80", # -5.0
+            3: "1+1j", 
+            4: "41.00", # 3.14
+            5: "7/8", # 3.5: 
+            6: "1.0,0.0,0.0,0.0", 7: "0.6,0.2,0.1", 
+            8: "1+1j",
+            9: "9.64", # 1.0
+            10: "1.34,2.55,0.25,4.61",
+            11: "2", # 2.5,0.0,0.0,0.0,0.0,0.0,0.0,0.0 # 0.56,1.94,0.75,1.47,0.96,0.48,1.08,0.02
             12: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
             13: "1.0" + ",0.0" * 15,
             14: "1.0+2.0e1+3.0e12",
             15: "1.0,0.1", 16: "1.0,0.5",
-            17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
-            19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
-            21: "12.85,0.08", 22: "11", 23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+            17: "2",
+            #"1.0" + ",0.0" * 31, 
+            18: "2",
+            #"1.0" + ",0.0" * 63,
+            19: "0.51,0.37,0.60,1.71,0.76,1.07,1.31,0.04,0.01,0.70,0.61,1.44,0.91,0.90,0.82,0.17,0.43,1.81,0.40,1.55,0.75,0.60,0.52,0.43,1.79,0.68,0.94,0.26,0.32,1.98,0.10,0.63,0.84,1.92,1.10,0.53,1.06,1.75,0.22,0.35,1.69,0.48,0.87,0.04,1.64,1.82,1.89,0.62,1.77,0.83,0.14,1.59,0.86,1.71,0.60,0.96,0.47,0.00,0.03,0.99,1.48,0.22,1.58,1.26,1.47,0.42,1.41,1.58,0.91,0.52,1.37,1.09,1.14,1.42,1.63,1.26,0.44,1.23,1.43,0.30,1.83,1.82,1.70,0.33,1.51,1.24,0.35,1.89,0.84,1.20,1.09,0.90,0.38,1.77,1.17,1.05,1.86,0.80,1.52,1.20,0.29,0.60,1.63,1.19,1.18,1.04,1.05,0.55,0.58,0.71,0.04,0.92,0.37,1.52,1.79,1.81,0.74,0.98,1.70,1.64,0.34,1.40,0.28,1.22,0.72,1.64,1.31,0.68",
+            #"1.0" + ",0.0" * 127, 
+            20: "1.28,0.41,1.02,0.17,0.79,1.96,1.10,1.34,1.40,0.94,1.72,1.74,0.85,0.01,0.86,1.72,0.28,1.63,1.02,1.31,0.97,0.43,1.90,1.18,0.64,1.87,1.25,1.14,0.79,1.44,1.59,0.36,0.43,0.48,1.01,1.83,1.86,1.58,0.24,1.90,0.17,0.83,0.40,0.15,0.35,1.67,0.81,0.39,0.26,0.27,1.46,0.74,0.21,0.20,0.48,1.23,0.16,0.37,1.43,0.81,0.61,1.16,0.20,0.66,1.66,1.59,0.33,0.93,1.22,1.64,0.31,0.50,0.65,1.00,0.83,0.84,0.31,1.37,0.80,1.36,1.56,0.74,0.66,1.76,0.65,1.42,1.49,1.50,1.94,1.69,1.52,1.98,1.70,1.45,0.13,1.31,0.05,1.66,0.33,1.70,0.07,1.17,1.97,1.33,0.69,1.30,0.61,0.69,1.18,0.22,1.32,0.52,1.11,0.81,1.19,1.44,1.68,0.26,0.50,0.25,0.27,0.54,0.24,1.15,1.14,1.02,0.67,0.09,1.86,0.48,1.10,1.38,0.93,0.19,1.68,1.36,1.01,1.58,1.95,1.84,1.22,1.10,0.54,0.64,1.07,0.97,1.28,1.71,0.41,1.16,0.65,1.34,1.39,1.42,0.82,0.38,1.49,1.67,0.83,1.52,0.44,1.98,0.27,1.66,0.70,1.65,0.89,1.35,0.42,0.28,1.10,1.35,1.73,0.42,0.70,0.80,0.43,1.68,0.70,0.82,1.63,0.92,1.69,1.19,1.71,1.71,0.20,1.97,0.96,1.94,0.97,0.20,0.52,1.55,0.65,1.11,1.70,0.18,1.68,1.29,0.88,1.11,0.69,0.18,1.41,0.21,0.87,1.75,0.97,1.31,1.93,0.31,0.90,0.56,1.11,0.42,1.64,0.09,0.30,1.42,0.66,1.74,0.69,0.69,1.83,0.88,0.38,1.63,1.63,1.87,0.46,1.22,0.57,0.03,1.03,0.81,0.62,0.33,1.54,0.85,0.18,1.31,1.61,0.40,1.73,0.28,1.03,0.16,0.07,0.34,0.53,0.03,0.18,1.41,1.60,0.49",
+            #"1.0" + ",0.0" * 255,
+            21: "2", # "12.85,0.08", 
+            22: "11", 
+            23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
         }
         default_adds = {
-            1: "9", 2: "-0.5", 3: "0.1+0.1j", 4: "0.1", 5: "0.1",
+            1: "9", 
+            2: "-6.19",  # -0.5
+            3: "0.1+0.1j", 
+            4: "1.40", # 0.1
+            5: "4/5", # 0.1
             6: "0.1,0.0,0.0,0.0", 7: "0.1,0.0,0.0", 8: "0.1+0.1j",
-            9: "2.0", 10: "0.08,0.0,0.0,0.0",
-            11: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+            9: "0.57", # 2.0
+            10: "0.08,0.0,0.0,0.0",
+            11: "2", # 0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0 # 0.1,0,0,0,0,0,0,0
             12: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
             13: "0.1" + ",0.0" * 15,
             14: "0.1+0.2e1", 15: "0.1,0.0", 16: "0.1,0.0",
-            17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
-            19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
-            21: "0.56,1.7", 22: "22", 23: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+            17: "2",
+            #"1.0" + ",0.0" * 31, 
+            18: "2",
+            #"1.0" + ",0.0" * 63,
+            19: "0.21,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+            #"1.0" + ",0.0" * 127, 
+            20: "0.26,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+            #"1.0" + ",0.0" * 255,
+            21: "2", # "0.56,1.7", 
+            22: "22", 
+            23: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
         }
+
+        """
+        default_starts = {
+            1: ["0", "2", "5"], 2: ["-5", "-3"], 3: ["9.17+2.73j"],  # : ["1+1j", "2+2j", "9.17+2.73j"]
+            4: ["2.5", "3.14", "1.5"],
+            5: ["3.5", "1/2"], 6: ["1.0,0.0,0.0,0.0"], 7: ["0.6,0.2,0.1"],
+            8: ["1+1j"], 9: ["1.0"], 10: ["1.34,2.55,0.25,4.61"],
+            11: ["2.5,0.0,0.0,0.0,0.0,0.0,0.0,0.0"], 12: ["1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0"],
+            13: ["1.0" + ",0.0" * 15], 14: ["1.0+2.0e1+3.0e12"], 15: ["1.0,0.1"],
+            16: ["1.0,0.5"], 17: ["1.0" + ",0.0" * 31], 18: ["1.0" + ",0.0" * 63],
+            19: ["1.0" + ",0.0" * 127], 20: ["1.0" + ",0.0" * 255], 21: ["12.85,0.08"],
+            22: ["2"], 23: ["1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0"],
+        }
+        default_adds = {
+            1: ["9", "3"], 2: ["-3"], 3: ["1.87+1.56j"], # 3: ["0.1+0.1j", "1.87+1.56j"],
+            4: ["4.5"], 
+            5: ["0.1"],
+            6: ["0.1,0.0,0.0,0.0"], 7: ["0.1,0.0,0.0"], 8: ["0.1+0.1j"], 9: ["2.0"],
+            10: ["0.08,0.0,0.0,0.0"], 11: ["0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0"],
+            12: ["0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0"], 13: ["0.1" + ",0.0" * 15],
+            14: ["0.1+0.2e1"], 15: ["0.1,0.0"], 16: ["0.1,0.0"],
+            17: ["1.0" + ",0.0" * 31], 18: ["1.0" + ",0.0" * 63], 19: ["1.0" + ",0.0" * 127],
+            20: ["1.0" + ",0.0" * 255], 
+            21: ["0.56,1.7"], 
+            22: ["1"],
+            23: ["0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0"],
+        }
+        """
+        """
+        default_starts = {
+            1: ["0"], 
+            2: ["-1.46"], 
+            3: ["1.50+2.56j"], 
+            4: ["27.59"],
+            5: ["7/8"], 
+            6: [".47,1.74,1.69,0.77"], 
+            7: ["0.41,0.89,0.80"],
+            8: ["0.22+8.60j"], 
+            9: ["3.30"], 
+            10: ["4.68,1.35,0.66,0.43"],
+            11: ["0.85,0.38,0.72,1.82,0.07,0.75,1.11,1.95"], 
+            12: ["1.93,0.11,0.16,0.54,1.47,1.79,1.05,1.10"],
+            13: ["0.46"], 
+            14: ["1.0+2.0e1+3.0e12"],
+            15: ["8.93,0.05"],
+            16: ["4.94,3.66"], 
+            17: ["2.0" + ",0.0" * 31], 
+            18: ["2.0" + ",0.0" * 63],
+            19: ["0.68,0.59,1.89,0.26,1.86,1.99,0.48,0.88,0.91,1.74,1.76,0.82,0.83,1.41,0.79,0.75,1.57,0.44,0.66,0.81,0.63,0.94,0.55,0.96,0.40,1.22,1.94,0.42,0.08,0.54,0.51,0.69,0.11,0.58,0.58,1.59,0.45,1.77,0.44,0.70,0.39,0.46,0.03,0.45,1.35,1.29,0.25,1.75,0.78,0.94,1.92,0.20,1.66,1.19,0.63,0.61,1.42,1.26,1.90,1.48,1.04,0.82,1.01,0.13,0.19,0.43,1.20,1.14,0.25,0.97,0.91,1.19,0.49,0.11,0.05,1.09,0.54,0.88,0.06,0.51,0.39,0.52,1.84,0.17,1.50,0.66,0.23,1.13,1.10,1.53,2.00,1.97,1.26,1.37,0.73,1.42,1.94,0.09,1.58,0.23,0.31,1.90,1.17,1.71,1.93,0.68,0.60,1.56,1.01,1.02,1.05,0.48,0.79,0.36,0.23,1.17,0.22,0.15,0.73,1.63,0.31,1.70,1.42,0.89,1.76,0.84,1.67,0.93"], 
+            20: ["0.01,0.81,1.35,0.45,0.69,0.94,1.20,0.82,1.20,0.14,0.59,0.25,1.99,0.10,1.11,0.87,1.98,0.58,1.36,0.62,0.65,0.06,0.51,0.67,1.00,1.23,1.28,1.71,0.36,1.44,0.97,0.98,1.53,0.44,0.36,1.59,0.39,0.73,0.41,1.10,0.70,0.90,1.88,1.23,1.36,2.00,1.51,1.55,0.51,0.96,0.63,0.05,0.64,1.32,0.00,1.84,1.15,1.20,0.47,1.23,0.90,0.45,0.67,0.78,1.50,0.37,0.47,1.08,1.93,0.48,1.73,0.06,0.13,0.51,0.61,0.75,0.56,0.43,1.29,0.87,0.51,1.23,0.32,0.24,0.40,0.89,1.73,1.78,1.45,0.33,1.41,0.49,0.49,1.12,1.77,1.54,1.97,0.61,1.88,0.13,1.40,1.87,0.81,1.17,1.20,1.97,1.02,1.35,1.47,0.39,1.01,0.14,0.57,1.66,0.04,1.19,1.94,1.54,0.72,0.03,1.89,0.89,0.24,0.61,0.61,0.81,0.35,1.44,1.76,1.10,0.21,1.35,1.49,0.12,1.04,1.30,1.15,0.61,1.10,0.44,0.10,1.87,1.39,1.49,0.96,0.19,1.11,0.14,0.46,1.61,1.54,1.24,0.50,0.06,1.79,1.04,0.90,0.32,1.36,1.05,0.18,0.44,0.85,1.95,1.79,1.31,0.97,0.73,1.76,0.05,1.80,0.75,1.83,0.58,1.56,0.38,0.77,1.61,0.86,0.91,0.25,0.73,1.69,1.06,0.82,0.32,0.01,0.45,1.66,0.33,0.68,0.39,0.37,1.45,1.69,1.02,0.12,1.17,1.55,0.14,1.90,0.34,1.37,1.61,0.01,0.79,1.41,1.88,0.04,1.69,1.85,0.16,0.59,1.08,1.89,1.11,1.18,1.04,1.42,0.96,1.87,1.05,0.27,0.21,1.32,0.65,0.43,1.31,0.52,1.30,1.59,0.79,1.20,1.38,1.82,1.28,1.65,0.36,0.02,0.03,1.71,1.57,1.94,0.77,1.65,1.53,1.06,1.43,0.58,0.47,0.79,0.28,1.69,1.36,0.01,1.24"], 
+            21: ["2"],
+            22: ["11"], 
+            23: ["0.53,0.32,0.79,0.95,1.11,1.54,0.69,1.23"],
+        }
+        default_adds = {
+            1: ["9"], 
+            2: ["-4.42"], 
+            3: ["0.13+1.06j"],
+            4: ["0.28"], 
+            5: ["4/5"],
+            6: ["0.74,0,0,0"], 
+            7: ["0.03,0,0"], 
+            8: ["0.56+1.13j"], 
+            9: ["0.30"],
+            10: ["0.08"], 
+            11: ["0.1"],
+            12: ["0.03"], 
+            13: ["0.46"],
+            14: ["0.1+0.2e1"], 
+            15: ["0.17,0"], 
+            16: ["0.7672"],
+            17: ["2.0" + ",0.0" * 31], 
+            18: ["2.0" + ",0.0" * 63], 
+            19: ["0.16"],
+            20: ["0.04"], 
+            21: ["2"], 
+            22: ["22"],
+            23: ["0.03,0.0,0.0,0.0,0.0,0.0,0.0,0.0"],
+        }
+        """
+ 
         print("\n📌 Varsayılan parametrelerle test...")
         for t in range(1, 24):
             name = type_names.get(t, f"Tip{t}")
             print(f"   {name:20}: ", end="", flush=True)
-            res = run_test(t, default_starts[t], default_adds[t], iterations=100)
+            res = run_test(t, default_starts[t], default_adds[t], iterations=10000)
             if res.get('success'):
                 self.results.append(res)
                 print(f"✅ KPN={res['kpn']} Ratio={res['ratio']:.4f} (bulan: {res.get('method','?')})")
@@ -873,8 +1024,52 @@ def random_start_add(typ):
 
 def srandom_start_add(typ):
     # Başarılı olduğu bilinen referans değerler
-    known_starts = {
-        1: ["0", "2", "5"], 2: ["-5", "-3"], 3: ["1+1j", "2+2j"], 4: ["2.5", "3.14", "1.5"],
+
+    default_starts = {
+        1: "0", 
+        2: "-5.0",
+        3: "1+1j", 
+        4: "3.14", 
+        5: "7/8", # 3.5: 
+        6: "1.0,0.0,0.0,0.0", 7: "0.6,0.2,0.1", 
+        8: "1+1j",
+        9: "9.64", # 1.0
+        10: "1.34,2.55,0.25,4.61",
+        11: "2.5,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+        12: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+        13: "1.0" + ",0.0" * 15,
+        14: "1.0+2.0e1+3.0e12",
+        15: "1.0,0.1", 16: "1.0,0.5",
+        17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
+        19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
+        21: "2", # "12.85,0.08", 
+        22: "11", 
+        23: "1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+    }
+    default_adds = {
+        1: "9", 
+        2: "-0.5", 
+        3: "0.1+0.1j", 
+        4: "0.1", 
+        5: "4/5", # 0.1
+        6: "0.1,0.0,0.0,0.0", 7: "0.1,0.0,0.0", 8: "0.1+0.1j",
+        9: "0.57", # 2.0
+        10: "0.08,0.0,0.0,0.0",
+        11: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+        12: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+        13: "0.1" + ",0.0" * 15,
+        14: "0.1+0.2e1", 15: "0.1,0.0", 16: "0.1,0.0",
+        17: "1.0" + ",0.0" * 31, 18: "1.0" + ",0.0" * 63,
+        19: "1.0" + ",0.0" * 127, 20: "1.0" + ",0.0" * 255,
+        21: "2", # "0.56,1.7", 
+        22: "22", 
+        23: "0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0",
+    }
+
+    """
+    default_starts = {
+        1: ["0", "2", "5"], 2: ["-5", "-3"], 3: ["9.17+2.73j"],  # : ["1+1j", "2+2j", "9.17+2.73j"]
+        4: ["2.5", "3.14", "1.5"],
         5: ["3.5", "1/2"], 6: ["1.0,0.0,0.0,0.0"], 7: ["0.6,0.2,0.1"],
         8: ["1+1j"], 9: ["1.0"], 10: ["1.34,2.55,0.25,4.61"],
         11: ["2.5,0.0,0.0,0.0,0.0,0.0,0.0,0.0"], 12: ["1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0"],
@@ -883,20 +1078,54 @@ def srandom_start_add(typ):
         19: ["1.0" + ",0.0" * 127], 20: ["1.0" + ",0.0" * 255], 21: ["12.85,0.08"],
         22: ["2"], 23: ["1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0"],
     }
-    known_adds = {
-        1: ["9", "3"], 2: ["-3"], 3: ["0.1+0.1j"], 4: ["4.5"], 5: ["0.1"],
+    default_adds = {
+        1: ["9", "3"], 2: ["-3"], 3: ["1.87+1.56j"], # 3: ["0.1+0.1j", "1.87+1.56j"],
+        4: ["4.5"], 5: ["0.1"],
         6: ["0.1,0.0,0.0,0.0"], 7: ["0.1,0.0,0.0"], 8: ["0.1+0.1j"], 9: ["2.0"],
         10: ["0.08,0.0,0.0,0.0"], 11: ["0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0"],
         12: ["0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0"], 13: ["0.1" + ",0.0" * 15],
         14: ["0.1+0.2e1"], 15: ["0.1,0.0"], 16: ["0.1,0.0"],
         17: ["1.0" + ",0.0" * 31], 18: ["1.0" + ",0.0" * 63], 19: ["1.0" + ",0.0" * 127],
-        20: ["1.0" + ",0.0" * 255], 21: ["0.56,1.7"], 22: ["1"],
+        20: ["1.0" + ",0.0" * 255], 
+        21: ["0.56,1.7"], 
+        22: ["1"],
         23: ["0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0"],
     }
+    """
+    """
+    default_starts = {
+        1: ["0", "6.58"], 2: ["-1.46"], 3: ["1.50+2.56j"], 4: ["27.59"],
+        5: ["7/8"], 6: [".47,1.74,1.69,0.77"], 7: ["0.41,0.89,0.80"],
+        8: ["0.22+8.60j"], 9: ["3.30"], 10: ["4.68,1.35,0.66,0.43"],
+        11: ["0.85,0.38,0.72,1.82,0.07,0.75,1.11,1.95"], 12: ["1.93,0.11,0.16,0.54,1.47,1.79,1.05,1.10"],
+        13: ["0.46"], 14: ["1.0+2.0e1+3.0e12"], 15: ["8.93,0.05"],
+        16: ["4.94,3.66"], 
+        17: ["2.0" + ",0.0" * 31], 
+        18: ["2.0" + ",0.0" * 63],
+        19: ["0.68,0.59,1.89,0.26,1.86,1.99,0.48,0.88,0.91,1.74,1.76,0.82,0.83,1.41,0.79,0.75,1.57,0.44,0.66,0.81,0.63,0.94,0.55,0.96,0.40,1.22,1.94,0.42,0.08,0.54,0.51,0.69,0.11,0.58,0.58,1.59,0.45,1.77,0.44,0.70,0.39,0.46,0.03,0.45,1.35,1.29,0.25,1.75,0.78,0.94,1.92,0.20,1.66,1.19,0.63,0.61,1.42,1.26,1.90,1.48,1.04,0.82,1.01,0.13,0.19,0.43,1.20,1.14,0.25,0.97,0.91,1.19,0.49,0.11,0.05,1.09,0.54,0.88,0.06,0.51,0.39,0.52,1.84,0.17,1.50,0.66,0.23,1.13,1.10,1.53,2.00,1.97,1.26,1.37,0.73,1.42,1.94,0.09,1.58,0.23,0.31,1.90,1.17,1.71,1.93,0.68,0.60,1.56,1.01,1.02,1.05,0.48,0.79,0.36,0.23,1.17,0.22,0.15,0.73,1.63,0.31,1.70,1.42,0.89,1.76,0.84,1.67,0.93"], 
+        20: ["0.01,0.81,1.35,0.45,0.69,0.94,1.20,0.82,1.20,0.14,0.59,0.25,1.99,0.10,1.11,0.87,1.98,0.58,1.36,0.62,0.65,0.06,0.51,0.67,1.00,1.23,1.28,1.71,0.36,1.44,0.97,0.98,1.53,0.44,0.36,1.59,0.39,0.73,0.41,1.10,0.70,0.90,1.88,1.23,1.36,2.00,1.51,1.55,0.51,0.96,0.63,0.05,0.64,1.32,0.00,1.84,1.15,1.20,0.47,1.23,0.90,0.45,0.67,0.78,1.50,0.37,0.47,1.08,1.93,0.48,1.73,0.06,0.13,0.51,0.61,0.75,0.56,0.43,1.29,0.87,0.51,1.23,0.32,0.24,0.40,0.89,1.73,1.78,1.45,0.33,1.41,0.49,0.49,1.12,1.77,1.54,1.97,0.61,1.88,0.13,1.40,1.87,0.81,1.17,1.20,1.97,1.02,1.35,1.47,0.39,1.01,0.14,0.57,1.66,0.04,1.19,1.94,1.54,0.72,0.03,1.89,0.89,0.24,0.61,0.61,0.81,0.35,1.44,1.76,1.10,0.21,1.35,1.49,0.12,1.04,1.30,1.15,0.61,1.10,0.44,0.10,1.87,1.39,1.49,0.96,0.19,1.11,0.14,0.46,1.61,1.54,1.24,0.50,0.06,1.79,1.04,0.90,0.32,1.36,1.05,0.18,0.44,0.85,1.95,1.79,1.31,0.97,0.73,1.76,0.05,1.80,0.75,1.83,0.58,1.56,0.38,0.77,1.61,0.86,0.91,0.25,0.73,1.69,1.06,0.82,0.32,0.01,0.45,1.66,0.33,0.68,0.39,0.37,1.45,1.69,1.02,0.12,1.17,1.55,0.14,1.90,0.34,1.37,1.61,0.01,0.79,1.41,1.88,0.04,1.69,1.85,0.16,0.59,1.08,1.89,1.11,1.18,1.04,1.42,0.96,1.87,1.05,0.27,0.21,1.32,0.65,0.43,1.31,0.52,1.30,1.59,0.79,1.20,1.38,1.82,1.28,1.65,0.36,0.02,0.03,1.71,1.57,1.94,0.77,1.65,1.53,1.06,1.43,0.58,0.47,0.79,0.28,1.69,1.36,0.01,1.24"], 
+        21: ["2"],
+        22: ["11"], 
+        23: ["0.53,0.32,0.79,0.95,1.11,1.54,0.69,1.23"],
+    }
+    default_adds = {
+        1: ["9", "6.41"], 2: ["-4.42"], 3: ["0.13+1.06j"], 4: ["0.28"], 5: ["4/5"],
+        6: ["0.74,0,0,0"], 7: ["0.03,0,0"], 8: ["0.56+1.13j"], 9: ["0.30"],
+        10: ["0.08"], 11: ["0.1"],
+        12: ["0.03"], 13: ["0.46"],
+        14: ["0.1+0.2e1"], 15: ["0.17,0"], 16: ["0.7672"],
+        17: ["2.0" + ",0.0" * 31], 18: ["2.0" + ",0.0" * 63], 
+        19: ["0.16"],
+        20: ["0.04"], 
+        21: ["2"], 
+        22: ["22"],
+        23: ["0.03,0.0,0.0,0.0,0.0,0.0,0.0,0.0"],
+    }
+    """
     # Eğer tip için bilinen değerler varsa, onlardan rastgele birini seç
-    if typ in known_starts:
-        start = random.choice(known_starts[typ])
-        add = random.choice(known_adds[typ])
+    if typ in default_starts:
+        start = random.choice(default_starts[typ])
+        add = random.choice(default_adds[typ])
         return start, add
     else:
         # Bilinen değer yoksa, eski mantıkla devam et (başlangıç için son çare)
@@ -6435,92 +6664,315 @@ class Constants:
     G = G
     H = H
 
+# ============================================================================
+# NÖTROSOFİK SAYI SINIFI (Ana Sınıf)
+# ============================================================================
+
 @dataclass
 class NeutrosophicNumber:
-    """Represents a neutrosophic number of the form t + iI + fF."""
-    t: float  # truth
-    i: float  # indeterminacy
-    f: float  # falsity
-
-    def __init__(self, t: float, i: float, f: float = 0.0):
-        self.t = t
-        self.i = i
-        self.f = f
-
+    """
+    Nötrosofik sayı sınıfı: t + iI + fF formunda
+    t = doğruluk değeri (truth)
+    i = belirsizlik değeri (indeterminacy)
+    f = yanlışlık değeri (falsity)
+    """
+    
+    t: float = 0.0  # truth (doğruluk)
+    i: float = 0.0  # indeterminacy (belirsizlik)
+    f: float = 0.0  # falsity (yanlışlık)
+    
+    def __post_init__(self):
+        """Değerleri float'a çevir ve normalize et"""
+        self.t = float(self.t)
+        self.i = float(self.i)
+        self.f = float(self.f)
+    
+    # ===== TEMEL OPERATÖRLER =====
+    
     def __add__(self, other: Any) -> "NeutrosophicNumber":
-        if isinstance(other, NeutrosophicNumber):
-            return NeutrosophicNumber(self.t + other.t, self.i + other.i, self.f + other.f)
-        if isinstance(other, (int, float)):
-            return NeutrosophicNumber(self.t + other, self.i, self.f)
-        return NotImplemented
-
-    def __sub__(self, other: Any) -> "NeutrosophicNumber":
-        if isinstance(other, NeutrosophicNumber):
-            return NeutrosophicNumber(self.t - other.t, self.i - other.i, self.f - other.f)
-        if isinstance(other, (int, float)):
-            return NeutrosophicNumber(self.t - other, self.i, self.f)
-        return NotImplemented
-
-    def __mul__(self, other: Any) -> "NeutrosophicNumber":
+        """Toplama operatörü"""
         if isinstance(other, NeutrosophicNumber):
             return NeutrosophicNumber(
-                self.t * other.t,
-                self.t * other.i + self.i * other.t + self.i * other.i,
-                self.t * other.f + self.f * other.t + self.f * other.f
+                self.t + other.t,
+                self.i + other.i,
+                self.f + other.f
             )
-        if isinstance(other, (int, float)):
-            return NeutrosophicNumber(self.t * other, self.i * other, self.f * other)
+        elif isinstance(other, (int, float)):
+            return NeutrosophicNumber(self.t + other, self.i, self.f)
         return NotImplemented
-
-    def __truediv__(self, divisor: float) -> "NeutrosophicNumber":
-        if isinstance(divisor, (int, float)):
-            if divisor == 0:
-                raise ZeroDivisionError("Cannot divide by zero.")
-            return NeutrosophicNumber(self.t / divisor, self.i / divisor, self.f / divisor)
-        raise TypeError("Only scalar division is supported.")
-        if isinstance(other, (int, float, Fraction)):
-            scalar = float(other)
-            return self.__class__([c/scalar for c in self.coeffs])
-
+    
+    def __radd__(self, other: Any) -> "NeutrosophicNumber":
+        """Sağdan toplama"""
+        return self.__add__(other)
+    
+    def __sub__(self, other: Any) -> "NeutrosophicNumber":
+        """Çıkarma operatörü"""
+        if isinstance(other, NeutrosophicNumber):
+            return NeutrosophicNumber(
+                self.t - other.t,
+                self.i - other.i,
+                self.f - other.f
+            )
+        elif isinstance(other, (int, float)):
+            return NeutrosophicNumber(self.t - other, self.i, self.f)
+        return NotImplemented
+    
+    def __rsub__(self, other: Any) -> "NeutrosophicNumber":
+        """Sağdan çıkarma"""
+        if isinstance(other, (int, float)):
+            return NeutrosophicNumber(other - self.t, -self.i, -self.f)
+        return NotImplemented
+    
+    def __mul__(self, other: Any) -> "NeutrosophicNumber":
+        """Çarpma operatörü"""
+        if isinstance(other, NeutrosophicNumber):
+            # Nötrosofik çarpma kuralı
+            return NeutrosophicNumber(
+                t=self.t * other.t,
+                i=self.t * other.i + self.i * other.t + self.i * other.i,
+                f=self.t * other.f + self.f * other.t + self.f * other.f
+            )
+        elif isinstance(other, (int, float)):
+            return NeutrosophicNumber(
+                self.t * other,
+                self.i * other,
+                self.f * other
+            )
+        return NotImplemented
+    
+    def __rmul__(self, other: Any) -> "NeutrosophicNumber":
+        """Sağdan çarpma"""
+        return self.__mul__(other)
+    
+    def __truediv__(self, other: Any) -> "NeutrosophicNumber":
+        """Bölme operatörü (sadece skaler bölme)"""
+        if isinstance(other, (int, float)):
+            if other == 0:
+                raise ZeroDivisionError("Sıfıra bölme hatası!")
+            return NeutrosophicNumber(
+                self.t / other,
+                self.i / other,
+                self.f / other
+            )
+        return NotImplemented
+    
+    def __rtruediv__(self, other: Any) -> "NeutrosophicNumber":
+        """Sağdan bölme"""
+        if isinstance(other, (int, float)):
+            return NeutrosophicNumber(
+                other / self.t if self.t != 0 else float('inf'),
+                other / self.i if self.i != 0 else float('inf'),
+                other / self.f if self.f != 0 else float('inf')
+            )
+        return NotImplemented
+    
+    def __floordiv__(self, other: Any) -> "NeutrosophicNumber":
+        """Tam bölme"""
+        if isinstance(other, (int, float)):
+            if other == 0:
+                raise ZeroDivisionError("Sıfıra bölme hatası!")
+            return NeutrosophicNumber(
+                self.t // other,
+                self.i // other,
+                self.f // other
+            )
+        return NotImplemented
+    
+    def __mod__(self, other: Any) -> "NeutrosophicNumber":
+        """Mod operatörü"""
+        if isinstance(other, (int, float)):
+            if other == 0:
+                raise ZeroDivisionError("Sıfıra mod alma hatası!")
+            return NeutrosophicNumber(
+                self.t % other,
+                self.i % other,
+                self.f % other
+            )
+        return NotImplemented
+    
+    def __pow__(self, exponent: Any) -> "NeutrosophicNumber":
+        """Üs alma"""
+        if isinstance(exponent, (int, float)):
+            return NeutrosophicNumber(
+                self.t ** exponent,
+                self.i ** exponent,
+                self.f ** exponent
+            )
+        return NotImplemented
+    
+    def __neg__(self) -> "NeutrosophicNumber":
+        """Negatif operatörü"""
+        return NeutrosophicNumber(-self.t, -self.i, -self.f)
+    
+    def __pos__(self) -> "NeutrosophicNumber":
+        """Pozitif operatörü"""
+        return self
+    
+    def __abs__(self) -> "NeutrosophicNumber":
+        """Mutlak değer"""
+        return NeutrosophicNumber(abs(self.t), abs(self.i), abs(self.f))
+    
+    # ===== KARŞILAŞTIRMA OPERATÖRLERİ =====
+    
+    def __eq__(self, other: Any) -> bool:
+        """Eşitlik kontrolü"""
+        if not isinstance(other, NeutrosophicNumber):
+            return NotImplemented
+        return (math.isclose(self.t, other.t, abs_tol=1e-12) and
+                math.isclose(self.i, other.i, abs_tol=1e-12) and
+                math.isclose(self.f, other.f, abs_tol=1e-12))
+    
+    def __ne__(self, other: Any) -> bool:
+        """Eşitsizlik kontrolü"""
+        return not self.__eq__(other)
+    
+    def __lt__(self, other: Any) -> bool:
+        """Küçüktür (gerçek kısım üzerinden)"""
+        if isinstance(other, NeutrosophicNumber):
+            return self.t < other.t
+        return NotImplemented
+    
+    def __le__(self, other: Any) -> bool:
+        """Küçük eşit"""
+        if isinstance(other, NeutrosophicNumber):
+            return self.t <= other.t
+        return NotImplemented
+    
+    def __gt__(self, other: Any) -> bool:
+        """Büyüktür"""
+        if isinstance(other, NeutrosophicNumber):
+            return self.t > other.t
+        return NotImplemented
+    
+    def __ge__(self, other: Any) -> bool:
+        """Büyük eşit"""
+        if isinstance(other, NeutrosophicNumber):
+            return self.t >= other.t
+        return NotImplemented
+    
+    # ===== STRING TEMSİLLERİ =====
+    
     def __str__(self) -> str:
+        """String temsili: t + iI + fF"""
         parts = []
-        if self.t != 0:
-            parts.append(f"{self.t}")
-        if self.i != 0:
-            parts.append(f"{self.i}I")
-        if self.f != 0:
-            parts.append(f"{self.f}F")
+        if abs(self.t) > 1e-12:
+            parts.append(f"{self.t:.6g}")
+        if abs(self.i) > 1e-12:
+            parts.append(f"{self.i:.6g}I")
+        if abs(self.f) > 1e-12:
+            parts.append(f"{self.f:.6g}F")
         return " + ".join(parts) if parts else "0"
+    
+    def __repr__(self) -> str:
+        """Repr temsili"""
+        return f"NeutrosophicNumber(t={self.t}, i={self.i}, f={self.f})"
+    
+    # ===== YARDIMCI METODLAR =====
+    
+    def conjugate(self) -> "NeutrosophicNumber":
+        """Nötrosofik eşlenik (belirsizlik ve yanlışlık işaret değiştirir)"""
+        return NeutrosophicNumber(self.t, -self.i, -self.f)
+    
+    def magnitude(self) -> float:
+        """Euclidean norm (büyüklük)"""
+        return math.sqrt(self.t**2 + self.i**2 + self.f**2)
+    
+    def normalized(self) -> "NeutrosophicNumber":
+        """Birim büyüklüğe normalize edilmiş sayı"""
+        mag = self.magnitude()
+        if mag == 0:
+            return NeutrosophicNumber(0, 0, 0)
+        return self / mag
+    
+    def score(self) -> float:
+        """Net skor: doğruluk - yanlışlık"""
+        return self.t - self.f
+    
+    def accuracy(self) -> float:
+        """Doğruluk değeri"""
+        return self.t
+    
+    def uncertainty(self) -> float:
+        """Belirsizlik seviyesi"""
+        return self.i
+    
+    def to_tuple(self) -> Tuple[float, float, float]:
+        """Tuple temsili"""
+        return (self.t, self.i, self.f)
+    
+    @classmethod
+    def from_tuple(cls, tpl: Tuple[float, float, float]) -> "NeutrosophicNumber":
+        """Tuple'dan oluştur"""
+        return cls(*tpl)
+    
+    @classmethod
+    def truth(cls, value: float) -> "NeutrosophicNumber":
+        """Sadece doğruluk değeri içeren sayı"""
+        return cls(t=value, i=0.0, f=0.0)
+    
+    @classmethod
+    def indeterminacy(cls, value: float) -> "NeutrosophicNumber":
+        """Sadece belirsizlik içeren sayı"""
+        return cls(t=0.0, i=value, f=0.0)
+    
+    @classmethod
+    def falsity(cls, value: float) -> "NeutrosophicNumber":
+        """Sadece yanlışlık içeren sayı"""
+        return cls(t=0.0, i=0.0, f=value)
+    
+    @classmethod
+    def from_string(cls, s: str) -> "NeutrosophicNumber":
+        """String ifadeden oluştur (örn: '3+2I+1F' veya '3+2I')"""
+        t = i = f = 0.0
+        s = s.replace(' ', '')
+        
+        # I ve F parçalarını ayır
+        parts = s.split('+')
+        for part in parts:
+            if 'I' in part:
+                i = float(part.replace('I', ''))
+            elif 'F' in part:
+                f = float(part.replace('F', ''))
+            else:
+                t = float(part) if part else 0
+        return cls(t, i, f)
 
-# Nötrosofik Karmaşık Sayı Sınıfı
+
+# ============================================================================
+# NÖTROSOFİK KARMAŞIK SAYI SINIFI
+# ============================================================================
+
 @dataclass
 class NeutrosophicComplexNumber:
     """
-    Represents a neutrosophic complex number: (a + bj) + cI
-    where I is the indeterminacy unit
+    Nötrosofik karmaşık sayı: (a + bj) + cI formunda
+    a = gerçel kısım, b = sanal kısım, c = belirsizlik
     """
-
+    
     real: float = 0.0
     imag: float = 0.0
     indeterminacy: float = 0.0
-
+    
     def __post_init__(self):
+        """Değerleri float'a çevir"""
         self.real = float(self.real)
         self.imag = float(self.imag)
         self.indeterminacy = float(self.indeterminacy)
-
+    
     @property
     def complex_part(self) -> complex:
         """Karmaşık kısmı döndür"""
         return complex(self.real, self.imag)
-
-    # Operatörler
+    
+    # ===== TEMEL OPERATÖRLER =====
+    
     def __add__(self, other: Any) -> "NeutrosophicComplexNumber":
+        """Toplama"""
         if isinstance(other, NeutrosophicComplexNumber):
             return NeutrosophicComplexNumber(
                 self.real + other.real,
                 self.imag + other.imag,
-                self.indeterminacy + other.indeterminacy,
+                self.indeterminacy + other.indeterminacy
             )
         elif isinstance(other, (int, float)):
             return NeutrosophicComplexNumber(
@@ -6531,16 +6983,18 @@ class NeutrosophicComplexNumber:
                 self.real + other.real, self.imag + other.imag, self.indeterminacy
             )
         return NotImplemented
-
+    
     def __radd__(self, other: Any) -> "NeutrosophicComplexNumber":
+        """Sağdan toplama"""
         return self.__add__(other)
-
+    
     def __sub__(self, other: Any) -> "NeutrosophicComplexNumber":
+        """Çıkarma"""
         if isinstance(other, NeutrosophicComplexNumber):
             return NeutrosophicComplexNumber(
                 self.real - other.real,
                 self.imag - other.imag,
-                self.indeterminacy - other.indeterminacy,
+                self.indeterminacy - other.indeterminacy
             )
         elif isinstance(other, (int, float)):
             return NeutrosophicComplexNumber(
@@ -6551,8 +7005,9 @@ class NeutrosophicComplexNumber:
                 self.real - other.real, self.imag - other.imag, self.indeterminacy
             )
         return NotImplemented
-
+    
     def __rsub__(self, other: Any) -> "NeutrosophicComplexNumber":
+        """Sağdan çıkarma"""
         if isinstance(other, (int, float)):
             return NeutrosophicComplexNumber(
                 other - self.real, -self.imag, -self.indeterminacy
@@ -6562,69 +7017,72 @@ class NeutrosophicComplexNumber:
                 other.real - self.real, other.imag - self.imag, -self.indeterminacy
             )
         return NotImplemented
-
+    
     def __mul__(self, other: Any) -> "NeutrosophicComplexNumber":
+        """Çarpma"""
         if isinstance(other, NeutrosophicComplexNumber):
-            # Karmaşık çarpma + belirsizlik yayılımı
+            # Karmaşık çarpma
             new_real = self.real * other.real - self.imag * other.imag
             new_imag = self.real * other.imag + self.imag * other.real
-
-            # Belirsizlik yayılımı (basitleştirilmiş model)
+            
+            # Belirsizlik yayılımı
             mag_sq_self = self.real**2 + self.imag**2
             mag_sq_other = other.real**2 + other.imag**2
             new_indeterminacy = (
-                self.indeterminacy
-                + other.indeterminacy
-                + mag_sq_self * other.indeterminacy
-                + mag_sq_other * self.indeterminacy
+                self.indeterminacy + other.indeterminacy +
+                mag_sq_self * other.indeterminacy +
+                mag_sq_other * self.indeterminacy
             )
-
             return NeutrosophicComplexNumber(new_real, new_imag, new_indeterminacy)
+        
         elif isinstance(other, complex):
             new_real = self.real * other.real - self.imag * other.imag
             new_imag = self.real * other.imag + self.imag * other.real
             return NeutrosophicComplexNumber(new_real, new_imag, self.indeterminacy)
+        
         elif isinstance(other, (int, float)):
             return NeutrosophicComplexNumber(
                 self.real * other, self.imag * other, self.indeterminacy * other
             )
         return NotImplemented
-
+    
     def __rmul__(self, other: Any) -> "NeutrosophicComplexNumber":
+        """Sağdan çarpma"""
         return self.__mul__(other)
-
+    
     def __truediv__(self, other: Any) -> "NeutrosophicComplexNumber":
+        """Bölme (sadece skaler)"""
         if isinstance(other, (int, float)):
             if other == 0:
-                raise ZeroDivisionError("Cannot divide by zero")
+                raise ZeroDivisionError("Sıfıra bölme hatası!")
             return NeutrosophicComplexNumber(
                 self.real / other, self.imag / other, self.indeterminacy / other
             )
         return NotImplemented
-        if isinstance(other, (int, float, Fraction)):
-            scalar = float(other)
-            return self.__class__([c/scalar for c in self.coeffs])
-
+    
     def __neg__(self) -> "NeutrosophicComplexNumber":
+        """Negatif"""
         return NeutrosophicComplexNumber(-self.real, -self.imag, -self.indeterminacy)
-
+    
     def __abs__(self) -> float:
-        """Büyüklük (karmaşık norm + belirsizlik)"""
+        """Büyüklük"""
         complex_mag = math.sqrt(self.real**2 + self.imag**2)
         return math.sqrt(complex_mag**2 + self.indeterminacy**2)
-
-    # Karşılaştırma
+    
+    # ===== KARŞILAŞTIRMA =====
+    
     def __eq__(self, other: Any) -> bool:
+        """Eşitlik kontrolü"""
         if not isinstance(other, NeutrosophicComplexNumber):
             return NotImplemented
-        return (
-            math.isclose(self.real, other.real, abs_tol=1e-12)
-            and math.isclose(self.imag, other.imag, abs_tol=1e-12)
-            and math.isclose(self.indeterminacy, other.indeterminacy, abs_tol=1e-12)
-        )
-
-    # String temsilleri
+        return (math.isclose(self.real, other.real, abs_tol=1e-12) and
+                math.isclose(self.imag, other.imag, abs_tol=1e-12) and
+                math.isclose(self.indeterminacy, other.indeterminacy, abs_tol=1e-12))
+    
+    # ===== STRING TEMSİLLERİ =====
+    
     def __str__(self) -> str:
+        """String temsili"""
         parts = []
         if abs(self.real) > 1e-12 or abs(self.imag) > 1e-12:
             if abs(self.imag) < 1e-12:
@@ -6634,37 +7092,42 @@ class NeutrosophicComplexNumber:
         if abs(self.indeterminacy) > 1e-12:
             parts.append(f"{self.indeterminacy:.6g}I")
         return " + ".join(parts) if parts else "0"
-
+    
     def __repr__(self) -> str:
+        """Repr temsili"""
         return f"NeutrosophicComplexNumber(real={self.real}, imag={self.imag}, indeterminacy={self.indeterminacy})"
-
-    # Yardımcı metodlar
+    
+    # ===== YARDIMCI METODLAR =====
+    
     def conjugate(self) -> "NeutrosophicComplexNumber":
-        """Karmaşık eşlenik alır, belirsizlik değişmez"""
+        """Karmaşık eşlenik (belirsizlik değişmez)"""
         return NeutrosophicComplexNumber(self.real, -self.imag, self.indeterminacy)
-
+    
     def magnitude_sq(self) -> float:
-        """Karmaşık kısmın büyüklüğünün karesi"""
+        """Karmaşık kısmın büyüklük karesi"""
         return self.real**2 + self.imag**2
-
+    
     def phase(self) -> float:
         """Faz açısı"""
         if abs(self.real) < 1e-12 and abs(self.imag) < 1e-12:
             return 0.0
         return math.atan2(self.imag, self.real)
-
+    
     def to_polar(self) -> Tuple[float, float, float]:
         """Kutupsal koordinatlara dönüşüm"""
         r = math.sqrt(self.real**2 + self.imag**2)
         theta = self.phase()
         return (r, theta, self.indeterminacy)
-
+    
     @classmethod
-    def from_polar(
-        cls, r: float, theta: float, indeterminacy: float = 0.0
-    ) -> "NeutrosophicComplexNumber":
+    def from_polar(cls, r: float, theta: float, indeterminacy: float = 0.0) -> "NeutrosophicComplexNumber":
         """Kutupsal koordinatlardan oluştur"""
         return cls(r * math.cos(theta), r * math.sin(theta), indeterminacy)
+    
+    @classmethod
+    def from_complex(cls, z: complex, indeterminacy: float = 0.0) -> "NeutrosophicComplexNumber":
+        """Karmaşık sayıdan oluştur"""
+        return cls(z.real, z.imag, indeterminacy)
 
 @dataclass
 class HyperrealNumber:
@@ -8252,499 +8715,6 @@ class ChingonNumber:
 def coeffs(self):
     return [self.w, self.x, self.y, self.z, self.e, self.f, self.g, self.h]
 
-# Ana Nötrosofik sayı sınıfı
-@dataclass
-class NeutrosophicNumber:
-    """
-    Represents a neutrosophic number of the form t + iI + fF.
-    t = truth value
-    i = indeterminacy value
-    f = falsity value
-    """
-
-    t: float = 0.0
-    i: float = 0.0
-    f: float = 0.0
-
-    def __post_init__(self):
-        """Değerleri normalize et ve kontrol et"""
-        self.t = float(self.t)
-        self.i = float(self.i)
-        self.f = float(self.f)
-
-        # Normalizasyon (isteğe bağlı)
-        # total = abs(self.t) + abs(self.i) + abs(self.f)
-        # if total > 0:
-        #     self.t /= total
-        #     self.i /= total
-        #     self.f /= total
-
-    # Temel operatörler
-    def __add__(self, other: Any) -> "NeutrosophicNumber":
-        if isinstance(other, NeutrosophicNumber):
-            return NeutrosophicNumber(
-                self.t + other.t, self.i + other.i, self.f + other.f
-            )
-        elif isinstance(other, (int, float)):
-            return NeutrosophicNumber(self.t + other, self.i, self.f)
-        return NotImplemented
-
-    def __radd__(self, other: Any) -> "NeutrosophicNumber":
-        return self.__add__(other)
-
-    def __sub__(self, other: Any) -> "NeutrosophicNumber":
-        if isinstance(other, NeutrosophicNumber):
-            return NeutrosophicNumber(
-                self.t - other.t, self.i - other.i, self.f - other.f
-            )
-        elif isinstance(other, (int, float)):
-            return NeutrosophicNumber(self.t - other, self.i, self.f)
-        return NotImplemented
-
-    def __rsub__(self, other: Any) -> "NeutrosophicNumber":
-        if isinstance(other, (int, float)):
-            return NeutrosophicNumber(other - self.t, -self.i, -self.f)
-        return NotImplemented
-
-    def __mul__(self, other: Any) -> "NeutrosophicNumber":
-        if isinstance(other, NeutrosophicNumber):
-            # Nötrosofik çarpma: (t1 + i1I + f1F) * (t2 + i2I + f2F)
-            return NeutrosophicNumber(
-                t=self.t * other.t,
-                i=self.t * other.i + self.i * other.t + self.i * other.i,
-                f=self.t * other.f + self.f * other.t + self.f * other.f,
-            )
-        elif isinstance(other, (int, float)):
-            return NeutrosophicNumber(self.t * other, self.i * other, self.f * other)
-        return NotImplemented
-
-    def __rmul__(self, other: Any) -> "NeutrosophicNumber":
-        return self.__mul__(other)
-
-    def __truediv__(self, other: Any) -> "NeutrosophicNumber":
-        if isinstance(other, (int, float)):
-            if other == 0:
-                raise ZeroDivisionError("Cannot divide by zero")
-            return NeutrosophicNumber(self.t / other, self.i / other, self.f / other)
-        return NotImplemented
-        if isinstance(other, (int, float, Fraction)):
-            scalar = float(other)
-            return self.__class__([c/scalar for c in self.coeffs])
-
-    def __rtruediv__(self, other: Any) -> "NeutrosophicNumber":
-        if isinstance(other, (int, float)):
-            return NeutrosophicNumber(
-                other / self.t if self.t != 0 else float("inf"),
-                other / self.i if self.i != 0 else float("inf"),
-                other / self.f if self.f != 0 else float("inf"),
-            )
-        return NotImplemented
-
-    def __floordiv__(self, other: Any) -> "NeutrosophicNumber":
-        if isinstance(other, (int, float)):
-            if other == 0:
-                raise ZeroDivisionError("Cannot divide by zero")
-            return NeutrosophicNumber(self.t // other, self.i // other, self.f // other)
-        return NotImplemented
-
-    def __mod__(self, other: Any) -> "NeutrosophicNumber":
-        if isinstance(other, (int, float)):
-            if other == 0:
-                raise ZeroDivisionError("Cannot modulo by zero")
-            return NeutrosophicNumber(self.t % other, self.i % other, self.f % other)
-        return NotImplemented
-
-    def __pow__(self, exponent: Any) -> "NeutrosophicNumber":
-        if isinstance(exponent, (int, float)):
-            return NeutrosophicNumber(
-                self.t**exponent, self.i**exponent, self.f**exponent
-            )
-        return NotImplemented
-
-    def __neg__(self) -> "NeutrosophicNumber":
-        return NeutrosophicNumber(-self.t, -self.i, -self.f)
-
-    def __pos__(self) -> "NeutrosophicNumber":
-        return self
-
-    def __abs__(self) -> "NeutrosophicNumber":
-        return NeutrosophicNumber(abs(self.t), abs(self.i), abs(self.f))
-
-    # Karşılaştırma operatörleri
-    def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, NeutrosophicNumber):
-            return NotImplemented
-        return (
-            math.isclose(self.t, other.t, abs_tol=1e-12)
-            and math.isclose(self.i, other.i, abs_tol=1e-12)
-            and math.isclose(self.f, other.f, abs_tol=1e-12)
-        )
-
-    def __ne__(self, other: Any) -> bool:
-        return not self.__eq__(other)
-
-    def __lt__(self, other: Any) -> bool:
-        if isinstance(other, NeutrosophicNumber):
-            # Nötrosofik sıralama (gerçek kısım üzerinden)
-            return self.t < other.t
-        return NotImplemented
-
-    def __le__(self, other: Any) -> bool:
-        if isinstance(other, NeutrosophicNumber):
-            return self.t <= other.t
-        return NotImplemented
-
-    def __gt__(self, other: Any) -> bool:
-        if isinstance(other, NeutrosophicNumber):
-            return self.t > other.t
-        return NotImplemented
-
-    def __ge__(self, other: Any) -> bool:
-        if isinstance(other, NeutrosophicNumber):
-            return self.t >= other.t
-        return NotImplemented
-
-    # String temsilleri
-    def __str__(self) -> str:
-        parts = []
-        if abs(self.t) > 1e-12:
-            parts.append(f"{self.t:.6g}")
-        if abs(self.i) > 1e-12:
-            parts.append(f"{self.i:.6g}I")
-        if abs(self.f) > 1e-12:
-            parts.append(f"{self.f:.6g}F")
-        return " + ".join(parts) if parts else "0"
-
-    def __repr__(self) -> str:
-        return f"NeutrosophicNumber(t={self.t}, i={self.i}, f={self.f})"
-
-    # Yardımcı metodlar
-    def conjugate(self) -> "NeutrosophicNumber":
-        """Nötrosofik eşlenik (işaret değişimi)"""
-        return NeutrosophicNumber(self.t, -self.i, -self.f)
-
-    def magnitude(self) -> float:
-        """Büyüklük (Euclidean norm)"""
-        return math.sqrt(self.t**2 + self.i**2 + self.f**2)
-
-    def normalized(self) -> "NeutrosophicNumber":
-        """Birim büyüklüğe normalize edilmiş Nötrosofik sayı"""
-        mag = self.magnitude()
-        if mag == 0:
-            return NeutrosophicNumber(0, 0, 0)
-        return self / mag
-
-    def score(self) -> float:
-        """Net skor: t - f"""
-        return self.t - self.f
-
-    def uncertainty(self) -> float:
-        """Belirsizlik seviyesi"""
-        return self.i
-
-    def to_tuple(self) -> Tuple[float, float, float]:
-        """Tuple temsili"""
-        return (self.t, self.i, self.f)
-
-    @classmethod
-    def from_tuple(cls, tpl: Tuple[float, float, float]) -> "NeutrosophicNumber":
-        """Tuple'dan oluştur"""
-        return cls(*tpl)
-
-    @classmethod
-    def truth(cls, value: float) -> "NeutrosophicNumber":
-        """Sadece gerçek değer içeren Nötrosofik sayı"""
-        return cls(t=value, i=0.0, f=0.0)
-
-    @classmethod
-    def indeterminacy(cls, value: float) -> "NeutrosophicNumber":
-        """Sadece belirsizlik içeren Nötrosofik sayı"""
-        return cls(t=0.0, i=value, f=0.0)
-
-    @classmethod
-    def falsity(cls, value: float) -> "NeutrosophicNumber":
-        """Sadece yanlışlık içeren Nötrosofik sayı"""
-        return cls(t=0.0, i=0.0, f=value)
-
-
-# Nötrosofik Karmaşık Sayı Sınıfı
-@dataclass
-class NeutrosophicComplexNumber:
-    """
-    Represents a neutrosophic complex number: (a + bj) + cI
-    where I is the indeterminacy unit
-    """
-
-    real: float = 0.0
-    imag: float = 0.0
-    indeterminacy: float = 0.0
-
-    def __post_init__(self):
-        self.real = float(self.real)
-        self.imag = float(self.imag)
-        self.indeterminacy = float(self.indeterminacy)
-
-    @property
-    def complex_part(self) -> complex:
-        """Karmaşık kısmı döndür"""
-        return complex(self.real, self.imag)
-
-    # Operatörler
-    def __add__(self, other: Any) -> "NeutrosophicComplexNumber":
-        if isinstance(other, NeutrosophicComplexNumber):
-            return NeutrosophicComplexNumber(
-                self.real + other.real,
-                self.imag + other.imag,
-                self.indeterminacy + other.indeterminacy,
-            )
-        elif isinstance(other, (int, float)):
-            return NeutrosophicComplexNumber(
-                self.real + other, self.imag, self.indeterminacy
-            )
-        elif isinstance(other, complex):
-            return NeutrosophicComplexNumber(
-                self.real + other.real, self.imag + other.imag, self.indeterminacy
-            )
-        return NotImplemented
-
-    def __radd__(self, other: Any) -> "NeutrosophicComplexNumber":
-        return self.__add__(other)
-
-    def __sub__(self, other: Any) -> "NeutrosophicComplexNumber":
-        if isinstance(other, NeutrosophicComplexNumber):
-            return NeutrosophicComplexNumber(
-                self.real - other.real,
-                self.imag - other.imag,
-                self.indeterminacy - other.indeterminacy,
-            )
-        elif isinstance(other, (int, float)):
-            return NeutrosophicComplexNumber(
-                self.real - other, self.imag, self.indeterminacy
-            )
-        elif isinstance(other, complex):
-            return NeutrosophicComplexNumber(
-                self.real - other.real, self.imag - other.imag, self.indeterminacy
-            )
-        return NotImplemented
-
-    def __rsub__(self, other: Any) -> "NeutrosophicComplexNumber":
-        if isinstance(other, (int, float)):
-            return NeutrosophicComplexNumber(
-                other - self.real, -self.imag, -self.indeterminacy
-            )
-        elif isinstance(other, complex):
-            return NeutrosophicComplexNumber(
-                other.real - self.real, other.imag - self.imag, -self.indeterminacy
-            )
-        return NotImplemented
-
-    def __mul__(self, other: Any) -> "NeutrosophicComplexNumber":
-        if isinstance(other, NeutrosophicComplexNumber):
-            # Karmaşık çarpma + belirsizlik yayılımı
-            new_real = self.real * other.real - self.imag * other.imag
-            new_imag = self.real * other.imag + self.imag * other.real
-
-            # Belirsizlik yayılımı (basitleştirilmiş model)
-            mag_sq_self = self.real**2 + self.imag**2
-            mag_sq_other = other.real**2 + other.imag**2
-            new_indeterminacy = (
-                self.indeterminacy
-                + other.indeterminacy
-                + mag_sq_self * other.indeterminacy
-                + mag_sq_other * self.indeterminacy
-            )
-
-            return NeutrosophicComplexNumber(new_real, new_imag, new_indeterminacy)
-        elif isinstance(other, complex):
-            new_real = self.real * other.real - self.imag * other.imag
-            new_imag = self.real * other.imag + self.imag * other.real
-            return NeutrosophicComplexNumber(new_real, new_imag, self.indeterminacy)
-        elif isinstance(other, (int, float)):
-            return NeutrosophicComplexNumber(
-                self.real * other, self.imag * other, self.indeterminacy * other
-            )
-        return NotImplemented
-
-    def __rmul__(self, other: Any) -> "NeutrosophicComplexNumber":
-        return self.__mul__(other)
-
-    def __truediv__(self, other: Any) -> "NeutrosophicComplexNumber":
-        if isinstance(other, (int, float)):
-            if other == 0:
-                raise ZeroDivisionError("Cannot divide by zero")
-            return NeutrosophicComplexNumber(
-                self.real / other, self.imag / other, self.indeterminacy / other
-            )
-        return NotImplemented
-        if isinstance(other, (int, float, Fraction)):
-            scalar = float(other)
-            return self.__class__([c/scalar for c in self.coeffs])
-
-    def __neg__(self) -> "NeutrosophicComplexNumber":
-        return NeutrosophicComplexNumber(-self.real, -self.imag, -self.indeterminacy)
-
-    def __abs__(self) -> float:
-        """Büyüklük (karmaşık norm + belirsizlik)"""
-        complex_mag = math.sqrt(self.real**2 + self.imag**2)
-        return math.sqrt(complex_mag**2 + self.indeterminacy**2)
-
-    # Karşılaştırma
-    def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, NeutrosophicComplexNumber):
-            return NotImplemented
-        return (
-            math.isclose(self.real, other.real, abs_tol=1e-12)
-            and math.isclose(self.imag, other.imag, abs_tol=1e-12)
-            and math.isclose(self.indeterminacy, other.indeterminacy, abs_tol=1e-12)
-        )
-
-    # String temsilleri
-    def __str__(self) -> str:
-        parts = []
-        if abs(self.real) > 1e-12 or abs(self.imag) > 1e-12:
-            if abs(self.imag) < 1e-12:
-                parts.append(f"{self.real:.6g}")
-            else:
-                parts.append(f"({self.real:.6g}{self.imag:+.6g}j)")
-        if abs(self.indeterminacy) > 1e-12:
-            parts.append(f"{self.indeterminacy:.6g}I")
-        return " + ".join(parts) if parts else "0"
-
-    def __repr__(self) -> str:
-        return f"NeutrosophicComplexNumber(real={self.real}, imag={self.imag}, indeterminacy={self.indeterminacy})"
-
-    # Yardımcı metodlar
-    def conjugate(self) -> "NeutrosophicComplexNumber":
-        """Karmaşık eşlenik alır, belirsizlik değişmez"""
-        return NeutrosophicComplexNumber(self.real, -self.imag, self.indeterminacy)
-
-    def magnitude_sq(self) -> float:
-        """Karmaşık kısmın büyüklüğünün karesi"""
-        return self.real**2 + self.imag**2
-
-    def phase(self) -> float:
-        """Faz açısı"""
-        if abs(self.real) < 1e-12 and abs(self.imag) < 1e-12:
-            return 0.0
-        return math.atan2(self.imag, self.real)
-
-    def to_polar(self) -> Tuple[float, float, float]:
-        """Kutupsal koordinatlara dönüşüm"""
-        r = math.sqrt(self.real**2 + self.imag**2)
-        theta = self.phase()
-        return (r, theta, self.indeterminacy)
-
-    @classmethod
-    def from_polar(
-        cls, r: float, theta: float, indeterminacy: float = 0.0
-    ) -> "NeutrosophicComplexNumber":
-        """Kutupsal koordinatlardan oluştur"""
-        return cls(r * math.cos(theta), r * math.sin(theta), indeterminacy)
-
-@dataclass
-class NeutrosophicComplexNumber:
-    """
-    Represents a number with a complex part and an indeterminacy level.
-    z = (a + bj) + cI, where I = indeterminacy.
-    """
-
-    def __init__(self, real: float = 0.0, imag: float = 0.0, indeterminacy: float = 0.0):
-        self.real = float(real)
-        self.imag = float(imag)
-        self.indeterminacy = float(indeterminacy)
-
-    def __repr__(self) -> str:
-        return f"NeutrosophicComplexNumber(real={self.real}, imag={self.imag}, indeterminacy={self.indeterminacy})"
-
-    def __str__(self) -> str:
-        return f"({self.real}{self.imag:+}j) + {self.indeterminacy}I"
-
-    def __add__(self, other: Any) -> "NeutrosophicComplexNumber":
-        if isinstance(other, NeutrosophicComplexNumber):
-            return NeutrosophicComplexNumber(
-                self.real + other.real,
-                self.imag + other.imag,
-                self.indeterminacy + other.indeterminacy
-            )
-        if isinstance(other, (int, float)):
-            return NeutrosophicComplexNumber(self.real + other, self.imag, self.indeterminacy)
-        if isinstance(other, complex):
-            return NeutrosophicComplexNumber(self.real + other.real, self.imag + other.imag, self.indeterminacy)
-        return NotImplemented
-
-    def __sub__(self, other: Any) -> "NeutrosophicComplexNumber":
-        if isinstance(other, NeutrosophicComplexNumber):
-            return NeutrosophicComplexNumber(
-                self.real - other.real,
-                self.imag - other.imag,
-                self.indeterminacy - other.indeterminacy
-            )
-        if isinstance(other, (int, float)):
-            return NeutrosophicComplexNumber(self.real - other, self.imag, self.indeterminacy)
-        if isinstance(other, complex):
-            return NeutrosophicComplexNumber(self.real - other.real, self.imag - other.imag, self.indeterminacy)
-        return NotImplemented
-
-    def __mul__(self, other: Any) -> "NeutrosophicComplexNumber":
-        if isinstance(other, NeutrosophicComplexNumber):
-            new_real = self.real * other.real - self.imag * other.imag
-            new_imag = self.real * other.imag + self.imag * other.real
-            # Indeterminacy: basitleştirilmiş model
-            new_indeterminacy = (self.indeterminacy + other.indeterminacy +
-                               self.magnitude_sq() * other.indeterminacy +
-                               other.magnitude_sq() * self.indeterminacy)
-            return NeutrosophicComplexNumber(new_real, new_imag, new_indeterminacy)
-        if isinstance(other, complex):
-            new_real = self.real * other.real - self.imag * other.imag
-            new_imag = self.real * other.imag + self.imag * other.real
-            return NeutrosophicComplexNumber(new_real, new_imag, self.indeterminacy)
-        if isinstance(other, (int, float)):
-            return NeutrosophicComplexNumber(
-                self.real * other,
-                self.imag * other,
-                self.indeterminacy * other
-            )
-        return NotImplemented
-
-    def __truediv__(self, divisor: Any) -> "NeutrosophicComplexNumber":
-        if isinstance(divisor, (int, float)):
-            if divisor == 0:
-                raise ZeroDivisionError("Cannot divide by zero.")
-            return NeutrosophicComplexNumber(
-                self.real / divisor,
-                self.imag / divisor,
-                self.indeterminacy / divisor
-            )
-        return NotImplemented  # complex / NeutrosophicComplex desteklenmiyor
-        if isinstance(other, (int, float, Fraction)):
-            scalar = float(other)
-            return self.__class__([c/scalar for c in self.coeffs])
-
-    def __radd__(self, other: Any) -> "NeutrosophicComplexNumber":
-        return self.__add__(other)
-
-    def __rsub__(self, other: Any) -> "NeutrosophicComplexNumber":
-        if isinstance(other, (int, float)):
-            return NeutrosophicComplexNumber(
-                other - self.real,
-                -self.imag,
-                -self.indeterminacy
-            )
-        return NotImplemented
-
-    def __rmul__(self, other: Any) -> "NeutrosophicComplexNumber":
-        return self.__mul__(other)
-
-    def magnitude_sq(self) -> float:
-        """Returns the squared magnitude of the complex part."""
-        return self.real**2 + self.imag**2
-
-    def __eq__(self, other: Any) -> bool:
-        if isinstance(other, NeutrosophicComplexNumber):
-            return (abs(self.real - other.real) < 1e-12 and
-                    abs(self.imag - other.imag) < 1e-12 and
-                    abs(self.indeterminacy - other.indeterminacy) < 1e-12)
-        return False
 
 @dataclass
 class HyperrealNumber:
@@ -11844,7 +11814,41 @@ def _is_divisible(value: Any, divisor: Union[int, float, Fraction], kececi_type:
                 return _iterable_divisible(value, divisor)
             return _divisible_by_numeric(value, divisor)
 
-        # Neutrosophic types: check relevant attributes if present
+        # ============================================================================
+        # BÖLÜNEBİLİRLİK KONTROLÜ - Nötrosofik Sayılar için
+        # ============================================================================
+        # Bu fonksiyon, bir Nötrosofik sayının belirli bir bölene tam bölünüp 
+        # bölünmediğini kontrol eder.
+        # 
+        # Nötrosofik sayı: t + iI  (veya a + bI)
+        # Her iki bileşen de tam bölünmelidir.
+        # ============================================================================
+
+        if kececi_type == TYPE_NEUTROSOPHIC:           # Sadece Nötrosofik tipi için çalış
+            try:                                        # Hata durumlarını yakala
+                # ----- 1. DURUM: t ve i özellikleri var -----
+                # Bazı NeutrosophicNumber sınıfları t (truth) ve i (indeterminacy) kullanır
+                if hasattr(value, 't') and hasattr(value, 'i'):
+                    # Örnek: value.t = 6, value.i = 4, divisor = 2
+                    # _divisible_by_numeric(6, 2) → True (6/2=3)
+                    # _divisible_by_numeric(4, 2) → True (4/2=2)
+                    # return True and True → True (tam bölünüyor)
+                    return _divisible_by_numeric(value.t, divisor) and _divisible_by_numeric(value.i, divisor)
+                
+                # ----- 2. DURUM: a ve b özellikleri var -----
+                # Alternatif sınıflar a (deterministic) ve b (uncertainty) kullanır
+                if hasattr(value, 'a') and hasattr(value, 'b'):
+                    # Örnek: value.a = 6, value.b = 4, divisor = 3
+                    # _divisible_by_numeric(6, 3) → True (6/3=2)
+                    # _divisible_by_numeric(4, 3) → False (4/3 tam değil)
+                    # return True and False → False (tam bölünmüyor)
+                    return _divisible_by_numeric(value.a, divisor) and _divisible_by_numeric(value.b, divisor)
+                    
+            except Exception:                           # Herhangi bir hata olursa
+                return False                            # Güvenli cevap: bölünemez
+            
+            return False                                 # Hiçbir özellik bulunamadı
+        """
         if kececi_type == TYPE_NEUTROSOPHIC:
             try:
                 if hasattr(value, 't') and hasattr(value, 'i'):
@@ -11854,6 +11858,7 @@ def _is_divisible(value: Any, divisor: Union[int, float, Fraction], kececi_type:
             except Exception:
                 return False
             return False
+        """
 
         if kececi_type == TYPE_NEUTROSOPHIC_COMPLEX:
             try:
@@ -13102,16 +13107,27 @@ def make_unit(exemplar):
 
 
 def unified_generator(
-    kececi_type: int,
-    start_input_raw: str,
-    add_input_raw: str,
-    iterations: int,
-    operation='ask',
-    include_intermediate_steps: bool = True,
-    first_divisor: int = 3,
-    ask_plus_first: bool = True,
+    kececi_type: int,           # Sayı tipi (7 = Neutrosophic)
+    start_input_raw: str,       # Başlangıç değeri ("3+2I")
+    add_input_raw: str,         # Artış miktarı (1.5)
+    iterations: int,            # İterasyon sayısı
+    operation='ask',            # İşlem tipi ('ask' = Collatz benzeri)
+    include_intermediate_steps: bool = True,  # Ara adımları dahil et?
+    first_divisor: int = 3,     # İlk bölen
+    ask_plus_first: bool = True, # ASK işleminde önce +1 mi?
 ) -> List[Any]:
     """
+    1. Başlangıç değerini parse et → start_value
+    2. Artış değerini parse et → add_value  
+    3. İşlem tipine göre (operation) döngüyü çalıştır:
+       - 'ask': Collatz benzeri kural
+       - 'add': Sadece toplama
+       - 'multiply': Çarpma
+       - vs.
+    4. Her adımda:
+       - include_intermediate_steps=True ise TÜM değerleri kaydet
+       - False ise sadece ana adımları kaydet
+
     Keçeci sayıları üretici – 23 farklı sayı sistemi için ask_unit kullanır.
     Tüm matematiksel işlemler (+, -, *, /, %, is_prime_like) tip-specific olarak tanımlanmıştır.
     """
@@ -13399,6 +13415,37 @@ def unified_generator(
             v = int(round(val.w))
             return v > 1 and isprime(v)
 
+    elif kececi_type == 7:   # NeutrosophicNumber Tipi (TYPE_NEUTROSOPHIC = 7)
+        
+        # ----- 1. TOPLAMA FONKSİYONU -----
+        # İki Neutrosophic sayıyı toplar
+        # Örnek: (3+2I) + (1+1I) = (4+3I)
+        def add(a, b): 
+            return a + b   # NeutrosophicNumber.__add__ metodunu çağırır
+        
+        # ----- 2. BÖLÜNEBİLİRLİK KONTROLÜ -----
+        # Bir Neutrosophic sayının bir bölene tam bölünüp bölünmediğini kontrol eder
+        # Bu, 1. KOD ile AYNI işlevi görür!
+        def is_divisible(val, d):
+            # val.t (truth/doğruluk bileşeni) kullanarak kontrol et
+            # math.isclose ile kayan nokta hassasiyetinde kontrol
+            return math.isclose(val.t % d, 0) if hasattr(val, 't') else False
+        
+        # ----- 3. BÖLME FONKSİYONU -----
+        # Neutrosophic sayının tüm bileşenlerini (t, i, f) bir sayıya böler
+        # Bu, 2. KOD'un ÇİFT sayı durumundaki işlemin AYNISIDIR!
+        # Örnek: (6+4I) / 2 = (3+2I)
+        def divide(val, d):
+            # Yeni bir NeutrosophicNumber oluştur: (t/d, i/d, f/d)
+            return type(val)(val.t/d, val.i/d, val.f/d)
+        
+        # ----- 4. ASALLIK KONTROLÜ -----
+        # Bir Neutrosophic sayının "Keçeci Asal" olup olmadığını kontrol eder
+        # Sadece deterministik kısım (t) kontrol edilir
+        def is_prime_like(val):
+            v = int(round(val.t))   # t bileşenini yuvarla ve integer'a çevir
+            return v > 1 and isprime(v)  # >1 ve asal mı?
+    """
     elif kececi_type == 7:   # NeutrosophicNumber
         def add(a, b): return a + b
         def is_divisible(val, d):
@@ -13410,6 +13457,7 @@ def unified_generator(
         def is_prime_like(val):
             v = int(round(val.t))
             return v > 1 and isprime(v)
+    """
 
     elif kececi_type == 8:   # NeutrosophicComplexNumber
         def add(a, b): return a + b
@@ -19054,7 +19102,7 @@ def find_stable_period(seq, min_repeats=3):
 # ------------------------------------------------------------
 # 3. VARYASYON TESTİ (her iki mod için çalışır)
 # ------------------------------------------------------------
-def run_variation_test(include_intermediate_steps=False, steps=100):
+def run_variation_test(include_intermediate_steps=True, steps=100):
     variations = [
         ("V1: Önce 3, ASK +1/-1", 3, True),
         ("V2: Önce 3, ASK -1/+1", 3, False),
@@ -23307,7 +23355,8 @@ def run_cramer_test(type_num, start, add, iterations=1000, first_divisor=3, ask_
             iterations=iterations,
             start_value_raw=str(start),
             add_value_raw=str(add),
-            include_intermediate_steps=True,
+            #include_intermediate_steps=True, Tenaryyi bulamıyor
+            include_intermediate_steps=False,
             first_divisor=first_divisor,
             ask_plus_first=ask_plus_first
         )
@@ -23352,7 +23401,8 @@ def run_test(type_num, start, add, iterations=1000, first_divisor=3, ask_plus_fi
             iterations=iterations,
             start_value_raw=str(start),
             add_value_raw=str(add),
-            include_intermediate_steps=True,
+            #include_intermediate_steps=True, Tenaryyi bulamıyor
+            include_intermediate_steps=False,
             first_divisor=first_divisor,
             ask_plus_first=ask_plus_first
         )
