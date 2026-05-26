@@ -1,4 +1,4 @@
-{% set version = "1.0.0" %}
+{% set version = "1.0.1" %}
 
 package:
   name: kececinumbers
@@ -25,6 +25,7 @@ requirements:
     - python {{ python }}
     - numpy
     - setuptools
+    - pip    
     # Other build tools
   run:
     - python >=3.11
