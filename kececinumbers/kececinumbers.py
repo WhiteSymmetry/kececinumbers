@@ -13445,19 +13445,19 @@ def unified_generator(
         def is_prime_like(val):
             v = int(round(val.t))   # t bileşenini yuvarla ve integer'a çevir
             return v > 1 and isprime(v)  # >1 ve asal mı?
-    """
-    elif kececi_type == 7:   # NeutrosophicNumber
-        def add(a, b): return a + b
-        def is_divisible(val, d):
-            # val.t (T bileşeni) kullan
-            return math.isclose(val.t % d, 0) if hasattr(val, 't') else False
-        def divide(val, d):
-            # Tüm bileşenleri d'ye böl
-            return type(val)(val.t/d, val.i/d, val.f/d)
-        def is_prime_like(val):
-            v = int(round(val.t))
-            return v > 1 and isprime(v)
-    """
+        """
+        elif kececi_type == 7:   # NeutrosophicNumber
+            def add(a, b): return a + b
+            def is_divisible(val, d):
+                # val.t (T bileşeni) kullan
+                return math.isclose(val.t % d, 0) if hasattr(val, 't') else False
+            def divide(val, d):
+                # Tüm bileşenleri d'ye böl
+                return type(val)(val.t/d, val.i/d, val.f/d)
+            def is_prime_like(val):
+                v = int(round(val.t))
+                return v > 1 and isprime(v)
+        """
 
     elif kececi_type == 8:   # NeutrosophicComplexNumber
         def add(a, b): return a + b
