@@ -16,7 +16,7 @@ from __future__ import annotations
 import warnings
 
 # Paket sürüm numarası
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 __description__ = "Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets."
