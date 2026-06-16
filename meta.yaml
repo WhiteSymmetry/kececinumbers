@@ -34,7 +34,8 @@ requirements:
     - python {{ python }}
     - numpy
     - setuptools
-    - pip    
+    - pip
+    - requests
     # Other build tools
   run:
     - python >=3.11
@@ -43,6 +44,7 @@ requirements:
     - scipy
     - scikit-learn
     - sympy
+    - requests
     # Other runtime dependencies
   build:
     - python >=3.11
@@ -53,6 +55,7 @@ requirements:
     - scipy
     - scikit-learn
     - sympy
+    - requests
 
 test:
   requires:
@@ -61,6 +64,7 @@ test:
     - scikit-learn
     - sympy
     - numpy
+    - requests
   imports:
     - kececinumbers
     - matplotlib.pyplot
@@ -70,6 +74,7 @@ test:
     - scipy.stats
     - scikit-learn
     - numpy
+    - requests
   commands:
     - python -c "import kececinumbers; print(kececinumbers.__version__)"
 
