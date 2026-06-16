@@ -30,7 +30,6 @@ jobs:
       - name: Build docs
         run: |
           pip install -r docs/requirements.txt
-          cd docs && make html
 
       - name: Clean unnecessary files before build
         run: |
