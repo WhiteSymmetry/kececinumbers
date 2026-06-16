@@ -23355,7 +23355,7 @@ def run_cramer_test(type_num, start, add, iterations=1000, first_divisor=3, ask_
             iterations=iterations,
             start_value_raw=str(start),
             add_value_raw=str(add),
-            #include_intermediate_steps=True, Tenaryyi bulamıyor
+            #include_intermediate_steps=True, ternaryyi bulamıyor
             include_intermediate_steps=False,
             first_divisor=first_divisor,
             ask_plus_first=ask_plus_first
@@ -23401,7 +23401,7 @@ def run_test(type_num, start, add, iterations=1000, first_divisor=3, ask_plus_fi
             iterations=iterations,
             start_value_raw=str(start),
             add_value_raw=str(add),
-            #include_intermediate_steps=True, Tenaryyi bulamıyor
+            #include_intermediate_steps=True, ternaryyi bulamıyor
             include_intermediate_steps=False,
             first_divisor=first_divisor,
             ask_plus_first=ask_plus_first
