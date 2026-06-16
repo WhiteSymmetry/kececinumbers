@@ -1,0 +1,12 @@
+# requirements.txt
+numpy
+scipy
+matplotlib
+scikit-learn
+sympy
+pytest
+flake8
+pytest-cov
+# optionals (ekstra analiz/plot paketleri)
+plotly
+pillow
