@@ -16,7 +16,7 @@ from __future__ import annotations
 import warnings
 
 # Paket sürüm numarası
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 __author__ = "Mehmet Keçeci"
 __email__ = "mkececi@yaani.com"
 __description__ = "Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets."
@@ -227,6 +227,18 @@ from .kececinumbers import (
     is_multiple_with_tolerance,
     generate_kececi_sequence,
     _generate_kececi_sequence,
+    plot_kececi_with_pattern,
+    extract_numericval,
+    ternary_to_decimal,
+    shorten_string,
+    to_ternary,
+    find_repeating_pattern,
+    _fallback_random_numbers,
+    get_quantum_random_numbers,
+    get_quantum_random_numbers_with_retry,
+    generate_geometric_kececi_art,
+    kececi_to_color,
+    kececi_numbers_complex,
 )
 
 # Tip Sabitleri
@@ -280,6 +292,19 @@ __all__ = [
 
     # Metadata
     '__version__', '__author__', '__description__',
+
+    'plot_kececi_with_pattern',
+    'extract_numericval',
+    'ternary_to_decimal',
+    'shorten_string',
+    'to_ternary',
+    'find_repeating_pattern',
+    '_fallback_random_numbers',
+    'get_quantum_random_numbers',
+    'get_quantum_random_numbers_with_retry',
+    'generate_geometric_kececi_art',
+    'kececi_to_color',
+    'kececi_numbers_complex',
 ]
 
 # Paket yüklendiğinde kısa bilgi
