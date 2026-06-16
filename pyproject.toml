@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kececinumbers"
-version = "1.0.1"
+version = "1.0.2"
 dynamic = ["keywords", "maintainers"]
 license = "GPL-3.0-or-later"  # SPDX ID
 
@@ -34,11 +34,29 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov", "pytest-mock", "ruff", "numpy", "matplotlib", "scipy", "scikit-learn", "sympy",]
+test = ["pytest", "pytest-cov", "pytest-mock", "ruff", "numpy", "matplotlib", "scipy", "scikit-learn", "sympy", "pillow"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
 
 [tool.setuptools.packages.find]
-where = ["."]
+include = ["kha256*"]
+exclude = ["binder", "build*", "content", "data", "dist", "dist*", "docs", "docs*", "examples*", "examples", "notebooks", "tests", "tests*"]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+"*" = ["*.py", "*.pyi"]  # Sadece Python dosyaları
 
 [project.urls]
 Homepage = "https://github.com/WhiteSymmetry/kececinumbers"
 Repository = "https://github.com/WhiteSymmetry/kececinumbers"
+
+[dependency-groups]
+build = [
+    "setuptools (>=82.0.1)",
+    "cython (>=3.2.5)"
+]
