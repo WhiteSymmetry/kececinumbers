@@ -130,6 +130,8 @@ Within all of these types, special repeating prime numbers called "Keçeci Prime
 *   **Advanced Visualization:** Provides a multi-dimensional `plot_numbers` function tailored to the nature of each number system.
 *   **Keçeci Prime Number (KPN) Analysis:** Identifies the most recurring prime representation in sequences to analyze their convergence behavior.
 *   **Interactive and Programmatic Usage:** Supports both interactive parameter input (`get_interactive`) and direct use in scripts (`get_with_params`).
+  
+*   1.0.2: **Quantum random"
 
 *   0.9.8-0.9.9: **Keçeci Numbers Sapce (KNS: Keçeci Sayıları Uzayı, KSU)**:
   
