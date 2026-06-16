@@ -6,9 +6,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kececinumbers"
-version = "1.0.3"
-dynamic = ["keywords", "maintainers"]
-license = "GPL-3.0-or-later"  # SPDX ID
+version = "1.0.4"
+license = {text = "GPL-3.0-or-later"}
 
 # Diğer proje bilgileri (isteğe bağlı ama tavsiye edilir)
 authors = [
@@ -43,21 +42,15 @@ python_files = ["test_*.py"]
 python_functions = ["test_*"]
 
 [tool.setuptools.packages.find]
-include = ["kha256*"]
+include = ["kececinumbers*"]
 exclude = ["binder", "build*", "content", "data", "dist", "dist*", "docs", "docs*", "examples*", "examples", "notebooks", "tests", "tests*"]
 
 [tool.setuptools]
 include-package-data = true
 
 [tool.setuptools.package-data]
-"*" = ["*.py", "*.pyi"]  # Sadece Python dosyaları
+kececinumbers = ["*.py", "*.pyi", "py.typed"]
 
 [project.urls]
 Homepage = "https://github.com/WhiteSymmetry/kececinumbers"
 Repository = "https://github.com/WhiteSymmetry/kececinumbers"
-
-[dependency-groups]
-build = [
-    "setuptools (>=82.0.1)",
-    "cython (>=3.2.5)"
-]
