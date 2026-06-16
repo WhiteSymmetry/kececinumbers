@@ -147,6 +147,68 @@ In version 0.9.7 of Keçeci Numbers, the sequence generation now supports **firs
 
 ---
 
+KEÇECİ CRAMÉR CONJECTURE – VARSYILAN ANALİZ
+==========================================
+
+📌 Varsayılan parametrelerle test...
+
+   Positive Real       : ✅ KPN=5 Ratio=0.1179 (bulan: find_kececi_prime_number)
+
+   Negative Real       : ✅ KPN=5 Ratio=0.0707 (bulan: find_kececi_prime_number)
+
+   Complex             : ✅ KPN=2 Ratio=0.3772 (bulan: safe_find_kpn)
+
+   Float               : ✅ KPN=7 Ratio=0.2358 (bulan: find_kececi_prime_number)
+
+   Rational            : ✅ KPN=2 Ratio=0.0236 (bulan: safe_find_kpn)
+
+   Quaternion          : ✅ KPN=2 Ratio=0.3772 (bulan: safe_find_kpn)
+
+   Neutrosophic        : ✅ KPN=2 Ratio=0.0472 (bulan: safe_find_kpn)
+
+   Neutrosophic Complex: ✅ KPN=2 Ratio=0.3772 (bulan: safe_find_kpn)
+
+   Hyperreal           : ✅ KPN=11 Ratio=0.0236 (bulan: safe_find_kpn)
+
+   Bicomplex           : ✅ KPN=2 Ratio=0.0236 (bulan: safe_find_kpn)
+
+   Neutrosophic Bicomplex: ✅ KPN=2 Ratio=0.0236 (bulan: find_kececi_prime_number)
+
+   Octonion            : ✅ KPN=2 Ratio=0.3772 (bulan: safe_find_kpn)
+
+   Sedenion            : ✅ KPN=2 Ratio=0.3772 (bulan: safe_find_kpn)
+
+   Clifford            : ✅ KPN=2 Ratio=0.3772 (bulan: safe_find_kpn)
+
+   Dual                : ✅ KPN=2 Ratio=0.3772 (bulan: safe_find_kpn)
+
+   Split Complex       : ✅ KPN=2 Ratio=0.3772 (bulan: safe_find_kpn)
+
+   Pathion             : ✅ KPN=2 Ratio=0.0236 (bulan: find_kececi_prime_number)
+
+   Chingon             : ✅ KPN=2 Ratio=0.0236 (bulan: find_kececi_prime_number)
+
+   Routon              : ✅ KPN=3 Ratio=0.0472 (bulan: safe_find_kpn)
+
+   Voudon              : ✅ KPN=3 Ratio=0.0472 (bulan: safe_find_kpn)
+
+   Super Real          : ✅ KPN=2 Ratio=0.0236 (bulan: find_kececi_prime_number)
+
+   Ternary             : ✅ KPN=7 Ratio=0.0707 (bulan: find_kececi_prime_number)
+
+   Hypercomplex        : ✅ KPN=2 Ratio=0.3772 (bulan: safe_find_kpn)
+
+===================
+🏁 SONUÇ
+===================
+Başarılı tür: 23/23
+
+✅ TÜM TÜRLER BAŞARILI!
+
+📊 Ratio ort: 0.1825
+
+---
+
 ## MODULE CONSTANTS: KEÇECİ NUMBER TYPES
 
 type_names = {
