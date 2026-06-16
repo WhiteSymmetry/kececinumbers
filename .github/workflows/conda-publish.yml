@@ -225,7 +225,7 @@ jobs:
           
           echo ""
           echo "✅ Conda ile kurulan paketler:"
-          conda list -n test-env | grep -E "(python|numpy|scipy|kececinumbers)" || true
+          conda list -n test-env | grep -E "(python|numpy|scipy|kececinumbers|requests)" || true
       
       # ================================================================
       # ADIM 7: Python Binding'leri Pip ile Kur
@@ -244,7 +244,7 @@ jobs:
           
           echo ""
           echo "✅ Pip ile kurulan paketler:"
-          conda run -n test-env pip list | grep -E "(kececinumbers)" || true
+          conda run -n test-env pip list | grep -E "(kececinumbers|requests)" || true
       
       # ================================================================
       # ADIM 8: Oluşturulan Paketi Kur
@@ -267,7 +267,7 @@ jobs:
           
           echo ""
           echo "✅ Tüm paketler:"
-          conda list -n test-env | grep -E "(kececinumbers)" || true
+          conda list -n test-env | grep -E "(kececinumbers|requests)" || true
       
       # ================================================================
       # ADIM 9: Paket Import Testi
