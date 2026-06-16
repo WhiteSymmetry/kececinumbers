@@ -1,24 +1,33 @@
-{% set version = "1.0.1" %}
-
+# meta.yaml
 package:
   name: kececinumbers
-  version: {{ version }}
+  version: "0.0.0"
 
 source:
-  path: .  # Derlemeyi bu meta.yaml dosyasının bulunduğu dizinden yap
-  url: 
-  blake2b-256: 
-
-channels:
-  - conda-forge
+  url: ""
+  blake2b-256: ""
+  exclude:
+    - docs/*
+    - notebooks/*
+    - tests/*
+    - test/*
+    - examples/*
+    - build/*
+    - dist/*
+    - .git/*
+    - .github/*
+    - "*.egg-info"
+    - "*.pyc"
+    - "__pycache__"
 
 build:
-  noarch: python  # Platformdan bağımsız bir paket oluşturur
-  #script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed"
-  script: "{{ PYTHON }} -m pip install . -vv"
   number: 0
-  entry_points:
-    - kececinumbers = kececinumbers.__main__:main
+  noarch: python
+  #script: "{{ PYTHON }} -m pip install . -vv"
+  script: |
+    {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+  # --no-deps: Bağımlılıkları pip kurmasın (conda kuracak)
+  # --no-build-isolation: Daha hızlı build
 
 requirements:
   host:
@@ -61,13 +70,19 @@ test:
     - scipy.stats
     - scikit-learn
     - numpy
+  commands:
+    - python -c "import kececinumbers; print(kececinumbers.__version__)"
 
 about:
   home: https://github.com/WhiteSymmetry/kececinumbers
   license: AGPL-3.0-or-later
-  summary: 'Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets.'
+  summary: "Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets"
   description: |
     Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets.
   dev_url: https://github.com/WhiteSymmetry/kececinumbers
-  doc_url: https://github.com/WhiteSymmetry/kececinumbers
+  doc_url: https://kececinumbers.readthedocs.io
   doc_source_url: https://github.com/WhiteSymmetry/kececinumbers/blob/main/README.md
+
+extra:
+  recipe-maintainers:
+    - WhiteSymmetry
