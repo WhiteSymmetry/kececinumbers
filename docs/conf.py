@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+
+import os
+import re
+import sys
+from datetime import datetime
+
+# Proje kök dizinini Python yoluna ekle
+sys.path.insert(0, os.path.abspath('../..'))
+
 # Project Information
 project = 'kececinumbers'
 author = 'Mehmet Keçeci'
