@@ -7,3 +7,4 @@ sympy
 # optionals (ekstra analiz/plot paketleri)
 plotly
 pillow
+requests
