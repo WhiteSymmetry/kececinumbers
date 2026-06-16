@@ -2,6 +2,7 @@
 numpy
 scipy
 matplotlib
+requests
 scikit-learn
 sympy
 pytest
