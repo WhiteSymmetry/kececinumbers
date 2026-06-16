@@ -31,10 +31,12 @@ requirements:
     - pip
     - setuptools
     - wheel
+    - requests
   run:
    - python >=3.11  # hypercomplex uyumlu versiyon
    - numpy  # kececinumbers numpy kullanıyor
    - pip
+   - requests
 
 # tests to validate that the package works as expected
 #tests:
