@@ -1,10 +1,10 @@
 # requirements.txt
 numpy
 scipy
+requests
 matplotlib
 scikit-learn
 sympy
 # optionals (ekstra analiz/plot paketleri)
 plotly
 pillow
-requests
