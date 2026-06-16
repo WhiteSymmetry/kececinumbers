@@ -99,7 +99,7 @@ from numbers import Number
 import operator
 import os
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw # pip install pillow
 import random
 import re
 import requests
