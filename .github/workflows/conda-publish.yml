@@ -276,15 +276,30 @@ jobs:
           
           conda run -n test-env python -c "
           import kececinumbers
+          from kececinumbers import find_kececi_prime_number, find_kpn
           
           print('✅ Tüm bağımlılıklar başarıyla yüklendi!')
           print(f'📦 kececinumbers version: {kececinumbers.__version__}')
           
-          try:
-              result = kececinumbers.quick_hash('test')
-              print(f'✅ quick_hash testi başarılı: {result[:16]}...')
-          except Exception as e:
-              print(f'⚠️ quick_hash testi başarısız: {e}')
+          # Test dizisi (asal sayılar)
+          test_seq = [0, 9, 3, 12, 6, 15, 5, 14, 7, 16, 8, 17, 18, 6, 15, 5, 14, 7, 16, 8, 17, 16, 8, 17, 18, 6, 15, 5, 14, 7, 16, 8, 17, 16, 8, 17, 18, 6, 15, 5, 14, 7, 16, 8, 17]
+          
+          # 1. Katı yöntem testi
+          result = find_kececi_prime_number(test_seq)
+          if result is None:
+              print(f'ℹ️  find_kececi_prime_number: KPN bulunamadı (katı kriter karşılanmadı)')
+          else:
+              print(f'✅ find_kececi_prime_number: KPN={result}')
+          
+          # 2. Fallback mekanizması testi
+          kpn, method = find_kpn(test_seq)
+          if kpn is not None:
+              print(f'✅ find_kpn: KPN={kpn}, Yöntem={method}')
+          else:
+              print(f'⚠️  find_kpn: KPN bulunamadı')
+          
+          print('')
+          print('🎉 Paket başarıyla çalışıyor!')
           "
 
       # ================================================================
