@@ -216,6 +216,7 @@ jobs:
             python=${{ matrix.python-version }} \
             numpy \
             scipy \
+            requests \
             pytest \
             pytest-cov \
             -c conda-forge -c bilgi
@@ -225,7 +226,7 @@ jobs:
           
           echo ""
           echo "✅ Conda ile kurulan paketler:"
-          conda list -n test-env | grep -E "(python|numpy|scipy|requests|kececinumbers)" || true
+          conda list -n test-env | grep -E "(python|requests|numpy|scipy|kececinumbers)" || true
       
       # ================================================================
       # ADIM 7: Python Binding'leri Pip ile Kur
@@ -236,15 +237,12 @@ jobs:
           
           # Conda'da Python binding olmayan paketleri pip ile kur
           conda run -n test-env pip install \
-            bcrypt \
-            argon2-cffi \
-            blake3 \
-            xxhash \
-            pycryptodome
+            plotly \
+            pillow
           
           echo ""
           echo "✅ Pip ile kurulan paketler:"
-          conda run -n test-env pip list | grep -E "(kececinumbers|requests)" || true
+          conda run -n test-env pip list | grep -E "(requests|kececinumbers)" || true
       
       # ================================================================
       # ADIM 8: Oluşturulan Paketi Kur
