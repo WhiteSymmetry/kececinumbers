@@ -1,3 +1,42 @@
-include README.md
+# MANIFEST.in - Sadece gerekli dosyaları dahil et
+
+# Zorunlu dosyalar
 include LICENSE
-recursive-include data *.json
+include README.md
+include pyproject.toml
+
+# Ana paket (sadece Python dosyaları)
+recursive-include kececinumbers *.py
+recursive-include kececinumbers *.pyi
+recursive-include kececinumbers py.typed
+
+# Global olarak hariç tut (KRİTİK!)
+global-exclude *.py[cod]
+global-exclude __pycache__
+global-exclude *.so
+global-exclude *.dylib
+global-exclude *.dll
+global-exclude .DS_Store
+global-exclude *.ipynb
+global-exclude *.ipynb_checkpoints
+
+# Gereksiz klasörleri hariç tut
+prune binder
+prune content
+prune data
+prune notebooks
+prune docs
+prune tests
+prune test
+prune examples
+prune .github
+prune .git
+prune build
+prune dist
+prune .venv
+prune venv
+prune .pytest_cache
+prune .mypy_cache
+prune .tox
+prune .eggs
+prune *.egg-info
