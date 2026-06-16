@@ -31,10 +31,11 @@ dependencies = [
     "scipy",
     "scikit-learn",
     "sympy",
+    "requests",
 ]
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov", "pytest-mock", "ruff", "numpy", "matplotlib", "scipy", "scikit-learn", "sympy", "pillow"]
+test = ["pytest", "pytest-cov", "pytest-mock", "ruff", "numpy", "matplotlib", "scipy", "scikit-learn", "sympy", "pillow", "requests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
