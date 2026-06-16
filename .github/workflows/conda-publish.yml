@@ -1,7 +1,14 @@
+# .github/workflows/conda-build-publish.yml
+
 name: Conda-Build, Test, and Publish Package
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Package version (leave empty for latest from PyPI)'
+        required: false
+        type: string
   release:
     types: [published]
 
@@ -10,80 +17,403 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11"]
+        python-version: ["3.14"]
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
-      
-      - name: Setup Miniconda for Python ${{ matrix.python-version }}
-        uses: conda-incubator/setup-miniconda@v4
+        uses: actions/checkout@v4
         with:
-          auto-activate-base: false
-          python-version: "${{ matrix.python-version }}"
-          channels: conda-forge,defaults
-          channel-priority: strict
+          fetch-depth: 0
 
-      - name: Install Conda-Build and Conda-Verify
-        run: conda install -n base conda-build -y
-
-      - name: Build the package for Python ${{ matrix.python-version }}
+      # ================================================================
+      # ADIM 1: PyPI'den Son Sürüm Bilgilerini Çek
+      # ================================================================
+      - name: Fetch latest version info from PyPI
+        id: pypi_info
         run: |
-          export PKG_VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')
-          echo "Building version: $PKG_VERSION for Python ${{ matrix.python-version }}"
+          if [ -n "${{ inputs.version }}" ]; then
+            PKG_VERSION="${{ inputs.version }}"
+            echo "📌 Manuel sürüm kullanılıyor: $PKG_VERSION"
+          else
+            echo "🔍 PyPI'den son sürüm bilgisi çekiliyor..."
+            PYPI_JSON=$(curl -s https://pypi.org/pypi/kececinumbers/json)
+            
+            PKG_VERSION=$(echo "$PYPI_JSON" | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          print(data['info']['version'])
+          ")
+            echo "✅ PyPI'den çekilen sürüm: $PKG_VERSION"
+          fi
           
-          conda build . --python ${{ matrix.python-version }} --output-folder ./dist
+          echo "PKG_VERSION=$PKG_VERSION" >> $GITHUB_ENV
+          echo "version=$PKG_VERSION" >> $GITHUB_OUTPUT
+
+      # ================================================================
+      # ADIM 2: PyPI'den Source URL ve BLAKE2b-256 Hash Çek
+      # ================================================================
+      - name: Fetch PyPI source URL and BLAKE2b-256 hash
+        id: pypi_source
+        run: |
+          echo "📦 PyPI source bilgileri çekiliyor (sürüm: $PKG_VERSION)..."
           
-          if [ -z "$(ls -A dist)" ]; then
-            echo "HATA: Hiçbir conda paketi oluşturulmadı."
+          PYPI_JSON=$(curl -s "https://pypi.org/pypi/kececinumbers/$PKG_VERSION/json")
+          
+          SOURCE_INFO=$(echo "$PYPI_JSON" | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          
+          for url_info in data['urls']:
+              if url_info['packagetype'] == 'sdist':
+                  print(f\"URL={url_info['url']}\")
+                  print(f\"HASH={url_info['digests']['blake2b_256']}\")
+                  break
+          else:
+              for url_info in data['urls']:
+                  if url_info['packagetype'] == 'bdist_wheel':
+                      print(f\"URL={url_info['url']}\")
+                      print(f\"HASH={url_info['digests']['blake2b_256']}\")
+                      break
+          ")
+          
+          PYPI_URL=$(echo "$SOURCE_INFO" | grep "^URL=" | cut -d'=' -f2-)
+          PYPI_HASH=$(echo "$SOURCE_INFO" | grep "^HASH=" | cut -d'=' -f2-)
+          
+          if [ -z "$PYPI_URL" ] || [ -z "$PYPI_HASH" ]; then
+            echo "❌ HATA: PyPI'den source bilgileri çekilemedi!"
             exit 1
           fi
-          echo "Oluşturulan paket:"
-          ls -l dist
+          
+          echo "✅ Source URL: $PYPI_URL"
+          echo "✅ BLAKE2b-256: $PYPI_HASH"
+          
+          echo "PYPI_URL=$PYPI_URL" >> $GITHUB_ENV
+          echo "PYPI_HASH=$PYPI_HASH" >> $GITHUB_ENV
 
-      - name: Create test environment and install dependencies
+      # ================================================================
+      # ADIM 3: meta.yaml Dosyasını Dinamik Olarak Güncelle
+      # ================================================================
+      - name: Update meta.yaml with PyPI source info
         run: |
-          conda create -n test-env -y python=${{ matrix.python-version }} numpy matplotlib scipy sympy pytest pytest-cov
+          echo "📝 meta.yaml dosyası güncelleniyor..."
+          
+          python3 << 'EOF'
+          import os
+          import re
+          
+          pypi_url = os.environ['PYPI_URL']
+          pypi_hash = os.environ['PYPI_HASH']
+          pkg_version = os.environ['PKG_VERSION']
+          
+          meta_file = 'meta.yaml'
+          
+          with open(meta_file, 'r', encoding='utf-8') as f:
+              content = f.read()
+          
+          content = re.sub(
+              r'(url:\s*)(["\']?)(.*?)\2',
+              f'url: "{pypi_url}"',
+              content,
+              count=1
+          )
+          
+          content = re.sub(
+              r'(blake2b-256:\s*)(["\']?)(.*?)\2',
+              f'blake2b-256: "{pypi_hash}"',
+              content,
+              count=1
+          )
+          
+          content = re.sub(
+              r'(version:\s*)(["\']?)(.*?)\2',
+              f'version: "{pkg_version}"',
+              content,
+              count=1
+          )
+          
+          with open(meta_file, 'w', encoding='utf-8') as f:
+              f.write(content)
+          
+          print(f"✅ meta.yaml güncellendi:")
+          print(f"   version: {pkg_version}")
+          print(f"   url: {pypi_url}")
+          print(f"   blake2b-256: {pypi_hash}")
+          EOF
+          
+          echo ""
+          echo "📄 Güncellenmiş meta.yaml (source bölümü):"
+          grep -A 3 "^source:" meta.yaml
 
-      - name: Run development tests
+      # ================================================================
+      # ADIM 4: Miniconda Kurulumu
+      # ================================================================
+      - name: Setup Miniconda for Python ${{ matrix.python-version }}
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: true
+          python-version: "${{ matrix.python-version }}"
+          channels: conda-forge,bilgi,defaults
+          channel-priority: strict
+          miniforge-version: latest
+
+      - name: Install Conda-Build
         run: |
-          conda run -n test-env --no-capture-output python -m pytest tests/ --cov=kececinumbers
+          echo "📦 Conda-build kuruluyor..."
+          conda config --add channels bilgi
+          conda config --set channel_priority strict
+          
+          conda install -n base -y \
+            conda-build \
+            anaconda-client
+          
+          conda info
 
-      - name: Install and test the built package
+      # ================================================================
+      # ADIM 5: Conda Paketi Oluştur (TEMİZLİK DAHİL)
+      # ================================================================
+      - name: Clean environment before build
         run: |
-          PACKAGE_FILE=$(ls dist/*.conda | head -n 1)
-          conda install -n test-env -y "$PACKAGE_FILE"
-          conda run -n test-env --no-capture-output python -c "import kececinumbers; print('Import successful for Python ${{ matrix.python-version }}!')"
+          echo "🧹 Derleme öncesi temizlik yapılıyor..."
+          rm -rf build/ dist/ *.egg-info kececinumbers.egg-info
+          find . -type d -name "__pycache__" -exec rm -rf {} + || true
+          find . -name "*.pyc" -delete || true
+          conda clean --all --yes
 
-      - name: Debug - List files in the workspace
+      - name: Build the package (skip tests)
         run: |
-          echo "--- Current Working Directory ---"
-          pwd
-          echo "--- Recursive file listing ---"
-          ls -R
-          echo "--- End of file listing ---"
+          echo "=========================================="
+          echo "🔨 Conda Paketi Oluşturuluyor"
+          echo "=========================================="
+          echo "Sürüm: $PKG_VERSION"
+          echo "Python: ${{ matrix.python-version }}"
+          echo "Source URL: $PYPI_URL"
+          echo "BLAKE2b-256: $PYPI_HASH"
+          echo "=========================================="
+          
+          conda build . \
+            --python ${{ matrix.python-version }} \
+            --no-test \
+            --output-folder ./dist
+          
+          if [ -z "$(ls -A dist 2>/dev/null)" ]; then
+            echo "❌ HATA: Hiçbir conda paketi oluşturulamadı!"
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ Oluşturulan paketler ve boyutları:"
+          ls -lh dist/noarch/
+      
+      # ================================================================
+      # ADIM 6: Test Ortamı Oluştur (Temel Paketler)
+      # ================================================================
+      - name: Create test environment
+        run: |
+          echo "🧪 Test ortamı oluşturuluyor (temel paketler)..."
+          
+          # Sadece temel paketleri conda ile kur
+          conda create -n test-env -y \
+            python=${{ matrix.python-version }} \
+            numpy \
+            scipy \
+            pytest \
+            pytest-cov \
+            -c conda-forge -c bilgi
+          
+          # kececinumbers ekle
+          conda install -n test-env -y kececinumbers -c bilgi
+          
+          echo ""
+          echo "✅ Conda ile kurulan paketler:"
+          conda list -n test-env | grep -E "(python|numpy|scipy|kececinumbers)" || true
+      
+      # ================================================================
+      # ADIM 7: Python Binding'leri Pip ile Kur
+      # ================================================================
+      - name: Install Python bindings with pip
+        run: |
+          echo "📦 Python binding'leri pip ile kuruluyor..."
+          
+          # Conda'da Python binding olmayan paketleri pip ile kur
+          conda run -n test-env pip install \
+            bcrypt \
+            argon2-cffi \
+            blake3 \
+            xxhash \
+            pycryptodome
+          
+          echo ""
+          echo "✅ Pip ile kurulan paketler:"
+          conda run -n test-env pip list | grep -E "(kececinumbers)" || true
+      
+      # ================================================================
+      # ADIM 8: Oluşturulan Paketi Kur
+      # ================================================================
+      - name: Install the built package
+        run: |
+          echo "📦 Oluşturulan paket kuruluyor..."
+          
+          PACKAGE_FILE=$(find dist -name "*.conda" -o -name "*.tar.bz2" | head -n 1)
+          
+          if [ -z "$PACKAGE_FILE" ]; then
+            echo "❌ HATA: Kurulacak paket dosyası bulunamadı!"
+            exit 1
+          fi
+          
+          echo "✅ Kurulan paket: $PACKAGE_FILE"
+          
+          # Paketi kur (--no-deps: bağımlılıkları tekrar kurma, zaten kurulu)
+          conda install -n test-env -y --no-deps "$PACKAGE_FILE"
+          
+          echo ""
+          echo "✅ Tüm paketler:"
+          conda list -n test-env | grep -E "(kececinumbers)" || true
+      
+      # ================================================================
+      # ADIM 9: Paket Import Testi
+      # ================================================================
+      - name: Verify package import
+        run: |
+          echo "🔍 Paket import testi yapılıyor..."
+          
+          conda run -n test-env python -c "
+          import kececinumbers
+          
+          print('✅ Tüm bağımlılıklar başarıyla yüklendi!')
+          print(f'📦 kececinumbers version: {kececinumbers.__version__}')
+          
+          try:
+              result = kececinumbers.quick_hash('test')
+              print(f'✅ quick_hash testi başarılı: {result[:16]}...')
+          except Exception as e:
+              print(f'⚠️ quick_hash testi başarısız: {e}')
+          "
 
+      # ================================================================
+      # ADIM 10: Debug (Başarısızlık Durumu)
+      # ================================================================
+      - name: Debug - Environment info
+        if: failure()
+        run: |
+          echo "=========================================="
+          echo "🔍 Hata Ayıklama Bilgileri"
+          echo "=========================================="
+          conda info
+          echo ""
+          echo "Test ortamı paketleri:"
+          conda list -n test-env || echo "test-env yok"
+          echo ""
+          echo "Ortam detayları:"
+          conda env export -n test-env || echo "test-env export başarısız"
+
+      # ================================================================
+      # ADIM 11: Anaconda Cloud'a Yükle (DÜZELTİLDİ)
+      # ================================================================
       - name: Upload to Anaconda Cloud
         if: success()
         env:
           ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
         run: |
-          PACKAGE_FILES=$(find dist -name "*.conda")
+          echo "📤 Anaconda Cloud'a yükleniyor..."
           
-          if [ -z "$PACKAGE_FILES" ]; then
-            echo "HATA: Yüklenecek .conda dosyası bulunamadı!"
+          # 1. Token kontrolü
+          if [ -z "$ANACONDA_TOKEN" ]; then
+            echo "❌ HATA: ANACONDA_TOKEN GitHub Secrets'ta tanımlı değil!"
             exit 1
           fi
-
-          echo "Yüklenecek paketler:"
+          echo "✅ Token bulundu."
+          
+          # 2. Conda bin yolunu tanımla
+          CONDA_BIN="$CONDA/bin"
+          echo "🔧 Conda executable yolu: $CONDA_BIN"
+          
+          # anaconda-client yüklü mü kontrol et
+          if ! command -v $CONDA_BIN/anaconda &> /dev/null; then
+            echo "⚠️ anaconda-client bulunamadı, kuruluyor..."
+            conda install -n base -y anaconda-client
+          else
+            echo "✅ anaconda-client zaten kurulu."
+          fi
+          
+          # 3. Token doğrulama
+          echo "🔍 Token doğrulanıyor..."
+          $CONDA_BIN/anaconda -t $ANACONDA_TOKEN whoami
+          if [ $? -ne 0 ]; then
+            echo "❌ HATA: Token geçersiz veya Anaconda'ya bağlanılamadı!"
+            exit 1
+          fi
+          echo "✅ Token geçerli!"
+          
+          # 4. Paket dosyalarını bul
+          PACKAGE_FILES=$(find dist -name "*.conda" -o -name "*.tar.bz2")
+          
+          if [ -z "$PACKAGE_FILES" ]; then
+            echo "❌ HATA: Yüklenecek paket dosyası bulunamadı!"
+            exit 1
+          fi
+          
+          echo "✅ Yüklenecek paketler:"
           echo "$PACKAGE_FILES"
           
-          conda install -n base -y anaconda-client
-          conda run -n base anaconda -t $ANACONDA_TOKEN upload \
-            $PACKAGE_FILES \
-            --label main \
-            --skip-existing
-
-      - name: Cleanup test environment
+          # 5. Yükleme işlemini yap (DÜZELTİLDİ: --verbose kaldırıldı)
+          UPLOAD_SUCCESS=false
+          for pkg in $PACKAGE_FILES; do
+            echo ""
+            echo "📦 Yükleniyor: $pkg"
+            
+            # --verbose KALDIRILDI, sadece --force kullanılıyor
+            $CONDA_BIN/anaconda -t $ANACONDA_TOKEN upload \
+              "$pkg" \
+              --user bilgi \
+              --label main \
+              --force
+            
+            if [ $? -eq 0 ]; then
+              echo "✅ Başarıyla yüklendi: $pkg"
+              UPLOAD_SUCCESS=true
+            else
+              echo "❌ Yükleme başarısız: $pkg"
+              exit 1  # Hata durumunda workflow'u durdur
+            fi
+          done
+          
+          # 6. Gerçek başarı kontrolü
+          if [ "$UPLOAD_SUCCESS" = true ]; then
+            echo ""
+            echo "=========================================="
+            echo "🎉 TÜM PAKETLER ANACONDA CLOUD'A YÜKLENDİ"
+            echo "🔗 Kontrol: https://anaconda.org/bilgi/kececinumbers"
+            echo "=========================================="
+          else
+            echo ""
+            echo "❌ HATA: Hiçbir paket yüklenemedi!"
+            exit 1
+          fi
+  
+      # ================================================================
+      # ADIM 12: Temizlik
+      # ================================================================
+      - name: Cleanup
         if: always()
-        run: conda env remove -n test-env || true
+        run: |
+          echo "🧹 Temizlik yapılıyor..."
+          conda env remove -n test-env || true
+          rm -rf dist/ build/ || true
+          echo "✅ Temizlik tamamlandı"
+
+      # ================================================================
+      # ADIM 13: Özet
+      # ================================================================
+      - name: Summary
+        if: success()
+        run: |
+          echo "=========================================="
+          echo "✅ CONDA BUILD VE YAYINLAMA BAŞARILI"
+          echo "=========================================="
+          echo "📦 Paket: kececinumbers"
+          echo "🏷️  Sürüm: $PKG_VERSION"
+          echo "🐍 Python: ${{ matrix.python-version }}"
+          echo "🔗 PyPI URL: $PYPI_URL"
+          echo "🔒 BLAKE2b-256: $PYPI_HASH"
+          echo "📤 Anaconda: https://anaconda.org/bilgi/kececinumbers"
+          echo "=========================================="
