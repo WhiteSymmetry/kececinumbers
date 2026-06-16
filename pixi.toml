@@ -22,6 +22,7 @@ setuptools_scm = ">=9.2.2"
 rattler-build = ">=0.55.0"
 quetz = ">=0.10.4"
 sqlalchemy = ">=2.0.45"
+requests = ">=2.34.2
 
 [tasks]
 build = "python -m build"
