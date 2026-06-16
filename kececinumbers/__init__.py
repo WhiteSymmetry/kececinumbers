@@ -10,16 +10,72 @@ to complex algebraic structures like quaternions and neutrosophic numbers.
 
 Bu dosya paketin başlangıç noktası olarak çalışır.
 Alt modülleri yükler, sürüm bilgileri tanımlar ve geriye dönük uyumluluk için uyarılar sağlar.
+
+:author: Mehmet Keçeci
+:license: AGPL-3.0-or-later
+:copyright: Copyright 2025-2026 Mehmet Keçeci
 """
 
 from __future__ import annotations
+
+import logging
 import warnings
+import functools
+from typing import TYPE_CHECKING, Any, Callable, List
 
 # Paket sürüm numarası
-__version__ = "1.0.2"
-__author__ = "Mehmet Keçeci"
-__email__ = "mkececi@yaani.com"
+#__version__ = "1.0.2"
+#__author__ = "Mehmet Keçeci"
+#__email__ = "mkececi@yaani.com"
 __description__ = "Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets."
+
+# ======================================================================
+# METADATA & VERSIONING (Modern Approach)
+# ======================================================================
+
+# Try to read metadata from the installed package (pyproject.toml / setup.py)
+try:
+    from importlib.metadata import version as _pkg_version, metadata as _pkg_metadata
+    
+    __version__ = _pkg_version("kececinumbers")
+    _meta = _pkg_metadata("kececinumbers")
+    __author__ = _meta.get("Author-email", "Mehmet Keçeci <mkececi@yaani.com>")
+    __license__ = _meta.get("License", "AGPL-3.0-or-later")
+except Exception:
+    # Fallback for development or if metadata is not available
+    __version__ = "1.0.2"
+    __author__ = "Mehmet Keçeci"
+    __license__ = "AGPL-3.0-or-later"
+
+__copyright__ = "Copyright 2025-2026 Mehmet Keçeci"
+__email__ = "mkececi@yaani.com"
+__certificate__ = "kececinumbers-PA-2025-001"
+
+_log = logging.getLogger(__name__)
+
+# BibTeX citation for academic use
+__bibtex__ = r"""@misc{kececi_2025_15589625,
+  author       = {Keçeci, Mehmet},
+  title        = {Keçeci Numbers and the Keçeci Prime Number: A
+                   Potential Number Theoretic Exploratory Tool
+                  },
+  month        = May,
+  year         = 2025,
+  publisher    = {Zenodo},
+  doi          = {10.5281/zenodo.15381697},
+  url          = {https://doi.org/10.5281/zenodo.15381697},
+}"""
+
+# ======================================================================
+# TYPE CHECKING (Only for IDEs and type checkers like mypy)
+# ======================================================================
+if TYPE_CHECKING:
+    from typing import Literal
+    LogLevel = int | str 
+
+# ======================================================================
+# PUBLIC API IMPORTS
+# ======================================================================
 
 # Ana Analiz Fonksiyonları
 from .kececinumbers import (
@@ -306,6 +362,41 @@ __all__ = [
     'kececi_to_color',
     'kececi_numbers_complex',
 ]
+
+# Ensure metadata is explicitly included in __all__
+__all__.extend([
+    "__version__", "__author__", "__license__", "__copyright__", 
+    "__email__", "__certificate__", "__bibtex__"
+])
+
+# ======================================================================
+# DEPRECATION UTILITIES
+# ======================================================================
+
+def deprecated(reason: str) -> Callable:
+    """Decorator to mark functions as deprecated."""
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            warnings.warn(
+                f"{func.__name__}() is deprecated and will be removed in a future version. {reason}",
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+# ======================================================================
+# DEPRECATED FUNCTIONS
+# ======================================================================
+
+@deprecated("Please use the alternative functions provided in the public API. KHA-256 is compatible with Python 3.11-3.15.")
+def legacy_function() -> None:
+    """Legacy function scheduled for removal."""
+    pass
+
+__all__.append("legacy_function")
 
 # Paket yüklendiğinde kısa bilgi
 def _show_welcome():
