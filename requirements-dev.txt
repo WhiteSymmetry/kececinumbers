@@ -9,3 +9,4 @@ flake8
 pytest-cov
 # optionals (ekstra analiz/plot paketleri)
 plotly
+pillow
