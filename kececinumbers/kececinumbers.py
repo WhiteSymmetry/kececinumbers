@@ -67,6 +67,7 @@ Keçeci Sayıları 0.9.7 sürümünde, artık seri üretimi için **ilk bölen**
 
 In version 0.9.7 of Keçeci Numbers, the sequence generation now supports **first divisor** (`first_divisor`) and **ASK order** (`ask_plus_first`) parameters directly. This allows easy comparison of sequences with the same start and increment but different divisors (3,2,5,...) and ASK priorities (+1 first / -1 first). The `get_with_params` function has been updated to accept these new parameters.
 
+*   1.0.2: quantum random
 *   0.9.5: 23 Numbers
 *   0.8.2: 22 Numbers
 *   0.7.9: 20 Numbers
@@ -94,11 +95,14 @@ from matplotlib.gridspec import GridSpec
 import matplotlib.pyplot as plt
 import numbers
 from numbers import Number
-import operator
 # from numbers import Real
+import operator
+import os
 import numpy as np
+from PIL import Image, ImageDraw
 import random
 import re
+import requests
 from scipy.fft import fft, fftfreq
 from scipy.signal import find_peaks
 from scipy.stats import ks_2samp
@@ -106,6 +110,7 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 import sympy
 from sympy import isprime
+import time
 from types import MethodType
 from typing import (
     Any,
@@ -411,88 +416,6 @@ def extract_scalar(result):
     if isinstance(result, complex): return result.real
     if isinstance(result, (list,tuple)): return result[0]
     return float(result)
-"""
-# ==================== EVRENSEL YEDEK KPN BULUCU ====================
-"""
-def robust_int(x: Any) -> Optional[int]:
-
-    #Her türden mutlaka bir tamsayı çıkarmaya çalışır.
-    #Önce _get_integer_representation, olmazsa çeşitli yuvarlama yöntemleri.
-
-    # Önce asıl fonksiyonu dene
-    val = _get_integer_representation(x)
-    if val is not None:
-        return val
-
-    # Yumuşak çıkarma: sırasıyla dene
-    try:
-        # Direkt float ise yuvarla
-        if isinstance(x, (int, float)):
-            return int(round(abs(x)))
-    except:
-        pass
-
-    # Kompleks büyüklük (norm)
-    try:
-        if isinstance(x, complex):
-            return int(round(abs(x)))
-    except:
-        pass
-
-    # Norm özelliği olanlar
-    if hasattr(x, 'norm'):
-        try:
-            return int(round(x.norm()))
-        except:
-            pass
-
-    # İlk bileşeni al (coeffs, __iter__, t, w, real, a, value)
-    for attr in ('coeffs', 'coefficients'):
-        if hasattr(x, attr):
-            try:
-                c0 = list(getattr(x, attr))[0]
-                return int(round(float(c0)))
-            except:
-                continue
-
-    for attr in ('t', 'w', 'real', 'a', 'value', 'x'):
-        if hasattr(x, attr):
-            try:
-                v = getattr(x, attr)
-                if isinstance(v, complex):
-                    return int(round(abs(v)))
-                return int(round(float(v)))
-            except:
-                continue
-
-    # Ternary için digits
-    if hasattr(x, 'digits'):
-        try:
-            digits = list(x.digits)
-            dec = 0
-            for i, d in enumerate(reversed(digits)):
-                dec += int(d) * (3 ** i)
-            return abs(int(dec))
-        except:
-            pass
-
-    # Liste/tuple ise ilk elemanı
-    if isinstance(x, (list, tuple)) and len(x) > 0:
-        try:
-            return int(round(float(x[0])))
-        except:
-            pass
-
-    # String temsilinden sayı çıkar
-    try:
-        s = str(x)
-        nums = re.findall(r"[-+]?\d*\.?\d+", s)
-        if nums:
-            return int(round(abs(float(nums[0]))))
-    except:
-        pass
-
-    return None
 """
 
 def universal_fallback_kpn(seq: List[Any]) -> Optional[int]:
@@ -13550,30 +13473,70 @@ def unified_generator(
             return v > 1 and isprime(v)
         ask_unit = make_unit(start_val)
 
-    elif kececi_type in (12, 13, 17, 18, 19, 20, 23):  # Octonion, Sedenion, Pathion, Chingon, Routon, Voudon, Hypercomplex
+    elif kececi_type in (12, 13, 17, 18, 19, 20, 23):
         def add(a, b): return a + b
         def is_divisible(val, d):
+            # Hem components hem coeffs kontrolü
             if hasattr(val, 'components'):
                 comps = val.components if not callable(val.components) else val.components()
-                if comps:
-                    return math.isclose(comps[0] % d, 0)
+            elif hasattr(val, 'coeffs'):
+                comps = val.coeffs if not callable(val.coeffs) else val.coeffs()
+            else:
+                return False
+            if comps and len(comps) > 0:
+                return math.isclose(comps[0] % d, 0)
             return False
+
         def divide(val, d):
             if hasattr(val, 'components'):
                 comps = val.components if not callable(val.components) else val.components()
-                new = [c/d for c in comps]
-                try:
-                    return type(val)(*new)
-                except TypeError:
-                    return type(val)(new)
-            return val
+            elif hasattr(val, 'coeffs'):
+                comps = val.coeffs if not callable(val.coeffs) else val.coeffs()
+            else:
+                return val
+            new = [c / d for c in comps]
+            try:
+                return type(val)(*new)
+            except TypeError:
+                return type(val)(new)
+
         def is_prime_like(val):
+            # Benzer şekilde components/coeffs kontrolü
             if hasattr(val, 'components'):
                 comps = val.components if not callable(val.components) else val.components()
-                first = comps[0] if comps else 0
-                v = int(round(float(first)))
-                return v > 1 and isprime(v)
-            return False
+            elif hasattr(val, 'coeffs'):
+                comps = val.coeffs if not callable(val.coeffs) else val.coeffs()
+            else:
+                return False
+            first = comps[0] if comps else 0
+            v = int(round(float(first)))
+            return v > 1 and isprime(v)
+        """
+        elif kececi_type in (12, 13, 17, 18, 19, 20, 23):  # Octonion, Sedenion, Pathion, Chingon, Routon, Voudon, Hypercomplex
+            def add(a, b): return a + b
+            def is_divisible(val, d):
+                if hasattr(val, 'components'):
+                    comps = val.components if not callable(val.components) else val.components()
+                    if comps:
+                        return math.isclose(comps[0] % d, 0)
+                return False
+            def divide(val, d):
+                if hasattr(val, 'components'):
+                    comps = val.components if not callable(val.components) else val.components()
+                    new = [c/d for c in comps]
+                    try:
+                        return type(val)(*new)
+                    except TypeError:
+                        return type(val)(new)
+                return val
+            def is_prime_like(val):
+                if hasattr(val, 'components'):
+                    comps = val.components if not callable(val.components) else val.components()
+                    first = comps[0] if comps else 0
+                    v = int(round(float(first)))
+                    return v > 1 and isprime(v)
+                return False
+        """
 
     elif kececi_type == 14:  # Clifford
         def add(a, b): return a + b
@@ -23492,6 +23455,324 @@ def run_test(type_num, start, add, iterations=1000):
         del seq
         gc.collect()
 """
+
+# -------------------- Kuantum API --------------------
+def get_quantum_random_numbers(length: int = 1, min_val: int = 0, max_val: int = 100, verbose: bool = False):
+    """
+    ANU Quantum Random Numbers API'den istenen sayıda rastgele sayı alır.
+    Büyük istekleri otomatik olarak parçalara böler.
+    """
+    CHUNK_SIZE = 1000
+    source = "api"
+    all_numbers = []
+
+    for i in range(0, length, CHUNK_SIZE):
+        chunk_length = min(CHUNK_SIZE, length - i)
+        url = f"https://qrng.anu.edu.au/API/jsonI.php?length={chunk_length}&type=uint16"
+
+        try:
+            response = requests.get(url, timeout=15)
+            if response.status_code == 200:
+                data = response.json()
+                raw = data.get('data', [])
+                if len(raw) >= chunk_length:
+                    scaled = [
+                        int(min_val + (x / 65535) * (max_val - min_val))
+                        for x in raw[:chunk_length]
+                    ]
+                    all_numbers.extend(scaled)
+                    if verbose:
+                        print(f"✅ API'den {len(scaled)} adet rastgele sayı alındı (parça {i//CHUNK_SIZE + 1}/{(length-1)//CHUNK_SIZE + 1}).")
+                else:
+                    if verbose:
+                        print(f"⚠️ API yetersiz veri döndü. ({len(raw)} < {chunk_length})")
+                    return _fallback_random_numbers(length, min_val, max_val, verbose)
+            else:
+                if verbose:
+                    print(f"⚠️ API yanıt kodu: {response.status_code}")
+                return _fallback_random_numbers(length, min_val, max_val, verbose)
+        except Exception as e:
+            if verbose:
+                print(f"⚠️ API bağlantı hatası: {e}")
+            return _fallback_random_numbers(length, min_val, max_val, verbose)
+
+    return all_numbers, "api"
+
+def _fallback_random_numbers(length, min_val, max_val, verbose):
+    if verbose:
+        print(f"↳ Sistemin güvenli rastgele üretecine geçiliyor (SystemRandom).")
+    system_random = random.SystemRandom()
+    numbers = [system_random.randint(min_val, max_val) for _ in range(length)]
+    return numbers, "system_random"
+
+def get_quantum_random_numbers_with_retry(length, max_retries=3):
+    for attempt in range(max_retries):
+        nums, src = get_quantum_random_numbers(length, verbose=True)
+        if src == "api":
+            return nums, src
+        print(f"Deneme {attempt+1} başarısız, 120 saniye bekleniyor...")
+        time.sleep(120)
+    # Hala olmazsa fallback
+    return get_quantum_random_numbers(length, verbose=False)  # tekrar dene ama bu sefer sessiz
+
+# -------------------- Tekrar Eden Kalıp Bulma --------------------
+def find_repeating_pattern(sequence):
+    n = len(sequence)
+    best_pattern = None
+    max_repetitions = 1
+    best_start_index = 0
+
+    for pattern_length in range(1, n // 2 + 1):
+        for i in range(n - 2 * pattern_length + 1):
+            pattern = sequence[i:i + pattern_length]
+            repetitions = 1
+            k = 1
+            while i + (k + 1) * pattern_length <= n:
+                if sequence[i + k * pattern_length:i + (k + 1) * pattern_length] == pattern:
+                    repetitions += 1
+                    k += 1
+                else:
+                    break
+            if repetitions > max_repetitions:
+                max_repetitions = repetitions
+                best_pattern = pattern
+                best_start_index = i
+
+    if best_pattern and max_repetitions > 1:
+        return best_pattern, best_start_index
+    else:
+        return None, None
+
+# -------------------- Yardımcı: Ternary Dönüşüm --------------------
+def to_ternary(num):
+    if num == 0:
+        return "0"
+    digits = []
+    n = abs(num)
+    while n > 0:
+        digits.append(str(n % 3))
+        n //= 3
+    return ''.join(reversed(digits))
+
+def shorten_string(s, max_len=30):
+    s = str(s)
+    return s[:max_len] + "..." if len(s) > max_len else s
+
+def ternary_to_decimal(s: str) -> int:
+    """Ternary string'i 10 tabanına çevirir."""
+    try:
+        return int(s, 3)
+    except ValueError:
+        return 0
+        
+def extract_numericval(v):
+    if hasattr(v, 'real'):
+        return v.real
+    if hasattr(v, 'value'):
+        return extract_numericval(v.value)
+    if isinstance(v, (int, float)):
+        return v
+    if isinstance(v, (tuple, list)):
+        return extract_numericval(v[0]) if len(v) > 0 else 0
+
+    s = str(v)
+    if 'TernaryNumber' in s or 'Ternary' in s:
+        match = re.search(r'\(([^)]+)\)', s)
+        if match:
+            return ternary_to_decimal(match.group(1).strip())
+        digits = re.findall(r'\d+', s)
+        if digits:
+            return ternary_to_decimal(digits[0])
+        return 0
+
+    nums = re.findall(r"[-+]?\d*\.?\d+", s)
+    if nums:
+        return float(nums[0])
+    return 0
+
+# -------------------- Grafik Çizimi --------------------
+def plot_kececi_with_pattern(sequence, title, filename, kpn=None, intermediate=True):
+    if sequence and isinstance(sequence[0], dict):
+        values = [item['value'] for item in sequence]
+    else:
+        values = sequence
+
+    # Tüm değerleri float'a çevir (Fraction, ... için)
+    numeric_values = []
+    for v in values:
+        try:
+            val = extract_numericval(v)
+            numeric_values.append(float(val))
+        except:
+            numeric_values.append(0.0)
+
+    print(f"  İlk 10 sayısal değer: {numeric_values[:10]}")
+    if numeric_values:
+        print(f"  Min: {min(numeric_values)}, Max: {max(numeric_values)}")
+
+    plt.figure(figsize=(14, 7), facecolor="#f0f0f0")
+    plt.plot(numeric_values, marker='o', linestyle='-', color="#2980b9",
+             markersize=5, linewidth=2.5, label="Dizi Değerleri", zorder=2)
+
+    pattern, start_idx = find_repeating_pattern(numeric_values)
+    if pattern:
+        pattern_length = len(pattern)
+        plt.axvspan(start_idx, start_idx + pattern_length, facecolor="#f39c12",
+                    alpha=0.3, label="Tekrarlayan Alan", zorder=0)
+        print(f"  Tekrarlayan kalıp bulundu: başlangıç indeksi={start_idx}, uzunluk={pattern_length}")
+    else:
+        print("  Tekrarlayan kalıp bulunamadı.")
+
+    if numeric_values:
+        y_min = min(numeric_values) - 1
+        y_max = max(numeric_values) + 1
+        plt.ylim(y_min, y_max)
+
+    kpn_str = f"KPN={kpn}" if kpn else "KPN=Bulunamadı"
+    ara_str = "Ara Adım: Var" if intermediate else "Ara Adım: Yok"
+    full_title = f"{title}\n{kpn_str} | {ara_str}"
+
+    plt.xlabel('Adım Sayısı', fontsize=14)
+    plt.ylabel('Değer', fontsize=14)
+    plt.title(full_title, fontsize=16, fontweight='bold')
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(filename, dpi=150, bbox_inches='tight')
+    plt.close()
+
+def kececi_numbers_complex(start, add_value, iterations, random_source="classical"):
+    """
+    Gerçek Keçeci Sayıları'nı kompleks sayılarla hesaplar.
+    """
+    sequence = [start + 1j*start]  # Başlangıç sayısı kompleks
+    current = start + 1j*start
+    last_divisor = None
+    ask_counter = 0
+
+    for _ in range(iterations):
+        added = current + add_value + 1j * add_value  # Gerçek ve sanal kısım eşit
+        sequence.append(added)
+
+        if last_divisor is None:
+            intended = 3
+        elif last_divisor == 3:
+            intended = 2
+        elif last_divisor == 2:
+            intended = 3
+        alternative = 2 if intended == 3 else 3
+
+        if added.real % intended == 0:
+            result = added / intended
+            last_divisor = intended
+        elif added.real % alternative == 0:
+            result = added / alternative
+            last_divisor = alternative
+        else:
+            if is_prime(abs(added.real)):
+                if ask_counter == 0:
+                    modified = added + 1 + 1j  # Kompleks bileşeni de artır
+                    ask_counter = 1
+                else:
+                    modified = added - 1 - 1j  # Kompleks bileşeni de azalt
+                    ask_counter = 0
+                sequence.append(modified)
+                if modified.real % intended == 0:
+                    result = modified / intended
+                    last_divisor = intended
+                elif modified.real % alternative == 0:
+                    result = modified / alternative
+                    last_divisor = alternative
+                else:
+                    result = modified
+            else:
+                result = added
+
+        sequence.append(result)
+        current = result
+
+    return sequence
+
+def kececi_to_color(kececi_number):
+    """Klasik rastgelelikle Keçeci sayısını RGB değerlerine dönüştürür."""
+    r = int((abs(kececi_number.real) * random.random()) % 256)
+    g = int((abs(kececi_number.imag) * random.random()) % 256)
+    b = int(((r + g) * random.random()) % 256)
+    return (r, g, b)
+
+def generate_geometric_kececi_art(start, add_value, width, height, shape_type="square", random_source="classical", filename="geometric_kececi_art.png"):
+    """Keçeci Sayıları'nı kullanarak geometrik şekillerden oluşan sanatsal bir görüntü oluşturur."""
+    iterations = 75  # Şekil sayısı
+    sequence = kececi_numbers_complex(start, add_value, iterations, random_source)
+
+    img = Image.new("RGB", (width, height), color="white")
+    draw = ImageDraw.Draw(img)
+
+    # Eğer kaynak "quantum" ise, toplu olarak rastgele sayıları API'den al
+    quantum_numbers = None
+    q_source = None
+    if random_source == "quantum":
+        # Her şekil için 5 sayı: R,G,B,x,y
+        #total_needed = iterations * 5
+        total_needed = len(sequence) * 5
+        q_numbers, q_source = get_quantum_random_numbers(total_needed, min_val=0, max_val=65535, verbose=True)
+        # Eğer q_source "system_random" veya "hybrid" ise, aslında klasik de kullanıldı, bunu not edelim
+        if q_source in ("system_random", "hybrid", "partial_api"):
+            print(f"⚠️ Kuantum kaynağı tam kullanılamadı, kaynak: {q_source}. Bazı sayılar klasik (SystemRandom) ile tamamlandı.")
+        quantum_numbers = q_numbers  # liste
+        # Güvenlik: quantum_numbers boyutunu kontrol et
+        if len(quantum_numbers) < total_needed:
+            print(f"⚠️ Uyarı: Beklenen {total_needed} sayı yerine {len(quantum_numbers)} sayı alındı. Eksikler fallback ile doldurulacak.")
+            # Bu durum get_quantum_random_numbers içinde zaten tamamlanmış olmalı, ama tekrar kontrol
+            while len(quantum_numbers) < total_needed:
+                quantum_numbers.append(random.SystemRandom().randint(0, 65535))
+
+    idx = 0
+    for i, kececi_number in enumerate(sequence):
+        if random_source == "quantum" and quantum_numbers is not None and idx + 4 < len(quantum_numbers):
+            # Kuantumdan alınan sayıları kullan
+            r = int(quantum_numbers[idx] * 255 / 65535); idx += 1
+            g = int(quantum_numbers[idx] * 255 / 65535); idx += 1
+            b = int(quantum_numbers[idx] * 255 / 65535); idx += 1
+            x = int(quantum_numbers[idx] * width / 65535); idx += 1
+            y = int(quantum_numbers[idx] * height / 65535); idx += 1
+            color = (r, g, b)
+        else:
+            # Klasik: mevcut yöntem (eğer quantum seçili ama sayılar bittiyse de buraya düşer)
+            if random_source == "quantum" and quantum_numbers is not None:
+                # Eğer idx listenin dışına çıktıysa, tekrar başa sar veya mevcut değerleri kullan
+                print(f"⚠️ Kuantum sayıları bitti, {i}. adımda klasik yönteme geçiliyor.")
+                # Basitçe mevcut kececi_number'dan renk üret
+                color = kececi_to_color(kececi_number)
+                # Konum için de kececi_number'ı kullan
+                x = int((kececi_number.real * i) % width)
+                y = int((kececi_number.imag * i) % height)
+            else:
+                color = kececi_to_color(kececi_number)
+                x = int((kececi_number.real * i) % width)
+                y = int((kececi_number.imag * i) % height)
+
+        size = int((abs(kececi_number.real) + abs(kececi_number.imag)) % 50) + 10
+
+        if shape_type == "square":
+            draw.rectangle((x, y, x + size, y + size), fill=color)
+        elif shape_type == "circle":
+            draw.ellipse((x, y, x + size, y + size), fill=color)
+        elif shape_type == "triangle":
+            points = [(x, y), (x + size // 2, y + size), (x + size, y)]
+            draw.polygon(points, fill=color)
+        else:  # Default square
+            draw.rectangle((x, y, x + size, y + size), fill=color)
+
+    img.save(filename)
+    if random_source == "quantum" and quantum_numbers is not None:
+        if q_source in ("api", "hybrid", "partial_api", "system_random"):
+            source_text = f"Kuantum (kaynak: {q_source})"
+        else:
+            source_text = "Kuantum (API)" if q_source == "api" else "Klasik (SystemRandom fallback)"
+    else:
+        source_text = "Klasik (random)"
+    print(f"Geometrik Keçeci sanatı '{filename}' oluşturuldu. Kullanılan kaynak: {source_text}")
 
 # ==============================================================================
 # --- MAIN EXECUTION BLOCK ---
