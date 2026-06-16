@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
@@ -26,6 +26,20 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install build
+
+      - name: Build docs
+        run: |
+          pip install -r docs/requirements.txt
+          cd docs && make html
+
+      - name: Clean unnecessary files before build
+        run: |
+          echo "🧹 Gereksiz dosyalar temizleniyor..."
+          find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+          find . -name "*.pyc" -delete 2>/dev/null || true
+          find . -name "*.pyo" -delete 2>/dev/null || true
+          rm -rf build/ dist/ *.egg-info .pytest_cache .mypy_cache
+          echo "✅ Temizlik tamamlandı"
 
       - name: Build the package
         run: python -m build
