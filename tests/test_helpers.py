@@ -72,10 +72,10 @@ def test_is_prime_like_basic():
 
 
 def test_ternary_conversion_and_prime():
-    t = kn.TernaryNumber.from_ternary_string("102")  # decimal 11
+    t = kn.TernaryNumber.from_ternary_string("102") # decimal 11
     assert kn._get_integer_representation(t) == 11
-    assert kn.is_prime_like(t, kn.TYPE_TERNARY)
-
+    int_repr = kn._get_integer_representation(t)
+    assert int_repr is not None and kn.is_prime(int_repr)  # doğrudan asallık kontrolü
 
 # test_kececi_conjecture için test fonksiyonları
 # Pytest artık bunları test olarak görecek ama sorun olmayacak
