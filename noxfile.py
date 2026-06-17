@@ -1,7 +1,7 @@
 # noxfile.py
 
+
 import nox
-import os
 
 # Test edilecek Python versiyonlarını listele
 PYTHON_VERSIONS = ["3.11", "3.12", "3.13", "3.14"]
@@ -26,21 +26,24 @@ def tests(session):
         "pytest-mock",
         # ... diğer tüm test bağımlılıkları
     )
-    session.install("-e", ".[test]") # pyproject.toml'daki [project.optional-dependencies] test grubunu kurar
-    
+    session.install(
+        "-e", ".[test]"
+    )  # pyproject.toml'daki [project.optional-dependencies] test grubunu kurar
+
     # Artık tüm kütüphaneler kurulu olduğu için pytest çalışabilir.
     # 2. Pytest'i çalıştır
     #    --cov ile kod kapsamı (code coverage) raporu oluştur.
     session.run("pytest", "--cov=kececinumbers", "--cov-report=xml")
 
-@nox.session(python="3.11") # Linting genellikle tek bir versiyonda yapılır
+
+@nox.session(python="3.11")  # Linting genellikle tek bir versiyonda yapılır
 def lint(session):
     """
     Run linters to check code style and quality.
     """
     # Linting araçlarını kur
     session.install("ruff")
-    
+
     # Kodu kontrol et
     session.run("ruff", "check", "kececinumbers", "tests")
     session.run("ruff", "format", "--check", "kececinumbers", "tests")

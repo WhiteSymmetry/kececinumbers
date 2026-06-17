@@ -2,31 +2,35 @@
 
 import ast
 import io
-import re
-from setuptools import setup, find_packages
 import sys
-import os
+
+from setuptools import find_packages, setup
 
 # UTF-8 encoding sorunlarını çöz
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+
 
 def get_version():
     """Parse the AST of __init__.py to find the __version__ assignment safely."""
-    with open('kececinumbers/__init__.py', 'r', encoding='utf-8') as f:
+    with open("kececinumbers/__init__.py", "r", encoding="utf-8") as f:
         tree = ast.parse(f.read())
-        
+
     for node in ast.walk(tree):
         if isinstance(node, ast.Assign):
             for target in node.targets:
-                if isinstance(target, ast.Name) and target.id == '__version__':
+                if isinstance(target, ast.Name) and target.id == "__version__":
                     # Eğer atanan değer bir string literal ise (örn: "0.2.9")
-                    if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                    if isinstance(node.value, ast.Constant) and isinstance(
+                        node.value.value, str
+                    ):
                         return node.value.value
-                        
+
     raise RuntimeError("Unable to find __version__ in kececinumbers/__init__.py")
+
+
 """
 def get_version():
     with open('kececinumbers/__init__.py', 'r', encoding='utf-8') as f:
@@ -37,6 +41,7 @@ def get_version():
     raise RuntimeError("Unable to find version string.")
 """
 
+
 def get_install_requires():
     """Kurulum bağımlılıklarını dinamik olarak belirle"""
     base_requires = [
@@ -46,6 +51,7 @@ def get_install_requires():
         "scikit-learn",
         "sympy",
     ]
+
 
 setup(
     name="kececinumbers",
@@ -58,42 +64,49 @@ setup(
     author_email="mkececi@yaani.com",
     maintainer_email="mkececi@yaani.com",
     url="https://github.com/WhiteSymmetry/kececinumbers",
-        #packages=find_packages(),
+    # packages=find_packages(),
     packages=find_packages(
         include=["kha256", "kha256.*"],
         exclude=[
-            "binder", "content", "data", "notebooks",
-            "tests", "tests.*",
-            "docs", "docs.*",
-            "examples", "examples.*",
-            "build", "dist",
-            "*.tests", "*.tests.*", ".github",
-        ]
+            "binder",
+            "content",
+            "data",
+            "notebooks",
+            "tests",
+            "tests.*",
+            "docs",
+            "docs.*",
+            "examples",
+            "examples.*",
+            "build",
+            "dist",
+            "*.tests",
+            "*.tests.*",
+            ".github",
+        ],
     ),
     include_package_data=True,
-    package_data={
-        "kha256": ["__init__.py", "_version.py", "*.pyi"]
-    },
+    package_data={"kha256": ["__init__.py", "_version.py", "*.pyi"]},
     install_requires=get_install_requires(),
     extras_require={
-        'test': [
+        "test": [
             "pytest",
             "pytest-cov",
         ],
-        'dev': [
+        "dev": [
             "pytest",
             "pytest-cov",
             "twine",
             "wheel",
-        ]
+        ],
     },
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
         "Intended Audience :: Science/Research",
-        "Topic :: Scientific/Engineering :: Mathematics"
+        "Topic :: Scientific/Engineering :: Mathematics",
     ],
-    python_requires='>=3.11',
+    python_requires=">=3.11",
     license="AGPL-3.0-or-later",
     keywords="mathematics numbers quaternion hypercomplex kececi",
     project_urls={

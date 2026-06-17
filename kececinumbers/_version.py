@@ -16,8 +16,12 @@ __license_name__: str = "GNU Affero General Public License v3.0 or later"
 __license_url__: str = "https://www.gnu.org/licenses/agpl-3.0.html"
 
 # Package description
-__description__: str = "Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets."
-__summary__: str = "A cryptographic hash algorithm maximizing security with performance trade-offs"
+__description__: str = (
+    "Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets."
+)
+__summary__: str = (
+    "A cryptographic hash algorithm maximizing security with performance trade-offs"
+)
 __keywords__: List[str] = [
     "cryptography",
     "hash",
@@ -105,7 +109,7 @@ __build__: int = 1  # Increment for each build of the same version
 
 def get_version_info() -> Dict[str, str]:
     """Return a dictionary with all version information.
-    
+
     Returns:
         Dict[str, str]: Dictionary containing version metadata.
     """
@@ -123,7 +127,7 @@ def get_version_info() -> Dict[str, str]:
 
 def get_dependency_info() -> Dict[str, List[str]]:
     """Return dependency information.
-    
+
     Returns:
         Dict[str, List[str]]: Dictionary containing dependency information.
     """
@@ -135,24 +139,24 @@ def get_dependency_info() -> Dict[str, List[str]]:
 
 def is_python_version_supported(major: int, minor: int) -> bool:
     """Check if a given Python version is supported.
-    
+
     Args:
         major: Python major version (e.g., 3)
         minor: Python minor version (e.g., 11)
-    
+
     Returns:
         bool: True if the version is supported, False otherwise.
     """
     min_supported = __min_python_version__
     max_supported = __max_python_version__
-    
+
     version = (major, minor)
     return min_supported <= version <= max_supported
 
 
 def get_supported_python_versions() -> List[str]:
     """Get a list of supported Python versions as strings.
-    
+
     Returns:
         List[str]: List of supported Python versions.
     """
@@ -160,6 +164,7 @@ def get_supported_python_versions() -> List[str]:
     for minor in range(__min_python_version__[1], __max_python_version__[1] + 1):
         versions.append(f"3.{minor}")
     return versions
+
 
 # Version history for changelog purposes
 __version_history__: List[Dict[str, str]] = [
@@ -170,7 +175,6 @@ __version_history__: List[Dict[str, str]] = [
             "minor",
         ],
     },
-  
 ]
 
 # Export all public variables
