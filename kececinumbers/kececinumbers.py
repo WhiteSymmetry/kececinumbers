@@ -4518,9 +4518,9 @@ def is_prime_like(value: Any, kececi_type: int = None) -> bool:
         if kececi_type == TYPE_QUATERNION:
             try:
                 # Eğer metot ise çağır
-                if hasattr(value, 'coeffs') and callable(value.coeffs):
+                if hasattr(value, "coeffs") and callable(value.coeffs):
                     comps = list(value.coeffs())
-                elif hasattr(value, 'coeffs'):
+                elif hasattr(value, "coeffs"):
                     comps = list(value.coeffs)  # property ise direkt
                 else:
                     comps = _parse_components(value)
@@ -4551,12 +4551,20 @@ def is_prime_like(value: Any, kececi_type: int = None) -> bool:
                     n = int(round(float(sub)))
 
         # Hypercomplex family (octonion, sedenion, pathion, ...)
-        if kececi_type in (TYPE_OCTONION, TYPE_SEDENION, TYPE_PATHION, TYPE_CHINGON, TYPE_ROUTON, TYPE_VOUDON, TYPE_HYPERCOMPLEX):
+        if kececi_type in (
+            TYPE_OCTONION,
+            TYPE_SEDENION,
+            TYPE_PATHION,
+            TYPE_CHINGON,
+            TYPE_ROUTON,
+            TYPE_VOUDON,
+            TYPE_HYPERCOMPLEX,
+        ):
             try:
                 # extract coeffs
-                if hasattr(value, 'coeffs'):
+                if hasattr(value, "coeffs"):
                     coeffs = list(value.coeffs())
-                elif hasattr(value, 'to_list'):
+                elif hasattr(value, "to_list"):
                     coeffs = list(value.to_list())
                 elif isinstance(value, (list, tuple)):
                     coeffs = list(value)
