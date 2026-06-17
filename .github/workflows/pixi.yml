@@ -1,5 +1,5 @@
 # .github/workflows/pixi.yml
-name: Release
+name: Pixi Release
 
 on:
   push:
@@ -110,7 +110,7 @@ jobs:
       - name: Build Python package
         run: pixi run build   # python -m build → dist/ klasörüne yazar
 
-      - name: Publish to PyPI
+      #- name: Publish to PyPI
         #uses: pypa/gh-action-pypi-publish@release/v1
         # Trusted publishing kullandığında api-token gerekmez
         # Eğer API token kullanıyorsan aşağıyı aç:
