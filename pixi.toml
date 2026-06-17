@@ -1,45 +1,85 @@
 # pixi.toml
-
 [workspace]
-preview = ["pixi-build"]
-authors = ["Mehmet Keçeci <mkececi@yaani.com>"]
-channels = ["pypi", "https://prefix.dev/conda-forge", "https://conda.modular.com/max-nightly", "conda-forge", "https://repo.prefix.dev/modular-community"]
-platforms = ["linux-64"]
 name = "kececinumbers"
 version = "1.0.4"
+authors = ["Mehmet Keçeci <mkececi@yaani.com>"]
+preview = ["pixi-build"]
 
+channels = [
+  "conda-forge",
+  "https://prefix.dev/conda-forge",
+  "https://conda.modular.com/max-nightly",
+  "https://repo.prefix.dev/modular-community",
+]
+
+# Tüm major platformlar
+platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
+
+# ──────────────────────────────────────────
 [package]
 name = "kececinumbers"
 version = "1.0.4"
 license = "AGPL-3.0-or-later"
 
-[dependencies]
-python = ">=3.11"
-pip = ">=25.3"
-conda-build = ">=25.11.1"
-setuptools = ">=82.0.1"
-wheel = ">=0.45.1"
-hatchling = ">=1.28.0"
-setuptools_scm = ">=9.2.2"
-rattler-build = ">=0.55.0"
-quetz = ">=0.10.4"
-sqlalchemy = ">=2.0.45"
-requests = ">=2.34.2"
-
-[tasks]
-build = "python -m build"
-start = "python -c 'import kececinumbers; print(kececinumbers.__version__)'"
-lint = "ruff check ."
-fmt = "ruff format ."
-serve = { cmd = "python -m http.server", cwd = "docs" }
-install-kececinumbers = "pip install git+https://github.com/WhiteSymmetry/kececinumbers"
-install = "pip install -e ."
-test = { depends-on = ["install"], cmd = "pytest" }
-install-deps = "pip install kececinumbers"
-
 [package.build.backend]
 name = "pixi-build-python"
 version = "*"
 
+# Derleme sırasında gereken araçlar (conda-forge'dan gelir)
 [package.host-dependencies]
-hatchling = "*"
+hatchling = ">=1.28.0"
+setuptools-scm = ">=9.2.2"
+
+# ──────────────────────────────────────────
+# Conda ortamı — sistem/araç bağımlılıkları
+[dependencies]
+python = ">=3.11"
+rattler-build = ">=0.66.1,<0.67"
+
+# ──────────────────────────────────────────
+# PyPI'dan gelen runtime bağımlılıkları
+[pypi-dependencies]
+numpy = ">=1.24.0"
+requests = ">=2.32.0"
+matplotlib = ">=3.7.0"
+scipy = ">=1.11.0"
+scikit-learn = ">=1.3.0"
+sympy = ">=1.12.0"
+
+# ──────────────────────────────────────────
+# Geliştirme araçları (sadece dev ortamında)
+[feature.dev.dependencies]
+ruff = ">=0.9.0"
+pytest = ">=8.0"
+
+[feature.dev.pypi-dependencies]
+# python-build PyPI'da "build" adıyla geçer; conda'da "python-build" ama
+# pixi-build-python backend'i varken buna genellikle gerek kalmaz.
+# Eğer `python -m build` çalıştırmak istersen:
+build = ">=1.2"
+
+[environments]
+default = { features = ["dev"], solve-group = "default" }
+
+# ──────────────────────────────────────────
+[tasks]
+# Kod kalitesi
+fmt  = "ruff format ."
+lint = "ruff check ."
+fix  = "ruff check --fix ."
+
+# Paket — pixi-build-python varken `pixi build` tercih edilir
+build = "python -m build"
+
+# Geliştirme kurulumu ve test
+install = "pip install -e ."
+test    = { depends-on = ["install"], cmd = "pytest -v" }
+
+# Çalıştırma
+start = "python -c 'import kececinumbers; print(kececinumbers.__version__)'"
+
+# Dokümantasyon
+serve = { cmd = "python -m http.server 8080", cwd = "docs" }
+
+# Uzak sürüm kurulumu (CI/test amaçlı)
+install-remote = "pip install git+https://github.com/WhiteSymmetry/kececinumbers"
