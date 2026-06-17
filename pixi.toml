@@ -56,6 +56,7 @@ pytest = ">=8.0"
 # python-build PyPI'da "build" adıyla geçer; conda'da "python-build" ama
 # pixi-build-python backend'i varken buna genellikle gerek kalmaz.
 # Eğer `python -m build` çalıştırmak istersen:
+kececinumbers = { path = ".", editable = true }
 build = ">=1.2"
 
 [environments]
@@ -64,9 +65,14 @@ default = { features = ["dev"], solve-group = "default" }
 # ──────────────────────────────────────────
 [tasks]
 # Kod kalitesi
-fmt  = "ruff format ."
-lint = "ruff check ."
-fix  = "ruff check --fix . || true"
+fmt     = "ruff format ."
+lint    = "ruff check ."
+fix     = "ruff check --fix . || true"
+build   = "python -m build"
+start   = "python -c 'import kececinumbers; print(kececinumbers.__version__)'"
+serve   = { cmd = "python -m http.server 8080", cwd = "docs" }
+test    = "pytest -v"           # artık depends-on ["install"] gerekmiyor
+install-remote = "pip install git+https://github.com/WhiteSymmetry/kececinumbers"
 
 # Paket — pixi-build-python varken `pixi build` tercih edilir
 build = "python -m build"
