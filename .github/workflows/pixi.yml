@@ -4,22 +4,27 @@ name: Pixi-Release
 on:
   push:
     tags:
-      - "v*"          # v1.0.4, v2.0.0 gibi tag'lerde tetiklenir
+      - "v*"
+  # Elle tetiklemek için — Actions sekmesinden "Run workflow" butonu çıkar
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (build et ama prefix.dev'e yükleme)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
-# prefix.dev OIDC trusted publishing için (API key yerine alternatif)
-# eğer API key kullanıyorsan bu bloğu kaldırabilirsin
 permissions:
   contents: read
-  id-token: write   # OIDC için gerekli (trusted publishing)
+  id-token: write
 
 jobs:
-  # ────────────────────────────────────────────────────────────
-  # JOB 1: Testler
-  # ────────────────────────────────────────────────────────────
   test:
     name: Test (linux-64)
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,7 +34,6 @@ jobs:
         with:
           pixi-version: v0.47.0
           cache: true
-          # prefix.dev özel kanalın için kimlik doğrulama (install sırasında)
           auth-host: prefix.dev
           auth-token: ${{ secrets.PIXI_TOKEN }}
 
@@ -39,24 +43,14 @@ jobs:
       - name: Test
         run: pixi run test
 
-  # ────────────────────────────────────────────────────────────
-  # JOB 2: Conda paketi derle ve prefix.dev'e yayınla
-  # ────────────────────────────────────────────────────────────
   build-and-publish:
     name: Build & Publish conda package
     runs-on: ubuntu-latest
-    needs: test          # testler geçmeden yayınlama
-
+    needs: test
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Tag'dan versiyon numarasını çıkar (v1.0.4 → 1.0.4)
-      - name: Parse version from tag
-        id: version
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-
-      # rattler-build'i yükle ve conda.recipe/recipe.yaml'ı derle
       - name: Build conda package
         uses: prefix-dev/rattler-build-action@v0.2.38
         with:
@@ -68,21 +62,27 @@ jobs:
           upload-artifact: true
           artifact-name: conda-package-linux-64
 
-      # prefix.dev'e yükle — API key ile
       - name: Upload to prefix.dev
+        # dry_run "true" ise veya hiç input yoksa (tag push) yükleme yapılır
+        # dry_run "true" seçildiyse bu adım atlanır
+        if: ${{ github.event.inputs.dry_run != 'true' }}
         shell: bash
         env:
           PIXI_TOKEN: ${{ secrets.PIXI_TOKEN }}
         run: |
-          # Tüm .conda ve .tar.bz2 dosyalarını yükle
-          # Kanal adını kendi prefix.dev kanal adınla değiştir!
           for pkg in $(find output -type f \( -name "*.conda" -o -name "*.tar.bz2" \)); do
             echo "Uploading: $pkg"
             rattler-build upload prefix \
               --channel kececinumbers \
               --api-key "$PIXI_TOKEN" \
-              "$pkg" || echo "Warning: upload failed for $pkg (duplicate?)"
+              "$pkg" || echo "Warning: duplicate, skipping"
           done
+
+      - name: Dry run info
+        if: ${{ github.event.inputs.dry_run == 'true' }}
+        run: |
+          echo "=== DRY RUN — yükleme yapılmadı ==="
+          find output -type f \( -name "*.conda" -o -name "*.tar.bz2" \)
 
   # ────────────────────────────────────────────────────────────
   # JOB 3: PyPI'ya da yayınla (opsiyonel)
