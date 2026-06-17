@@ -41,6 +41,20 @@ jobs:
           cache: true
           auth-host: prefix.dev
           auth-token: ${{ secrets.PIXI_TOKEN }}
+          frozen: false      # lock dosyası yoksa veya eskiyse yeniden çöz
+          locked: false      # lock dosyasını zorunlu tutma
+
+      - name: Update lock file (değişmişse commit'le)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet pixi.lock; then
+            git add pixi.lock
+            git commit -m "chore: update pixi.lock [skip ci]"
+            git push
+          else
+            echo "pixi.lock değişmedi."
+          fi
 
       - name: Format & lint (auto-fix)
         run: |
