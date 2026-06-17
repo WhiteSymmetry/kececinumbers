@@ -89,8 +89,8 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           SHA256=$(curl -sL "https://pypi.org/packages/source/k/kececinumbers/kececinumbers-${VERSION}.tar.gz" | sha256sum | cut -d' ' -f1)
-          sed -i "s/version: \".*\"/version: \"${VERSION}\"/" conda.recipe/recipe.yaml
-          sed -i "s/sha256: .*/sha256: ${SHA256}/" conda.recipe/recipe.yaml
+          sed -i "s/version: \".*\"/version: \"${VERSION}\"/" recipe.yaml
+          sed -i "s/sha256: .*/sha256: ${SHA256}/" recipe.yaml
           echo "Version: $VERSION, SHA256: $SHA256"
 
       - name: Build conda package
