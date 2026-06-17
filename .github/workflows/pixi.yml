@@ -105,8 +105,6 @@ jobs:
           artifact-name: conda-package-linux-64
 
       - name: Upload to prefix.dev
-        # dry_run "true" ise veya hiç input yoksa (tag push) yükleme yapılır
-        # dry_run "true" seçildiyse bu adım atlanır
         if: ${{ github.event.inputs.dry_run != 'true' }}
         shell: bash
         env:
@@ -116,7 +114,7 @@ jobs:
             echo "Uploading: $pkg"
             rattler-build upload prefix \
               --channel kececinumbers \
-              --api-key "$PIXI_TOKEN" \
+              --token "$PIXI_TOKEN" \
               "$pkg" || echo "Warning: duplicate, skipping"
           done
 
