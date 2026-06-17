@@ -4501,26 +4501,26 @@ def is_prime_like(value: Any, kececi_type: int = None) -> bool:
         # Tip sabitleri proje içinde farklı isimlerde olabilir; burada sayısal kodlar kullanılıyor.
         # Kullanıcının tanımladığı TYPE_* sabitlerini kullanıyorsanız onları import edin veya
         # burada numeric karşılıklarını verin. Örnek: TYPE_HYPERCOMPLEX == 23
-        TYPE_HYPERCOMPLEX = 23
         TYPE_QUATERNION = 6
         TYPE_OCTONION = 12
         TYPE_SEDENION = 13
+        TYPE_CLIFFORD = 14
         TYPE_PATHION = 17
         TYPE_CHINGON = 18
         TYPE_ROUTON = 19
         TYPE_VOUDON = 20
-        TYPE_TERNARY = 22
-        TYPE_CLIFFORD = 14
         TYPE_SUPERREAL = 21
+        TYPE_TERNARY = 22
+        TYPE_HYPERCOMPLEX = 23
 
         # Quaternion özel kontrol
         # Quaternion ve diğer tiplerde coeffs alırken:
         if kececi_type == TYPE_QUATERNION:
             try:
                 # Eğer metot ise çağır
-                if hasattr(value, "coeffs") and callable(value.coeffs):
+                if hasattr(value, 'coeffs') and callable(value.coeffs):
                     comps = list(value.coeffs())
-                elif hasattr(value, "coeffs"):
+                elif hasattr(value, 'coeffs'):
                     comps = list(value.coeffs)  # property ise direkt
                 else:
                     comps = _parse_components(value)
@@ -4551,20 +4551,12 @@ def is_prime_like(value: Any, kececi_type: int = None) -> bool:
                     n = int(round(float(sub)))
 
         # Hypercomplex family (octonion, sedenion, pathion, ...)
-        if kececi_type in (
-            TYPE_OCTONION,
-            TYPE_SEDENION,
-            TYPE_PATHION,
-            TYPE_CHINGON,
-            TYPE_ROUTON,
-            TYPE_VOUDON,
-            TYPE_HYPERCOMPLEX,
-        ):
+        if kececi_type in (TYPE_OCTONION, TYPE_SEDENION, TYPE_PATHION, TYPE_CHINGON, TYPE_ROUTON, TYPE_VOUDON, TYPE_HYPERCOMPLEX):
             try:
                 # extract coeffs
-                if hasattr(value, "coeffs"):
+                if hasattr(value, 'coeffs'):
                     coeffs = list(value.coeffs())
-                elif hasattr(value, "to_list"):
+                elif hasattr(value, 'to_list'):
                     coeffs = list(value.to_list())
                 elif isinstance(value, (list, tuple)):
                     coeffs = list(value)
@@ -4584,28 +4576,13 @@ def is_prime_like(value: Any, kececi_type: int = None) -> bool:
         # Ternary
         if kececi_type == TYPE_TERNARY:
             try:
-                # If object has to_decimal or digits
-                if hasattr(value, "to_decimal"):
-                    dec = int(value.to_decimal())
-                elif hasattr(value, "digits"):
-                    digits = list(value.digits)
-                    dec = 0
-                    for i, d in enumerate(reversed(digits)):
-                        dec += int(d) * (3**i)
-                elif isinstance(value, (list, tuple)):
-                    parts = list(value)
-                    dec = 0
-                    for i, d in enumerate(reversed(parts)):
-                        dec += int(d) * (3**i)
-                else:
-                    # try parse first component
-                    comps = _parse_components(value)
-                    if not comps:
-                        return False
-                    dec = int(round(comps[0]))
-                if _sympy_isprime:
-                    return bool(_sympy_isprime(dec))
-                return _simple_is_prime(dec)
+                # Ternary sayıyı integer'a çevir
+                n = _get_integer_representation(value)
+                if n is not None and n > 1:
+                    if _sympy_isprime:
+                        return bool(_sympy_isprime(n))
+                    return _simple_is_prime(n)
+                return False
             except Exception:
                 return False
 
