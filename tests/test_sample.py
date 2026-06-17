@@ -269,12 +269,12 @@ class TestKececiNumbers(unittest.TestCase):
             self.assertFalse(none_result)
 
     def test_find_kececi_prime_number(self):
-        """Test if a repeating prime is correctly identified."""
-        mock_sequence = [2, 3, 4, 5, 3, 6, 3]  # 3 repeats
+        # Burada 2,3,4 döngüsü var, döngüdeki ilk asal 2'dir.
+        mock_sequence = [2, 3, 4, 2, 3, 4, 2, 3, 4]  
         kpn = find_kececi_prime_number(mock_sequence)
-        self.assertEqual(kpn, 3)
-
-        mock_sequence2 = [2, 3, 5, 7]  # all prime but no repeat
+        self.assertEqual(kpn, 2)  # 2 asal ve döngüdeki ilk eleman
+    
+        mock_sequence2 = [4, 6, 8, 4, 6, 8] # Döngü var ama asal yok
         kpn2 = find_kececi_prime_number(mock_sequence2)
         self.assertIsNone(kpn2)
 
