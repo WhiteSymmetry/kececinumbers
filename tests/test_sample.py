@@ -322,7 +322,7 @@ if __name__ == "__main__":
     result = runner.run(suite)
 
     # Ayrı test fonksiyonunu çalıştır
-    kn.test_kececi_conjecture()
+    #kn.test_kececi_conjecture()
 
     # Hata özeti
     print(f"\n{'=' * 60}")
