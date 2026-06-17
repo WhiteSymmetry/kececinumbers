@@ -68,24 +68,14 @@ default = { features = ["dev"], solve-group = "default" }
 fmt     = "ruff format ."
 lint    = "ruff check ."
 fix     = "ruff check --fix . || true"
-build   = "python -m build"
-start   = "python -c 'import kececinumbers; print(kececinumbers.__version__)'"
-serve   = { cmd = "python -m http.server 8080", cwd = "docs" }
-test    = "pytest -v"           # artık depends-on ["install"] gerekmiyor
-install-remote = "pip install git+https://github.com/WhiteSymmetry/kececinumbers"
-
 # Paket — pixi-build-python varken `pixi build` tercih edilir
-build = "python -m build"
-
+build   = "python -m build"
+# Çalıştırma
+start   = "python -c 'import kececinumbers; print(kececinumbers.__version__)'"
+# Dokümantasyon
+serve   = { cmd = "python -m http.server 8080", cwd = "docs" }
 # Geliştirme kurulumu ve test
 install = "pip install -e ."
-test    = { depends-on = ["install"], cmd = "pytest -v" }
-
-# Çalıştırma
-start = "python -c 'import kececinumbers; print(kececinumbers.__version__)'"
-
-# Dokümantasyon
-serve = { cmd = "python -m http.server 8080", cwd = "docs" }
-
+test    = "pytest -v"           # artık depends-on ["install"] gerekmiyor
 # Uzak sürüm kurulumu (CI/test amaçlı)
 install-remote = "pip install git+https://github.com/WhiteSymmetry/kececinumbers"
