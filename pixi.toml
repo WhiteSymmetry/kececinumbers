@@ -1,3 +1,5 @@
+# pixi.toml
+
 [workspace]
 preview = ["pixi-build"]
 authors = ["Mehmet Keçeci <mkececi@yaani.com>"]
