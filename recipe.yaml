@@ -1,61 +1,44 @@
 # recipe.yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
-# this sets up "context variables" (in this case name and version) that
-# can later be used in Jinja expressions
 context:
-  version: 1.0.4
+  version: "1.0.4"
   name: kececinumbers
+  python_min: "3.11"
 
-# top level package information (name and version)
 package:
-  name: kececinumbers
-  version: 1.0.4
+  name: ${{ name }}
+  version: ${{ version }}
 
-# location to get the source from
-#`source` are `url`, `sha256`, `md5`, `patches`, `file_name` and `target_directory`
 source:
-  url: 
-  sha256: 
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 865857e05bb6af86f44da046df1b7e3baaeed6e7af4dc55a9f38a5b36c1bb6fa
 
-# build number (should be incremented if a new build is made, but version is not incrementing)
 build:
-  number: 1
-  script: python -m pip install --no-deps --ignore-installed .
   noarch: python
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-# the requirements at build and runtime
 requirements:
   host:
-    - python
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
-    - wheel
-    - requests
+    - hatchling >=1.28.0
   run:
-   - python >=3.11  # hypercomplex uyumlu versiyon
-   - numpy  # kececinumbers numpy kullanıyor
-   - pip
-   - requests
+    - python >=${{ python_min }}
+    - numpy >=1.24.0
+    - requests >=2.32.0
+    - matplotlib >=3.7.0
+    - scipy >=1.11.0
+    - scikit-learn >=1.3.0
+    - sympy >=1.12.0
 
-# tests to validate that the package works as expected
-#tests:
-#  requires: []  # veya boş liste
-#  - python:
-#      imports:
-#        - kececinumbers
-
-# information about the package
-about:
-  homepage: https://github.com/WhiteSymmetry/kececinumbers/
-  license: GPL-3.0-or-later
-  summary: 'kececinumbers'
-  description: |
-    kececinumbers
-  repository: https://github.com/WhiteSymmetry/kececinumbers/
-  documentation: https://github.com/WhiteSymmetry/kececinumbers/
-
-# the below is conda-forge specific!
-extra:
-  recipe-maintainers:
-    - bilgi
+tests:
+  - python:
+      imports:
+        - kececinumbers
+      pip_check: true
+  - script:
+      - python -c "import kececinumbers; print(kececinumbers.__version__)"
+      - python -c "import numpy, requests, matplotlib, scipy, sklearn, sympy"
