@@ -270,11 +270,11 @@ class TestKececiNumbers(unittest.TestCase):
 
     def test_find_kececi_prime_number(self):
         # Burada 2,3,4 döngüsü var, döngüdeki ilk asal 2'dir.
-        mock_sequence = [2, 3, 4, 2, 3, 4, 2, 3, 4]  
+        mock_sequence = [2, 3, 4, 2, 3, 4, 2, 3, 4]
         kpn = find_kececi_prime_number(mock_sequence)
         self.assertEqual(kpn, 2)  # 2 asal ve döngüdeki ilk eleman
-    
-        mock_sequence2 = [4, 6, 8, 4, 6, 8] # Döngü var ama asal yok
+
+        mock_sequence2 = [4, 6, 8, 4, 6, 8]  # Döngü var ama asal yok
         kpn2 = find_kececi_prime_number(mock_sequence2)
         self.assertIsNone(kpn2)
 
