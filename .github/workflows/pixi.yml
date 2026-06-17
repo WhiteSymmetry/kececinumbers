@@ -25,9 +25,14 @@ jobs:
   test:
     name: Test (linux-64)
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # commit push edebilmek için
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0   # tam git geçmişi (commit için gerekli)
 
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.6
@@ -37,8 +42,23 @@ jobs:
           auth-host: prefix.dev
           auth-token: ${{ secrets.PIXI_TOKEN }}
 
-      - name: Lint
-        run: pixi run lint
+      - name: Format & lint (auto-fix)
+        run: |
+          pixi run fmt          # ruff format .
+          pixi run fix          # ruff check --fix .
+
+      - name: Commit lint fixes (varsa)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Değişiklik yoksa bu adım sessizce geçer
+          if ! git diff --quiet; then
+            git add -A
+            git commit -m "style: auto-fix ruff lint [skip ci]"
+            git push
+          else
+            echo "Lint düzeltmesi gerekmedi."
+          fi
 
       - name: Test
         run: pixi run test
