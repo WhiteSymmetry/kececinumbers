@@ -8,7 +8,7 @@ from typing import Dict, List, Tuple
 # - MAJOR: Incompatible API changes
 # - MINOR: Backwards-compatible functionality additions
 # - PATCH: Backwards-compatible bug fixes
-__version__: str = "1.0.4"
+__version__: str = "1.0.5"
 
 # License information
 __license__: str = "AGPL-3.0-or-later"
