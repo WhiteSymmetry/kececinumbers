@@ -148,7 +148,7 @@ jobs:
       # ADIM 4: Miniconda Kurulumu
       # ================================================================
       - name: Setup Miniconda for Python ${{ matrix.python-version }}
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           auto-activate-base: true
           python-version: "${{ matrix.python-version }}"
