@@ -1,7 +1,7 @@
 # pixi.toml
 [workspace]
 name = "kececinumbers"
-version = "1.0.5"
+version = "1.0.6"
 authors = ["Mehmet Keçeci <mkececi@yaani.com>"]
 preview = ["pixi-build"]
 
@@ -18,7 +18,7 @@ platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
 # ──────────────────────────────────────────
 [package]
 name = "kececinumbers"
-version = "1.0.5"
+version = "1.0.6"
 license = "AGPL-3.0-or-later"
 
 [package.build.backend]
