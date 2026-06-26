@@ -1,7 +1,7 @@
 schema_version: 1
 
 context:
-  version: "1.0.5"
+  version: "1.0.6"
   name: kececinumbers
   python_min: "3.11"
 
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 4a8fa50272479bcfd69d4b7d3ab447e38f15e26a5f71a7ab6f84a56a0fd06bf6
+  sha256: 
 
 build:
   noarch: python
