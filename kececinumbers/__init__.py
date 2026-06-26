@@ -46,7 +46,7 @@ try:
     __license__ = _meta.get("License", "AGPL-3.0-or-later")
 except Exception:
     # Fallback for development or if metadata is not available
-    __version__ = "1.0.5"
+    __version__ = "1.0.6"
     __author__ = "Mehmet Keçeci"
     __license__ = "AGPL-3.0-or-later"
 
@@ -215,6 +215,7 @@ from .kececinumbers import (
     analyze_pair_correlation,
     apply_operation,
     apply_pca_clustering,
+    apply_step,
     chingon_cross,
     chingon_dot,
     chingon_eye,
@@ -361,6 +362,7 @@ __all__ = [
     "generate_geometric_kececi_art",
     "kececi_to_color",
     "kececi_numbers_complex",
+    "apply_step",
 ]
 
 # Ensure metadata is explicitly included in __all__
