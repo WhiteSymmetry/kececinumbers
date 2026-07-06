@@ -38,6 +38,11 @@ setuptools = ">=61.0"
 cython = ">=3.0.0"
 compilers = "*"  # Linux ortamında Cython kodunu derlemek için GCC/Clang kurar
 
+[tool.pixi.package.build-dependencies]
+setuptools = ">=61.0"
+cython = ">=3.0.0"
+compilers = "*"
+
 [project.optional-dependencies]
 test = ["pytest", "pytest-cov", "pytest-mock", "ruff", "numpy", "matplotlib", "scipy", "scikit-learn", "sympy", "pillow", "requests"]
 
