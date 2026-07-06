@@ -156,3 +156,7 @@ jobs:
         # Eğer API token kullanıyorsan aşağıyı aç:
         # with:
         #   password: ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: 🏗️ Paket Derle ve prefix.dev'e Yayınla (Trusted Publishing)
+        # URL'in sonuna kendi kanal adınızı ekleyin
+        run: pixi publish --target-channel https://prefix.dev/bilgi
