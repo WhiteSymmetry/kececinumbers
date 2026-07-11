@@ -94,7 +94,7 @@ jobs:
           echo "Version: $VERSION, SHA256: $SHA256"
 
       - name: Build conda package
-        uses: prefix-dev/rattler-build-action@v0.2.38
+        uses: prefix-dev/rattler-build-action@v0.2.39
         with:
           recipe-path: recipe.yaml    # ana dizin
           build-args: >-
