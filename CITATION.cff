@@ -12,7 +12,7 @@ type: software
 authors:
   - given-names: Mehmet
     family-names: Keçeci
-    email: bilginomi@yaani.com
+    email: enfo@tuta.io
     orcid: 'https://orcid.org/0000-0001-9937-9839'
 identifiers:
   - type: doi
