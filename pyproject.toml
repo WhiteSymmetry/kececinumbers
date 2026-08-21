@@ -1,7 +1,7 @@
 # pyproject.toml
 
 [build-system]
-requires = ["setuptools>=82.0.1"]
+requires = ["setuptools>=84.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -11,7 +11,7 @@ license = {text = "GPL-3.0-or-later"}
 
 # Diğer proje bilgileri (isteğe bağlı ama tavsiye edilir)
 authors = [
-    { name="Mehmet Keçeci", email="mkececi@yaani.com" },
+    { name="Mehmet Keçeci", email="enfo@tuta.io" },
 ]
 description = "Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets"
 readme = "README.md"
