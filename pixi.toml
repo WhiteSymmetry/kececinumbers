@@ -2,7 +2,7 @@
 [workspace]
 name = "kececinumbers"
 version = "1.0.6"
-authors = ["Mehmet Keçeci <mkececi@yaani.com>"]
+authors = ["Mehmet Keçeci <enfo@tuta.io>"]
 preview = ["pixi-build"]
 
 channels = [
