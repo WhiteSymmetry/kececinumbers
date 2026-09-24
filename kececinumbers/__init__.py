@@ -23,10 +23,6 @@ import logging
 import warnings
 from typing import TYPE_CHECKING, Any, Callable, List
 
-# Paket sürüm numarası
-# __version__ = "1.0.5"
-# __author__ = "Mehmet Keçeci"
-# __email__ = "mkececi@yaani.com"
 __description__ = (
     "Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets."
 )
@@ -46,12 +42,12 @@ try:
     __license__ = _meta.get("License", "AGPL-3.0-or-later")
 except Exception:
     # Fallback for development or if metadata is not available
-    __version__ = "1.0.6"
+    __version__ = "1.0.7"
     __author__ = "Mehmet Keçeci"
     __license__ = "AGPL-3.0-or-later"
 
 __copyright__ = "Copyright 2025-2026 Mehmet Keçeci"
-__email__ = "mkececi@yaani.com"
+__email__ = "enfo@tuta.io"
 __certificate__ = "kececinumbers-PA-2025-001"
 
 _log = logging.getLogger(__name__)
