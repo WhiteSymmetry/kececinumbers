@@ -60,17 +60,17 @@ default = { features = ["dev"], solve-group = "default" }
 
 [tasks]
 # Kod kalitesi
-fmt     = "ruff format ."
-lint    = "ruff check ."
-fix     = "ruff check --fix . || true"
+fmt = "ruff format ."
+lint = "ruff check ."
+fix = "ruff check --fix . || true"
 # Paket — pixi-build-python varken `pixi build` tercih edilir
-build   = "python -m build"
+build = "python -m build"
 # Çalıştırma
-start   = "python -c 'import kececinumbers; print(kececinumbers.__version__)'"
+start = "python -c 'import kececinumbers; print(kececinumbers.__version__)'"
 # Dokümantasyon
-serve   = { cmd = "python -m http.server 8080", cwd = "docs" }
+serve = { cmd = "python -m http.server 8080", cwd = "docs" }
 # Geliştirme kurulumu ve test
 install = "pip install -e ."
-test    = "pytest -v"           # artık depends-on ["install"] gerekmiyor
+test = "pytest -v"     # artık depends-on ["install"] gerekmiyor
 # Uzak sürüm kurulumu (CI/test amaçlı)
 install-remote = "pip install git+https://github.com/WhiteSymmetry/kececinumbers"
