@@ -6,8 +6,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kececinumbers"
-version = "1.0.6"
-license = {text = "GPL-3.0-or-later"}
+version = "1.0.7"
+license = {text = "AGPL-3.0-or-later"}
 
 # Diğer proje bilgileri (isteğe bağlı ama tavsiye edilir)
 authors = [
@@ -34,7 +34,7 @@ dependencies = [
 ]
 
 [package.build-dependencies]
-setuptools = ">=61.0"
+setuptools = ">=84.0.0"
 cython = ">=3.0.0"
 compilers = "*"  # Linux ortamında Cython kodunu derlemek için GCC/Clang kurar
 
