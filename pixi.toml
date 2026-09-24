@@ -1,7 +1,7 @@
 # pixi.toml
 [workspace]
 name = "kececinumbers"
-version = "1.0.6"
+version = "1.0.7"
 authors = ["Mehmet Keçeci <enfo@tuta.io>"]
 preview = ["pixi-build"]
 
@@ -15,10 +15,9 @@ channels = [
 # Tüm major platformlar
 platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
 
-# ──────────────────────────────────────────
 [package]
 name = "kececinumbers"
-version = "1.0.6"
+version = "1.0.7"
 license = "AGPL-3.0-or-later"
 
 [package.build.backend]
@@ -30,13 +29,11 @@ version = "*"
 hatchling = ">=1.28.0"
 setuptools-scm = ">=9.2.2"
 
-# ──────────────────────────────────────────
 # Conda ortamı — sistem/araç bağımlılıkları
 [dependencies]
 python = ">=3.11"
-rattler-build = ">=0.66.1,<0.67"
+rattler-build = ">=0.66.1"
 
-# ──────────────────────────────────────────
 # PyPI'dan gelen runtime bağımlılıkları
 [pypi-dependencies]
 numpy = ">=1.24.0"
@@ -46,7 +43,6 @@ scipy = ">=1.11.0"
 scikit-learn = ">=1.3.0"
 sympy = ">=1.12.0"
 
-# ──────────────────────────────────────────
 # Geliştirme araçları (sadece dev ortamında)
 [feature.dev.dependencies]
 ruff = ">=0.9.0"
@@ -62,7 +58,6 @@ build = ">=1.2"
 [environments]
 default = { features = ["dev"], solve-group = "default" }
 
-# ──────────────────────────────────────────
 [tasks]
 # Kod kalitesi
 fmt     = "ruff format ."
