@@ -147,16 +147,19 @@ jobs:
           pixi-version: v0.70.2
           cache: true
 
-      - name: Build Python package
-        run: pixi run build   # python -m build → dist/ klasörüne yazar
+      - name: 🏗️ Build package (wheel + sdist)
+        run: pixi run build  # python -m build → dist/ klasörüne yazar
+        # Gerekiyorsa `build` görevini pixi.toml'da tanımlamış olmalısınız:
+        # [tasks]
+        # build = "python -m build"
 
-      #- name: Publish to PyPI
-        #uses: pypa/gh-action-pypi-publish@release/v1
-        # Trusted publishing kullandığında api-token gerekmez
-        # Eğer API token kullanıyorsan aşağıyı aç:
-        # with:
-        #   password: ${{ secrets.PYPI_API_TOKEN }}
+      - name: 📤 Upload build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: kececinumbers-dist-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: dist/
+          if-no-files-found: ignore
 
       - name: 🏗️ Paket Derle ve prefix.dev'e Yayınla (Trusted Publishing)
-        # URL'in sonuna kendi kanal adınızı ekleyin
+        # Hangi sunucuda çalışıyorsa (Win/Mac/Linux) o platformun paketini derleyip yükler
         run: pixi publish --target-channel https://prefix.dev/bilgi
