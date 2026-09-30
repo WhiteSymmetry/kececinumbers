@@ -61,9 +61,8 @@ default = { features = ["dev"], solve-group = "default" }
 
 [tasks]
 # Kod kalitesi
-fmt = "ruff format ."
 lint = "ruff check ."
-fix = "ruff check --fix . || true"
+#fix = "ruff check --fix . || true"
 # Paket — pixi-build-python varken `pixi build` tercih edilir
 build = "python -m build"
 # Çalıştırma
