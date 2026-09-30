@@ -37,8 +37,8 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.10.2
         with:
-          pixi-version: v0.70.2
-          cache: true
+          pixi-version: v0.81.0
+          cache: false
           auth-host: prefix.dev
           auth-token: ${{ secrets.PIXI_TOKEN }}
           frozen: false      # lock dosyası yoksa veya eskiyse yeniden çöz
@@ -144,8 +144,8 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.10.2
         with:
-          pixi-version: v0.70.2
-          cache: true
+          pixi-version: v0.81.0
+          cache: false
 
       - name: 🏗️ Build package (wheel + sdist)
         run: pixi run build  # python -m build → dist/ klasörüne yazar
