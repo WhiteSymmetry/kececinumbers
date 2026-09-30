@@ -6,6 +6,7 @@ authors = ["Mehmet Keçeci <enfo@tuta.io>"]
 preview = ["pixi-build"]
 
 channels = [
+  "pypi", 
   "conda-forge",
   "https://prefix.dev/conda-forge",
   "https://conda.modular.com/max-nightly",
