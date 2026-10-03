@@ -2,6 +2,10 @@
 
 name: Conda-Build, Test, and Publish Package
 
+permissions:
+  contents: read
+  pull-requests: write
+
 on:
   workflow_dispatch:
     inputs:
