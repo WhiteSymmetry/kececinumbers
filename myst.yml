@@ -1,0 +1,15 @@
+# See docs at: https://mystmd.org/guide/frontmatter
+version: 1
+project:
+  id: c54a8c8e-c3f5-4627-8390-67c9064549bb
+  title: kececinumbers
+  description: "kececinumbers"
+  keywords: [kececinumbers]
+  authors: [Mehmet Keçeci]
+  github: https://github.com/WhiteSymmetry/kececinumbers
+  # To autogenerate a Table of Contents, run "jupyter book init --write-toc"
+site:
+  template: book-theme
+  options:
+    favicon: docs/favicon.ico
+    logo: docs/logo.jpg
