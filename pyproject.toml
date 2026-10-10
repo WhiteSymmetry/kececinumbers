@@ -1,21 +1,20 @@
 # pyproject.toml
-
-[build-system]
-requires = ["setuptools>=84.0.0"]
-build-backend = "setuptools.build_meta"
-
 [project]
-name = "kececinumbers"
-version = "1.0.7"
-license = {text = "AGPL-3.0-or-later"}
-
-# Diğer proje bilgileri (isteğe bağlı ama tavsiye edilir)
+name = "adnus"
+version = "0.2.3"
+description = "A Python library for Advanced Number Systems (AdNuS), including Bicomplex, Neutrosophic, Hyperreal numbers, reals, Complex, Quaternion, Octonion, Sedenion, Pathion, Chingon, Routon, Voudon."
 authors = [
-    { name="Mehmet Keçeci", email="enfo@tuta.io" },
+    {name = "Mehmet Keçeci", email = "enfo@tuta.io"}
 ]
-description = "Keçeci Numbers: An Exploration of a Dynamic Sequence Across Diverse Number Sets"
+maintainers = [
+    {name = "Mehmet Keçeci", email = "enfo@tuta.io"}
+]
+license = { file="LICENSE" }
 readme = "README.md"
 requires-python = ">=3.11"
+dependencies = [
+    "numpy>=2.4.1",
+]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
@@ -23,44 +22,26 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Visualization",
 ]
 
-# Ana bağımlılıklarınız
-dependencies = [
-    "numpy",
-    "matplotlib",
-    "scipy",
-    "scikit-learn",
-    "sympy",
-    "requests",
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.2"
+]
+build = [
+    "setuptools>=80.10.1",
+    "cython>=3.2.4"
 ]
 
-[package.build-dependencies]
-setuptools = ">=84.0.0"
-cython = ">=3.0.0"
-compilers = "*"  # Linux ortamında Cython kodunu derlemek için GCC/Clang kurar
-
-[tool.pixi.package.build-dependencies]
-setuptools = ">=61.0"
-cython = ">=3.0.0"
-compilers = "*"
-
-[project.optional-dependencies]
-test = ["pytest", "pytest-cov", "pytest-mock", "ruff", "numpy", "matplotlib", "scipy", "scikit-learn", "sympy", "pillow", "requests"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_functions = ["test_*"]
-
-[tool.setuptools.packages.find]
-include = ["kececinumbers*"]
-exclude = ["binder", "build*", "content", "data", "dist", "dist*", "docs", "docs*", "examples*", "examples", "notebooks", "tests", "tests*"]
-
 [tool.setuptools]
-include-package-data = true
+package-dir = {"" = "adnus"}
+packages = {find = {where = ["adnus"]}}
 
-[tool.setuptools.package-data]
-kececinumbers = ["*.py", "*.pyi", "py.typed"]
+[tool.setuptools.dynamic]
+version = {attr = "adnus._version.__version__"}
 
-[project.urls]
-Homepage = "https://github.com/WhiteSymmetry/kececinumbers"
-Repository = "https://github.com/WhiteSymmetry/kececinumbers"
+[build-system]
+requires = [
+    "setuptools>=80.10.1",
+    "wheel",
+    "setuptools_scm>=9.2.2"
+]
+build-backend = "setuptools.build_meta"
