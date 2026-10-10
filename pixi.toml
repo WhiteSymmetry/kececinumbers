@@ -1,25 +1,28 @@
 # pixi.toml
 [workspace]
 name = "kececinumbers"
-version = "1.0.7"
+version = "1.0.9"
 authors = ["Mehmet Keçeci <enfo@tuta.io>"]
 preview = ["pixi-build"]
-
-channels = [
-  "pypi", 
-  "conda-forge",
-  "https://prefix.dev/conda-forge",
-  "https://conda.modular.com/max-nightly",
-  "https://repo.prefix.dev/modular-community",
-]
-
+channels = ["https://prefix.dev/bilgi", "bilgi", "pypi", "https://prefix.dev/conda-forge", "https://conda.modular.com/max-nightly", "conda-forge", "https://repo.prefix.dev/modular-community"]
 # Tüm major platformlar
 platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
 
 [package]
 name = "kececinumbers"
-version = "1.0.7"
+version = "1.0.9"
 license = "AGPL-3.0-or-later"
+
+[dependencies]
+python = ">=3.11"
+pip = ">=25.3"
+conda-build = ">=25.11.1"
+setuptools = ">=80.10.1"
+wheel = ">=0.45.1"
+hatchling = ">=1.28.0"
+setuptools_scm = ">=9.2.2"
+rattler-build = ">=0.55.0"
+pytest = "*"
 
 [package.build.backend]
 name = "pixi-build-python"
