@@ -1,7 +1,7 @@
 # pixi.toml
 [workspace]
 name = "kececinumbers"
-version = "1.0.9"
+version = "1.0.8"
 authors = ["Mehmet Keçeci <enfo@tuta.io>"]
 preview = ["pixi-build"]
 channels = ["https://prefix.dev/bilgi", "bilgi", "pypi", "https://prefix.dev/conda-forge", "https://conda.modular.com/max-nightly", "conda-forge", "https://repo.prefix.dev/modular-community"]
@@ -10,7 +10,7 @@ platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
 
 [package]
 name = "kececinumbers"
-version = "1.0.9"
+version = "1.0.8"
 license = "AGPL-3.0-or-later"
 
 [dependencies]
