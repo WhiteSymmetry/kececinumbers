@@ -24,7 +24,7 @@ jobs:
       BASE_URL: /${{ github.event.repository.name }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
