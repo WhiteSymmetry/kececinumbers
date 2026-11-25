@@ -33,11 +33,6 @@ version = "*"
 hatchling = ">=1.28.0"
 setuptools-scm = ">=9.2.2"
 
-# Conda ortamı — sistem/araç bağımlılıkları
-[dependencies]
-python = ">=3.11"
-rattler-build = ">=0.66.1"
-
 # PyPI'dan gelen runtime bağımlılıkları
 [pypi-dependencies]
 numpy = ">=1.24.0"
