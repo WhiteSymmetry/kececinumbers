@@ -1,11 +1,13 @@
 # meta.yaml
+{% set version = "1.0.8" %}
+
 package:
   name: kececinumbers
-  version: "1.0.8"
+  version: "{{ version }}"
 
 source:
-  url: ""
-  blake2b-256: ""
+  url: 
+  blake2b-256: 
   exclude:
     - docs/*
     - notebooks/*
